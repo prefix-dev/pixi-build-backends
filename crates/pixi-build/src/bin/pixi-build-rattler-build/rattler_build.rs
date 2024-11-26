@@ -93,6 +93,9 @@ impl Protocol for RattlerBuildBackend {
 
         let selector_config = RattlerBuild::selector_config_from(&params);
 
+        // Create the work directory if it does not exist
+        std::fs::create_dir_all(&params.work_directory).into_diagnostic()?;
+
         let rattler_build_tool = RattlerBuild::new(
             self.raw_recipe.clone(),
             self.recipe_path.clone(),

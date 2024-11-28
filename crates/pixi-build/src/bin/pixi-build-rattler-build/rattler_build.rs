@@ -255,7 +255,7 @@ impl Protocol for RattlerBuildBackend {
 
         let channels = params
             .channel_base_urls
-            .unwrap_or_else(|| vec![Url::from_str("https://fast.prefix.dev/conda-forge").unwrap()]);
+            .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
 
         let rattler_build_tool = RattlerBuild::new(
             self.raw_recipe.clone(),
@@ -371,7 +371,7 @@ mod tests {
                 host_platform: None,
                 build_platform: None,
                 channel_configuration: ChannelConfiguration {
-                    base_url: Url::from_str("https://fast.prefix.dev").unwrap(),
+                    base_url: Url::from_str("https://prefix.dev").unwrap(),
                 },
                 channel_base_urls: None,
                 work_directory: current_dir,
@@ -406,7 +406,7 @@ mod tests {
                 host_platform: None,
                 channel_base_urls: None,
                 channel_configuration: ChannelConfiguration {
-                    base_url: Url::from_str("https://fast.prefix.dev").unwrap(),
+                    base_url: Url::from_str("https://prefix.dev").unwrap(),
                 },
                 outputs: None,
                 work_directory: current_dir.into_path(),

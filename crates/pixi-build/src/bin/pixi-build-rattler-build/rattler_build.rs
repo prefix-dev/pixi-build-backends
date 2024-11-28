@@ -204,6 +204,7 @@ impl Protocol for RattlerBuildBackend {
     }
 
     async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+        // Create the work directory if it does not exist
         fs::create_dir_all(&params.work_directory).into_diagnostic()?;
 
         let host_platform = params

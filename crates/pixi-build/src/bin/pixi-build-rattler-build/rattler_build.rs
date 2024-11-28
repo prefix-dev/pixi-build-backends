@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use fs_err as fs;
 use miette::IntoDiagnostic;
 use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
 use pixi_build_backend::tools::RattlerBuild;
@@ -50,7 +51,7 @@ impl RattlerBuildBackend {
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
         // Load the manifest from the source directory
-        let raw_recipe = std::fs::read_to_string(manifest_path).into_diagnostic()?;
+        let raw_recipe = fs::read_to_string(manifest_path).into_diagnostic()?;
 
         Ok(Self {
             raw_recipe,
@@ -79,6 +80,9 @@ impl Protocol for RattlerBuildBackend {
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
+        // Create the work directory if it does not exist
+        fs::create_dir_all(&params.work_directory).into_diagnostic()?;
+
         let host_platform = params
             .host_platform
             .as_ref()
@@ -92,9 +96,6 @@ impl Protocol for RattlerBuildBackend {
             .unwrap_or(Platform::current());
 
         let selector_config = RattlerBuild::selector_config_from(&params);
-
-        // Create the work directory if it does not exist
-        std::fs::create_dir_all(&params.work_directory).into_diagnostic()?;
 
         let rattler_build_tool = RattlerBuild::new(
             self.raw_recipe.clone(),
@@ -203,6 +204,8 @@ impl Protocol for RattlerBuildBackend {
     }
 
     async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+        fs::create_dir_all(&params.work_directory).into_diagnostic()?;
+
         let host_platform = params
             .host_platform
             .as_ref()

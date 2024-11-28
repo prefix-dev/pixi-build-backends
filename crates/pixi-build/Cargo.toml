@@ -36,4 +36,5 @@ parking_lot = { workspace = true }
 jsonrpc-stdio-server = { workspace = true }
 jsonrpc-http-server = { workspace = true }
 jsonrpc-core = { workspace = true }
-log = "0.4.22"
+log = { workspace = true }
+fs-err = { workspace = true }

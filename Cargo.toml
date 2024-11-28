@@ -30,7 +30,8 @@ jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
 url = "2.5.3"
-
+log = "0.4.22"
+fs-err = "3.0.0"
 
 
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false }

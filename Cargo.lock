@@ -2909,6 +2909,7 @@ dependencies = [
  "chrono",
  "clap",
  "clap-verbosity-flag",
+ "fs-err 3.0.0",
  "indexmap 2.6.0",
  "itertools 0.13.0",
  "jsonrpc-core",

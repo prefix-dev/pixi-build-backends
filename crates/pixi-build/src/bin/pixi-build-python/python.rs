@@ -112,7 +112,7 @@ impl PythonBuildBackend {
         })?;
 
         let targets = package.targets.resolve(Some(host_platform)).collect_vec();
-        println!("Package targets: {:?}", package.targets);
+
         let run_dependencies = Dependencies::from(
             targets
                 .iter()

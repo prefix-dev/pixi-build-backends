@@ -10,7 +10,7 @@ use chrono::Utc;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
-    dependencies::MatchspecExtractor,
+    dependencies::extract_dependencies,
     manifest_ext::ManifestExt,
     protocol::{Protocol, ProtocolFactory},
     utils::TemporaryRenderedRecipe,
@@ -33,7 +33,7 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackagingSettings, PlatformWithVirtualPackages,
     },
     recipe::{
-        parser::{Build, Dependency, Package, PathSource, Requirements, ScriptContent, Source},
+        parser::{Build, Package, PathSource, Requirements, ScriptContent, Source},
         Recipe,
     },
     render::resolved_dependencies::DependencyInfo,
@@ -162,26 +162,9 @@ impl PythonBuildBackend {
             }
         }
 
-        requirements.build = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(build_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
-
-        requirements.host = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(host_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
-
-        requirements.run = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(run_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
+        requirements.build = extract_dependencies(channel_config, build_dependencies)?;
+        requirements.host = extract_dependencies(channel_config, host_dependencies)?;
+        requirements.run = extract_dependencies(channel_config, run_dependencies)?;
 
         Ok((requirements, installer))
     }

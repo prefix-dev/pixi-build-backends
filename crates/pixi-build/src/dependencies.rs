@@ -1,17 +1,18 @@
 use itertools::Either;
 use miette::IntoDiagnostic;
-use pixi_manifest::CondaDependencies;
-use pixi_spec::SourceSpec;
-use rattler_conda_types::{ChannelConfig, MatchSpec};
+use pixi_manifest::{CondaDependencies, Dependencies};
+use pixi_spec::{PixiSpec, SourceSpec};
+use rattler_build::recipe::parser::Dependency;
+use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName};
 
 /// A helper struct to extract match specs from a manifest.
-pub struct MatchspecExtractor {
-    channel_config: ChannelConfig,
+pub struct MatchspecExtractor<'a> {
+    channel_config: &'a ChannelConfig,
     ignore_self: bool,
 }
 
-impl MatchspecExtractor {
-    pub fn new(channel_config: ChannelConfig) -> Self {
+impl<'a> MatchspecExtractor<'a> {
+    pub fn new(channel_config: &'a ChannelConfig) -> Self {
         Self {
             channel_config,
             ignore_self: false,
@@ -60,4 +61,16 @@ impl MatchspecExtractor {
 
         Ok(specs)
     }
+}
+
+pub fn extract_dependencies(
+    channel_config: &ChannelConfig,
+    dependencies: Dependencies<PackageName, PixiSpec>,
+) -> miette::Result<Vec<Dependency>> {
+    Ok(MatchspecExtractor::new(channel_config)
+        .with_ignore_self(true)
+        .extract(dependencies)?
+        .into_iter()
+        .map(Dependency::Spec)
+        .collect())
 }

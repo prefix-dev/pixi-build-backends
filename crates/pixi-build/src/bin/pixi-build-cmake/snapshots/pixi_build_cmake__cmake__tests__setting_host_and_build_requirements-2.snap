@@ -13,7 +13,7 @@ build:
 requirements:
   build:
     - boltons *
-    - clangxx_osx-arm64
+    - "... compiler ..."
   host:
     - hatchling *
     - cmake *

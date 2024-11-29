@@ -10,7 +10,7 @@ use chrono::Utc;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
-    dependencies::MatchspecExtractor,
+    dependencies::extract_dependencies,
     manifest_ext::ManifestExt,
     protocol::{Protocol, ProtocolFactory},
     utils::TemporaryRenderedRecipe,
@@ -155,24 +155,9 @@ impl CMakeBuildBackend {
             }
         }
 
-        requirements.build = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(build_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
-        requirements.host = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(host_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
-        requirements.run = MatchspecExtractor::new(channel_config.clone())
-            .with_ignore_self(true)
-            .extract(run_dependencies)?
-            .into_iter()
-            .map(Dependency::Spec)
-            .collect();
+        requirements.build = extract_dependencies(channel_config, build_dependencies)?;
+        requirements.host = extract_dependencies(channel_config, host_dependencies)?;
+        requirements.run = extract_dependencies(channel_config, run_dependencies)?;
 
         // Add compilers to the dependencies.
         requirements.build.extend(
@@ -645,6 +630,9 @@ mod tests {
         insta::assert_yaml_snapshot!(reqs);
 
         let recipe = cmake_backend.recipe(host_platform, &channel_config);
-        insta::assert_yaml_snapshot!(recipe.unwrap(), { ".build.script" => "[ ... script ... ]" });
+        insta::assert_yaml_snapshot!(recipe.unwrap(), {
+           ".build.script" => "[ ... script ... ]",
+           ".requirements.build[1]" => "... compiler ..."
+        });
     }
 }

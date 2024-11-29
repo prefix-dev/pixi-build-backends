@@ -34,7 +34,7 @@ impl<'a> MatchspecExtractor<'a> {
         let mut specs = Vec::new();
         for (name, spec) in dependencies.into_specs() {
             let source_or_binary = spec
-                .into_source_or_binary(&self.channel_config)
+                .into_source_or_binary(self.channel_config)
                 .into_diagnostic()?;
             let match_spec = match source_or_binary {
                 Either::Left(SourceSpec::Path(path))

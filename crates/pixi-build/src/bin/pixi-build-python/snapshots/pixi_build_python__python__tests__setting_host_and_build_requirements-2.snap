@@ -11,10 +11,7 @@ source:
   - path: "[ ... path ... ]"
 build:
   number: 0
-  script:
-    - ""
-    - $PYTHON -m pip install -vv --ignore-installed --no-deps --no-build-isolation $SRC_DIR
-    - ""
+  script: "[ ... script ... ]"
   noarch: python
 requirements:
   build:

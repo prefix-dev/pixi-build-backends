@@ -625,6 +625,9 @@ mod tests {
         insta::assert_yaml_snapshot!(reqs);
 
         let recipe = python_backend.recipe(host_platform, &channel_config);
-        insta::assert_yaml_snapshot!(recipe.unwrap(), { ".source[0].path" => "[ ... path ... ]" });
+        insta::assert_yaml_snapshot!(recipe.unwrap(), {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        });
     }
 }

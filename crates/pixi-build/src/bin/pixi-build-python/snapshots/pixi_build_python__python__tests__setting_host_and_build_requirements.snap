@@ -8,3 +8,5 @@ host:
   - hatchling *
   - pip *
   - python *
+run:
+  - foobar >=3.2.1

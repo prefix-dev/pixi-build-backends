@@ -38,4 +38,4 @@ jsonrpc-http-server = { workspace = true }
 jsonrpc-core = { workspace = true }
 
 [dev-dependencies]
-insta = { version = "1.41.1", features = ["yaml"] }
+insta = { version = "1.41.1", features = ["yaml", "redactions"] }

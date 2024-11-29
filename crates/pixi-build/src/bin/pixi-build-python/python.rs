@@ -112,7 +112,7 @@ impl PythonBuildBackend {
         })?;
 
         let targets = package.targets.resolve(Some(host_platform)).collect_vec();
-
+        println!("Package targets: {:?}", package.targets);
         let run_dependencies = Dependencies::from(
             targets
                 .iter()
@@ -586,7 +586,7 @@ impl ProtocolFactory for PythonBuildBackendFactory {
 mod tests {
 
     use pixi_manifest::Manifest;
-    use rattler_build::{console_utils::LoggingOutputHandler, recipe::parser::Dependency};
+    use rattler_build::console_utils::LoggingOutputHandler;
     use rattler_conda_types::{ChannelConfig, Platform};
     use std::path::PathBuf;
 
@@ -613,7 +613,7 @@ mod tests {
         [build-dependencies]
         boltons = "*"
 
-        [dependencies]
+        [run-dependencies]
         foobar = ">=3.2.1"
 
         [build-system]
@@ -644,6 +644,6 @@ mod tests {
         insta::assert_yaml_snapshot!(reqs);
 
         let recipe = python_backend.recipe(host_platform, &channel_config);
-        insta::assert_yaml_snapshot!(recipe.unwrap());
+        insta::assert_yaml_snapshot!(recipe.unwrap(), { ".source[0].path" => "[ ... path ... ]" });
     }
 }

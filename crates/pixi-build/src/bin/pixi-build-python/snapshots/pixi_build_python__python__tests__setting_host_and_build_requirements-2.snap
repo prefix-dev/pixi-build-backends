@@ -8,7 +8,7 @@ package:
   name: test-reqs
   version: 1.2.3
 source:
-  - path: /private/var/folders/ls/nd2_c1qn1tz8c8sccxmg83m00000gn/T/.tmpnR9Hq1
+  - path: "[ ... path ... ]"
 build:
   number: 0
   script:
@@ -23,3 +23,5 @@ requirements:
     - hatchling *
     - pip *
     - python *
+  run:
+    - foobar >=3.2.1

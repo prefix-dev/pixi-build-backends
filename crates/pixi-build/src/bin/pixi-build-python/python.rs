@@ -144,8 +144,8 @@ impl PythonBuildBackend {
         // Ensure python and pip are available in the host dependencies section.
         for pkg_name in [installer.package_name(), "python"] {
             if host_dependencies.contains_key(pkg_name) {
-                // If the host dependencies already contain the package, we don't need to add it
-                // again.
+                // If the host dependencies already contain the package,
+                // we don't need to add it again.
                 continue;
             }
 
@@ -168,12 +168,14 @@ impl PythonBuildBackend {
             .into_iter()
             .map(Dependency::Spec)
             .collect();
+
         requirements.host = MatchspecExtractor::new(channel_config.clone())
             .with_ignore_self(true)
             .extract(host_dependencies)?
             .into_iter()
             .map(Dependency::Spec)
             .collect();
+
         requirements.run = MatchspecExtractor::new(channel_config.clone())
             .with_ignore_self(true)
             .extract(run_dependencies)?

@@ -627,7 +627,7 @@ mod tests {
             .requirements(host_platform, &channel_config)
             .unwrap();
 
-        insta::assert_yaml_snapshot!(reqs);
+        insta::assert_yaml_snapshot!(reqs, { ".build[1]" => "... compiler ..." });
 
         let recipe = cmake_backend.recipe(host_platform, &channel_config);
         insta::assert_yaml_snapshot!(recipe.unwrap(), {

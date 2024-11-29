@@ -4,7 +4,7 @@ expression: reqs
 ---
 build:
   - boltons *
-  - clangxx_osx-arm64
+  - "... compiler ..."
 host:
   - hatchling *
   - cmake *

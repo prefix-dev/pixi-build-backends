@@ -616,6 +616,9 @@ mod tests {
         [build-dependencies]
         boltons = "*"
 
+        [run-dependencies]
+        foobar = "3.2.1"
+
         [build-system]
         build-backend = "pixi-build-cmake"
         dependencies = []
@@ -641,28 +644,9 @@ mod tests {
             .requirements(host_platform, &channel_config)
             .unwrap();
 
-        let host_reqs = reqs
-            .host
-            .iter()
-            .map(|d| match d {
-                Dependency::Spec(spec) => spec.to_string(),
-                _ => "".to_string(),
-            })
-            .collect::<Vec<String>>();
+        insta::assert_yaml_snapshot!(reqs);
 
-        let build_reqs = reqs
-            .build
-            .iter()
-            .map(|d| match d {
-                Dependency::Spec(spec) => spec.to_string(),
-                _ => "".to_string(),
-            })
-            .collect::<Vec<String>>();
-
-        assert!(host_reqs.contains(&"hatchling *".to_string()));
-        assert!(!host_reqs.contains(&"boltons *".to_string()));
-
-        assert!(build_reqs.contains(&"boltons *".to_string()));
-        assert!(!host_reqs.contains(&"hatcling *".to_string()));
+        let recipe = cmake_backend.recipe(host_platform, &channel_config);
+        insta::assert_yaml_snapshot!(recipe.unwrap());
     }
 }

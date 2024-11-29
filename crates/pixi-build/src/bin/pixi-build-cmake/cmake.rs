@@ -224,15 +224,13 @@ impl CMakeBuildBackend {
             .expect("the project manifest must reside in a directory");
 
         // Parse the package name from the manifest
-        let package = self
+        let package = &self
             .manifest
             .package
             .as_ref()
             .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package
-            .clone();
+            .package;
         let name = PackageName::from_str(&package.name).into_diagnostic()?;
-        let version = package.version;
 
         let noarch_type = NoArchType::none();
 
@@ -254,7 +252,7 @@ impl CMakeBuildBackend {
             schema_version: 1,
             context: Default::default(),
             package: Package {
-                version: version.into(),
+                version: package.version.clone().into(),
                 name,
             },
             cache: None,
@@ -588,7 +586,7 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
 mod tests {
 
     use pixi_manifest::Manifest;
-    use rattler_build::{console_utils::LoggingOutputHandler, recipe::parser::Dependency};
+    use rattler_build::console_utils::LoggingOutputHandler;
     use rattler_conda_types::{ChannelConfig, Platform};
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -647,6 +645,6 @@ mod tests {
         insta::assert_yaml_snapshot!(reqs);
 
         let recipe = cmake_backend.recipe(host_platform, &channel_config);
-        insta::assert_yaml_snapshot!(recipe.unwrap());
+        insta::assert_yaml_snapshot!(recipe.unwrap(), { ".build.script" => "[ ... script ... ]" });
     }
 }

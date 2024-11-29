@@ -199,16 +199,14 @@ impl PythonBuildBackend {
             .expect("the project manifest must reside in a directory");
 
         // Parse the package name from the manifest
-        let package = self
+        let package = &self
             .manifest
             .package
             .as_ref()
             .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package
-            .clone();
+            .package;
 
         let name = PackageName::from_str(&package.name).into_diagnostic()?;
-        let version = package.version;
 
         // TODO: NoArchType???
         let noarch_type = NoArchType::python();
@@ -231,7 +229,7 @@ impl PythonBuildBackend {
         Ok(Recipe {
             schema_version: 1,
             package: Package {
-                version: version.into(),
+                version: package.version.clone().into(),
                 name,
             },
             context: Default::default(),

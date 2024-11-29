@@ -9,22 +9,7 @@ package:
   version: "1.0"
 build:
   number: 0
-  script:
-    - ninja --version
-    - cmake --version
-    - ""
-    - "# Windows"
-    - "if [ ! -f \"$SRC_DIR/../build/CMakeCache.txt\" ]; then"
-    - "    cmake $CMAKE_ARGS \\"
-    - "          -GNinja \\"
-    - "          -DCMAKE_BUILD_TYPE=Release \\"
-    - "          -DCMAKE_INSTALL_PREFIX=$PREFIX \\"
-    - "          -DBUILD_SHARED_LIBS=ON \\"
-    - "          -B $SRC_DIR/../build \\"
-    - "          -S \"/private/var/folders/ls/nd2_c1qn1tz8c8sccxmg83m00000gn/T/.tmptIxAhO\""
-    - fi
-    - cmake --build $SRC_DIR/../build --target install
-    - ""
+  script: "[ ... script ... ]"
 requirements:
   build:
     - boltons *

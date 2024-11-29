@@ -596,8 +596,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_setting_host_and_build_requirements() {
-        // get cargo manifest dir
-
         let package_with_host_and_build_deps = r#"
         [workspace]
         name = "test-reqs"
@@ -614,6 +612,9 @@ mod tests {
 
         [build-dependencies]
         boltons = "*"
+
+        [dependencies]
+        foobar = ">=3.2.1"
 
         [build-system]
         build-backend = "pixi-build-python"
@@ -640,28 +641,6 @@ mod tests {
             .requirements(host_platform, &channel_config)
             .unwrap();
 
-        let host_reqs = reqs
-            .host
-            .iter()
-            .map(|d| match d {
-                Dependency::Spec(spec) => spec.to_string(),
-                _ => "".to_string(),
-            })
-            .collect::<Vec<String>>();
-
-        let build_reqs = reqs
-            .build
-            .iter()
-            .map(|d| match d {
-                Dependency::Spec(spec) => spec.to_string(),
-                _ => "".to_string(),
-            })
-            .collect::<Vec<String>>();
-
-        assert!(host_reqs.contains(&"hatchling *".to_string()));
-        assert!(!host_reqs.contains(&"boltons *".to_string()));
-
-        assert!(build_reqs.contains(&"boltons *".to_string()));
-        assert!(!host_reqs.contains(&"hatcling *".to_string()));
+        insta::assert_yaml_snapshot!(reqs);
     }
 }

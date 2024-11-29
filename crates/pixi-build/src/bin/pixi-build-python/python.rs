@@ -605,7 +605,7 @@ mod tests {
 
         [package]
         name = "test-reqs"
-        version = "1.0"
+        version = "1.2.3"
 
         [host-dependencies]
         hatchling = "*"
@@ -642,5 +642,8 @@ mod tests {
             .unwrap();
 
         insta::assert_yaml_snapshot!(reqs);
+
+        let recipe = python_backend.recipe(host_platform, &channel_config);
+        insta::assert_yaml_snapshot!(recipe.unwrap());
     }
 }

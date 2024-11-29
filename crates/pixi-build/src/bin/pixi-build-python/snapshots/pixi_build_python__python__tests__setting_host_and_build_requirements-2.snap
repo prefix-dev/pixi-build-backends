@@ -1,0 +1,25 @@
+---
+source: crates/pixi-build/src/bin/pixi-build-python/python.rs
+expression: recipe.unwrap()
+---
+schema_version: 1
+context: {}
+package:
+  name: test-reqs
+  version: 1.2.3
+source:
+  - path: /private/var/folders/ls/nd2_c1qn1tz8c8sccxmg83m00000gn/T/.tmpnR9Hq1
+build:
+  number: 0
+  script:
+    - ""
+    - $PYTHON -m pip install -vv --ignore-installed --no-deps --no-build-isolation $SRC_DIR
+    - ""
+  noarch: python
+requirements:
+  build:
+    - boltons *
+  host:
+    - hatchling *
+    - pip *
+    - python *

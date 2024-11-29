@@ -197,16 +197,16 @@ impl PythonBuildBackend {
             .expect("the project manifest must reside in a directory");
 
         // Parse the package name from the manifest
-        let name = self
+        let package = self
             .manifest
             .package
             .as_ref()
             .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
             .package
-            .name
             .clone();
-        let name = PackageName::from_str(&name).into_diagnostic()?;
-        let version = self.manifest.version_or_default().clone();
+
+        let name = PackageName::from_str(&package.name).into_diagnostic()?;
+        let version = package.version;
 
         // TODO: NoArchType???
         let noarch_type = NoArchType::python();

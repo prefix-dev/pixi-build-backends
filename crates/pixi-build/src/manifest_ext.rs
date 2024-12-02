@@ -95,9 +95,7 @@ mod tests {
             [tasks]
 
             [build-system]
-            channels = []
-            build-backend = "pixi-build-python"
-            dependencies = []
+            build-backend = { name = "pixi-build-python", version = "*" }
             "#;
 
         let manifest_path = Path::new("pixi.toml");

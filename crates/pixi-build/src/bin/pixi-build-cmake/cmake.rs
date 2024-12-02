@@ -603,9 +603,7 @@ mod tests {
         foobar = "3.2.1"
 
         [build-system]
-        build-backend = "pixi-build-cmake"
-        dependencies = []
-        channels = []
+        build-backend = { name = "pixi-build-python", version = "*" }
         "#;
 
         let tmp_dir = tempdir().unwrap();

@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#73a95a5a180fede26f9582fe5c415a5b901102d1"
 dependencies = [
  "console",
 ]
@@ -1117,8 +1117,8 @@ dependencies = [
 
 [[package]]
 name = "file_url"
-version = "0.1.7"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.2.0"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "itertools 0.13.0",
  "percent-encoding",
@@ -3017,7 +3017,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#73a95a5a180fede26f9582fe5c415a5b901102d1"
 dependencies = [
  "rattler_conda_types",
  "serde",
@@ -3028,7 +3028,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#73a95a5a180fede26f9582fe5c415a5b901102d1"
 dependencies = [
  "console",
  "lazy_static",
@@ -3039,7 +3039,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#73a95a5a180fede26f9582fe5c415a5b901102d1"
 dependencies = [
  "console",
  "dunce",
@@ -3071,10 +3071,10 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#73a95a5a180fede26f9582fe5c415a5b901102d1"
 dependencies = [
  "dirs",
- "file_url 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "file_url 0.1.7",
  "itertools 0.13.0",
  "rattler_conda_types",
  "rattler_digest 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3264,8 +3264,8 @@ dependencies = [
 
 [[package]]
 name = "rattler"
-version = "0.28.3"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.28.4"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "anyhow",
  "clap",
@@ -3287,7 +3287,7 @@ dependencies = [
  "rattler_digest 1.0.3 (git+https://github.com/conda/rattler?branch=main)",
  "rattler_networking",
  "rattler_package_streaming",
- "rattler_shell 0.22.7 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_shell 0.22.8 (git+https://github.com/conda/rattler?branch=main)",
  "reflink-copy",
  "regex",
  "reqwest",
@@ -3305,7 +3305,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.31.1"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#4265e0e904461bd6c43da9dbd82bf9d42220f92c"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#cff5ca53751d348a469bfbf9577e970d6797bdc5"
 dependencies = [
  "anyhow",
  "async-once-cell",
@@ -3350,7 +3350,7 @@ dependencies = [
  "rattler_package_streaming",
  "rattler_redaction",
  "rattler_repodata_gateway",
- "rattler_shell 0.22.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rattler_shell 0.22.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rattler_solve",
  "rattler_virtual_packages",
  "rayon",
@@ -3387,8 +3387,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_cache"
-version = "0.2.11"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.2.12"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -3415,12 +3415,12 @@ dependencies = [
 
 [[package]]
 name = "rattler_conda_types"
-version = "0.29.2"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.29.3"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "chrono",
  "dirs",
- "file_url 0.1.7 (git+https://github.com/conda/rattler?branch=main)",
+ "file_url 0.2.0",
  "fxhash",
  "glob",
  "hex",
@@ -3467,7 +3467,7 @@ dependencies = [
 [[package]]
 name = "rattler_digest"
 version = "1.0.3"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "blake2",
  "digest",
@@ -3482,9 +3482,9 @@ dependencies = [
 
 [[package]]
 name = "rattler_index"
-version = "0.19.36"
+version = "0.19.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a805fc30cc208c5a45a722b3818a83175e1de2e3a6e3f4e0b8454a4f9183651"
+checksum = "edba9d13d0cb24a6755778c4652078b6f3926d3917c23c4bcf094fd4b6471a6b"
 dependencies = [
  "fs-err 3.0.0",
  "rattler_conda_types",
@@ -3498,7 +3498,7 @@ dependencies = [
 [[package]]
 name = "rattler_macros"
 version = "1.0.3"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "quote",
  "syn",
@@ -3506,8 +3506,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_networking"
-version = "0.21.6"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.21.7"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3532,8 +3532,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_package_streaming"
-version = "0.22.14"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.22.15"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "bzip2",
  "chrono",
@@ -3560,8 +3560,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_redaction"
-version = "0.1.3"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.1.4"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "reqwest",
  "reqwest-middleware",
@@ -3570,8 +3570,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_repodata_gateway"
-version = "0.21.23"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.21.24"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -3583,7 +3583,7 @@ dependencies = [
  "chrono",
  "dashmap",
  "dirs",
- "file_url 0.1.7 (git+https://github.com/conda/rattler?branch=main)",
+ "file_url 0.2.0",
  "fs-err 3.0.0",
  "futures",
  "hex",
@@ -3624,9 +3624,9 @@ dependencies = [
 
 [[package]]
 name = "rattler_shell"
-version = "0.22.7"
+version = "0.22.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47fbaf13fcf46e10c72c266f975f9d979e13bfe4ff159e4778b2357cf0ac2530"
+checksum = "070b851b93cd8973a6e9377c06323aca1d8faeeeb5b59f80f3cd1e2c8a7684bf"
 dependencies = [
  "enum_dispatch",
  "fs-err 3.0.0",
@@ -3643,8 +3643,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_shell"
-version = "0.22.7"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "0.22.8"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "enum_dispatch",
  "fs-err 3.0.0",
@@ -3660,8 +3660,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_solve"
-version = "1.2.3"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "1.2.4"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "chrono",
  "futures",
@@ -3678,8 +3678,8 @@ dependencies = [
 
 [[package]]
 name = "rattler_virtual_packages"
-version = "1.1.10"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+version = "1.1.11"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "archspec",
  "libloading",
@@ -4328,7 +4328,7 @@ checksum = "1de1d4f81173b03af4c0cbed3c898f6bff5b870e4a7f5d6f4057d62a7a4b686e"
 [[package]]
 name = "simple_spawn_blocking"
 version = "1.0.0"
-source = "git+https://github.com/conda/rattler?branch=main#6cb97fe62a894fc8088eeacc32f8072b367d7a2f"
+source = "git+https://github.com/conda/rattler?branch=main#c125172a6a6998eca33631619f8174772a044cea"
 dependencies = [
  "tokio",
 ]
@@ -4648,9 +4648,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.36"
+version = "0.3.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
+checksum = "35e7868883861bd0e56d9ac6efcaaca0d6d5d82a2a7ec8209ff492c07cf37b21"
 dependencies = [
  "deranged",
  "itoa",
@@ -4669,9 +4669,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.18"
+version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
+checksum = "2834e6017e3e5e4b9834939793b282bc03b37a3336245fa820e35e233e2a85de"
 dependencies = [
  "num-conv",
  "time-core",

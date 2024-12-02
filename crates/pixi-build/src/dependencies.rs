@@ -33,9 +33,7 @@ impl<'a> MatchspecExtractor<'a> {
         let root_dir = &self.channel_config.root_dir;
         let mut specs = Vec::new();
         for (name, spec) in dependencies.into_specs() {
-            let source_or_binary = spec
-                .into_source_or_binary(self.channel_config)
-                .into_diagnostic()?;
+            let source_or_binary = spec.into_source_or_binary();
             let match_spec = match source_or_binary {
                 Either::Left(SourceSpec::Path(path))
                     if self.ignore_self
@@ -53,7 +51,12 @@ impl<'a> MatchspecExtractor<'a> {
                         "recursive source dependencies are not yet supported"
                     ));
                 }
-                Either::Right(binary) => MatchSpec::from_nameless(binary, Some(name)),
+                Either::Right(binary) => {
+                    let nameless_spec = binary
+                        .try_into_nameless_match_spec(self.channel_config)
+                        .into_diagnostic()?;
+                    MatchSpec::from_nameless(nameless_spec, Some(name))
+                }
             };
 
             specs.push(match_spec);

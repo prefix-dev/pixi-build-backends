@@ -361,8 +361,6 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, str::FromStr};
-    use std::path::Path;
     use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
     use pixi_build_types::{
         procedures::{
@@ -372,6 +370,8 @@ mod tests {
         ChannelConfiguration, FrontendCapabilities,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
+    use std::path::Path;
+    use std::{path::PathBuf, str::FromStr};
     use tempfile::tempdir;
     use url::Url;
 
@@ -446,13 +446,15 @@ mod tests {
         assert_eq!(result.packages[0].name, "boltons-with-extra");
     }
 
-    const FAKE_RECIPE : &str = r#"
+    const FAKE_RECIPE: &str = r#"
     package:
       name: foobar
       version: 0.1.0
     "#;
 
-    async fn try_initialize(manifest_path: impl AsRef<Path>) -> miette::Result<RattlerBuildBackend> {
+    async fn try_initialize(
+        manifest_path: impl AsRef<Path>,
+    ) -> miette::Result<RattlerBuildBackend> {
         RattlerBuildBackend::factory(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: manifest_path.as_ref().to_path_buf(),
@@ -468,13 +470,25 @@ mod tests {
         let tmp = tempdir().unwrap();
         let recipe = tmp.path().join("recipe.yaml");
         std::fs::write(&recipe, FAKE_RECIPE).unwrap();
-        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&tmp.path().join("pixi.toml"))
+                .await
+                .unwrap()
+                .recipe_path,
+            recipe
+        );
         assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
 
         let tmp = tempdir().unwrap();
         let recipe = tmp.path().join("recipe.yml");
         std::fs::write(&recipe, FAKE_RECIPE).unwrap();
-        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&tmp.path().join("pixi.toml"))
+                .await
+                .unwrap()
+                .recipe_path,
+            recipe
+        );
         assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
 
         let tmp = tempdir().unwrap();
@@ -482,13 +496,25 @@ mod tests {
         let recipe = recipe_dir.join("recipe.yaml");
         std::fs::create_dir(recipe_dir).unwrap();
         std::fs::write(&recipe, FAKE_RECIPE).unwrap();
-        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&tmp.path().join("pixi.toml"))
+                .await
+                .unwrap()
+                .recipe_path,
+            recipe
+        );
 
         let tmp = tempdir().unwrap();
         let recipe_dir = tmp.path().join("recipe");
         let recipe = recipe_dir.join("recipe.yml");
         std::fs::create_dir(recipe_dir).unwrap();
         std::fs::write(&recipe, FAKE_RECIPE).unwrap();
-        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&tmp.path().join("pixi.toml"))
+                .await
+                .unwrap()
+                .recipe_path,
+            recipe
+        );
     }
 }

@@ -1,24 +1,29 @@
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use fs_err as fs;
 use miette::IntoDiagnostic;
-use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
-use pixi_build_backend::tools::RattlerBuild;
-use pixi_build_backend::utils::TemporaryRenderedRecipe;
-use pixi_build_types::procedures::conda_build::{
-    CondaBuildParams, CondaBuildResult, CondaBuiltPackage,
+use pixi_build_backend::{
+    protocol::{Protocol, ProtocolFactory},
+    tools::RattlerBuild,
+    utils::TemporaryRenderedRecipe,
 };
-use pixi_build_types::procedures::conda_metadata::{CondaMetadataParams, CondaMetadataResult};
-use pixi_build_types::procedures::initialize::{InitializeParams, InitializeResult};
-use pixi_build_types::{BackendCapabilities, CondaPackageMetadata, FrontendCapabilities};
-use rattler_build::build::run_build;
-use rattler_build::console_utils::LoggingOutputHandler;
-
-use rattler_build::metadata::PlatformWithVirtualPackages;
-use rattler_build::render::resolved_dependencies::DependencyInfo;
-use rattler_build::selectors::SelectorConfig;
-use rattler_build::tool_configuration::Configuration;
+use pixi_build_types::{
+    procedures::{
+        conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
+        conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        initialize::{InitializeParams, InitializeResult},
+    },
+    BackendCapabilities, CondaPackageMetadata, FrontendCapabilities,
+};
+use rattler_build::{
+    build::run_build, console_utils::LoggingOutputHandler, metadata::PlatformWithVirtualPackages,
+    render::resolved_dependencies::DependencyInfo, selectors::SelectorConfig,
+    tool_configuration::Configuration,
+};
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
@@ -43,19 +48,43 @@ impl RattlerBuildBackend {
         }
     }
 
-    /// Returns a new instance of [`RattlerBuildBackend`] by reading the manifest
-    /// at the given path.
+    /// Returns a new instance of [`RattlerBuildBackend`] by reading the
+    /// manifest at the given path.
     pub fn new(
         manifest_path: &Path,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
+        // Locate the recipe
+        let manifest_file_name = manifest_path.file_name().and_then(OsStr::to_str);
+        let recipe_path = match manifest_file_name {
+            Some("recipe.yaml") | Some("recipe.yml") => manifest_path.to_path_buf(),
+            _ => {
+                // The manifest is not a recipe, so we need to find the recipe.yaml file.
+                let recipe_path = manifest_path.parent().and_then(|manifest_dir| {
+                    [
+                        "recipe.yaml",
+                        "recipe.yml",
+                        "recipe/recipe.yaml",
+                        "recipe/recipe.yml",
+                    ]
+                    .into_iter()
+                    .find_map(|relative_path| {
+                        let recipe_path = manifest_dir.join(relative_path);
+                        recipe_path.is_file().then_some(recipe_path)
+                    })
+                });
+
+                recipe_path.ok_or_else(|| miette::miette!("Could not find a recipe.yaml in the source directory to use as the recipe manifest."))?
+            }
+        };
+
         // Load the manifest from the source directory
-        let raw_recipe = fs::read_to_string(manifest_path).into_diagnostic()?;
+        let raw_recipe = fs::read_to_string(&recipe_path).into_diagnostic()?;
 
         Ok(Self {
             raw_recipe,
-            recipe_path: manifest_path.to_path_buf(),
+            recipe_path,
             logging_output_handler,
             cache_dir,
         })
@@ -333,7 +362,7 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
 #[cfg(test)]
 mod tests {
     use std::{path::PathBuf, str::FromStr};
-
+    use std::path::Path;
     use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
     use pixi_build_types::{
         procedures::{
@@ -344,10 +373,9 @@ mod tests {
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;
+    use url::Url;
 
     use crate::rattler_build::RattlerBuildBackend;
-
-    use url::Url;
 
     #[tokio::test]
     async fn test_get_conda_metadata() {
@@ -387,7 +415,7 @@ mod tests {
     async fn test_conda_build() {
         // get cargo manifest dir
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../tests/recipe/boltons_recipe.yaml");
+        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
 
         let factory = RattlerBuildBackend::factory(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -416,5 +444,51 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.packages[0].name, "boltons-with-extra");
+    }
+
+    const FAKE_RECIPE : &str = r#"
+    package:
+      name: foobar
+      version: 0.1.0
+    "#;
+
+    async fn try_initialize(manifest_path: impl AsRef<Path>) -> miette::Result<RattlerBuildBackend> {
+        RattlerBuildBackend::factory(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                manifest_path: manifest_path.as_ref().to_path_buf(),
+                capabilities: FrontendCapabilities {},
+                cache_directory: None,
+            })
+            .await
+            .map(|e| e.0)
+    }
+
+    #[tokio::test]
+    async fn test_recipe_discovery() {
+        let tmp = tempdir().unwrap();
+        let recipe = tmp.path().join("recipe.yaml");
+        std::fs::write(&recipe, FAKE_RECIPE).unwrap();
+        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
+
+        let tmp = tempdir().unwrap();
+        let recipe = tmp.path().join("recipe.yml");
+        std::fs::write(&recipe, FAKE_RECIPE).unwrap();
+        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+        assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
+
+        let tmp = tempdir().unwrap();
+        let recipe_dir = tmp.path().join("recipe");
+        let recipe = recipe_dir.join("recipe.yaml");
+        std::fs::create_dir(recipe_dir).unwrap();
+        std::fs::write(&recipe, FAKE_RECIPE).unwrap();
+        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
+
+        let tmp = tempdir().unwrap();
+        let recipe_dir = tmp.path().join("recipe");
+        let recipe = recipe_dir.join("recipe.yml");
+        std::fs::create_dir(recipe_dir).unwrap();
+        std::fs::write(&recipe, FAKE_RECIPE).unwrap();
+        assert_eq!(try_initialize(&tmp.path().join("pixi.toml")).await.unwrap().recipe_path, recipe);
     }
 }

@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::PathBuf,
+};
 
 use chrono::Utc;
 use indexmap::IndexSet;
@@ -83,7 +86,10 @@ impl RattlerBuild {
     }
 
     /// Discover the outputs from the recipe.
-    pub fn discover_outputs(&self) -> miette::Result<IndexSet<DiscoveredOutput>> {
+    pub fn discover_outputs(
+        &self,
+        variant_config_input: &Option<HashMap<String, Vec<String>>>,
+    ) -> miette::Result<IndexSet<DiscoveredOutput>> {
         // First find all outputs from the recipe
         let outputs = find_outputs_from_src(&self.raw_recipe)?;
 
@@ -102,8 +108,14 @@ impl RattlerBuild {
 
         let variant_configs = variant_configs.unwrap_or_default();
 
-        let variant_config =
+        let mut variant_config =
             VariantConfig::from_files(&variant_configs, &self.selector_config).into_diagnostic()?;
+
+        if let Some(variant_config_input) = variant_config_input {
+            for (k, v) in variant_config_input.iter() {
+                variant_config.variants.insert(k.into(), v.clone());
+            }
+        }
 
         variant_config
             .find_variants(&outputs, &self.raw_recipe, &self.selector_config)

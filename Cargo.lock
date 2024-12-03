@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d4f0dd74656c84e5d0ac78ffb20cc3be34f13719"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#cba5830562699649422f3540eca93421a104ea8e"
 dependencies = [
  "console",
 ]
@@ -3018,7 +3018,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d4f0dd74656c84e5d0ac78ffb20cc3be34f13719"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#cba5830562699649422f3540eca93421a104ea8e"
 dependencies = [
  "rattler_conda_types",
  "serde",
@@ -3030,7 +3030,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d4f0dd74656c84e5d0ac78ffb20cc3be34f13719"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#cba5830562699649422f3540eca93421a104ea8e"
 dependencies = [
  "console",
  "lazy_static",
@@ -3041,7 +3041,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d4f0dd74656c84e5d0ac78ffb20cc3be34f13719"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#cba5830562699649422f3540eca93421a104ea8e"
 dependencies = [
  "console",
  "dunce",
@@ -3074,7 +3074,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d4f0dd74656c84e5d0ac78ffb20cc3be34f13719"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#cba5830562699649422f3540eca93421a104ea8e"
 dependencies = [
  "dirs",
  "file_url 0.1.7",
@@ -3373,7 +3373,7 @@ dependencies = [
  "tar",
  "tempfile",
  "terminal_size",
- "thiserror 2.0.3",
+ "thiserror 2.0.4",
  "tokio",
  "tokio-util 0.7.12",
  "toml",
@@ -4610,11 +4610,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c006c85c7651b3cf2ada4584faa36773bd07bac24acfb39f3c431b36d7e667aa"
+checksum = "2f49a1853cf82743e3b7950f77e0f4d622ca36cf4317cba00c767838bac8d490"
 dependencies = [
- "thiserror-impl 2.0.3",
+ "thiserror-impl 2.0.4",
 ]
 
 [[package]]
@@ -4630,9 +4630,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f077553d607adc1caf65430528a576c757a71ed73944b66ebb58ef2bbd243568"
+checksum = "8381894bb3efe0c4acac3ded651301ceee58a15d47c2e34885ed1908ad667061"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4692,9 +4692,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.41.1"
+version = "1.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cfb5bee7a6a52939ca9224d6ac897bb669134078daa8735560897f69de4d33"
+checksum = "5cec9b21b0450273377fc97bd4c33a8acffc8c996c987a7c5b319a0083707551"
 dependencies = [
  "backtrace",
  "bytes",
@@ -5771,7 +5771,7 @@ dependencies = [
  "flate2",
  "indexmap 2.7.0",
  "memchr",
- "thiserror 2.0.3",
+ "thiserror 2.0.4",
  "time",
  "zopfli",
 ]

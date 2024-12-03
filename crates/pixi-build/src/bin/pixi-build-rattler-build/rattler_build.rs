@@ -146,7 +146,8 @@ impl Protocol for RattlerBuildBackend {
             .channel_base_urls
             .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
 
-        let discovered_outputs = rattler_build_tool.discover_outputs()?;
+        let discovered_outputs =
+            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
 
         let host_vpkgs = params
             .host_platform
@@ -294,7 +295,8 @@ impl Protocol for RattlerBuildBackend {
             params.work_directory.clone(),
         );
 
-        let discovered_outputs = rattler_build_tool.discover_outputs()?;
+        let discovered_outputs =
+            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
 
         let outputs = rattler_build_tool.get_outputs(
             &discovered_outputs,

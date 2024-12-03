@@ -135,6 +135,7 @@ async fn get_conda_metadata(
                 base_url: channel_config.channel_alias,
             },
             work_directory: tempdir.path().to_path_buf(),
+            variant_configuration: None,
         })
         .await
 }
@@ -170,6 +171,7 @@ async fn build(factory: impl ProtocolFactory, manifest_path: &Path) -> miette::R
             },
             outputs: None,
             work_directory: work_dir.path().to_path_buf(),
+            variant_configuration: None,
         })
         .await?;
 

@@ -408,6 +408,7 @@ mod tests {
                 },
                 channel_base_urls: None,
                 work_directory: current_dir,
+                variant_configuration: None,
             })
             .await
             .unwrap();
@@ -444,6 +445,7 @@ mod tests {
                 },
                 outputs: None,
                 work_directory: current_dir.into_path(),
+                variant_configuration: None,
             })
             .await
             .unwrap();

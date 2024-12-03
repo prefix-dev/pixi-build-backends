@@ -92,7 +92,7 @@ impl RattlerBuildBackend {
 
     /// Returns the capabilities of this backend based on the capabilities of
     /// the frontend.
-    pub fn capabilites(
+    pub fn capabilities(
         &self,
         _frontend_capabilities: &FrontendCapabilities,
     ) -> BackendCapabilities {
@@ -354,7 +354,7 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
             params.cache_directory,
         )?;
 
-        let capabilities = instance.capabilites(&params.capabilities);
+        let capabilities = instance.capabilities(&params.capabilities);
         Ok((instance, InitializeResult { capabilities }))
     }
 }

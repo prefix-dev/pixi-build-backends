@@ -39,7 +39,7 @@ jobs:
       - name: Run rustfmt
         uses: actions-rust-lang/rustfmt@v1
       - name: Run clippy
-        run: cargo clippy --all-targets
+        run: cargo clippy --all-targets --workspace
 
   test:
     name: Test
@@ -68,7 +68,7 @@ jobs:
 
       - name: Run tests
         run: >
-          cargo nextest run --workspace
+          cargo nextest run --workspace --all-targets
 
       - name: Run doctests
         run: >

@@ -56,7 +56,7 @@ jobs:
           TARGET_PLATFORM: ${{ matrix.target }}
           RECIPE_VERSION: ${{ needs.generate_version.outputs.version }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
-          RATTLER_BUILD_COLOR: "always"  
+          RATTLER_BUILD_COLOR: "always"
         run: |
           pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload all packages
@@ -65,7 +65,7 @@ jobs:
         if: github.event_name == 'push' && matrix.os != 'windows-latest'
         run: |
           # ignore errors because we want to ignore duplicate packages
-          for file in $RUNNER_TEMP/**/*.conda; do
+          for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$file"
           done

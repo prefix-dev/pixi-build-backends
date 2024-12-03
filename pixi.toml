@@ -8,39 +8,42 @@ platforms = ["osx-arm64", "win-64", "linux-64", "osx-64"]
 
 [tasks]
 run-release = { cmd = "cargo run --release", inputs = [
-    "crates/**",
-    "Cargo.toml",
-    "Cargo.lock",
+  "crates/**",
+  "Cargo.toml",
+  "Cargo.lock",
 ], outputs = [
-    "target/debug/**",
+  "target/debug/**",
 ] }
 
 build = { cmd = "cargo build", inputs = [
-    "crates/**",
-    "Cargo.toml",
-    "Cargo.lock",
+  "crates/**",
+  "Cargo.toml",
+  "Cargo.lock",
 ], outputs = [
-    "target/debug/**",
+  "target/debug/**",
 ] }
 build-release = { cmd = "cargo build --release", inputs = [
-    "crates/**",
-    "Cargo.toml",
-    "Cargo.lock",
+  "crates/**",
+  "Cargo.toml",
+  "Cargo.lock",
 ], outputs = [
-    "target/release/**",
+  "target/release/**",
 ] }
 run = { cmd = "cargo run", inputs = [
-    "crates/**",
-    "Cargo.toml",
-    "Cargo.lock",
+  "crates/**",
+  "Cargo.toml",
+  "Cargo.lock",
 ], outputs = [
-    "target/debug/**",
+  "target/debug/**",
 ] }
 
 
-install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-python --locked"}
-install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-cmake --locked"}
-install-pixi-backends = { depends-on = ["install-pixi-build-python", "install-pixi-build-cmake"] }
+install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-python --locked" }
+install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-cmake --locked" }
+install-pixi-backends = { depends-on = [
+  "install-pixi-build-python",
+  "install-pixi-build-cmake",
+] }
 
 [dependencies]
 rust = "~=1.80.1"
@@ -64,7 +67,25 @@ generate-schema = "python schema/model.py > schema/schema.json"
 fmt-schema = "ruff format schema"
 lint-schema = "ruff check schema --fix"
 
+[feature.lint.dependencies]
+actionlint = ">=1.7.4,<2"
+pre-commit = ">=3.7.1,<4"
+pre-commit-hooks = ">=4.6.0,<5"
+shellcheck = ">=0.10.0,<0.11"
+taplo = ">=0.9.1,<0.10"
+typos = ">=1.23.1,<2"
+
+[feature.lint.tasks]
+actionlint = { cmd = "actionlint", env = { SHELLCHECK_OPTS = "-e SC2086" } }
+lint = "pre-commit run --all-files --hook-stage=manual"
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run --all-files"
+toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
+toml-lint = "taplo lint --verbose **/pixi.toml"
+
+
 [environments]
 test = ["test"]
 schema = { no-default-feature = true, features = ["schema"] }
+lint = { features = ["lint"], no-default-feature = true }
 build-self = { no-default-feature = true, features = ["build-self"] }

@@ -8,6 +8,7 @@ use std::{
 
 use chrono::Utc;
 use itertools::Itertools;
+use jsonrpc_core::serde_json;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::extract_dependencies,
@@ -46,11 +47,15 @@ use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
 
-use crate::build_script::{BuildPlatform, BuildScriptContext, Installer};
+use crate::{
+    build_script::{BuildPlatform, BuildScriptContext, Installer},
+    config::PythonBackendConfig,
+};
 
 pub struct PythonBuildBackend {
     logging_output_handler: LoggingOutputHandler,
     manifest: Manifest,
+    config: PythonBackendConfig,
     cache_dir: Option<PathBuf>,
 }
 
@@ -69,6 +74,7 @@ impl PythonBuildBackend {
     /// at the given path.
     pub fn new(
         manifest_path: &Path,
+        config: PythonBackendConfig,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -79,6 +85,7 @@ impl PythonBuildBackend {
 
         Ok(Self {
             manifest,
+            config,
             logging_output_handler,
             cache_dir,
         })
@@ -191,10 +198,12 @@ impl PythonBuildBackend {
 
         let name = PackageName::from_str(&package.name).into_diagnostic()?;
 
-        // TODO: NoArchType???
-        let noarch_type = NoArchType::python();
+        let noarch_type = if self.config.noarch() {
+            NoArchType::python()
+        } else {
+            NoArchType::none()
+        };
 
-        // TODO: Read from config / project.
         let (requirements, installer) = self.requirements(host_platform, channel_config)?;
         let build_platform = Platform::current();
         let build_number = 0;
@@ -552,8 +561,14 @@ impl ProtocolFactory for PythonBuildBackendFactory {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Self::Protocol, InitializeResult)> {
+        // Parse the config
+        let config = serde_json::from_value(params.configuration)
+            .into_diagnostic()
+            .context("failed to parse backend configuration")?;
+
         let instance = PythonBuildBackend::new(
             params.manifest_path.as_path(),
+            config,
             self.logging_output_handler.clone(),
             params.cache_directory,
         )?;
@@ -566,14 +581,71 @@ impl ProtocolFactory for PythonBuildBackendFactory {
 #[cfg(test)]
 mod tests {
 
-    use pixi_manifest::Manifest;
-    use rattler_build::console_utils::LoggingOutputHandler;
-    use rattler_conda_types::{ChannelConfig, Platform};
     use std::path::PathBuf;
 
+    use pixi_manifest::Manifest;
+    use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
+    use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
 
-    use crate::python::PythonBuildBackend;
+    use crate::{config::PythonBackendConfig, python::PythonBuildBackend};
+
+    fn recipe(manifest_source: &str, config: PythonBackendConfig) -> Recipe {
+        let tmp_dir = tempdir().unwrap();
+        let tmp_manifest = tmp_dir.path().join("pixi.toml");
+        std::fs::write(&tmp_manifest, manifest_source).unwrap();
+
+        let python_backend =
+            PythonBuildBackend::new(&tmp_manifest, config, LoggingOutputHandler::default(), None)
+                .unwrap();
+
+        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
+        python_backend
+            .recipe(Platform::current(), &channel_config)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_noarch_none() {
+        insta::assert_yaml_snapshot!(recipe(r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [build-system]
+        build-backend = { name = "pixi-build-python", version = "*" }
+        "#, PythonBackendConfig {
+            noarch: Some(false),
+        }), {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        });
+    }
+
+    #[test]
+    fn test_noarch_python() {
+        insta::assert_yaml_snapshot!(recipe(r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [build-system]
+        build-backend = { name = "pixi-build-python", version = "*" }
+        "#, PythonBackendConfig::default()), {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        });
+    }
 
     #[tokio::test]
     async fn test_setting_host_and_build_requirements() {
@@ -609,8 +681,13 @@ mod tests {
 
         let manifest = Manifest::from_str(&tmp_manifest, package_with_host_and_build_deps).unwrap();
 
-        let python_backend =
-            PythonBuildBackend::new(&manifest.path, LoggingOutputHandler::default(), None).unwrap();
+        let python_backend = PythonBuildBackend::new(
+            &manifest.path,
+            PythonBackendConfig::default(),
+            LoggingOutputHandler::default(),
+            None,
+        )
+        .unwrap();
 
         let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
 

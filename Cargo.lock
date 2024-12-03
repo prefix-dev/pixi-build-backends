@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat/build_backend_config#90d1017ce1c0f1aff70c25a84a8b2d092c8adebc"
 dependencies = [
  "console",
 ]
@@ -3007,6 +3007,7 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "serde",
+ "serde_json",
  "serde_yaml",
  "tempfile",
  "tokio",
@@ -3017,10 +3018,11 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat/build_backend_config#90d1017ce1c0f1aff70c25a84a8b2d092c8adebc"
 dependencies = [
  "rattler_conda_types",
  "serde",
+ "serde_json",
  "serde_with",
  "url",
 ]
@@ -3028,7 +3030,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat/build_backend_config#90d1017ce1c0f1aff70c25a84a8b2d092c8adebc"
 dependencies = [
  "console",
  "lazy_static",
@@ -3039,7 +3041,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat/build_backend_config#90d1017ce1c0f1aff70c25a84a8b2d092c8adebc"
 dependencies = [
  "console",
  "dunce",
@@ -3071,7 +3073,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=fix/build_system_refactor#04cecdf05a6d91cc6fdfbc858773634db0441b62"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat/build_backend_config#90d1017ce1c0f1aff70c25a84a8b2d092c8adebc"
 dependencies = [
  "dirs",
  "file_url 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",

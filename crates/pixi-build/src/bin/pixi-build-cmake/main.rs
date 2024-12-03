@@ -1,5 +1,6 @@
 mod build_script;
 mod cmake;
+mod config;
 mod stub;
 
 use cmake::CMakeBuildBackend;

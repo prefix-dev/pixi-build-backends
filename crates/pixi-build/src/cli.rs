@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand};
 use clap_verbosity_flag::{InfoLevel, Verbosity};
+use jsonrpc_core::Value;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     procedures::{
@@ -106,6 +107,7 @@ async fn get_conda_metadata(
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
+            configuration: Value::Null,
             capabilities: FrontendCapabilities {},
             cache_directory: None,
         })
@@ -148,6 +150,7 @@ async fn build(factory: impl ProtocolFactory, manifest_path: &Path) -> miette::R
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
+            configuration: Value::Null,
             capabilities: FrontendCapabilities {},
             cache_directory: None,
         })

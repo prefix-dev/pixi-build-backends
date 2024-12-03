@@ -1,0 +1,19 @@
+---
+source: crates/pixi-build/src/bin/pixi-build-python/python.rs
+expression: "recipe(r#\"\n        [workspace]\n        platforms = []\n        channels = []\n        preview = [\"pixi-build\"]\n\n        [package]\n        name = \"foobar\"\n        version = \"0.1.0\"\n\n        [build-system]\n        build-backend = { name = \"pixi-build-python\", version = \"*\" }\n        \"#,\n    PythonBackendConfig::default())"
+---
+schema_version: 1
+context: {}
+package:
+  name: foobar
+  version: 0.1.0
+source:
+  - path: "[ ... path ... ]"
+build:
+  number: 0
+  script: "[ ... script ... ]"
+  noarch: python
+requirements:
+  host:
+    - pip *
+    - python *

@@ -1,4 +1,5 @@
 mod build_script;
+mod config;
 mod python;
 
 use python::PythonBuildBackend;

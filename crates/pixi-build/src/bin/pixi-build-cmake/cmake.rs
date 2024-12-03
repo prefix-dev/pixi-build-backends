@@ -47,9 +47,9 @@ use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
 
-use crate::config::CMakeBackendConfig;
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext},
+    config::CMakeBackendConfig,
     stub::default_compiler,
 };
 
@@ -561,9 +561,13 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Self::Protocol, InitializeResult)> {
-        let config = serde_json::from_value(params.configuration)
-            .into_diagnostic()
-            .context("failed to parse backend configuration")?;
+        let config = if params.configuration.is_null() {
+            CMakeBackendConfig::default()
+        } else {
+            serde_json::from_value(params.configuration)
+                .into_diagnostic()
+                .context("failed to parse backend configuration")?
+        };
 
         let instance = CMakeBuildBackend::new(
             params.manifest_path.as_path(),
@@ -579,15 +583,14 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
 
     use pixi_manifest::Manifest;
     use rattler_build::console_utils::LoggingOutputHandler;
     use rattler_conda_types::{ChannelConfig, Platform};
-    use std::path::PathBuf;
     use tempfile::tempdir;
 
-    use crate::cmake::CMakeBuildBackend;
-    use crate::config::CMakeBackendConfig;
+    use crate::{cmake::CMakeBuildBackend, config::CMakeBackendConfig};
 
     #[tokio::test]
     async fn test_setting_host_and_build_requirements() {

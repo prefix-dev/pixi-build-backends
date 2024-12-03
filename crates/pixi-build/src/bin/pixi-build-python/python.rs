@@ -562,9 +562,13 @@ impl ProtocolFactory for PythonBuildBackendFactory {
         params: InitializeParams,
     ) -> miette::Result<(Self::Protocol, InitializeResult)> {
         // Parse the config
-        let config = serde_json::from_value(params.configuration)
-            .into_diagnostic()
-            .context("failed to parse backend configuration")?;
+        let config = if params.configuration.is_null() {
+            PythonBackendConfig::default()
+        } else {
+            serde_json::from_value(params.configuration)
+                .into_diagnostic()
+                .context("failed to parse backend configuration")?
+        };
 
         let instance = PythonBuildBackend::new(
             params.manifest_path.as_path(),

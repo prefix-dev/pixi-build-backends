@@ -1,7 +1,7 @@
 ninja --version
 cmake --version
 
-# Windows
+{# Windows #}
 {% if build_platform == "windows" -%}
 if not exist %SRC_DIR%\..\build\CMakeCache.txt (
     cmake %CMAKE_ARGS% ^
@@ -16,7 +16,7 @@ if not exist %SRC_DIR%\..\build\CMakeCache.txt (
 cmake --build %SRC_DIR%\..\build --target install
 @if errorlevel 1 exit 1
 
-# Non-Windows
+{# Non Windows #}
 {% else -%}
 if [ ! -f "$SRC_DIR/../build/CMakeCache.txt" ]; then
     cmake $CMAKE_ARGS \

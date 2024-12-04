@@ -37,15 +37,10 @@ rattler_conda_types = { version = "0.29.1", default-features = false }
 rattler_package_streaming = { version = "0.22.14", default-features = false }
 rattler_virtual_packages = { version = "1.1.10", default-features = false }
 
-# pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-# pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-# pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { path = "/Users/graf/projects/oss/pixi-build-branch/crates/pixi_manifest" }
-pixi_spec = { path = "/Users/graf/projects/oss/pixi-build-branch/crates/pixi_spec" }
-pixi_build_types = { path = "/Users/graf/projects/oss/pixi-build-branch/crates/pixi_build_types" }
-pixi_consts = { path = "/Users/graf/projects/oss/pixi-build-branch/crates/pixi_consts" }
-
-# pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 [patch.crates-io]
 rattler = { git = "https://github.com/conda/rattler", branch = "main" }

@@ -259,7 +259,6 @@ impl PythonBuildBackend {
                 script: ScriptContent::Commands(build_script).into(),
                 noarch: noarch_type,
 
-                // TODO: Python is not exposed properly
                 python,
                 // dynamic_linking: Default::default(),
                 // always_copy_files: Default::default(),

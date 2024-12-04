@@ -24,8 +24,9 @@ use pixi_build_types::{
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities, PlatformAndVirtualPackages,
 };
-use pixi_manifest::{Dependencies, Manifest, SpecType};
+use pixi_manifest::{toml::TomlDocument, Dependencies, Manifest, SpecType};
 use pixi_spec::PixiSpec;
+use rattler_build::recipe::parser::Python;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -41,7 +42,8 @@ use rattler_build::{
     tool_configuration::Configuration,
 };
 use rattler_conda_types::{
-    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
+    package::{ArchiveType, EntryPoint},
+    ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
@@ -204,6 +206,19 @@ impl PythonBuildBackend {
             NoArchType::none()
         };
 
+        // Determine the entry points from the pyproject.toml
+        // which would be passed into recipe
+        let python = if self.manifest.document.is_pyproject_toml() {
+            let mut python = Python::default();
+            let entry_points = get_entry_points(self.manifest.document.manifest())?;
+            if let Some(scripts) = entry_points {
+                python.entry_points = scripts;
+            }
+            python
+        } else {
+            Python::default()
+        };
+
         let (requirements, installer) = self.requirements(host_platform, channel_config)?;
         let build_platform = Platform::current();
         let build_number = 0;
@@ -245,7 +260,7 @@ impl PythonBuildBackend {
                 noarch: noarch_type,
 
                 // TODO: Python is not exposed properly
-                //python: Default::default(),
+                python,
                 // dynamic_linking: Default::default(),
                 // always_copy_files: Default::default(),
                 // always_include_files: Default::default(),
@@ -390,6 +405,42 @@ fn input_globs() -> Vec<String> {
     .collect()
 }
 
+/// Returns the entry points from pyproject.toml scripts table
+fn get_entry_points(toml_document: &TomlDocument) -> miette::Result<Option<Vec<EntryPoint>>> {
+    let scripts = toml_document.get_nested_table("project.scripts").ok();
+    // all the entry points are in the form of a table
+    if let Some(scripts) = scripts {
+        let entry_points = scripts
+            .get_values()
+            .iter()
+            .map(|(k, v)| {
+                // Ensure the key vector has exactly one element
+                let key = k
+                    .first()
+                    .ok_or_else(|| miette::miette!("entry points should have a key"))?;
+
+                if k.len() > 1 {
+                    return Err(miette::miette!("entry points should be a single key"));
+                }
+
+                let value = v
+                    .as_str()
+                    .ok_or_else(|| miette::miette!("entry point value {v} should be a string"))?;
+
+                // format it as a script = some_module:some_function
+                let entry_point_str = format!("{} = {}", key, value);
+                EntryPoint::from_str(&entry_point_str).map_err(|e| {
+                    miette::miette!("failed to parse entry point {}: {}", entry_point_str, e)
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        return Ok(Some(entry_points));
+    }
+
+    Ok(None)
+}
+
 #[async_trait::async_trait]
 impl Protocol for PythonBuildBackend {
     async fn get_conda_metadata(
@@ -433,6 +484,7 @@ impl Protocol for PythonBuildBackend {
             recipe,
             finalized_dependencies: None,
             finalized_cache_dependencies: None,
+            finalized_cache_sources: None,
             finalized_sources: None,
             build_summary: Arc::default(),
             system_tools: Default::default(),
@@ -519,6 +571,7 @@ impl Protocol for PythonBuildBackend {
             recipe,
             finalized_dependencies: None,
             finalized_cache_dependencies: None,
+            finalized_cache_sources: None,
             finalized_sources: None,
             build_summary: Arc::default(),
             system_tools: Default::default(),
@@ -585,12 +638,13 @@ impl ProtocolFactory for PythonBuildBackendFactory {
 #[cfg(test)]
 mod tests {
 
-    use std::path::PathBuf;
+    use std::{path::PathBuf, str::FromStr};
 
-    use pixi_manifest::Manifest;
+    use pixi_manifest::{toml::TomlDocument, Manifest};
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
+    use toml_edit::DocumentMut;
 
     use crate::{config::PythonBackendConfig, python::PythonBuildBackend};
 
@@ -708,5 +762,56 @@ mod tests {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         });
+    }
+
+    #[test]
+    fn test_entry_points_are_read() {
+        let pyproject_toml = r#"
+        [project.scripts]
+        spam-cli = "spam:main_cli"
+        "#;
+        let manifest = TomlDocument::new(DocumentMut::from_str(pyproject_toml).unwrap());
+        let entry_points = super::get_entry_points(&manifest).unwrap();
+
+        insta::assert_yaml_snapshot!(entry_points);
+    }
+
+    #[test]
+    fn test_entry_point_nested() {
+        // This is a wrong entry point
+        let pyproject_toml = r#"
+        [project.scripts]
+        spam-cli.ddd = "spam:main_cli"
+        "#;
+        let manifest = TomlDocument::new(DocumentMut::from_str(pyproject_toml).unwrap());
+        let entry_points = super::get_entry_points(&manifest).unwrap_err();
+
+        insta::assert_yaml_snapshot!(entry_points.to_string());
+    }
+
+    #[test]
+    fn test_entry_point_not_a_module() {
+        // This is a wrong entry point
+        let pyproject_toml = r#"
+        [project.scripts]
+        spam-cli = "blablabla"
+        "#;
+        let manifest = TomlDocument::new(DocumentMut::from_str(pyproject_toml).unwrap());
+        let entry_points = super::get_entry_points(&manifest).unwrap_err();
+
+        insta::assert_yaml_snapshot!(entry_points.to_string());
+    }
+
+    #[test]
+    fn test_entry_point_not_string() {
+        // This is a wrong entry point
+        let pyproject_toml = r#"
+        [project.scripts]
+        spam-cli = 1
+        "#;
+        let manifest = TomlDocument::new(DocumentMut::from_str(pyproject_toml).unwrap());
+        let entry_points = super::get_entry_points(&manifest).unwrap_err();
+
+        insta::assert_yaml_snapshot!(entry_points.to_string());
     }
 }

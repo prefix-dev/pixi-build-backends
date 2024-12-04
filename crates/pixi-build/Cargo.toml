@@ -40,3 +40,4 @@ jsonrpc-core = { workspace = true }
 
 [dev-dependencies]
 insta = { version = "1.41.1", features = ["yaml", "redactions"] }
+toml_edit = { version = "0.22.22" }

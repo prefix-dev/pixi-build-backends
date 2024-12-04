@@ -406,38 +406,37 @@ fn input_globs() -> Vec<String> {
 
 /// Returns the entry points from pyproject.toml scripts table
 fn get_entry_points(toml_document: &TomlDocument) -> miette::Result<Option<Vec<EntryPoint>>> {
-    let scripts = toml_document.get_nested_table("project.scripts").ok();
+    let Ok(scripts) = toml_document.get_nested_table("project.scripts") else {
+        return Ok(None);
+    };
+
     // all the entry points are in the form of a table
-    if let Some(scripts) = scripts {
-        let entry_points = scripts
-            .get_values()
-            .iter()
-            .map(|(k, v)| {
-                // Ensure the key vector has exactly one element
-                let key = k
-                    .first()
-                    .ok_or_else(|| miette::miette!("entry points should have a key"))?;
+    let entry_points = scripts
+        .get_values()
+        .iter()
+        .map(|(k, v)| {
+            // Ensure the key vector has exactly one element
+            let key = k
+                .first()
+                .ok_or_else(|| miette::miette!("entry points should have a key"))?;
 
-                if k.len() > 1 {
-                    return Err(miette::miette!("entry points should be a single key"));
-                }
+            if k.len() > 1 {
+                return Err(miette::miette!("entry points should be a single key"));
+            }
 
-                let value = v
-                    .as_str()
-                    .ok_or_else(|| miette::miette!("entry point value {v} should be a string"))?;
+            let value = v
+                .as_str()
+                .ok_or_else(|| miette::miette!("entry point value {v} should be a string"))?;
 
-                // format it as a script = some_module:some_function
-                let entry_point_str = format!("{} = {}", key, value);
-                EntryPoint::from_str(&entry_point_str).map_err(|e| {
-                    miette::miette!("failed to parse entry point {}: {}", entry_point_str, e)
-                })
+            // format it as a script = some_module:some_function
+            let entry_point_str = format!("{} = {}", key, value);
+            EntryPoint::from_str(&entry_point_str).map_err(|e| {
+                miette::miette!("failed to parse entry point {}: {}", entry_point_str, e)
             })
-            .collect::<Result<Vec<_>, _>>()?;
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
-        return Ok(Some(entry_points));
-    }
-
-    Ok(None)
+    Ok(Some(entry_points))
 }
 
 #[async_trait::async_trait]

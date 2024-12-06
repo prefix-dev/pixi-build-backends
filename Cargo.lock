@@ -3019,7 +3019,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#8070a89a4a7ea228c5703ef71a2a980ae91e1e76"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=feat/build-editable#824d763287ef1df27a0b28ba95b062e9245c9f40"
 dependencies = [
  "rattler_conda_types",
  "serde",

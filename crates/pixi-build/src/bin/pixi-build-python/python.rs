@@ -561,6 +561,8 @@ impl Protocol for PythonBuildBackend {
             miette::bail!("the project does not support the target platform ({host_platform})");
         }
 
+        todo!("Do something with params.editable");
+
         let recipe = self.recipe(host_platform, &channel_config)?;
         let output = Output {
             build_configuration: self

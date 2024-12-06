@@ -14,5 +14,5 @@ build:
   script: "[ ... script ... ]"
 requirements:
   host:
-    - pip *
-    - python *
+    - pip
+    - python

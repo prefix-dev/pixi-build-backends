@@ -3,10 +3,10 @@ source: crates/pixi-build/src/bin/pixi-build-python/python.rs
 expression: reqs
 ---
 build:
-  - boltons *
+  - boltons
 host:
-  - hatchling *
-  - pip *
-  - python *
+  - hatchling
+  - pip
+  - python
 run:
   - foobar >=3.2.1

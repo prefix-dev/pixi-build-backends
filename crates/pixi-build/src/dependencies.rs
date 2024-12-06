@@ -55,7 +55,12 @@ impl<'a> MatchspecExtractor<'a> {
                     let nameless_spec = binary
                         .try_into_nameless_match_spec(self.channel_config)
                         .into_diagnostic()?;
-                    MatchSpec::from_nameless(nameless_spec, Some(name))
+                    if nameless_spec.version == Some("*".parse().unwrap()) {
+                        // Skip dependencies with wildcard versions.
+                        name.as_normalized().to_string().parse().unwrap()
+                    } else {
+                        MatchSpec::from_nameless(nameless_spec, Some(name))
+                    }
                 }
             };
 

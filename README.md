@@ -47,7 +47,7 @@ channels = [
 ### Developing on Backends
 
 Even though binary versions are available on the prefix channels, its also quite easy to get started on developing a new backend or work on an existing one.
-To start development make sure you have installed [pixi](https://pixi.sh). After which, a number of command should be avalable:
+To start development make sure you have installed [pixi](https://pixi.sh). After which, a number of command should be available:
 
 ```bash
 # To build the backens

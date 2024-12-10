@@ -446,6 +446,7 @@ mod tests {
                 outputs: None,
                 work_directory: current_dir.into_path(),
                 variant_configuration: None,
+                editable: false,
             })
             .await
             .unwrap();

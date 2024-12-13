@@ -231,7 +231,7 @@ impl PythonBuildBackend {
                 BuildPlatform::Unix
             },
             // TODO: remove this as soon as we have profiles
-            editable: std::env::var("EDITABLE_PYTHON")
+            editable: std::env::var("BUILD_EDITABLE_PYTHON")
                 .map(|val| val == "true")
                 .unwrap_or(editable),
             manifest_root: manifest_root.to_path_buf(),

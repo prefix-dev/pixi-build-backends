@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use minijinja::Environment;
 use serde::Serialize;
 
@@ -5,6 +7,8 @@ use serde::Serialize;
 pub struct BuildScriptContext {
     pub installer: Installer,
     pub build_platform: BuildPlatform,
+    pub editable: bool,
+    pub manifest_root: PathBuf,
 }
 
 #[derive(Default, Serialize)]

@@ -1,11 +1,3 @@
-use std::{
-    borrow::Cow,
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
-
 use chrono::Utc;
 use itertools::Itertools;
 use jsonrpc_core::serde_json;
@@ -48,6 +40,13 @@ use rattler_conda_types::{
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
+use std::{
+    borrow::Cow,
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext, Installer},
@@ -183,6 +182,7 @@ impl PythonBuildBackend {
         &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
+        editable: bool,
     ) -> miette::Result<Recipe> {
         let manifest_root = self
             .manifest
@@ -230,8 +230,28 @@ impl PythonBuildBackend {
             } else {
                 BuildPlatform::Unix
             },
+            // TODO: remove this as soon as we have profiles
+            editable: std::env::var("EDITABLE_PYTHON")
+                .map(|val| val == "true")
+                .unwrap_or(editable),
+            manifest_root: manifest_root.to_path_buf(),
         }
         .render();
+
+        let source = if editable {
+            Vec::new()
+        } else {
+            Vec::from([Source::Path(PathSource {
+                // TODO: How can we use a git source?
+                path: manifest_root.to_path_buf(),
+                sha256: None,
+                md5: None,
+                patches: vec![],
+                target_directory: None,
+                file_name: None,
+                use_gitignore: true,
+            })])
+        };
 
         Ok(Recipe {
             schema_version: 1,
@@ -241,16 +261,7 @@ impl PythonBuildBackend {
             },
             context: Default::default(),
             cache: None,
-            source: vec![Source::Path(PathSource {
-                // TODO: How can we use a git source?
-                path: manifest_root.to_path_buf(),
-                sha256: None,
-                md5: None,
-                patches: vec![],
-                target_directory: None,
-                file_name: None,
-                use_gitignore: true,
-            })],
+            source,
             build: Build {
                 number: build_number,
                 string: Default::default(),
@@ -468,7 +479,7 @@ impl Protocol for PythonBuildBackend {
         }
 
         // TODO: Determine how and if we can determine this from the manifest.
-        let recipe = self.recipe(host_platform, &channel_config)?;
+        let recipe = self.recipe(host_platform, &channel_config, false)?;
         let output = Output {
             build_configuration: self
                 .build_configuration(
@@ -561,7 +572,7 @@ impl Protocol for PythonBuildBackend {
             miette::bail!("the project does not support the target platform ({host_platform})");
         }
 
-        let recipe = self.recipe(host_platform, &channel_config)?;
+        let recipe = self.recipe(host_platform, &channel_config, params.editable)?;
         let output = Output {
             build_configuration: self
                 .build_configuration(&recipe, channels, None, None, &params.work_directory)
@@ -657,7 +668,7 @@ mod tests {
 
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
         python_backend
-            .recipe(Platform::current(), &channel_config)
+            .recipe(Platform::current(), &channel_config, false)
             .unwrap()
     }
 
@@ -755,7 +766,7 @@ mod tests {
 
         insta::assert_yaml_snapshot!(reqs);
 
-        let recipe = python_backend.recipe(host_platform, &channel_config);
+        let recipe = python_backend.recipe(host_platform, &channel_config, false);
         insta::assert_yaml_snapshot!(recipe.unwrap(), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",

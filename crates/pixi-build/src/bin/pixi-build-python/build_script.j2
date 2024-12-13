@@ -1,10 +1,12 @@
 {% set PYTHON="%PYTHON%" if build_platform == "windows" else "$PYTHON" -%}
-{% set SRC_DIR="%SRC_DIR%" if build_platform == "windows" else "$SRC_DIR" -%}
+{% set SRC_DIR = manifest_root if editable else ("%SRC_DIR%" if build_platform == "windows" else "$SRC_DIR") -%}
+{% set EDITABLE_OPTION = " --editable" if editable else "" -%}
+{% set COMMON_OPTIONS = "-vv --no-deps --no-build-isolation" + EDITABLE_OPTION -%}
 
 {% if installer == "uv" -%}
-uv pip install --python {{ PYTHON }} -vv --no-deps --no-build-isolation {{ SRC_DIR }}
+uv pip install --python {{ PYTHON }} {{ COMMON_OPTIONS }} {{ SRC_DIR }}
 {% else %}
-{{ PYTHON }} -m pip install -vv --ignore-installed --no-deps --no-build-isolation {{ SRC_DIR }}
+{{ PYTHON }} -m pip install --ignore-installed {{ COMMON_OPTIONS }} {{ SRC_DIR }}
 {% endif -%}
 
 {% if build_platform == "windows" -%}

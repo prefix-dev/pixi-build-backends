@@ -172,6 +172,7 @@ async fn build(factory: impl ProtocolFactory, manifest_path: &Path) -> miette::R
             outputs: None,
             work_directory: work_dir.path().to_path_buf(),
             variant_configuration: None,
+            editable: false,
         })
         .await?;
 

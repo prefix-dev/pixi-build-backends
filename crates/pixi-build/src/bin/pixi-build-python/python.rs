@@ -208,9 +208,9 @@ impl PythonBuildBackend {
 
         // Determine the entry points from the pyproject.toml
         // which would be passed into recipe
-        let python = if self.manifest.document.is_pyproject_toml() {
+        let python = if self.manifest.source.is_pyproject_toml() {
             let mut python = Python::default();
-            let entry_points = get_entry_points(self.manifest.document.manifest())?;
+            let entry_points = get_entry_points(self.manifest.source.manifest())?;
             if let Some(scripts) = entry_points {
                 python.entry_points = scripts;
             }

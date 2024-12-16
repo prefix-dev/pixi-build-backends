@@ -14,7 +14,7 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
-    recipe::{parser::find_outputs_from_src, ParsingError, Recipe},
+    recipe::{parser::find_outputs_from_src, Jinja, ParsingError, Recipe},
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
@@ -113,7 +113,9 @@ impl RattlerBuild {
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
-                variant_config.variants.insert(k.into(), v.clone());
+                variant_config
+                    .variants
+                    .insert(k.to_owned().into(), v.clone());
             }
         }
 
@@ -153,8 +155,8 @@ impl RattlerBuild {
                 allow_undefined: false,
             };
 
-            let recipe =
-                Recipe::from_node(&discovered_output.node, selector_config).map_err(|err| {
+            let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
+                .map_err(|err| {
                     let errs: ParseErrors = err
                         .into_iter()
                         .map(|err| ParsingError::from_partial(&self.raw_recipe, err))
@@ -179,7 +181,7 @@ impl RattlerBuild {
                     build_string: recipe
                         .build()
                         .string()
-                        .resolve(&hash, recipe.build().number())
+                        .resolve(&hash, recipe.build().number(), &Jinja::new(selector_config))
                         .into_owned(),
                 },
             );

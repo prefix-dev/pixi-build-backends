@@ -191,7 +191,7 @@ version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df895a515f70646414f4b45c0b79082783b80552b373a68283012928df56f522"
 dependencies = [
- "bzip2 0.4.4",
+ "bzip2",
  "flate2",
  "futures-core",
  "memchr",
@@ -498,16 +498,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bzip2"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bafdbf26611df8c14810e268ddceda071c297570a5fb360ceddf617fe417ef58"
-dependencies = [
- "bzip2-sys",
- "libc",
-]
-
-[[package]]
 name = "bzip2-sys"
 version = "0.1.11+1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -599,6 +589,16 @@ dependencies = [
 
 [[package]]
 name = "clap-verbosity-flag"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34c77f67047557f62582784fd7482884697731b2932c7d37ced54bce2312e1e2"
+dependencies = [
+ "clap",
+ "log",
+]
+
+[[package]]
+name = "clap-verbosity-flag"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54381ae56ad222eea3f529c692879e9c65e07945ae48d3dc4d1cb18dbec8cf44"
@@ -685,15 +685,15 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.8"
+version = "0.15.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb"
+checksum = "ea3c6ecd8059b57859df5c69830340ed3c41d30e3da0c1cbed90a96ac853041b"
 dependencies = [
  "encode_unicode",
- "lazy_static",
  "libc",
- "unicode-width 0.1.14",
- "windows-sys 0.52.0",
+ "once_cell",
+ "unicode-width 0.2.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -977,9 +977,9 @@ dependencies = [
 
 [[package]]
 name = "encode_unicode"
-version = "0.3.6"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 
 [[package]]
 name = "encoding_rs"
@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d7ccc408b0c9e9811b31ef17f03839f7f1f605ee"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#2e8ca9bc14c34899f02885d4cd14baaa815bf076"
 dependencies = [
  "console",
 ]
@@ -2976,7 +2976,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "clap",
- "clap-verbosity-flag",
+ "clap-verbosity-flag 3.0.1",
  "fs-err 3.0.0",
  "indexmap 2.7.0",
  "insta",
@@ -3011,7 +3011,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d7ccc408b0c9e9811b31ef17f03839f7f1f605ee"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#2e8ca9bc14c34899f02885d4cd14baaa815bf076"
 dependencies = [
  "rattler_conda_types",
  "serde",
@@ -3023,7 +3023,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d7ccc408b0c9e9811b31ef17f03839f7f1f605ee"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#2e8ca9bc14c34899f02885d4cd14baaa815bf076"
 dependencies = [
  "console",
  "lazy_static",
@@ -3034,7 +3034,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d7ccc408b0c9e9811b31ef17f03839f7f1f605ee"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#2e8ca9bc14c34899f02885d4cd14baaa815bf076"
 dependencies = [
  "console",
  "dunce",
@@ -3067,7 +3067,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d7ccc408b0c9e9811b31ef17f03839f7f1f605ee"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#2e8ca9bc14c34899f02885d4cd14baaa815bf076"
 dependencies = [
  "dirs",
  "file_url 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3300,17 +3300,17 @@ dependencies = [
 
 [[package]]
 name = "rattler-build"
-version = "0.32.1"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#f859487230bcb5ac6cf1a40ab7582b994791cf09"
+version = "0.31.1"
+source = "git+https://github.com/prefix-dev/rattler-build?rev=b3f6bd25067177a4b7937a3960d2e2da196b249a#b3f6bd25067177a4b7937a3960d2e2da196b249a"
 dependencies = [
  "anyhow",
  "async-once-cell",
  "async-recursion",
  "base64",
- "bzip2 0.5.0",
+ "bzip2",
  "chrono",
  "clap",
- "clap-verbosity-flag",
+ "clap-verbosity-flag 2.2.3",
  "clap_complete",
  "clap_complete_nushell",
  "comfy-table",
@@ -3478,9 +3478,9 @@ dependencies = [
 
 [[package]]
 name = "rattler_index"
-version = "0.20.2"
+version = "0.19.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "188b27919eaf192845768c671515253bfc12ccc46151158b998047736e8b1542"
+checksum = "edba9d13d0cb24a6755778c4652078b6f3926d3917c23c4bcf094fd4b6471a6b"
 dependencies = [
  "fs-err 3.0.0",
  "rattler_conda_types",
@@ -3531,7 +3531,7 @@ name = "rattler_package_streaming"
 version = "0.22.18"
 source = "git+https://github.com/conda/rattler?branch=main#42de2b958ba8e02ae30753ee233790b32073f357"
 dependencies = [
- "bzip2 0.4.4",
+ "bzip2",
  "chrono",
  "fs-err 3.0.0",
  "futures-util",

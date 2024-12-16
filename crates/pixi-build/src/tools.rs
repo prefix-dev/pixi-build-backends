@@ -14,7 +14,7 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
-    recipe::{parser::find_outputs_from_src, Jinja, ParsingError, Recipe},
+    recipe::{parser::find_outputs_from_src, ParsingError, Recipe},
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
@@ -181,7 +181,7 @@ impl RattlerBuild {
                     build_string: recipe
                         .build()
                         .string()
-                        .resolve(&hash, recipe.build().number(), &Jinja::new(selector_config))
+                        .resolve(&hash, recipe.build().number())
                         .into_owned(),
                 },
             );

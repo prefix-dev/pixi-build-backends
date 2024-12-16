@@ -113,9 +113,7 @@ impl RattlerBuild {
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
-                variant_config
-                    .variants
-                    .insert(k.to_owned().into(), v.clone());
+                variant_config.variants.insert(k.to_owned(), v.clone());
             }
         }
 

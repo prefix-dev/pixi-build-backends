@@ -14,7 +14,7 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
-    recipe::{parser::find_outputs_from_src, ParsingError, Recipe},
+    recipe::{parser::find_outputs_from_src, Jinja, ParsingError, Recipe},
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
@@ -113,7 +113,7 @@ impl RattlerBuild {
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
-                variant_config.variants.insert(k.to_owned(), v.clone());
+                variant_config.variants.insert(k.as_str().into(), v.clone());
             }
         }
 
@@ -171,6 +171,8 @@ impl RattlerBuild {
                 continue;
             }
 
+            let jinja = Jinja::new(selector_config);
+
             subpackages.insert(
                 recipe.package().name().clone(),
                 PackageIdentifier {
@@ -179,7 +181,7 @@ impl RattlerBuild {
                     build_string: recipe
                         .build()
                         .string()
-                        .resolve(&hash, recipe.build().number())
+                        .resolve(&hash, recipe.build().number(), &jinja)
                         .into_owned(),
                 },
             );

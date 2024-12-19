@@ -31,16 +31,16 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/prefix-dev/rattler-build", rev = "b3f6bd25067177a4b7937a3960d2e2da196b249a", default-features = false }
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", rev = "69b1d957fb0c63389a1f1f5fea33a40beccdc757", default-features = false }
 
 rattler_conda_types = { version = "0.29.1", default-features = false }
 rattler_package_streaming = { version = "0.22.14", default-features = false }
 rattler_virtual_packages = { version = "1.1.10", default-features = false }
 
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_types = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
+pixi_consts = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
+pixi_manifest = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
+pixi_spec = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
 
 [patch.crates-io]
 rattler = { git = "https://github.com/conda/rattler", branch = "main" }

@@ -654,4 +654,35 @@ mod tests {
            ".requirements.build[1]" => "... compiler ..."
         });
     }
+
+    #[tokio::test]
+    async fn test_parsing_subdirectory() {
+        // get cargo manifest dir
+
+        let package_with_git_and_subdir = r#"
+        [workspace]
+        name = "test-reqs"
+        channels = ["conda-forge"]
+        platforms = ["osx-arm64"]
+        preview = ["pixi-build"]
+
+        [package]
+        name = "test-reqs"
+        version = "1.0"
+
+        [build-system]
+        build-backend = { name = "pixi-build-python", version = "*" }
+
+        [host-dependencies]
+        hatchling = { git = "git+https://github.com/hatchling/hatchling.git", subdirectory = "src" }
+        "#;
+
+        let tmp_dir = tempdir().unwrap();
+        let tmp_manifest = tmp_dir.path().join("pixi.toml");
+
+        // write the raw string into the file
+        std::fs::write(&tmp_manifest, package_with_git_and_subdir).unwrap();
+
+        Manifest::from_str(&tmp_manifest, package_with_git_and_subdir).unwrap();
+    }
 }

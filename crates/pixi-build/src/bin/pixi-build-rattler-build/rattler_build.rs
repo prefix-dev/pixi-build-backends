@@ -20,8 +20,13 @@ use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities,
 };
 use rattler_build::{
-    build::run_build, console_utils::LoggingOutputHandler, metadata::PlatformWithVirtualPackages,
-    render::resolved_dependencies::DependencyInfo, selectors::SelectorConfig,
+    build::run_build,
+    console_utils::LoggingOutputHandler,
+    hash::HashInfo,
+    metadata::PlatformWithVirtualPackages,
+    recipe::{parser::BuildString, Jinja},
+    render::resolved_dependencies::DependencyInfo,
+    selectors::SelectorConfig,
     tool_configuration::Configuration,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
@@ -184,6 +189,8 @@ impl Protocol for RattlerBuildBackend {
 
         let mut solved_packages = vec![];
 
+        eprintln!("before outputs ");
+
         for output in outputs {
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
             let tool_config = &tool_config;
@@ -202,10 +209,21 @@ impl Protocol for RattlerBuildBackend {
                 .expect("dependencies should be resolved at this point")
                 .run;
 
+            let selector_config = output.build_configuration.selector_config();
+
+            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+            let build_string = output.recipe.build().string().resolve(
+                &hash,
+                output.recipe.build().number(),
+                &jinja,
+            );
+
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone().into(),
-                build: output.build_string().into_owned(),
+                build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
                 depends: finalized_deps
@@ -317,12 +335,31 @@ impl Protocol for RattlerBuildBackend {
             .with_keep_build(true)
             .finish();
 
+        eprintln!("before outputs ");
         for output in outputs {
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
 
             let tool_config = &tool_config;
+
+            let mut output_with_build_string = output.clone();
+
+            let selector_config = output.build_configuration.selector_config();
+
+            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+            let build_string = output.recipe.build().string().resolve(
+                &hash,
+                output.recipe.build().number(),
+                &jinja,
+            );
+            output_with_build_string.recipe.build.string =
+                BuildString::Resolved(build_string.to_string());
+
             let (output, build_path) = temp_recipe
-                .within_context_async(move || async move { run_build(output, tool_config).await })
+                .within_context_async(move || async move {
+                    run_build(output_with_build_string, tool_config).await
+                })
                 .await?;
 
             built.push(CondaBuiltPackage {
@@ -330,11 +367,10 @@ impl Protocol for RattlerBuildBackend {
                 input_globs: Vec::from([self.recipe_path.to_string_lossy().to_string()]),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
-                build: output.build_string().into_owned(),
+                build: build_string.to_string(),
                 subdir: output.target_platform().to_string(),
             });
         }
-
         Ok(CondaBuildResult { packages: built })
     }
 }

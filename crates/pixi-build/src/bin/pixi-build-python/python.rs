@@ -18,7 +18,10 @@ use pixi_build_types::{
 };
 use pixi_manifest::{toml::TomlDocument, Dependencies, Manifest, SpecType};
 use pixi_spec::PixiSpec;
-use rattler_build::recipe::parser::Python;
+use rattler_build::recipe::{
+    parser::{BuildString, Python},
+    Jinja,
+};
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -522,11 +525,23 @@ impl Protocol for PythonBuildBackend {
             .expect("dependencies should be resolved at this point")
             .run;
 
+        let selector_config = output.build_configuration.selector_config();
+
+        let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+        let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+        let build_string =
+            output
+                .recipe
+                .build()
+                .string()
+                .resolve(&hash, output.recipe.build().number(), &jinja);
+
         Ok(CondaMetadataResult {
             packages: vec![CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone().into(),
-                build: output.build_string().into_owned(),
+                build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
                 depends: finalized_deps
@@ -594,8 +609,27 @@ impl Protocol for PythonBuildBackend {
             .finish();
 
         let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+
+        let mut output_with_build_string = output.clone();
+
+        let selector_config = output.build_configuration.selector_config();
+
+        let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+        let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+        let build_string =
+            output
+                .recipe
+                .build()
+                .string()
+                .resolve(&hash, output.recipe.build().number(), &jinja);
+        output_with_build_string.recipe.build.string =
+            BuildString::Resolved(build_string.to_string());
+
         let (output, package) = temp_recipe
-            .within_context_async(move || async move { run_build(output, &tool_config).await })
+            .within_context_async(move || async move {
+                run_build(output_with_build_string, &tool_config).await
+            })
             .await?;
 
         Ok(CondaBuildResult {
@@ -604,7 +638,7 @@ impl Protocol for PythonBuildBackend {
                 input_globs: input_globs(),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
-                build: output.build_string().into_owned(),
+                build: build_string.to_string(),
                 subdir: output.target_platform().to_string(),
             }],
         })

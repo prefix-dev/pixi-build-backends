@@ -657,7 +657,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parsing_subdirectory() {
-        // get cargo manifest dir
+        // a manifest with subdir
 
         let package_with_git_and_subdir = r#"
         [workspace]

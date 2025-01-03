@@ -21,6 +21,7 @@ use pixi_build_types::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
+        negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities, PlatformAndVirtualPackages,
 };
@@ -94,10 +95,7 @@ impl CMakeBuildBackend {
 
     /// Returns the capabilities of this backend based on the capabilities of
     /// the frontend.
-    pub fn capabilities(
-        &self,
-        _frontend_capabilities: &FrontendCapabilities,
-    ) -> BackendCapabilities {
+    pub fn capabilities(_frontend_capabilities: &FrontendCapabilities) -> BackendCapabilities {
         BackendCapabilities {
             provides_conda_metadata: Some(true),
             provides_conda_build: Some(true),
@@ -608,8 +606,14 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
             params.cache_directory,
         )?;
 
-        let capabilities = instance.capabilities(&params.capabilities);
-        Ok((instance, InitializeResult { capabilities }))
+        Ok((instance, InitializeResult {}))
+    }
+
+    async fn negotiate_capabilities(
+        params: NegotiateCapabilitiesParams,
+    ) -> miette::Result<NegotiateCapabilitiesResult> {
+        let capabilities = Self::Protocol::capabilities(&params.capabilities);
+        Ok(NegotiateCapabilitiesResult { capabilities })
     }
 }
 

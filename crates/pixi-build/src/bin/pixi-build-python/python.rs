@@ -13,6 +13,7 @@ use pixi_build_types::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
+        negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities, PlatformAndVirtualPackages,
 };
@@ -97,10 +98,7 @@ impl PythonBuildBackend {
 
     /// Returns the capabilities of this backend based on the capabilities of
     /// the frontend.
-    pub fn capabilities(
-        &self,
-        _frontend_capabilities: &FrontendCapabilities,
-    ) -> BackendCapabilities {
+    pub fn capabilities(_frontend_capabilities: &FrontendCapabilities) -> BackendCapabilities {
         BackendCapabilities {
             provides_conda_metadata: Some(true),
             provides_conda_build: Some(true),
@@ -211,7 +209,7 @@ impl PythonBuildBackend {
 
         // Determine the entry points from the pyproject.toml
         // which would be passed into recipe
-        let python = if self.manifest.source.is_pyproject_toml() {
+        let python = if self.manifest.is_pyproject() {
             let mut python = Python::default();
             let entry_points = get_entry_points(self.manifest.source.manifest())?;
             if let Some(scripts) = entry_points {
@@ -673,8 +671,14 @@ impl ProtocolFactory for PythonBuildBackendFactory {
             params.cache_directory,
         )?;
 
-        let capabilities = instance.capabilities(&params.capabilities);
-        Ok((instance, InitializeResult { capabilities }))
+        Ok((instance, InitializeResult {}))
+    }
+
+    async fn negotiate_capabilities(
+        params: NegotiateCapabilitiesParams,
+    ) -> miette::Result<NegotiateCapabilitiesResult> {
+        let capabilities = Self::Protocol::capabilities(&params.capabilities);
+        Ok(NegotiateCapabilitiesResult { capabilities })
     }
 }
 

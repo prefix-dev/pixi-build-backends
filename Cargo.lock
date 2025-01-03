@@ -1103,7 +1103,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "console",
 ]
@@ -3097,7 +3097,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "rattler_conda_types",
  "serde",
@@ -3109,7 +3109,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "clap",
  "console",
@@ -3134,18 +3134,18 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "console",
- "lazy_static",
  "rattler_cache",
+ "rattler_conda_types",
  "url",
 ]
 
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "dashmap",
  "dunce",
@@ -3166,7 +3166,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "console",
  "dunce",
@@ -3179,6 +3179,7 @@ dependencies = [
  "pep508_rs",
  "pixi_consts",
  "pixi_spec",
+ "pixi_utils",
  "pyproject-toml",
  "rattler_conda_types",
  "rattler_solve",
@@ -3199,7 +3200,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "dirs",
  "file_url 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3219,7 +3220,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/nichmor/pixi?branch=feat/add-git-source-dependencies#3bdbeff779675c619f5d467c4fd01581c3c36d6d"
+source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
 dependencies = [
  "fd-lock",
  "fs-err",
@@ -3233,6 +3234,7 @@ dependencies = [
  "rattler_networking",
  "reqwest",
  "reqwest-middleware",
+ "reqwest-retry",
  "serde",
  "serde_json",
  "serde_yaml",

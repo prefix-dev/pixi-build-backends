@@ -2,12 +2,18 @@ use pixi_build_types::procedures::{
     conda_build::{CondaBuildParams, CondaBuildResult},
     conda_metadata::{CondaMetadataParams, CondaMetadataResult},
     initialize::{InitializeParams, InitializeResult},
+    negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
 };
 
 /// A trait that is used to initialize a new protocol connection.
 #[async_trait::async_trait]
 pub trait ProtocolFactory: Send + Sync + 'static {
     type Protocol: Protocol + Send + Sync + 'static;
+
+    /// Called when negotiating capabilities with the client.
+    async fn negotiate_capabilities(
+        params: NegotiateCapabilitiesParams,
+    ) -> miette::Result<NegotiateCapabilitiesResult>;
 
     /// Called when the client requests initialization.
     async fn initialize(

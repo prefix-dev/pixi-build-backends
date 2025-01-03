@@ -9,6 +9,7 @@ use pixi_build_types::{
         conda_build::CondaBuildParams,
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::InitializeParams,
+        negotiate_capabilities::NegotiateCapabilitiesParams,
     },
     ChannelConfiguration, FrontendCapabilities, PlatformAndVirtualPackages,
 };
@@ -42,7 +43,7 @@ pub struct App {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// store data as key value pair
+    /// Get conda metadata for a recipe.
     GetCondaMetadata {
         #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
         manifest_path: PathBuf,
@@ -50,10 +51,13 @@ pub enum Commands {
         #[clap(long)]
         host_platform: Option<Platform>,
     },
+    /// Build a conda package.
     CondaBuild {
         #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
         manifest_path: PathBuf,
     },
+    /// Get the capabilities of the backend.
+    Capabilities,
 }
 
 async fn run_server<T: ProtocolFactory>(port: Option<u16>, protocol: T) -> miette::Result<()> {
@@ -80,6 +84,7 @@ pub async fn main<T: ProtocolFactory, F: FnOnce(LoggingOutputHandler) -> T>(
 
     match args.command {
         None => run_server(args.http_port, factory).await,
+        Some(Commands::Capabilities) => capabilities::<T>().await,
         Some(Commands::CondaBuild { manifest_path }) => build(factory, &manifest_path).await,
         Some(Commands::GetCondaMetadata {
             manifest_path,
@@ -108,7 +113,6 @@ async fn get_conda_metadata(
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
             configuration: Value::Null,
-            capabilities: FrontendCapabilities {},
             cache_directory: None,
         })
         .await?;
@@ -140,6 +144,27 @@ async fn get_conda_metadata(
         .await
 }
 
+async fn capabilities<Factory: ProtocolFactory>() -> miette::Result<()> {
+    let result = Factory::negotiate_capabilities(NegotiateCapabilitiesParams {
+        capabilities: FrontendCapabilities {},
+    })
+    .await?;
+
+    eprintln!(
+        "Supports conda metadata: {}",
+        result
+            .capabilities
+            .provides_conda_metadata
+            .unwrap_or_default()
+    );
+    eprintln!(
+        "Supports conda build: {}",
+        result.capabilities.provides_conda_build.unwrap_or_default()
+    );
+
+    Ok(())
+}
+
 async fn build(factory: impl ProtocolFactory, manifest_path: &Path) -> miette::Result<()> {
     let channel_config = ChannelConfig::default_with_root_dir(
         manifest_path
@@ -152,7 +177,6 @@ async fn build(factory: impl ProtocolFactory, manifest_path: &Path) -> miette::R
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
             configuration: Value::Null,
-            capabilities: FrontendCapabilities {},
             cache_directory: None,
         })
         .await?;

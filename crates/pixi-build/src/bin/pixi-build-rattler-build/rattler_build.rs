@@ -16,6 +16,7 @@ use pixi_build_types::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
+        negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities,
 };
@@ -97,10 +98,7 @@ impl RattlerBuildBackend {
 
     /// Returns the capabilities of this backend based on the capabilities of
     /// the frontend.
-    pub fn capabilities(
-        &self,
-        _frontend_capabilities: &FrontendCapabilities,
-    ) -> BackendCapabilities {
+    pub fn capabilities(_frontend_capabilities: &FrontendCapabilities) -> BackendCapabilities {
         BackendCapabilities {
             provides_conda_metadata: Some(true),
             provides_conda_build: Some(true),
@@ -392,8 +390,15 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
             params.cache_directory,
         )?;
 
-        let capabilities = instance.capabilities(&params.capabilities);
-        Ok((instance, InitializeResult { capabilities }))
+        Ok((instance, InitializeResult {}))
+    }
+
+    async fn negotiate_capabilities(
+        params: NegotiateCapabilitiesParams,
+    ) -> miette::Result<NegotiateCapabilitiesResult> {
+        Ok(NegotiateCapabilitiesResult {
+            capabilities: Self::Protocol::capabilities(&params.capabilities),
+        })
     }
 }
 
@@ -405,7 +410,7 @@ mod tests {
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
-        ChannelConfiguration, FrontendCapabilities,
+        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use serde_json::Value;
@@ -426,7 +431,6 @@ mod tests {
             .initialize(InitializeParams {
                 manifest_path: recipe,
                 configuration: Value::Null,
-                capabilities: FrontendCapabilities {},
                 cache_directory: None,
             })
             .await
@@ -462,7 +466,6 @@ mod tests {
             .initialize(InitializeParams {
                 manifest_path: recipe,
                 configuration: Value::Null,
-                capabilities: FrontendCapabilities {},
                 cache_directory: None,
             })
             .await
@@ -503,7 +506,6 @@ mod tests {
             .initialize(InitializeParams {
                 manifest_path: manifest_path.as_ref().to_path_buf(),
                 configuration: Value::Null,
-                capabilities: FrontendCapabilities {},
                 cache_directory: None,
             })
             .await

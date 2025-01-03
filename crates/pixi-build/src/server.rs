@@ -2,12 +2,9 @@ use std::{net::SocketAddr, sync::Arc};
 
 use jsonrpc_core::{serde_json, to_value, Error, IoHandler, Params};
 use miette::{IntoDiagnostic, JSONReportHandler};
-use pixi_build_types::{
-    procedures,
-    procedures::{
-        conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
-        initialize::InitializeParams,
-    },
+use pixi_build_types::procedures::{
+    self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
+    initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
 };
 use tokio::sync::RwLock;
 
@@ -19,11 +16,14 @@ pub struct Server<T: ProtocolFactory> {
 }
 
 enum ServerState<T: ProtocolFactory> {
+    /// Server has not been initialized yet.
     Uninitialized(T),
+    /// Server has been initialized, with a protocol.
     Initialized(T::Protocol),
 }
 
 impl<T: ProtocolFactory> ServerState<T> {
+    /// Convert to a protocol, if the server has been initialized.
     pub fn as_protocol(&self) -> Result<&T::Protocol, jsonrpc_core::Error> {
         match self {
             Self::Initialized(protocol) => Ok(protocol),
@@ -37,12 +37,14 @@ impl<T: ProtocolFactory> Server<T> {
         Self { factory }
     }
 
+    /// Run the server, communicating over stdin/stdout.
     pub async fn run(self) -> miette::Result<()> {
         let io = self.setup_io();
         jsonrpc_stdio_server::ServerBuilder::new(io).build().await;
         Ok(())
     }
 
+    /// Run the server, communicating over HTTP.
     pub fn run_over_http(self, port: u16) -> miette::Result<()> {
         let io = self.setup_io();
         jsonrpc_http_server::ServerBuilder::new(io)
@@ -52,11 +54,22 @@ impl<T: ProtocolFactory> Server<T> {
         Ok(())
     }
 
+    /// Setup the IO inner handler.
     fn setup_io(self) -> IoHandler {
         // Construct a server
         let mut io = IoHandler::new();
-        let state = Arc::new(RwLock::new(ServerState::Uninitialized(self.factory)));
+        io.add_method(
+            procedures::negotiate_capabilities::METHOD_NAME,
+            move |params: Params| async move {
+                let params: NegotiateCapabilitiesParams = params.parse()?;
+                let result = T::negotiate_capabilities(params)
+                    .await
+                    .map_err(convert_error)?;
+                Ok(to_value(result).expect("failed to convert to json"))
+            },
+        );
 
+        let state = Arc::new(RwLock::new(ServerState::Uninitialized(self.factory)));
         let initialize_state = state.clone();
         io.add_method(
             procedures::initialize::METHOD_NAME,

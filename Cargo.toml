@@ -37,10 +37,10 @@ rattler_conda_types = { version = "0.29.1", default-features = false }
 rattler_package_streaming = { version = "0.22.14", default-features = false }
 rattler_virtual_packages = { version = "1.1.10", default-features = false }
 
-pixi_build_types = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
-pixi_consts = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
-pixi_manifest = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
-pixi_spec = { git = "https://github.com/nichmor/pixi", branch = "feat/add-git-source-dependencies" }
+pixi_build_types = { git = "https://github.com/tdejager/pixi", branch = "feat/split-initalize-and-capabilities" }
+pixi_consts = { git = "https://github.com/tdejager/pixi", branch = "feat/split-initalize-and-capabilities" }
+pixi_manifest = { git = "https://github.com/tdejager/pixi", branch = "feat/split-initalize-and-capabilities" }
+pixi_spec = { git = "https://github.com/tdejager/pixi", branch = "feat/split-initalize-and-capabilities" }
 
 [patch.crates-io]
 rattler = { git = "https://github.com/conda/rattler", branch = "main" }

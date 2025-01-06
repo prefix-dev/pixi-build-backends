@@ -690,9 +690,13 @@ mod tests {
         let tmp_manifest = tmp_dir.path().join("pixi.toml");
         std::fs::write(&tmp_manifest, manifest_source).unwrap();
 
-        let python_backend =
-            PythonBuildBackend::new(&tmp_manifest, Some(config), LoggingOutputHandler::default(), None)
-                .unwrap();
+        let python_backend = PythonBuildBackend::new(
+            &tmp_manifest,
+            Some(config),
+            LoggingOutputHandler::default(),
+            None,
+        )
+        .unwrap();
 
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
         python_backend

@@ -1,6 +1,6 @@
-use std::path::Path;
 use miette::IntoDiagnostic;
 use serde::Deserialize;
+use std::path::Path;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]

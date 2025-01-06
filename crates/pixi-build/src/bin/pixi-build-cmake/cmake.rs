@@ -127,7 +127,7 @@ impl CMakeBuildBackend {
                 .filter_map(|f| f.dependencies(SpecType::Run).cloned().map(Cow::Owned)),
         );
 
-        let build_dependencies = Dependencies::from(
+        let mut build_dependencies = Dependencies::from(
             targets
                 .iter()
                 .filter_map(|f| f.dependencies(SpecType::Build).cloned().map(Cow::Owned)),
@@ -141,7 +141,7 @@ impl CMakeBuildBackend {
 
         // Ensure build tools are available in the host dependencies section.
         for pkg_name in ["cmake", "ninja"] {
-            if host_dependencies.contains_key(pkg_name) {
+            if build_dependencies.contains_key(pkg_name) {
                 // If the host dependencies already contain the package, we don't need to add it
                 // again.
                 continue;
@@ -150,10 +150,10 @@ impl CMakeBuildBackend {
             if let Some(run_requirements) = run_dependencies.get(pkg_name) {
                 // Copy the run requirements to the host requirements.
                 for req in run_requirements {
-                    host_dependencies.insert(PackageName::from_str(pkg_name).unwrap(), req.clone());
+                    build_dependencies.insert(PackageName::from_str(pkg_name).unwrap(), req.clone());
                 }
             } else {
-                host_dependencies.insert(
+                build_dependencies.insert(
                     PackageName::from_str(pkg_name).unwrap(),
                     PixiSpec::default(),
                 );

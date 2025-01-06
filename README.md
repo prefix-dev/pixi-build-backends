@@ -56,11 +56,8 @@ pixi run build
 pixi r install-pixi-build-python
 ```
 
-You can make use of these backends to overwrite any existing backend in pixi. For example, to overwrite the python backend with a local version, you can do the following:
-
-```bash
-PIXI_BUILD_BACKEND_OVERRIDE=/path/to/pixi-build-python pixi install
-```
+You can make use of these backends to overwrite any existing backend in pixi.
+This is described in the [pixi docs](https://pixi.sh/dev/build/backends/)
 
 ## Contributing
 Contributions are welcome! Please refer to the contributing guidelines for more information.

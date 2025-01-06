@@ -1103,7 +1103,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "console",
 ]
@@ -3098,11 +3098,10 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "rattler_conda_types",
  "serde",
- "serde_json",
  "serde_with",
  "url",
 ]
@@ -3110,7 +3109,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "clap",
  "console",
@@ -3135,7 +3134,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "console",
  "rattler_cache",
@@ -3146,7 +3145,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "dashmap",
  "dunce",
@@ -3167,7 +3166,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "console",
  "dunce",
@@ -3180,19 +3179,19 @@ dependencies = [
  "pep508_rs",
  "pixi_consts",
  "pixi_spec",
+ "pixi_toml",
  "pixi_utils",
  "pyproject-toml",
  "rattler_conda_types",
- "rattler_solve",
  "rattler_virtual_packages",
  "regex",
  "serde",
- "serde-untagged",
  "serde-value",
- "serde_with",
  "spdx",
  "strsim",
+ "strum",
  "thiserror 2.0.9",
+ "toml-span",
  "toml_edit",
  "tracing",
  "url",
@@ -3201,27 +3200,42 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "dirs",
  "file_url 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.13.0",
  "pixi_git",
+ "pixi_toml",
  "rattler_conda_types",
  "rattler_digest 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde-untagged",
  "serde_with",
  "thiserror 2.0.9",
+ "toml-span",
  "toml_edit",
  "typed-path",
  "url",
 ]
 
 [[package]]
+name = "pixi_toml"
+version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
+dependencies = [
+ "digest",
+ "hex",
+ "indexmap 2.7.0",
+ "itertools 0.13.0",
+ "strum",
+ "toml-span",
+]
+
+[[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/tdejager/pixi?branch=feat/split-initalize-and-capabilities#d5ed9d57418134882e4f116b1b3c72e2865b615b"
+source = "git+https://github.com/baszalmstra/pixi?branch=refactor/package_everything#9172b28b79ff3f970df0d502d98d96cbd33cdbc9"
 dependencies = [
  "fd-lock",
  "fs-err",
@@ -5095,6 +5109,16 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "toml_edit",
+]
+
+[[package]]
+name = "toml-span"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "757f36f490e7b3a25ed9fb692d7a0beb1424eabec3f7e8f40f576bece9a8cdc5"
+dependencies = [
+ "serde",
+ "smallvec",
 ]
 
 [[package]]

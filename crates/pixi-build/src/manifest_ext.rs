@@ -92,10 +92,8 @@ mod tests {
             name = "basic"
             version = "0.1.0"
 
-            [tasks]
-
-            [build-system]
-            build-backend = { name = "pixi-build-python", version = "*" }
+            [package.build]
+            backend = { name = "pixi-build-python", version = "*" }
             "#;
 
         let manifest_path = Path::new("pixi.toml");

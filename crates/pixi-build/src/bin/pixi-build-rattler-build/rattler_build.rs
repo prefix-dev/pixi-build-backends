@@ -413,7 +413,6 @@ mod tests {
         ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
-    use serde_json::Value;
     use std::path::Path;
     use std::{path::PathBuf, str::FromStr};
     use tempfile::tempdir;
@@ -430,7 +429,6 @@ mod tests {
         let factory = RattlerBuildBackend::factory(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: recipe,
-                configuration: Value::Null,
                 cache_directory: None,
             })
             .await
@@ -465,7 +463,6 @@ mod tests {
         let factory = RattlerBuildBackend::factory(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: recipe,
-                configuration: Value::Null,
                 cache_directory: None,
             })
             .await
@@ -505,7 +502,6 @@ mod tests {
         RattlerBuildBackend::factory(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: manifest_path.as_ref().to_path_buf(),
-                configuration: Value::Null,
                 cache_directory: None,
             })
             .await

@@ -33,3 +33,4 @@ output/
 
 # Output directory
 pixi-build-python-output/
+**/repodata.json

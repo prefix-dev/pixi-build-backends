@@ -1,6 +1,5 @@
 use chrono::Utc;
 use itertools::Itertools;
-use jsonrpc_core::serde_json;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::extract_dependencies,
@@ -79,7 +78,7 @@ impl PythonBuildBackend {
     /// at the given path.
     pub fn new(
         manifest_path: &Path,
-        config: PythonBackendConfig,
+        config: Option<PythonBackendConfig>,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -87,6 +86,13 @@ impl PythonBuildBackend {
         let manifest = Manifest::from_path(manifest_path).with_context(|| {
             format!("failed to parse manifest from {}", manifest_path.display())
         })?;
+
+        // Read config from the manifest itself if its not provided
+        // TODO: I guess this should also be passed over the protocol.
+        let config = match config {
+            Some(config) => config,
+            None => PythonBackendConfig::from_path(manifest_path)?,
+        };
 
         Ok(Self {
             manifest,
@@ -648,18 +654,9 @@ impl ProtocolFactory for PythonBuildBackendFactory {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Self::Protocol, InitializeResult)> {
-        // Parse the config
-        let config = if params.configuration.is_null() {
-            PythonBackendConfig::default()
-        } else {
-            serde_json::from_value(params.configuration)
-                .into_diagnostic()
-                .context("failed to parse backend configuration")?
-        };
-
         let instance = PythonBuildBackend::new(
             params.manifest_path.as_path(),
-            config,
+            None,
             self.logging_output_handler.clone(),
             params.cache_directory,
         )?;
@@ -694,7 +691,7 @@ mod tests {
         std::fs::write(&tmp_manifest, manifest_source).unwrap();
 
         let python_backend =
-            PythonBuildBackend::new(&tmp_manifest, config, LoggingOutputHandler::default(), None)
+            PythonBuildBackend::new(&tmp_manifest, Some(config), LoggingOutputHandler::default(), None)
                 .unwrap();
 
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
@@ -715,8 +712,8 @@ mod tests {
         name = "foobar"
         version = "0.1.0"
 
-        [build-system]
-        build-backend = { name = "pixi-build-python", version = "*" }
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
         "#, PythonBackendConfig {
             noarch: Some(false),
         }), {
@@ -737,8 +734,8 @@ mod tests {
         name = "foobar"
         version = "0.1.0"
 
-        [build-system]
-        build-backend = { name = "pixi-build-python", version = "*" }
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
         "#, PythonBackendConfig::default()), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
@@ -758,17 +755,17 @@ mod tests {
         name = "test-reqs"
         version = "1.2.3"
 
-        [host-dependencies]
+        [package.host-dependencies]
         hatchling = "*"
 
-        [build-dependencies]
+        [package.build-dependencies]
         boltons = "*"
 
-        [run-dependencies]
+        [package.run-dependencies]
         foobar = ">=3.2.1"
 
-        [build-system]
-        build-backend = { name = "pixi-build-python", version = "*" }
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
         "#;
 
         let tmp_dir = tempdir().unwrap();
@@ -781,7 +778,7 @@ mod tests {
 
         let python_backend = PythonBuildBackend::new(
             &manifest.path,
-            PythonBackendConfig::default(),
+            Some(PythonBackendConfig::default()),
             LoggingOutputHandler::default(),
             None,
         )

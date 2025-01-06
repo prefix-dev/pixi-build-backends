@@ -8,7 +8,6 @@ use std::{
 
 use chrono::Utc;
 use itertools::Itertools;
-use jsonrpc_core::serde_json;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::extract_dependencies,
@@ -76,7 +75,7 @@ impl CMakeBuildBackend {
     /// at the given path.
     pub fn new(
         manifest_path: &Path,
-        config: CMakeBackendConfig,
+        config: Option<CMakeBackendConfig>,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -84,6 +83,13 @@ impl CMakeBuildBackend {
         let manifest = Manifest::from_path(manifest_path).with_context(|| {
             format!("failed to parse manifest from {}", manifest_path.display())
         })?;
+
+        // Read config from the manifest itself if its not provided
+        // TODO: I guess this should also be passed over the protocol.
+        let config = match config {
+            Some(config) => config,
+            None => CMakeBackendConfig::from_path(manifest_path)?,
+        };
 
         Ok(Self {
             manifest,
@@ -584,17 +590,9 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Self::Protocol, InitializeResult)> {
-        let config = if params.configuration.is_null() {
-            CMakeBackendConfig::default()
-        } else {
-            serde_json::from_value(params.configuration)
-                .into_diagnostic()
-                .context("failed to parse backend configuration")?
-        };
-
         let instance = CMakeBuildBackend::new(
             params.manifest_path.as_path(),
-            config,
+            None,
             self.logging_output_handler.clone(),
             params.cache_directory,
         )?;
@@ -636,17 +634,17 @@ mod tests {
         name = "test-reqs"
         version = "1.0"
 
-        [host-dependencies]
+        [package.host-dependencies]
         hatchling = "*"
 
-        [build-dependencies]
+        [package.build-dependencies]
         boltons = "*"
 
-        [run-dependencies]
+        [package.run-dependencies]
         foobar = "3.2.1"
 
-        [build-system]
-        build-backend = { name = "pixi-build-python", version = "*" }
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
         "#;
 
         let tmp_dir = tempdir().unwrap();
@@ -659,7 +657,7 @@ mod tests {
 
         let cmake_backend = CMakeBuildBackend::new(
             &manifest.path,
-            CMakeBackendConfig::default(),
+            Some(CMakeBackendConfig::default()),
             LoggingOutputHandler::default(),
             None,
         )
@@ -696,10 +694,10 @@ mod tests {
         name = "test-reqs"
         version = "1.0"
 
-        [build-system]
-        build-backend = { name = "pixi-build-python", version = "*" }
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
 
-        [host-dependencies]
+        [package.host-dependencies]
         hatchling = { git = "git+https://github.com/hatchling/hatchling.git", subdirectory = "src" }
         "#;
 

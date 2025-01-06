@@ -152,7 +152,7 @@ impl PythonBuildBackend {
             Installer::Pip
         };
 
-        // Ensure python and pip are available in the host dependencies section.
+        // Ensure python and pip/uv are available in the host dependencies section.
         for pkg_name in [installer.package_name(), "python"] {
             if host_dependencies.contains_key(pkg_name) {
                 // If the host dependencies already contain the package,
@@ -160,17 +160,10 @@ impl PythonBuildBackend {
                 continue;
             }
 
-            if let Some(run_requirements) = run_dependencies.get(pkg_name) {
-                // Copy the run requirements to the host requirements.
-                for req in run_requirements {
-                    host_dependencies.insert(PackageName::from_str(pkg_name).unwrap(), req.clone());
-                }
-            } else {
-                host_dependencies.insert(
-                    PackageName::from_str(pkg_name).unwrap(),
-                    PixiSpec::default(),
-                );
-            }
+            host_dependencies.insert(
+                PackageName::from_str(pkg_name).unwrap(),
+                PixiSpec::default(),
+            );
         }
 
         requirements.build = extract_dependencies(channel_config, build_dependencies)?;

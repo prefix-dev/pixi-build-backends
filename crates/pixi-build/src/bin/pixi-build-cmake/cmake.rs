@@ -133,13 +133,13 @@ impl CMakeBuildBackend {
                 .filter_map(|f| f.dependencies(SpecType::Build).cloned().map(Cow::Owned)),
         );
 
-        let mut host_dependencies = Dependencies::from(
+        let host_dependencies = Dependencies::from(
             targets
                 .iter()
                 .filter_map(|f| f.dependencies(SpecType::Host).cloned().map(Cow::Owned)),
         );
 
-        // Ensure build tools are available in the host dependencies section.
+        // Ensure build tools are available in the build dependencies section.
         for pkg_name in ["cmake", "ninja"] {
             if build_dependencies.contains_key(pkg_name) {
                 // If the host dependencies already contain the package, we don't need to add it
@@ -147,17 +147,10 @@ impl CMakeBuildBackend {
                 continue;
             }
 
-            if let Some(run_requirements) = run_dependencies.get(pkg_name) {
-                // Copy the run requirements to the host requirements.
-                for req in run_requirements {
-                    build_dependencies.insert(PackageName::from_str(pkg_name).unwrap(), req.clone());
-                }
-            } else {
-                build_dependencies.insert(
-                    PackageName::from_str(pkg_name).unwrap(),
-                    PixiSpec::default(),
-                );
-            }
+            build_dependencies.insert(
+                PackageName::from_str(pkg_name).unwrap(),
+                PixiSpec::default(),
+            );
         }
 
         requirements.build = extract_dependencies(channel_config, build_dependencies)?;

@@ -665,16 +665,15 @@ mod tests {
 
         let host_platform = Platform::current();
 
-        let reqs = cmake_backend
-            .requirements(host_platform, &channel_config)
-            .unwrap();
-
-        insta::assert_yaml_snapshot!(reqs, { ".build[1]" => "... compiler ..." });
-
         let recipe = cmake_backend.recipe(host_platform, &channel_config);
-        insta::assert_yaml_snapshot!(recipe.unwrap(), {
-           ".build.script" => "[ ... script ... ]",
-           ".requirements.build[1]" => "... compiler ..."
+        insta::with_settings!({
+            filters => vec![
+                ("(vs2017|vs2019|gxx|clang).*", "\"[ ... compiler ... ]\""),
+            ]
+        }, {
+            insta::assert_yaml_snapshot!(recipe.unwrap(), {
+               ".build.script" => "[ ... script ... ]",
+            });
         });
     }
 

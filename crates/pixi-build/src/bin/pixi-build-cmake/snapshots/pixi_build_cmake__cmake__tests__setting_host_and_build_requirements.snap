@@ -1,13 +1,22 @@
 ---
 source: crates/pixi-build/src/bin/pixi-build-cmake/cmake.rs
-expression: reqs
+expression: recipe.unwrap()
 ---
+schema_version: 1
+context: {}
+package:
+  name: test-reqs
+  version: "1.0"
 build:
-  - boltons
-  - "... compiler ..."
-host:
-  - hatchling
-  - cmake
-  - ninja
-run:
-  - foobar ==3.2.1
+  number: 0
+  script: "[ ... script ... ]"
+requirements:
+  build:
+    - boltons
+    - cmake
+    - ninja
+    - "[ ... compiler ... ]"
+  host:
+    - hatchling
+  run:
+    - foobar ==3.2.1

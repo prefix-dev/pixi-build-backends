@@ -2,10 +2,9 @@ recipe:
   name: pixi-build
   version: "${{ env.get('RECIPE_VERSION', default='0.1.0dev') }}"
 
-source:
-  path: ..
-
 cache:
+  source:
+    path: ..
   requirements:
     build:
       - ${{ compiler("rust") }}

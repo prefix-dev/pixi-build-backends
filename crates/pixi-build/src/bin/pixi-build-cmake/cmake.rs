@@ -663,7 +663,7 @@ mod tests {
         boltons = "*"
 
         [package.run-dependencies]
-        foobar = "3.2.1"
+        foobar = "==3.2.1"
 
         [package.build]
         backend = { name = "pixi-build-python", version = "*" }

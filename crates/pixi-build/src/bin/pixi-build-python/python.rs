@@ -686,13 +686,12 @@ impl ProtocolFactory for PythonBuildBackendFactory {
 #[cfg(test)]
 mod tests {
 
-    use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
+    use std::{collections::BTreeMap, path::PathBuf};
 
-    use pixi_manifest::{toml::TomlDocument, Manifest};
+    use pixi_manifest::Manifest;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
-    use toml_edit::DocumentMut;
 
     use crate::{config::PythonBackendConfig, python::PythonBuildBackend};
 

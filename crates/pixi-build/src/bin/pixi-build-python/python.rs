@@ -1,11 +1,20 @@
+use std::{
+    borrow::Cow,
+    collections::BTreeMap,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
+
 use chrono::Utc;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::extract_dependencies,
-    manifest_ext::ManifestExt,
     protocol::{Protocol, ProtocolFactory},
     utils::TemporaryRenderedRecipe,
+    variants::can_be_used_as_variant,
 };
 use pixi_build_types::{
     procedures::{
@@ -16,12 +25,9 @@ use pixi_build_types::{
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities, PlatformAndVirtualPackages,
 };
-use pixi_manifest::{toml::TomlDocument, Dependencies, Manifest, SpecType};
+use pixi_manifest::{Dependencies, Manifest, PackageManifest, SpecType};
 use pixi_spec::PixiSpec;
-use rattler_build::recipe::{
-    parser::{BuildString, Python},
-    Jinja,
-};
+use pyproject_toml::PyProjectToml;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -30,11 +36,15 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackagingSettings, PlatformWithVirtualPackages,
     },
     recipe::{
-        parser::{Build, Package, PathSource, Requirements, ScriptContent, Source},
-        Recipe,
+        parser::{
+            Build, BuildString, Package, PathSource, Python, Requirements, ScriptContent, Source,
+        },
+        Jinja, Recipe,
     },
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
+    variant_config::VariantConfig,
+    NormalizedKey,
 };
 use rattler_conda_types::{
     package::{ArchiveType, EntryPoint},
@@ -43,13 +53,6 @@ use rattler_conda_types::{
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
-use std::{
-    borrow::Cow,
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
 
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext, Installer},
@@ -58,9 +61,12 @@ use crate::{
 
 pub struct PythonBuildBackend {
     logging_output_handler: LoggingOutputHandler,
-    manifest: Manifest,
+    manifest_path: PathBuf,
+    manifest_root: PathBuf,
+    package_manifest: PackageManifest,
     config: PythonBackendConfig,
     cache_dir: Option<PathBuf>,
+    pyproject_manifest: Option<PyProjectToml>,
 }
 
 impl PythonBuildBackend {
@@ -87,6 +93,17 @@ impl PythonBuildBackend {
             format!("failed to parse manifest from {}", manifest_path.display())
         })?;
 
+        // Determine the root directory of the manifest
+        let manifest_root = manifest
+            .path
+            .parent()
+            .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
+            .to_path_buf();
+
+        let Some(package_manifest) = manifest.package else {
+            return Err(miette::miette!("no package manifest found in the manifest"));
+        };
+
         // Read config from the manifest itself if its not provided
         // TODO: I guess this should also be passed over the protocol.
         let config = match config {
@@ -94,11 +111,29 @@ impl PythonBuildBackend {
             None => PythonBackendConfig::from_path(manifest_path)?,
         };
 
+        let pyproject_manifest = if manifest_path
+            .file_name()
+            .and_then(OsStr::to_str)
+            .map(|str| str.to_lowercase())
+            == Some("pyproject.toml".to_string())
+        {
+            // Load the manifest as a pyproject
+            let contents = fs_err::read_to_string(manifest_path).into_diagnostic()?;
+
+            // Load the manifest as a pyproject
+            Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
+        } else {
+            None
+        };
+
         Ok(Self {
-            manifest,
+            manifest_path: manifest.path,
+            manifest_root,
+            package_manifest,
             config,
             logging_output_handler,
             cache_dir,
+            pyproject_manifest,
         })
     }
 
@@ -117,16 +152,14 @@ impl PythonBuildBackend {
         &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
+        variant: &BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<(Requirements, Installer)> {
         let mut requirements = Requirements::default();
-        let package = self.manifest.package.clone().ok_or_else(|| {
-            miette::miette!(
-                "manifest {} does not contains [package] section",
-                self.manifest.path.display()
-            )
-        })?;
-
-        let targets = package.targets.resolve(Some(host_platform)).collect_vec();
+        let targets = self
+            .package_manifest
+            .targets
+            .resolve(Some(host_platform))
+            .collect_vec();
 
         let run_dependencies = Dependencies::from(
             targets
@@ -170,9 +203,9 @@ impl PythonBuildBackend {
             );
         }
 
-        requirements.build = extract_dependencies(channel_config, build_dependencies)?;
-        requirements.host = extract_dependencies(channel_config, host_dependencies)?;
-        requirements.run = extract_dependencies(channel_config, run_dependencies)?;
+        requirements.build = extract_dependencies(channel_config, build_dependencies, variant)?;
+        requirements.host = extract_dependencies(channel_config, host_dependencies, variant)?;
+        requirements.run = extract_dependencies(channel_config, run_dependencies, variant)?;
 
         Ok((requirements, installer))
     }
@@ -183,20 +216,10 @@ impl PythonBuildBackend {
         host_platform: Platform,
         channel_config: &ChannelConfig,
         editable: bool,
+        variant: &BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<Recipe> {
-        let manifest_root = self
-            .manifest
-            .path
-            .parent()
-            .expect("the project manifest must reside in a directory");
-
         // Parse the package name from the manifest
-        let package = &self
-            .manifest
-            .package
-            .as_ref()
-            .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package;
+        let package = &self.package_manifest.package;
 
         let name = PackageName::from_str(&package.name).into_diagnostic()?;
 
@@ -208,18 +231,27 @@ impl PythonBuildBackend {
 
         // Determine the entry points from the pyproject.toml
         // which would be passed into recipe
-        let python = if self.manifest.is_pyproject() {
+        let python = if let Some(pyproject_manifest) = &self.pyproject_manifest {
             let mut python = Python::default();
-            let entry_points = get_entry_points(self.manifest.source.manifest())?;
-            if let Some(scripts) = entry_points {
-                python.entry_points = scripts;
+            let scripts = pyproject_manifest
+                .project
+                .as_ref()
+                .and_then(|p| p.scripts.as_ref());
+            if let Some(scripts) = scripts {
+                python.entry_points = scripts
+                    .into_iter()
+                    .flat_map(|(name, entry_point)| {
+                        EntryPoint::from_str(&format!("{name} = {entry_point}"))
+                    })
+                    .collect();
             }
             python
         } else {
             Python::default()
         };
 
-        let (requirements, installer) = self.requirements(host_platform, channel_config)?;
+        let (requirements, installer) =
+            self.requirements(host_platform, channel_config, variant)?;
         let build_platform = Platform::current();
         let build_number = 0;
 
@@ -234,7 +266,7 @@ impl PythonBuildBackend {
             editable: std::env::var("BUILD_EDITABLE_PYTHON")
                 .map(|val| val == "true")
                 .unwrap_or(editable),
-            manifest_root: manifest_root.to_path_buf(),
+            manifest_root: self.manifest_root.clone(),
         }
         .render();
 
@@ -243,7 +275,7 @@ impl PythonBuildBackend {
         } else {
             Vec::from([Source::Path(PathSource {
                 // TODO: How can we use a git source?
-                path: manifest_root.to_path_buf(),
+                path: self.manifest_root.clone(),
                 sha256: None,
                 md5: None,
                 patches: vec![],
@@ -299,14 +331,7 @@ impl PythonBuildBackend {
         work_directory: &Path,
     ) -> miette::Result<BuildConfiguration> {
         // Parse the package name from the manifest
-        let name = self
-            .manifest
-            .package
-            .as_ref()
-            .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package
-            .name
-            .clone();
+        let name = self.package_manifest.package.name.clone();
         let name = PackageName::from_str(&name).into_diagnostic()?;
 
         std::fs::create_dir_all(work_directory)
@@ -314,7 +339,7 @@ impl PythonBuildBackend {
             .context("failed to create output directory")?;
         let directories = Directories::setup(
             name.as_normalized(),
-            self.manifest.path.as_path(),
+            &self.manifest_path,
             work_directory,
             true,
             &Utc::now(),
@@ -369,6 +394,7 @@ impl PythonBuildBackend {
             ),
             store_recipe: false,
             force_colors: true,
+            sandbox_config: None,
         })
     }
 }
@@ -415,41 +441,6 @@ fn input_globs() -> Vec<String> {
     .collect()
 }
 
-/// Returns the entry points from pyproject.toml scripts table
-fn get_entry_points(toml_document: &TomlDocument) -> miette::Result<Option<Vec<EntryPoint>>> {
-    let Ok(scripts) = toml_document.get_nested_table("project.scripts") else {
-        return Ok(None);
-    };
-
-    // all the entry points are in the form of a table
-    let entry_points = scripts
-        .get_values()
-        .iter()
-        .map(|(k, v)| {
-            // Ensure the key vector has exactly one element
-            let key = k
-                .first()
-                .ok_or_else(|| miette::miette!("entry points should have a key"))?;
-
-            if k.len() > 1 {
-                return Err(miette::miette!("entry points should be a single key"));
-            }
-
-            let value = v
-                .as_str()
-                .ok_or_else(|| miette::miette!("entry point value {v} should be a string"))?;
-
-            // format it as a script = some_module:some_function
-            let entry_point_str = format!("{} = {}", key, value);
-            EntryPoint::from_str(&entry_point_str).map_err(|e| {
-                miette::miette!("failed to parse entry point {}: {}", entry_point_str, e)
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(Some(entry_points))
-}
-
 #[async_trait::async_trait]
 impl Protocol for PythonBuildBackend {
     async fn get_conda_metadata(
@@ -458,84 +449,108 @@ impl Protocol for PythonBuildBackend {
     ) -> miette::Result<CondaMetadataResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest.manifest_root().to_path_buf(),
+            root_dir: self.manifest_root.to_path_buf(),
         };
-        let channels = match params.channel_base_urls {
-            Some(channels) => channels,
-            None => self
-                .manifest
-                .resolved_project_channels(&channel_config)
-                .into_diagnostic()
-                .context("failed to determine channels from the manifest")?,
-        };
+        let channels = params.channel_base_urls.unwrap_or_default();
 
         let host_platform = params
             .host_platform
             .as_ref()
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
-        if !self.manifest.supports_target_platform(host_platform) {
-            miette::bail!("the project does not support the target platform ({host_platform})");
-        }
 
-        // TODO: Determine how and if we can determine this from the manifest.
-        let recipe = self.recipe(host_platform, &channel_config, false)?;
-        let output = Output {
-            build_configuration: self
-                .build_configuration(
-                    &recipe,
-                    channels,
-                    params.build_platform,
-                    params.host_platform,
-                    &params.work_directory,
-                )
-                .await?,
-            recipe,
-            finalized_dependencies: None,
-            finalized_cache_dependencies: None,
-            finalized_cache_sources: None,
-            finalized_sources: None,
-            build_summary: Arc::default(),
-            system_tools: Default::default(),
-            extra_meta: None,
+        // Build the tool configuration
+        let tool_config = Arc::new(
+            Configuration::builder()
+                .with_opt_cache_dir(self.cache_dir.clone())
+                .with_logging_output_handler(self.logging_output_handler.clone())
+                .with_channel_config(channel_config.clone())
+                .with_testing(false)
+                .with_keep_build(true)
+                .finish(),
+        );
+
+        // Create a variant config from the variant configuration in the parameters.
+        let variant_config = VariantConfig {
+            variants: params
+                .variant_configuration
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(key, values)| (key.into(), values))
+                .collect(),
+            pin_run_as_build: None,
+            zip_keys: None,
         };
-        let tool_config = Configuration::builder()
-            .with_opt_cache_dir(self.cache_dir.clone())
-            .with_logging_output_handler(self.logging_output_handler.clone())
-            .with_channel_config(channel_config.clone())
-            .with_testing(false)
-            .finish();
 
-        let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
-        let output = temp_recipe
-            .within_context_async(move || async move {
-                output
-                    .resolve_dependencies(&tool_config)
-                    .await
-                    .into_diagnostic()
-            })
-            .await?;
+        // Determine the variant keys that are used in the recipe.
+        let used_variants = self
+            .package_manifest
+            .targets
+            .resolve(Some(host_platform))
+            .flat_map(|dep| dep.dependencies.values().flatten())
+            .filter(|(_, spec)| can_be_used_as_variant(spec))
+            .map(|(name, _)| name.into())
+            .collect();
 
-        let finalized_deps = &output
-            .finalized_dependencies
-            .as_ref()
-            .expect("dependencies should be resolved at this point")
-            .run;
+        // Determine the combinations of the used variants.
+        let combinations = variant_config
+            .combinations(&used_variants, None)
+            .into_diagnostic()?;
 
-        let selector_config = output.build_configuration.selector_config();
+        // Construct the different outputs
+        let mut packages = Vec::new();
+        for variant in combinations {
+            // TODO: Determine how and if we can determine this from the manifest.
+            let recipe = self.recipe(host_platform, &channel_config, false, &variant)?;
+            let output = Output {
+                build_configuration: self
+                    .build_configuration(
+                        &recipe,
+                        channels.clone(),
+                        params.build_platform.clone(),
+                        params.host_platform.clone(),
+                        &params.work_directory.clone(),
+                    )
+                    .await?,
+                recipe,
+                finalized_dependencies: None,
+                finalized_cache_dependencies: None,
+                finalized_cache_sources: None,
+                finalized_sources: None,
+                build_summary: Arc::default(),
+                system_tools: Default::default(),
+                extra_meta: None,
+            };
 
-        let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+            let tool_config = tool_config.clone();
+            let output = temp_recipe
+                .within_context_async(move || async move {
+                    output
+                        .resolve_dependencies(&tool_config)
+                        .await
+                        .into_diagnostic()
+                })
+                .await?;
 
-        let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-        let build_string =
-            output
-                .recipe
-                .build()
-                .string()
-                .resolve(&hash, output.recipe.build().number(), &jinja);
+            let finalized_deps = &output
+                .finalized_dependencies
+                .as_ref()
+                .expect("dependencies should be resolved at this point")
+                .run;
 
-        Ok(CondaMetadataResult {
-            packages: vec![CondaPackageMetadata {
+            let selector_config = output.build_configuration.selector_config();
+
+            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+            let build_string = output.recipe.build().string().resolve(
+                &hash,
+                output.recipe.build().number(),
+                &jinja,
+            );
+
+            packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone().into(),
                 build: build_string.to_string(),
@@ -556,7 +571,11 @@ impl Protocol for PythonBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-            }],
+            });
+        }
+
+        Ok(CondaMetadataResult {
+            packages,
             input_globs: None,
         })
     }
@@ -564,27 +583,19 @@ impl Protocol for PythonBuildBackend {
     async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest.manifest_root().to_path_buf(),
+            root_dir: self.manifest_root.to_path_buf(),
         };
-        let channels = match params.channel_base_urls {
-            Some(channels) => channels,
-            None => self
-                .manifest
-                .resolved_project_channels(&channel_config)
-                .into_diagnostic()
-                .context("failed to determine channels from the manifest")?,
-        };
+        let channels = params.channel_base_urls.unwrap_or_default();
 
         let host_platform = params
             .host_platform
             .as_ref()
             .map(|p| p.platform)
             .unwrap_or_else(Platform::current);
-        if !self.manifest.supports_target_platform(host_platform) {
-            miette::bail!("the project does not support the target platform ({host_platform})");
-        }
 
-        let recipe = self.recipe(host_platform, &channel_config, params.editable)?;
+        let variant = BTreeMap::new();
+
+        let recipe = self.recipe(host_platform, &channel_config, params.editable, &variant)?;
         let output = Output {
             build_configuration: self
                 .build_configuration(&recipe, channels, None, None, &params.work_directory)
@@ -675,7 +686,7 @@ impl ProtocolFactory for PythonBuildBackendFactory {
 #[cfg(test)]
 mod tests {
 
-    use std::{path::PathBuf, str::FromStr};
+    use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
     use pixi_manifest::{toml::TomlDocument, Manifest};
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
@@ -700,7 +711,12 @@ mod tests {
 
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
         python_backend
-            .recipe(Platform::current(), &channel_config, false)
+            .recipe(
+                Platform::current(),
+                &channel_config,
+                false,
+                &BTreeMap::new(),
+            )
             .unwrap()
     }
 
@@ -791,14 +807,15 @@ mod tests {
         let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
 
         let host_platform = Platform::current();
+        let variant = BTreeMap::new();
 
         let (reqs, _) = python_backend
-            .requirements(host_platform, &channel_config)
+            .requirements(host_platform, &channel_config, &variant)
             .unwrap();
 
         insta::assert_yaml_snapshot!(reqs);
 
-        let recipe = python_backend.recipe(host_platform, &channel_config, false);
+        let recipe = python_backend.recipe(host_platform, &channel_config, false, &BTreeMap::new());
         insta::assert_yaml_snapshot!(recipe.unwrap(), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",

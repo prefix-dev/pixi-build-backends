@@ -222,6 +222,7 @@ impl RattlerBuild {
                     ),
                     store_recipe: false,
                     force_colors: true,
+                    sandbox_config: None,
                 },
                 finalized_dependencies: None,
                 finalized_cache_dependencies: None,

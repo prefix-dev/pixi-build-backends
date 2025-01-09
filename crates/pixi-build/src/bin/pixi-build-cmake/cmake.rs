@@ -11,9 +11,9 @@ use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::extract_dependencies,
-    manifest_ext::ManifestExt,
     protocol::{Protocol, ProtocolFactory},
     utils::TemporaryRenderedRecipe,
+    variants::can_be_used_as_variant,
 };
 use pixi_build_types::{
     procedures::{
@@ -24,7 +24,7 @@ use pixi_build_types::{
     },
     BackendCapabilities, CondaPackageMetadata, FrontendCapabilities, PlatformAndVirtualPackages,
 };
-use pixi_manifest::{Dependencies, Manifest, SpecType};
+use pixi_manifest::{Dependencies, Manifest, PackageManifest, SpecType};
 use pixi_spec::PixiSpec;
 use rattler_build::{
     build::run_build,
@@ -39,6 +39,8 @@ use rattler_build::{
     },
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
+    variant_config::VariantConfig,
+    NormalizedKey,
 };
 use rattler_conda_types::{
     package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
@@ -55,7 +57,9 @@ use crate::{
 
 pub struct CMakeBuildBackend {
     logging_output_handler: LoggingOutputHandler,
-    manifest: Manifest,
+    manifest_path: PathBuf,
+    manifest_root: PathBuf,
+    package_manifest: PackageManifest,
     _config: CMakeBackendConfig,
     cache_dir: Option<PathBuf>,
 }
@@ -84,6 +88,17 @@ impl CMakeBuildBackend {
             format!("failed to parse manifest from {}", manifest_path.display())
         })?;
 
+        // Determine the root directory of the manifest
+        let manifest_root = manifest
+            .path
+            .parent()
+            .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
+            .to_path_buf();
+
+        let Some(package_manifest) = manifest.package else {
+            return Err(miette::miette!("no package manifest found in the manifest"));
+        };
+
         // Read config from the manifest itself if its not provided
         // TODO: I guess this should also be passed over the protocol.
         let config = match config {
@@ -92,7 +107,9 @@ impl CMakeBuildBackend {
         };
 
         Ok(Self {
-            manifest,
+            manifest_path: manifest.path,
+            manifest_root,
+            package_manifest,
             _config: config,
             logging_output_handler,
             cache_dir,
@@ -114,16 +131,15 @@ impl CMakeBuildBackend {
         &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
+        variant: &BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<Requirements> {
         let mut requirements = Requirements::default();
-        let package = self.manifest.package.clone().ok_or_else(|| {
-            miette::miette!(
-                "manifest {} does not contains [package] section",
-                self.manifest.path.display()
-            )
-        })?;
 
-        let targets = package.targets.resolve(Some(host_platform)).collect_vec();
+        let targets = self
+            .package_manifest
+            .targets
+            .resolve(Some(host_platform))
+            .collect_vec();
 
         let run_dependencies = Dependencies::from(
             targets
@@ -157,9 +173,9 @@ impl CMakeBuildBackend {
             );
         }
 
-        requirements.build = extract_dependencies(channel_config, build_dependencies)?;
-        requirements.host = extract_dependencies(channel_config, host_dependencies)?;
-        requirements.run = extract_dependencies(channel_config, run_dependencies)?;
+        requirements.build = extract_dependencies(channel_config, build_dependencies, variant)?;
+        requirements.host = extract_dependencies(channel_config, host_dependencies, variant)?;
+        requirements.run = extract_dependencies(channel_config, run_dependencies, variant)?;
 
         // Add compilers to the dependencies.
         requirements.build.extend(
@@ -203,25 +219,15 @@ impl CMakeBuildBackend {
         &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
+        variant: &BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<Recipe> {
-        let manifest_root = self
-            .manifest
-            .path
-            .parent()
-            .expect("the project manifest must reside in a directory");
-
         // Parse the package name from the manifest
-        let package = &self
-            .manifest
-            .package
-            .as_ref()
-            .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package;
+        let package = &self.package_manifest.package;
         let name = PackageName::from_str(&package.name).into_diagnostic()?;
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config)?;
+        let requirements = self.requirements(host_platform, channel_config, variant)?;
         let build_platform = Platform::current();
         let build_number = 0;
 
@@ -231,7 +237,7 @@ impl CMakeBuildBackend {
             } else {
                 BuildPlatform::Unix
             },
-            source_dir: manifest_root.display().to_string(),
+            source_dir: self.manifest_root.display().to_string(),
         }
         .render();
 
@@ -291,16 +297,10 @@ impl CMakeBuildBackend {
         build_platform: Option<PlatformAndVirtualPackages>,
         host_platform: Option<PlatformAndVirtualPackages>,
         work_directory: &Path,
+        variant: BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<BuildConfiguration> {
         // Parse the package name from the manifest
-        let name = self
-            .manifest
-            .package
-            .as_ref()
-            .ok_or_else(|| miette::miette!("manifest should contain a [package]"))?
-            .package
-            .name
-            .clone();
+        let name = self.package_manifest.package.name.clone();
         let name = PackageName::from_str(&name).into_diagnostic()?;
         // TODO: Setup defaults
         std::fs::create_dir_all(work_directory)
@@ -308,7 +308,7 @@ impl CMakeBuildBackend {
             .context("failed to create output directory")?;
         let directories = Directories::setup(
             name.as_normalized(),
-            self.manifest.path.as_path(),
+            &self.manifest_path,
             work_directory,
             true,
             &Utc::now(),
@@ -339,7 +339,6 @@ impl CMakeBuildBackend {
             }
         };
 
-        let variant = BTreeMap::new();
         let channels = channels.into_iter().map(Into::into).collect_vec();
 
         Ok(BuildConfiguration {
@@ -360,6 +359,7 @@ impl CMakeBuildBackend {
             ),
             store_recipe: false,
             force_colors: true,
+            sandbox_config: None,
         })
     }
 }
@@ -385,85 +385,109 @@ impl Protocol for CMakeBuildBackend {
     ) -> miette::Result<CondaMetadataResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest.manifest_root().to_path_buf(),
+            root_dir: self.manifest_root.to_path_buf(),
         };
-        let channels = match params.channel_base_urls {
-            Some(channels) => channels,
-            None => self
-                .manifest
-                .resolved_project_channels(&channel_config)
-                .into_diagnostic()
-                .context("failed to determine channels from the manifest")?,
-        };
+        let channels = params.channel_base_urls.unwrap_or_default();
 
         let host_platform = params
             .host_platform
             .as_ref()
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
-        if !self.manifest.supports_target_platform(host_platform) {
-            miette::bail!("the project does not support the target platform ({host_platform})");
-        }
 
-        // TODO: Determine how and if we can determine this from the manifest.
-        let recipe = self.recipe(host_platform, &channel_config)?;
-        let output = Output {
-            build_configuration: self
-                .build_configuration(
-                    &recipe,
-                    channels,
-                    params.build_platform,
-                    params.host_platform,
-                    &params.work_directory,
-                )
-                .await?,
-            recipe,
-            finalized_dependencies: None,
-            finalized_cache_dependencies: None,
-            finalized_cache_sources: None,
-            finalized_sources: None,
-            build_summary: Arc::default(),
-            system_tools: Default::default(),
-            extra_meta: None,
+        // Build the tool configuration
+        let tool_config = Arc::new(
+            Configuration::builder()
+                .with_opt_cache_dir(self.cache_dir.clone())
+                .with_logging_output_handler(self.logging_output_handler.clone())
+                .with_channel_config(channel_config.clone())
+                .with_testing(false)
+                .with_keep_build(true)
+                .finish(),
+        );
+
+        // Create a variant config from the variant configuration in the parameters.
+        let variant_config = VariantConfig {
+            variants: params
+                .variant_configuration
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(key, values)| (key.into(), values))
+                .collect(),
+            pin_run_as_build: None,
+            zip_keys: None,
         };
-        let tool_config = Configuration::builder()
-            .with_opt_cache_dir(self.cache_dir.clone())
-            .with_logging_output_handler(self.logging_output_handler.clone())
-            .with_channel_config(channel_config.clone())
-            .with_testing(false)
-            .with_keep_build(true)
-            .finish();
 
-        let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
-        let output = temp_recipe
-            .within_context_async(move || async move {
-                output
-                    .resolve_dependencies(&tool_config)
-                    .await
-                    .into_diagnostic()
-            })
-            .await?;
+        // Determine the variant keys that are used in the recipe.
+        let used_variants = self
+            .package_manifest
+            .targets
+            .resolve(Some(host_platform))
+            .flat_map(|dep| dep.dependencies.values().flatten())
+            .filter(|(_, spec)| can_be_used_as_variant(spec))
+            .map(|(name, _)| name.into())
+            .collect();
 
-        let selector_config = output.build_configuration.selector_config();
+        // Determine the combinations of the used variants.
+        let combinations = variant_config
+            .combinations(&used_variants, None)
+            .into_diagnostic()?;
 
-        let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+        // Construct the different outputs
+        let mut packages = Vec::new();
+        for variant in combinations {
+            // TODO: Determine how and if we can determine this from the manifest.
+            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
+            let output = Output {
+                build_configuration: self
+                    .build_configuration(
+                        &recipe,
+                        channels.clone(),
+                        params.build_platform.clone(),
+                        params.host_platform.clone(),
+                        &params.work_directory,
+                        variant,
+                    )
+                    .await?,
+                recipe,
+                finalized_dependencies: None,
+                finalized_cache_dependencies: None,
+                finalized_cache_sources: None,
+                finalized_sources: None,
+                build_summary: Arc::default(),
+                system_tools: Default::default(),
+                extra_meta: None,
+            };
 
-        let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-        let build_string =
-            output
-                .recipe
-                .build()
-                .string()
-                .resolve(&hash, output.recipe.build().number(), &jinja);
+            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+            let tool_config = tool_config.clone();
+            let output = temp_recipe
+                .within_context_async(move || async move {
+                    output
+                        .resolve_dependencies(&tool_config)
+                        .await
+                        .into_diagnostic()
+                })
+                .await?;
 
-        let finalized_deps = &output
-            .finalized_dependencies
-            .as_ref()
-            .expect("dependencies should be resolved at this point")
-            .run;
+            let selector_config = output.build_configuration.selector_config();
 
-        Ok(CondaMetadataResult {
-            packages: vec![CondaPackageMetadata {
+            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+
+            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+            let build_string = output.recipe.build().string().resolve(
+                &hash,
+                output.recipe.build().number(),
+                &jinja,
+            );
+
+            let finalized_deps = &output
+                .finalized_dependencies
+                .as_ref()
+                .expect("dependencies should be resolved at this point")
+                .run;
+
+            packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone().into(),
                 build: build_string.to_string(),
@@ -484,7 +508,11 @@ impl Protocol for CMakeBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-            }],
+            });
+        }
+
+        Ok(CondaMetadataResult {
+            packages,
             input_globs: None,
         })
     }
@@ -492,26 +520,18 @@ impl Protocol for CMakeBuildBackend {
     async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest.manifest_root().to_path_buf(),
+            root_dir: self.manifest_root.to_path_buf(),
         };
-        let channels = match params.channel_base_urls {
-            Some(channels) => channels,
-            None => self
-                .manifest
-                .resolved_project_channels(&channel_config)
-                .into_diagnostic()
-                .context("failed to determine channels from the manifest")?,
-        };
+        let channels = params.channel_base_urls.unwrap_or_default();
         let host_platform = params
             .host_platform
             .as_ref()
             .map(|p| p.platform)
             .unwrap_or_else(Platform::current);
-        if !self.manifest.supports_target_platform(host_platform) {
-            miette::bail!("the project does not support the target platform ({host_platform})");
-        }
 
-        let recipe = self.recipe(host_platform, &channel_config)?;
+        let variant = BTreeMap::new();
+
+        let recipe = self.recipe(host_platform, &channel_config, &variant)?;
         let output = Output {
             build_configuration: self
                 .build_configuration(
@@ -523,6 +543,7 @@ impl Protocol for CMakeBuildBackend {
                         virtual_packages: params.build_platform_virtual_packages,
                     }),
                     &params.work_directory,
+                    variant,
                 )
                 .await?,
             recipe,
@@ -559,6 +580,7 @@ impl Protocol for CMakeBuildBackend {
         output_with_build_string.recipe.build.string =
             BuildString::Resolved(build_string.to_string());
 
+        let tool_config = Arc::new(tool_config);
         let (output, package) = temp_recipe
             .within_context_async(move || async move {
                 run_build(output_with_build_string, &tool_config).await
@@ -610,7 +632,7 @@ impl ProtocolFactory for CMakeBuildBackendFactory {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{collections::BTreeMap, path::PathBuf};
 
     use pixi_manifest::Manifest;
     use rattler_build::console_utils::LoggingOutputHandler;
@@ -667,7 +689,7 @@ mod tests {
 
         let host_platform = Platform::current();
 
-        let recipe = cmake_backend.recipe(host_platform, &channel_config);
+        let recipe = cmake_backend.recipe(host_platform, &channel_config, &BTreeMap::new());
         insta::with_settings!({
             filters => vec![
                 ("(vs2017|vs2019|gxx|clang).*", "\"[ ... compiler ... ]\""),

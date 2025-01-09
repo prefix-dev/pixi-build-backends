@@ -59,6 +59,12 @@ jobs:
           components: rustfmt
           cache: false
 
+      - name: Install LZMA and dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xz-utils liblzma-dev
+
       - uses: Swatinem/rust-cache@v2
 
       - name: Install cargo nextest

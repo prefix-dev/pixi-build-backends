@@ -162,7 +162,7 @@ impl RattlerBuild {
                         .collect::<Vec<ParsingError>>()
                         .into();
                     errs
-                })?;
+                }).into_diagnostic()?;
 
             if recipe.build().skip() {
                 eprintln!(

@@ -216,7 +216,8 @@ impl CMakeBuildBackend {
         vec!["cxx".to_string()]
     }
 
-    /// Constructs a [`Recipe`] from the current manifest.
+    /// Constructs a [`Recipe`] from the current manifest. The constructed
+    /// recipe will invoke CMake to build and install the package.
     fn recipe(
         &self,
         host_platform: Platform,
@@ -349,6 +350,12 @@ impl CMakeBuildBackend {
         })
     }
 
+    /// Determine the all the variants that can be built for this package.
+    ///
+    /// The variants are computed based on the dependencies of the package and
+    /// the input variants. Each package that has a `*` as its version we
+    /// consider as a potential variant. If an input variant configuration for
+    /// it exists we add it.
     pub fn compute_variants(
         &self,
         input_variant_configuration: Option<HashMap<String, Vec<String>>>,

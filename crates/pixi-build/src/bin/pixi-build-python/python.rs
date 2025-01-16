@@ -1,3 +1,12 @@
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
+
 use chrono::Utc;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
@@ -7,10 +16,11 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
     variants::can_be_used_as_variant,
 };
-use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
     procedures::{
-        conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
+        conda_build::{
+            CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
+        },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
@@ -45,15 +55,6 @@ use rattler_conda_types::{
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use reqwest::Url;
-use std::collections::HashMap;
-use std::{
-    borrow::Cow,
-    collections::BTreeMap,
-    ffi::OsStr,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
 
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext, Installer},
@@ -211,7 +212,33 @@ impl PythonBuildBackend {
         Ok((requirements, installer))
     }
 
-    /// Constructs a [`Recipe`] from the current manifest.
+    /// Read the entry points from the pyproject.toml and return them as a list.
+    ///
+    /// If the manifest is not a pyproject.toml file no entry-points are added.
+    fn entry_points(&self) -> Vec<EntryPoint> {
+        let scripts = self
+            .pyproject_manifest
+            .as_ref()
+            .and_then(|p| p.project.as_ref())
+            .and_then(|p| p.scripts.as_ref());
+
+        scripts
+            .into_iter()
+            .flatten()
+            .flat_map(|(name, entry_point)| {
+                EntryPoint::from_str(&format!("{name} = {entry_point}"))
+            })
+            .collect()
+    }
+
+    /// Constructs a [`Recipe`] that will build the python package into a conda
+    /// package.
+    ///
+    /// If the package is editable, the recipe will not include the source but
+    /// only references to the original source files.
+    ///
+    /// Script entry points are read from the pyproject and added as entry
+    /// points in the conda package.
     fn recipe(
         &self,
         host_platform: Platform,
@@ -219,40 +246,28 @@ impl PythonBuildBackend {
         editable: bool,
         variant: &BTreeMap<NormalizedKey, String>,
     ) -> miette::Result<Recipe> {
-        // Parse the package name from the manifest
-        let package = &self.package_manifest.package;
+        // Parse the package name and version from the manifest
+        let name = PackageName::from_str(&self.package_manifest.package.name).into_diagnostic()?;
+        let version = self.package_manifest.package.version.clone();
 
-        let name = PackageName::from_str(&package.name).into_diagnostic()?;
-
+        // Determine whether the package should be built as a noarch package or as a
+        // generic package.
         let noarch_type = if self.config.noarch() {
             NoArchType::python()
         } else {
             NoArchType::none()
         };
 
-        // Determine the entry points from the pyproject.toml
-        // which would be passed into recipe
-        let python = if let Some(pyproject_manifest) = &self.pyproject_manifest {
-            let mut python = Python::default();
-            let scripts = pyproject_manifest
-                .project
-                .as_ref()
-                .and_then(|p| p.scripts.as_ref());
-            if let Some(scripts) = scripts {
-                python.entry_points = scripts
-                    .into_iter()
-                    .flat_map(|(name, entry_point)| {
-                        EntryPoint::from_str(&format!("{name} = {entry_point}"))
-                    })
-                    .collect();
-            }
-            python
-        } else {
-            Python::default()
+        // Construct python specific settings
+        let python = Python {
+            entry_points: self.entry_points(),
+            ..Python::default()
         };
 
         let (requirements, installer) =
             self.requirements(host_platform, channel_config, variant)?;
+
+        // Create a build script
         let build_platform = Platform::current();
         let build_number = 0;
 
@@ -271,7 +286,10 @@ impl PythonBuildBackend {
         }
         .render();
 
+        // Define the sources of the package.
         let source = if editable {
+            // In editable mode we don't include the source in the package, the package will
+            // refer back to the original source.
             Vec::new()
         } else {
             Vec::from([Source::Path(PathSource {
@@ -289,7 +307,7 @@ impl PythonBuildBackend {
         Ok(Recipe {
             schema_version: 1,
             package: Package {
-                version: package.version.clone().into(),
+                version: version.into(),
                 name,
             },
             context: Default::default(),
@@ -314,7 +332,6 @@ impl PythonBuildBackend {
                 // files: Default::default(),
                 ..Build::default()
             },
-            // TODO read from manifest
             requirements,
             tests: vec![],
             about: Default::default(),
@@ -382,6 +399,12 @@ impl PythonBuildBackend {
         })
     }
 
+    /// Determine the all the variants that can be built for this package.
+    ///
+    /// The variants are computed based on the dependencies of the package and
+    /// the input variants. Each package that has a `*` as its version we
+    /// consider as a potential variant. If an input variant configuration for
+    /// it exists we add it.
     pub fn compute_variants(
         &self,
         input_variant_configuration: Option<HashMap<String, Vec<String>>>,

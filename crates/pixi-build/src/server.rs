@@ -140,10 +140,13 @@ fn convert_error(err: miette::Report) -> jsonrpc_core::Error {
     rendered
         .render_report(&mut json_str, err.as_ref())
         .expect("failed to convert error to json");
+
+    let report = format!("{:?}", err);
+
     let data = serde_json::from_str(&json_str).expect("failed to parse json error");
     jsonrpc_core::Error {
         code: jsonrpc_core::ErrorCode::ServerError(-32000),
-        message: err.to_string(),
+        message: report,
         data: Some(data),
     }
 }

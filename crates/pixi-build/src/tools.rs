@@ -110,7 +110,7 @@ impl RattlerBuild {
         let variant_configs = variant_configs.unwrap_or_default();
 
         let mut variant_config =
-            VariantConfig::from_files(&variant_configs, &self.selector_config).into_diagnostic()?;
+            VariantConfig::from_files(&variant_configs, &self.selector_config)?;
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
@@ -118,9 +118,7 @@ impl RattlerBuild {
             }
         }
 
-        variant_config
-            .find_variants(&outputs, &self.raw_recipe, &self.selector_config)
-            .into_diagnostic()
+        Ok(variant_config.find_variants(&outputs, &self.raw_recipe, &self.selector_config)?)
     }
 
     /// Get the outputs from the recipe.
@@ -162,8 +160,7 @@ impl RattlerBuild {
                         .collect::<Vec<ParsingError>>()
                         .into();
                     errs
-                })
-                .into_diagnostic()?;
+                })?;
 
             if recipe.build().skip() {
                 eprintln!(

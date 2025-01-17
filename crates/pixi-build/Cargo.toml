@@ -12,7 +12,7 @@ fs-err = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
-miette = { workspace = true, features = ["fancy-base"] }
+miette = { workspace = true, features = ["fancy-no-backtrace"] }
 minijinja = { workspace = true }
 parking_lot = { workspace = true }
 rattler_conda_types = { workspace = true }

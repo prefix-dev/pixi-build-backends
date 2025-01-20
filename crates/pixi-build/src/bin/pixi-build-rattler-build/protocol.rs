@@ -35,9 +35,9 @@ pub struct RattlerBuildBackendInstantiator {
 }
 
 impl RattlerBuildBackendInstantiator {
-    /// Returns a new instance of [`RattlerBuildBackendFactory`].
+    /// Returns a new instance of [`RatterBuildBackendInstantiator`].
     ///
-    /// This type implements [`ProtocolFactory`] and can be used to initialize a
+    /// This type implements [`ProtocolInstantiator`] and can be used to initialize a
     /// new [`RattlerBuildBackend`].
     pub fn new(logging_output_handler: LoggingOutputHandler) -> RattlerBuildBackendInstantiator {
         RattlerBuildBackendInstantiator {

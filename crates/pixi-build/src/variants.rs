@@ -1,7 +1,7 @@
 use pixi_build_types as pbt;
 use rattler_conda_types::VersionSpec;
 
-/// Returns true if the specified [`PixiSpec`] is a valid variant spec.
+/// Returns true if the specified [`pbt::PackageSpecV1`] is a valid variant spec.
 ///
 /// At the moment, a spec that allows any version is considered a variant spec.
 pub fn can_be_used_as_variant(spec: &pbt::PackageSpecV1) -> bool {

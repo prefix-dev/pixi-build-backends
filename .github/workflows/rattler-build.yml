@@ -19,7 +19,7 @@ jobs:
         id: set_version
         run: |
           # Modify this if we split up in different crates so we can version them differently
-          VERSION="cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | "\(.version)"'"
+          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | "\(.version)"')
           echo "Generated version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 

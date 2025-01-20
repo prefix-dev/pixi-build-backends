@@ -5,7 +5,6 @@ on:
   pull_request:
 
 name: "Build Conda Package"
-
 permissions:
   id-token: write
   contents: read
@@ -15,13 +14,12 @@ jobs:
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - name: Set up datetime
-        id: datetime
-        run: echo "datetime=$(date -u +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Set version
         id: set_version
         run: |
-          VERSION="0.1.0dev${{ env.datetime }}"
+          # Modify this if we split up in different crates so we can version them differently
+          VERSION="cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | "\(.version)"'"
           echo "Generated version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 

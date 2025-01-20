@@ -5,7 +5,7 @@ use pixi_build_types::procedures::{
     negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
 };
 
-/// A trait that is used to instatiate a new protocol connection
+/// A trait that is used to instantiate a new protocol connection
 /// and endpoint that can handle the RPC calls.
 #[async_trait::async_trait]
 pub trait ProtocolInstantiator: Send + Sync + 'static {

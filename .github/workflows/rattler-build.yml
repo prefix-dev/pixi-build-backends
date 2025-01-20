@@ -74,7 +74,7 @@ jobs:
           done
       - name: Upload all packages
         shell: pwsh
-        if: github.event_name == 'push' && matrix.os == 'windows-latest' && github.event.pull_request.head.repo.full_name == '${ env.FULL_NAME }'
+        if: github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == '${ env.FULL_NAME }'
         run: |
           # ignore errors because we want to ignore duplicate packages
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {

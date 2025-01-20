@@ -65,7 +65,7 @@ jobs:
       - name: Upload all packages
         shell: bash
         # do not upload on PR or fork
-        if: github.event_name == 'push' && matrix.os != 'windows-latest' && github.event.pull_request.head.repo.full_name == '${ env.FULL_NAME }'
+        if: github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == '${ env.FULL_NAME }'
         run: |
           # ignore errors because we want to ignore duplicate packages
           for file in "$RUNNER_TEMP"/**/*.conda; do

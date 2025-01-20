@@ -9,6 +9,9 @@ name: "Build Conda Package"
 permissions:
   id-token: write
   contents: read
+env:
+  FULL_NAME: "prefix-dev/repo"
+
 jobs:
   generate_version:
     runs-on: ubuntu-latest
@@ -61,8 +64,8 @@ jobs:
           pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload all packages
         shell: bash
-        # do not upload on PR
-        if: github.event_name == 'push' && matrix.os != 'windows-latest'
+        # do not upload on PR or fork
+        if: github.event_name == 'push' && matrix.os != 'windows-latest' && github.event.pull_request.head.repo.full_name == '${{ env.FULL_NAME }}'
         run: |
           # ignore errors because we want to ignore duplicate packages
           for file in "$RUNNER_TEMP"/**/*.conda; do
@@ -71,7 +74,7 @@ jobs:
           done
       - name: Upload all packages
         shell: pwsh
-        if: github.event_name == 'push' && matrix.os == 'windows-latest'
+        if: github.event_name == 'push' && matrix.os == 'windows-latest' && github.event.pull_request.head.repo.full_name == '${{ env.FULL_NAME }}'
         run: |
           # ignore errors because we want to ignore duplicate packages
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {

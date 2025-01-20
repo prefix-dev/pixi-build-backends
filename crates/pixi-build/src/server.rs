@@ -8,23 +8,23 @@ use pixi_build_types::procedures::{
 };
 use tokio::sync::RwLock;
 
-use crate::protocol::{Protocol, ProtocolFactory};
+use crate::protocol::{Protocol, ProtocolInstantiator};
 
 /// A JSONRPC server that can be used to communicate with a client.
-pub struct Server<T: ProtocolFactory> {
-    factory: T,
+pub struct Server<T: ProtocolInstantiator> {
+    instatiator: T,
 }
 
-enum ServerState<T: ProtocolFactory> {
+enum ServerState<T: ProtocolInstantiator> {
     /// Server has not been initialized yet.
     Uninitialized(T),
     /// Server has been initialized, with a protocol.
-    Initialized(T::Protocol),
+    Initialized(T::ProtocolEndpoint),
 }
 
-impl<T: ProtocolFactory> ServerState<T> {
+impl<T: ProtocolInstantiator> ServerState<T> {
     /// Convert to a protocol, if the server has been initialized.
-    pub fn as_protocol(&self) -> Result<&T::Protocol, jsonrpc_core::Error> {
+    pub fn as_endpoint(&self) -> Result<&T::ProtocolEndpoint, jsonrpc_core::Error> {
         match self {
             Self::Initialized(protocol) => Ok(protocol),
             _ => Err(Error::invalid_request()),
@@ -32,9 +32,9 @@ impl<T: ProtocolFactory> ServerState<T> {
     }
 }
 
-impl<T: ProtocolFactory> Server<T> {
-    pub fn new(factory: T) -> Self {
-        Self { factory }
+impl<T: ProtocolInstantiator> Server<T> {
+    pub fn new(instatiator: T) -> Self {
+        Self { instatiator }
     }
 
     /// Run the server, communicating over stdin/stdout.
@@ -69,7 +69,7 @@ impl<T: ProtocolFactory> Server<T> {
             },
         );
 
-        let state = Arc::new(RwLock::new(ServerState::Uninitialized(self.factory)));
+        let state = Arc::new(RwLock::new(ServerState::Uninitialized(self.instatiator)));
         let initialize_state = state.clone();
         io.add_method(
             procedures::initialize::METHOD_NAME,
@@ -79,13 +79,15 @@ impl<T: ProtocolFactory> Server<T> {
                 async move {
                     let params: InitializeParams = params.parse()?;
                     let mut state = state.write().await;
-                    let ServerState::Uninitialized(factory) = &mut *state else {
+                    let ServerState::Uninitialized(initializer) = &mut *state else {
                         return Err(Error::invalid_request());
                     };
 
-                    let (protocol, result) =
-                        factory.initialize(params).await.map_err(convert_error)?;
-                    *state = ServerState::Initialized(protocol);
+                    let (protocol_endpoint, result) = initializer
+                        .initialize(params)
+                        .await
+                        .map_err(convert_error)?;
+                    *state = ServerState::Initialized(protocol_endpoint);
 
                     Ok(to_value(result).expect("failed to convert to json"))
                 }
@@ -102,7 +104,7 @@ impl<T: ProtocolFactory> Server<T> {
                     let params: CondaMetadataParams = params.parse()?;
                     let state = state.read().await;
                     state
-                        .as_protocol()?
+                        .as_endpoint()?
                         .get_conda_metadata(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))
@@ -121,7 +123,7 @@ impl<T: ProtocolFactory> Server<T> {
                     let params: CondaBuildParams = params.parse()?;
                     let state = state.read().await;
                     state
-                        .as_protocol()?
+                        .as_endpoint()?
                         .build_conda(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))

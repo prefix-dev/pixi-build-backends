@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    protocol::{Protocol, ProtocolFactory},
+    protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
@@ -30,17 +30,17 @@ use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
 use crate::rattler_build::RattlerBuildBackend;
-pub struct RattlerBuildBackendFactory {
+pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
 
-impl RattlerBuildBackendFactory {
+impl RattlerBuildBackendInstantiator {
     /// Returns a new instance of [`RattlerBuildBackendFactory`].
     ///
     /// This type implements [`ProtocolFactory`] and can be used to initialize a
     /// new [`RattlerBuildBackend`].
-    pub fn new(logging_output_handler: LoggingOutputHandler) -> RattlerBuildBackendFactory {
-        RattlerBuildBackendFactory {
+    pub fn new(logging_output_handler: LoggingOutputHandler) -> RattlerBuildBackendInstantiator {
+        RattlerBuildBackendInstantiator {
             logging_output_handler,
         }
     }
@@ -314,13 +314,13 @@ impl Protocol for RattlerBuildBackend {
 }
 
 #[async_trait::async_trait]
-impl ProtocolFactory for RattlerBuildBackendFactory {
-    type Protocol = RattlerBuildBackend;
+impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
+    type ProtocolEndpoint = RattlerBuildBackend;
 
     async fn initialize(
         &self,
         params: InitializeParams,
-    ) -> miette::Result<(Self::Protocol, InitializeResult)> {
+    ) -> miette::Result<(Self::ProtocolEndpoint, InitializeResult)> {
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
@@ -335,13 +335,13 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
         params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
         Ok(NegotiateCapabilitiesResult {
-            capabilities: Self::Protocol::capabilities(&params.capabilities),
+            capabilities: Self::ProtocolEndpoint::capabilities(&params.capabilities),
         })
     }
 }
 #[cfg(test)]
 mod tests {
-    use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
+    use pixi_build_backend::protocol::{Protocol, ProtocolInstantiator};
     use pixi_build_types::{
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
@@ -355,7 +355,7 @@ mod tests {
     use tempfile::tempdir;
     use url::Url;
 
-    use crate::{protocol::RattlerBuildBackendFactory, rattler_build::RattlerBuildBackend};
+    use crate::{protocol::RattlerBuildBackendInstantiator, rattler_build::RattlerBuildBackend};
 
     #[tokio::test]
     async fn test_get_conda_metadata() {
@@ -363,7 +363,7 @@ mod tests {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let recipe = manifest_dir.join("../../recipe/recipe.yaml");
 
-        let factory = RattlerBuildBackendFactory::new(LoggingOutputHandler::default())
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: recipe,
                 project_model: None,
@@ -399,7 +399,7 @@ mod tests {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
 
-        let factory = RattlerBuildBackendFactory::new(LoggingOutputHandler::default())
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 manifest_path: recipe,
                 project_model: None,
@@ -440,7 +440,7 @@ mod tests {
     async fn try_initialize(
         manifest_path: impl AsRef<Path>,
     ) -> miette::Result<RattlerBuildBackend> {
-        RattlerBuildBackendFactory::new(LoggingOutputHandler::default())
+        RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 project_model: None,
                 manifest_path: manifest_path.as_ref().to_path_buf(),

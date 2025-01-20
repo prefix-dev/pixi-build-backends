@@ -4,8 +4,6 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
-    variants::can_be_used_as_variant,
-    TargetExt,
 };
 use pixi_build_types::{
     procedures::{
@@ -18,7 +16,6 @@ use pixi_build_types::{
     },
     CondaPackageMetadata, PlatformAndVirtualPackages,
 };
-// use pixi_build_types as pbt;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -27,14 +24,37 @@ use rattler_build::{
     recipe::{parser::BuildString, Jinja},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
-    variant_config::VariantConfig,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 
-use crate::{config::PythonBackendConfig, python::PythonBuildBackend};
+use crate::{cmake::CMakeBuildBackend, config::CMakeBackendConfig};
 
+fn input_globs() -> Vec<String> {
+    [
+        // Source files
+        "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
+        // CMake files
+        "**/*.{cmake,cmake.in}",
+        "**/CMakeFiles.txt",
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect()
+}
+
+pub struct CMakeBuildBackendInstantiator {
+    logging_output_handler: LoggingOutputHandler,
+}
+
+impl CMakeBuildBackendInstantiator {
+    pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
+        Self {
+            logging_output_handler,
+        }
+    }
+}
 #[async_trait::async_trait]
-impl Protocol for PythonBuildBackend {
+impl Protocol for CMakeBuildBackend {
     async fn get_conda_metadata(
         &self,
         params: CondaMetadataParams,
@@ -51,6 +71,17 @@ impl Protocol for PythonBuildBackend {
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
 
+        // Build the tool configuration
+        let tool_config = Arc::new(
+            Configuration::builder()
+                .with_opt_cache_dir(self.cache_dir.clone())
+                .with_logging_output_handler(self.logging_output_handler.clone())
+                .with_channel_config(channel_config.clone())
+                .with_testing(false)
+                .with_keep_build(true)
+                .finish(),
+        );
+
         let package_name = PackageName::from_str(&self.project_model.name)
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
@@ -65,56 +96,15 @@ impl Protocol for PythonBuildBackend {
         .into_diagnostic()
         .context("failed to setup build directories")?;
 
-        // Build the tool configuration
-        let tool_config = Arc::new(
-            Configuration::builder()
-                .with_opt_cache_dir(self.cache_dir.clone())
-                .with_logging_output_handler(self.logging_output_handler.clone())
-                .with_channel_config(channel_config.clone())
-                .with_testing(false)
-                .with_keep_build(true)
-                .finish(),
-        );
-
         // Create a variant config from the variant configuration in the parameters.
-        let variant_config = VariantConfig {
-            variants: params
-                .variant_configuration
-                .unwrap_or_default()
-                .into_iter()
-                .map(|(key, values)| (key.into(), values))
-                .collect(),
-            pin_run_as_build: None,
-            zip_keys: None,
-        };
-
-        // Determine the variant keys that are used in the recipe.
-        let used_variants = self
-            .project_model
-            .targets
-            .iter()
-            .flat_map(|target| target.resolve(Some(host_platform)))
-            .flat_map(|dep| {
-                dep.build_dependencies
-                    .iter()
-                    .flatten()
-                    .chain(dep.run_dependencies.iter().flatten())
-                    .chain(dep.host_dependencies.iter().flatten())
-            })
-            .filter(|(_, spec)| can_be_used_as_variant(spec))
-            .map(|(name, _)| name.clone().into())
-            .collect();
-
-        // Determine the combinations of the used variants.
-        let combinations = variant_config
-            .combinations(&used_variants, None)
-            .into_diagnostic()?;
+        let variant_combinations =
+            self.compute_variants(params.variant_configuration, host_platform)?;
 
         // Construct the different outputs
         let mut packages = Vec::new();
-        for variant in combinations {
+        for variant in variant_combinations {
             // TODO: Determine how and if we can determine this from the manifest.
-            let recipe = self.recipe(host_platform, &channel_config, false, &variant)?;
+            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
             let output = Output {
                 build_configuration: self.build_configuration(
                     &recipe,
@@ -145,12 +135,6 @@ impl Protocol for PythonBuildBackend {
                 })
                 .await?;
 
-            let finalized_deps = &output
-                .finalized_dependencies
-                .as_ref()
-                .expect("dependencies should be resolved at this point")
-                .run;
-
             let selector_config = output.build_configuration.selector_config();
 
             let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
@@ -161,6 +145,12 @@ impl Protocol for PythonBuildBackend {
                 output.recipe.build().number(),
                 &jinja,
             );
+
+            let finalized_deps = &output
+                .finalized_dependencies
+                .as_ref()
+                .expect("dependencies should be resolved at this point")
+                .run;
 
             packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
@@ -225,7 +215,7 @@ impl Protocol for PythonBuildBackend {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let recipe = self.recipe(host_platform, &channel_config, params.editable, &variant)?;
+            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
             let build_configuration = self.build_configuration(
                 &recipe,
                 channels.clone(),
@@ -336,63 +326,9 @@ impl Protocol for PythonBuildBackend {
     }
 }
 
-/// Determines the build input globs for given python package
-/// even this will be probably backend specific, e.g setuptools
-/// has a different way of determining the input globs than hatch etc.
-///
-/// However, lets take everything in the directory as input for now
-fn input_globs() -> Vec<String> {
-    vec![
-        // Source files
-        "**/*.py",
-        "**/*.pyx",
-        "**/*.c",
-        "**/*.cpp",
-        "**/*.sh",
-        // Common data files
-        "**/*.json",
-        "**/*.yaml",
-        "**/*.yml",
-        "**/*.txt",
-        // Project configuration
-        "setup.py",
-        "setup.cfg",
-        "pyproject.toml",
-        "requirements*.txt",
-        "Pipfile",
-        "Pipfile.lock",
-        "poetry.lock",
-        "tox.ini",
-        // Build configuration
-        "Makefile",
-        "MANIFEST.in",
-        "tests/**/*.py",
-        "docs/**/*.rst",
-        "docs/**/*.md",
-        // Versioning
-        "VERSION",
-        "version.py",
-    ]
-    .iter()
-    .map(|s| s.to_string())
-    .collect()
-}
-
-pub struct PythonBuildBackendInstantiator {
-    logging_output_handler: LoggingOutputHandler,
-}
-
-impl PythonBuildBackendInstantiator {
-    pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
-        Self {
-            logging_output_handler,
-        }
-    }
-}
-
 #[async_trait::async_trait]
-impl ProtocolInstantiator for PythonBuildBackendInstantiator {
-    type ProtocolEndpoint = PythonBuildBackend;
+impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
+    type ProtocolEndpoint = CMakeBuildBackend;
 
     async fn initialize(
         &self,
@@ -411,11 +347,11 @@ impl ProtocolInstantiator for PythonBuildBackendInstantiator {
                 .into_diagnostic()
                 .context("failed to parse configuration")?
         } else {
-            PythonBackendConfig::default()
+            CMakeBackendConfig::default()
         };
 
-        let instance = PythonBuildBackend::new(
-            params.manifest_path,
+        let instance = CMakeBuildBackend::new(
+            params.manifest_path.as_path(),
             project_model,
             config,
             self.logging_output_handler.clone(),

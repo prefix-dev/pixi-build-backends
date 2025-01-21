@@ -8,8 +8,6 @@ name: "Build Conda Package"
 permissions:
   id-token: write
   contents: read
-env:
-  FULL_NAME: "prefix-dev/pixi-build-backends"
 
 jobs:
   generate_version:
@@ -29,6 +27,8 @@ jobs:
 
   rattler-build:
     needs: generate_version
+    env:
+      REPO_NAME: "prefix-dev/pixi-build-backends"
     strategy:
       matrix:
         include:
@@ -61,19 +61,23 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
-      - name: Upload all packages
+      - name: test
+        if: ${{ github.repository == env.REPO_NAME }}
+        run: |
+          echo "Test"
+      - name: Upload all packages (OSX or Linux)
         shell: bash
         # do not upload on PR or fork
-        if: github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == '${ env.FULL_NAME }'
+        if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           # ignore errors because we want to ignore duplicate packages
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$file"
           done
-      - name: Upload all packages
+      - name: Upload all packages (Windows)
         shell: pwsh
-        if: github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == '${ env.FULL_NAME }'
+        if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           # ignore errors because we want to ignore duplicate packages
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {

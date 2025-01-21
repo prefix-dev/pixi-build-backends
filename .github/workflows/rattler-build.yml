@@ -71,7 +71,7 @@ jobs:
             echo "Uploading ${file}"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$file"
           done
-      - name: Upload all packages (Windows)
+      - name: Upload Windows packages
         shell: pwsh
         if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |

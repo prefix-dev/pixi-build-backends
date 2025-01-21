@@ -61,10 +61,6 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
-      - name: test
-        if: ${{ github.repository == env.REPO_NAME }}
-        run: |
-          echo "Test"
       - name: Upload all packages (OSX or Linux)
         shell: bash
         # do not upload on PR or fork

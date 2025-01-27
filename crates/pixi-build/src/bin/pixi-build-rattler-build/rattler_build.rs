@@ -4,9 +4,9 @@ use std::{
 };
 
 use miette::IntoDiagnostic;
+use pixi_build_backend::source::Source;
 use pixi_build_types::{BackendCapabilities, FrontendCapabilities};
 use rattler_build::console_utils::LoggingOutputHandler;
-use pixi_build_backend::source::Source;
 
 pub struct RattlerBuildBackend {
     pub(crate) logging_output_handler: LoggingOutputHandler,

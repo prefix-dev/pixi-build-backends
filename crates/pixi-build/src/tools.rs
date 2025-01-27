@@ -19,11 +19,12 @@ use rattler_build::{
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-
 use rattler_conda_types::{package::ArchiveType, GenericVirtualPackage, Platform};
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
+
+use crate::source::Source;
 
 /// A `recipe.yaml` file might be accompanied by a `variants.toml` file from
 /// which we can read variant configuration for that specific recipe..
@@ -35,10 +36,8 @@ pub const VARIANTS_CONFIG_FILE: &str = "variants.yaml";
 /// should be hidden behind this struct and all pixi-build-backends
 /// should only interact with this struct.
 pub struct RattlerBuild {
-    /// The raw recipe string.
-    pub raw_recipe: String,
-    /// The path to the recipe file.
-    pub recipe_path: PathBuf,
+    /// The source of the recipe
+    pub recipe_source: Source,
     /// The selector configuration.
     pub selector_config: SelectorConfig,
     /// The directory where the build should happen.
@@ -47,15 +46,9 @@ pub struct RattlerBuild {
 
 impl RattlerBuild {
     /// Create a new `RattlerBuild` instance.
-    pub fn new(
-        raw_recipe: String,
-        recipe_path: PathBuf,
-        selector_config: SelectorConfig,
-        work_directory: PathBuf,
-    ) -> Self {
+    pub fn new(source: Source, selector_config: SelectorConfig, work_directory: PathBuf) -> Self {
         Self {
-            raw_recipe,
-            recipe_path,
+            recipe_source: source,
             selector_config,
             work_directory,
         }
@@ -92,13 +85,14 @@ impl RattlerBuild {
         variant_config_input: &Option<HashMap<String, Vec<String>>>,
     ) -> miette::Result<IndexSet<DiscoveredOutput>> {
         // First find all outputs from the recipe
-        let outputs = find_outputs_from_src(&self.raw_recipe)?;
+        let outputs = find_outputs_from_src(self.recipe_source.clone())?;
 
         // Check if there is a `variants.yaml` file next to the recipe that we should
         // potentially use.
         let mut variant_configs = None;
         if let Some(variant_path) = self
-            .recipe_path
+            .recipe_source
+            .path
             .parent()
             .map(|parent| parent.join(VARIANTS_CONFIG_FILE))
         {
@@ -118,7 +112,11 @@ impl RattlerBuild {
             }
         }
 
-        Ok(variant_config.find_variants(&outputs, &self.raw_recipe, &self.selector_config)?)
+        Ok(variant_config.find_variants(
+            &outputs,
+            self.recipe_source.clone(),
+            &self.selector_config,
+        )?)
     }
 
     /// Get the outputs from the recipe.
@@ -154,10 +152,10 @@ impl RattlerBuild {
 
             let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
                 .map_err(|err| {
-                    let errs: ParseErrors = err
+                    let errs: ParseErrors<_> = err
                         .into_iter()
-                        .map(|err| ParsingError::from_partial(&self.raw_recipe, err))
-                        .collect::<Vec<ParsingError>>()
+                        .map(|err| ParsingError::from_partial(self.recipe_source.clone(), err))
+                        .collect::<Vec<_>>()
                         .into();
                     errs
                 })?;
@@ -203,7 +201,7 @@ impl RattlerBuild {
                     variant: discovered_output.used_vars.clone(),
                     directories: Directories::setup(
                         name.as_normalized(),
-                        &self.recipe_path,
+                        &self.recipe_source.path,
                         &self.work_directory,
                         true,
                         &Utc::now(),

@@ -6,6 +6,7 @@ mod build_types_ext;
 mod consts;
 pub mod dependencies;
 pub mod manifest_ext;
+pub mod source;
 pub mod tools;
 pub mod utils;
 pub mod variants;

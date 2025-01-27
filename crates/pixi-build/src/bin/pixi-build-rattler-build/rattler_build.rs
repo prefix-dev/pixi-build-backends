@@ -8,6 +8,7 @@ use fs_err as fs;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolFactory},
+    source::Source,
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
@@ -38,8 +39,7 @@ pub struct RattlerBuildBackend {
     logging_output_handler: LoggingOutputHandler,
     /// In case of rattler-build, manifest is the raw recipe
     /// We need to apply later the selectors to get the final recipe
-    raw_recipe: String,
-    recipe_path: PathBuf,
+    recipe_source: Source,
     cache_dir: Option<PathBuf>,
 }
 
@@ -86,11 +86,12 @@ impl RattlerBuildBackend {
         };
 
         // Load the manifest from the source directory
-        let raw_recipe = fs::read_to_string(&recipe_path).into_diagnostic()?;
+        let manifest_root = manifest_path.parent().expect("manifest must have a root");
+        let recipe_source =
+            Source::from_rooted_path(manifest_root, recipe_path).into_diagnostic()?;
 
         Ok(Self {
-            raw_recipe,
-            recipe_path,
+            recipe_source,
             logging_output_handler,
             cache_dir,
         })
@@ -131,8 +132,7 @@ impl Protocol for RattlerBuildBackend {
         let selector_config = RattlerBuild::selector_config_from(&params);
 
         let rattler_build_tool = RattlerBuild::new(
-            self.raw_recipe.clone(),
-            self.recipe_path.clone(),
+            self.recipe_source.clone(),
             selector_config,
             params.work_directory.clone(),
         );
@@ -140,7 +140,8 @@ impl Protocol for RattlerBuildBackend {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
             root_dir: self
-                .recipe_path
+                .recipe_source
+                .path
                 .parent()
                 .expect("should have parent")
                 .to_path_buf(),
@@ -295,7 +296,8 @@ impl Protocol for RattlerBuildBackend {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
             root_dir: self
-                .recipe_path
+                .recipe_source
+                .path
                 .parent()
                 .expect("should have parent")
                 .to_path_buf(),
@@ -306,8 +308,7 @@ impl Protocol for RattlerBuildBackend {
             .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
 
         let rattler_build_tool = RattlerBuild::new(
-            self.raw_recipe.clone(),
-            self.recipe_path.clone(),
+            self.recipe_source.clone(),
             selector_config,
             params.work_directory.clone(),
         );
@@ -363,7 +364,7 @@ impl Protocol for RattlerBuildBackend {
 
             built.push(CondaBuiltPackage {
                 output_file: build_path,
-                input_globs: Vec::from([self.recipe_path.to_string_lossy().to_string()]),
+                input_globs: Vec::from([self.recipe_source.name.clone()]),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -405,6 +406,11 @@ impl ProtocolFactory for RattlerBuildBackendFactory {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        path::{Path, PathBuf},
+        str::FromStr,
+    };
+
     use pixi_build_backend::protocol::{Protocol, ProtocolFactory};
     use pixi_build_types::{
         procedures::{
@@ -414,8 +420,6 @@ mod tests {
         ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
-    use std::path::Path;
-    use std::{path::PathBuf, str::FromStr};
     use tempfile::tempdir;
     use url::Url;
 
@@ -524,10 +528,14 @@ mod tests {
             try_initialize(&tmp.path().join("pixi.toml"))
                 .await
                 .unwrap()
-                .recipe_path,
+                .recipe_source
+                .path,
             recipe
         );
-        assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&recipe).await.unwrap().recipe_source.path,
+            recipe
+        );
 
         let tmp = tempdir().unwrap();
         let recipe = tmp.path().join("recipe.yml");
@@ -536,10 +544,14 @@ mod tests {
             try_initialize(&tmp.path().join("pixi.toml"))
                 .await
                 .unwrap()
-                .recipe_path,
+                .recipe_source
+                .path,
             recipe
         );
-        assert_eq!(try_initialize(&recipe).await.unwrap().recipe_path, recipe);
+        assert_eq!(
+            try_initialize(&recipe).await.unwrap().recipe_source.path,
+            recipe
+        );
 
         let tmp = tempdir().unwrap();
         let recipe_dir = tmp.path().join("recipe");
@@ -550,7 +562,8 @@ mod tests {
             try_initialize(&tmp.path().join("pixi.toml"))
                 .await
                 .unwrap()
-                .recipe_path,
+                .recipe_source
+                .path,
             recipe
         );
 
@@ -563,7 +576,8 @@ mod tests {
             try_initialize(&tmp.path().join("pixi.toml"))
                 .await
                 .unwrap()
-                .recipe_path,
+                .recipe_source
+                .path,
             recipe
         );
     }

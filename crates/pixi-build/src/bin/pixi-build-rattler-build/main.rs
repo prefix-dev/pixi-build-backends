@@ -1,10 +1,11 @@
+mod protocol;
 mod rattler_build;
 
-use rattler_build::RattlerBuildBackend;
+use protocol::RattlerBuildBackendInstantiator;
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) = pixi_build_backend::cli::main(RattlerBuildBackend::factory).await {
+    if let Err(err) = pixi_build_backend::cli::main(RattlerBuildBackendInstantiator::new).await {
         eprintln!("{err:?}");
         std::process::exit(1);
     }

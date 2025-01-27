@@ -1,32 +1,36 @@
 on:
   push:
-    branches:
-      - "main"
+    # Run full workflow on tags
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  # Run everything but publish on PRs
   pull_request:
 
 name: "Build Conda Package"
-
 permissions:
   id-token: write
   contents: read
+
 jobs:
   generate_version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - name: Set up datetime
-        id: datetime
-        run: echo "datetime=$(date -u +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@v4
       - name: Set version
         id: set_version
         run: |
-          VERSION="0.1.0dev${{ env.datetime }}"
+          # Modify this if we split up in different crates so we can version them differently
+          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | "\(.version)"')
           echo "Generated version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   rattler-build:
     needs: generate_version
+    env:
+      REPO_NAME: "prefix-dev/pixi-build-backends"
     strategy:
       matrix:
         include:
@@ -59,19 +63,19 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
-      - name: Upload all packages
+      - name: Upload OSX or Linux packages
         shell: bash
-        # do not upload on PR
-        if: github.event_name == 'push' && matrix.os != 'windows-latest'
+        # do not upload on PR or fork
+        if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           # ignore errors because we want to ignore duplicate packages
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$file"
           done
-      - name: Upload all packages
+      - name: Upload Windows packages
         shell: pwsh
-        if: github.event_name == 'push' && matrix.os == 'windows-latest'
+        if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           # ignore errors because we want to ignore duplicate packages
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {

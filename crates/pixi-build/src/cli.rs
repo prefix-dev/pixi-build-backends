@@ -22,7 +22,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     consts,
-    protocol::{Protocol, ProtocolFactory},
+    protocol::{Protocol, ProtocolInstantiator},
     server::Server,
 };
 
@@ -63,7 +63,7 @@ pub enum Commands {
 }
 
 /// Run the sever on the specified port or over stdin/stdout.
-async fn run_server<T: ProtocolFactory>(port: Option<u16>, protocol: T) -> miette::Result<()> {
+async fn run_server<T: ProtocolInstantiator>(port: Option<u16>, protocol: T) -> miette::Result<()> {
     let server = Server::new(protocol);
     if let Some(port) = port {
         server.run_over_http(port)
@@ -73,7 +73,7 @@ async fn run_server<T: ProtocolFactory>(port: Option<u16>, protocol: T) -> miett
 }
 
 /// Run the main CLI.
-pub async fn main<T: ProtocolFactory, F: FnOnce(LoggingOutputHandler) -> T>(
+pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
     factory: F,
 ) -> miette::Result<()> {
     let args = App::parse();
@@ -139,10 +139,10 @@ fn project_model_v1(
 }
 
 /// Negotiate the capabilities of the backend and initialize the backend.
-async fn initialize<T: ProtocolFactory>(
+async fn initialize<T: ProtocolInstantiator>(
     factory: T,
     manifest_path: &Path,
-) -> miette::Result<T::Protocol> {
+) -> miette::Result<T::ProtocolEndpoint> {
     // Negotiate the capabilities of the backend.
     let capabilities = capabilities::<T>().await?;
     let channel_config = ChannelConfig::default_with_root_dir(
@@ -175,7 +175,7 @@ async fn initialize<T: ProtocolFactory>(
 }
 
 /// Frontend implementation for getting conda metadata.
-async fn get_conda_metadata<T: ProtocolFactory>(
+async fn get_conda_metadata<T: ProtocolInstantiator>(
     factory: T,
     manifest_path: &Path,
     host_platform: Option<Platform>,
@@ -216,7 +216,7 @@ async fn get_conda_metadata<T: ProtocolFactory>(
 }
 
 /// Returns the capabilities of the backend.
-async fn capabilities<Factory: ProtocolFactory>() -> miette::Result<BackendCapabilities> {
+async fn capabilities<Factory: ProtocolInstantiator>() -> miette::Result<BackendCapabilities> {
     let result = Factory::negotiate_capabilities(NegotiateCapabilitiesParams {
         capabilities: FrontendCapabilities {},
     })
@@ -226,7 +226,7 @@ async fn capabilities<Factory: ProtocolFactory>() -> miette::Result<BackendCapab
 }
 
 /// Frontend implementation for building a conda package.
-async fn build<T: ProtocolFactory>(factory: T, manifest_path: &Path) -> miette::Result<()> {
+async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> miette::Result<()> {
     let channel_config = ChannelConfig::default_with_root_dir(
         manifest_path
             .parent()

@@ -81,7 +81,7 @@ impl<'a> MatchspecExtractor<'a> {
                     .and_then(|variant| variant.get(&NormalizedKey::from(&name)))
                 {
                     let spec = NamelessMatchSpec::from_str(
-                        &variant_value.as_ref().as_str().wrap_err_with(|| {
+                        variant_value.as_ref().as_str().wrap_err_with(|| {
                             miette::miette!("Variant {variant_value} needs to be a string")
                         })?,
                         Strict,

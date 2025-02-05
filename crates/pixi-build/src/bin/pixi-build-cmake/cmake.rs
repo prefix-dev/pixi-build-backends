@@ -133,8 +133,6 @@ impl CMakeBuildBackend {
             build_dependencies.insert(pkg_name, &any);
         }
 
-        let variant = variant;
-
         requirements.build = extract_dependencies(channel_config, build_dependencies, variant)?;
         requirements.host = extract_dependencies(channel_config, host_dependencies, variant)?;
         requirements.run = extract_dependencies(channel_config, run_dependencies, variant)?;

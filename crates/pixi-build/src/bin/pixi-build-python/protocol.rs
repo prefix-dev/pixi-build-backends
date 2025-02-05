@@ -24,7 +24,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{parser::BuildString, Jinja},
+    recipe::{parser::BuildString, variable::Variable, Jinja},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
     variant_config::VariantConfig,
@@ -77,13 +77,21 @@ impl Protocol for PythonBuildBackend {
         );
 
         // Create a variant config from the variant configuration in the parameters.
+        let variants = params
+            .variant_configuration
+            .map(|v| {
+                v.into_iter()
+                    .map(|(k, v)| {
+                        (
+                            k.into(),
+                            v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         let variant_config = VariantConfig {
-            variants: params
-                .variant_configuration
-                .unwrap_or_default()
-                .into_iter()
-                .map(|(key, values)| (key.into(), values))
-                .collect(),
+            variants,
             pin_run_as_build: None,
             zip_keys: None,
         };
@@ -219,8 +227,18 @@ impl Protocol for PythonBuildBackend {
         .context("failed to setup build directories")?;
 
         // Recompute all the variant combinations
+        let input_variant_configuration = params.variant_configuration.map(|v| {
+            v.into_iter()
+                .map(|(k, v)| {
+                    (
+                        k.into(),
+                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                    )
+                })
+                .collect()
+        });
         let variant_combinations =
-            self.compute_variants(params.variant_configuration, host_platform)?;
+            self.compute_variants(input_variant_configuration, host_platform)?;
 
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());

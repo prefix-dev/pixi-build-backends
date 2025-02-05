@@ -21,7 +21,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{parser::BuildString, Jinja},
+    recipe::{parser::BuildString, variable::Variable, Jinja},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
 };
@@ -97,8 +97,18 @@ impl Protocol for CMakeBuildBackend {
         .context("failed to setup build directories")?;
 
         // Create a variant config from the variant configuration in the parameters.
+        let input_variant_configuration = params.variant_configuration.map(|v| {
+            v.into_iter()
+                .map(|(k, v)| {
+                    (
+                        k.into(),
+                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                    )
+                })
+                .collect()
+        });
         let variant_combinations =
-            self.compute_variants(params.variant_configuration, host_platform)?;
+            self.compute_variants(input_variant_configuration, host_platform)?;
 
         // Construct the different outputs
         let mut packages = Vec::new();
@@ -209,8 +219,18 @@ impl Protocol for CMakeBuildBackend {
         .context("failed to setup build directories")?;
 
         // Recompute all the variant combinations
+        let input_variant_configuration = params.variant_configuration.map(|v| {
+            v.into_iter()
+                .map(|(k, v)| {
+                    (
+                        k.into(),
+                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                    )
+                })
+                .collect()
+        });
         let variant_combinations =
-            self.compute_variants(params.variant_configuration, host_platform)?;
+            self.compute_variants(input_variant_configuration, host_platform)?;
 
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());

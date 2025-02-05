@@ -71,6 +71,7 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
             sha256: self.sha256.as_ref().map(|s| s.0),
             namespace: None,
             url: None,
+            extras: None,
         }
     }
 }
@@ -103,7 +104,7 @@ impl<'a> TargetExt<'a> for pbt::TargetsV1 {
 
 impl AnyVersion for pbt::PackageSpecV1 {
     fn any() -> Self {
-        pbt::PackageSpecV1::Binary(rattler_conda_types::VersionSpec::Any.into())
+        pbt::PackageSpecV1::Binary(Box::new(rattler_conda_types::VersionSpec::Any.into()))
     }
 }
 

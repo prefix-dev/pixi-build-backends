@@ -48,7 +48,7 @@ install-pixi-backends = { depends-on = [
 ] }
 
 [dependencies]
-rust = "~=1.81.0"
+rust = ">=1.84.0,<1.85"
 python = ">=3.12.4,<4"
 
 [feature.test.dependencies]

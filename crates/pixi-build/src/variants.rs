@@ -6,16 +6,27 @@ use rattler_conda_types::VersionSpec;
 /// At the moment, a spec that allows any version is considered a variant spec.
 pub fn can_be_used_as_variant(spec: &pbt::PackageSpecV1) -> bool {
     match spec {
-        pbt::PackageSpecV1::Binary(pbt::BinaryPackageSpecV1 {
-            version: Some(version),
-            build: None,
-            build_number: None,
-            file_name: None,
-            channel: None,
-            subdir: None,
-            md5: None,
-            sha256: None,
-        }) => version == &VersionSpec::Any,
+        pbt::PackageSpecV1::Binary(boxed_spec) => {
+            let pbt::BinaryPackageSpecV1 {
+                version,
+                build,
+                build_number,
+                file_name,
+                channel,
+                subdir,
+                md5,
+                sha256,
+            } = &**boxed_spec;
+
+            version == &Some(VersionSpec::Any)
+                && build.is_none()
+                && build_number.is_none()
+                && file_name.is_none()
+                && channel.is_none()
+                && subdir.is_none()
+                && md5.is_none()
+                && sha256.is_none()
+        }
         _ => false,
     }
 }

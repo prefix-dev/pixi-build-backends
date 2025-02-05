@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    ffi::OsStr,
-    path::PathBuf,
-    str::FromStr,
-};
+use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -22,6 +17,7 @@ use rattler_build::{
     metadata::{BuildConfiguration, Directories, PackagingSettings, PlatformWithVirtualPackages},
     recipe::{
         parser::{Build, Package, PathSource, Python, Requirements, ScriptContent, Source},
+        variable::Variable,
         Recipe,
     },
     variant_config::VariantConfig,
@@ -110,7 +106,7 @@ impl PythonBuildBackend {
         &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
-        variant: &BTreeMap<NormalizedKey, String>,
+        variant: &BTreeMap<NormalizedKey, Variable>,
     ) -> miette::Result<(Requirements, Installer)> {
         let mut requirements = Requirements::default();
 
@@ -203,7 +199,7 @@ impl PythonBuildBackend {
         host_platform: Platform,
         channel_config: &ChannelConfig,
         editable: bool,
-        variant: &BTreeMap<NormalizedKey, String>,
+        variant: &BTreeMap<NormalizedKey, Variable>,
     ) -> miette::Result<Recipe> {
         // Parse the package name and version from the manifest
         let name = PackageName::from_str(&self.project_model.name).into_diagnostic()?;
@@ -307,7 +303,7 @@ impl PythonBuildBackend {
         channels: Vec<Url>,
         build_platform: Option<PlatformAndVirtualPackages>,
         host_platform: Option<PlatformAndVirtualPackages>,
-        variant: BTreeMap<NormalizedKey, String>,
+        variant: BTreeMap<NormalizedKey, Variable>,
         directories: Directories,
     ) -> miette::Result<BuildConfiguration> {
         let build_platform = build_platform.map(|p| PlatformWithVirtualPackages {
@@ -368,16 +364,12 @@ impl PythonBuildBackend {
     /// it exists we add it.
     pub fn compute_variants(
         &self,
-        input_variant_configuration: Option<HashMap<String, Vec<String>>>,
+        input_variant_configuration: Option<BTreeMap<NormalizedKey, Vec<Variable>>>,
         host_platform: Platform,
-    ) -> miette::Result<Vec<BTreeMap<NormalizedKey, String>>> {
+    ) -> miette::Result<Vec<BTreeMap<NormalizedKey, Variable>>> {
         // Create a variant config from the variant configuration in the parameters.
         let variant_config = VariantConfig {
-            variants: input_variant_configuration
-                .unwrap_or_default()
-                .into_iter()
-                .map(|(key, values)| (key.into(), values))
-                .collect(),
+            variants: input_variant_configuration.unwrap_or_default(),
             pin_run_as_build: None,
             zip_keys: None,
         };

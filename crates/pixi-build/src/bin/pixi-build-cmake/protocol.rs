@@ -55,7 +55,7 @@ impl CMakeBuildBackendInstantiator {
 }
 #[async_trait::async_trait]
 impl Protocol for CMakeBuildBackend {
-    async fn get_conda_metadata(
+    async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
@@ -192,7 +192,7 @@ impl Protocol for CMakeBuildBackend {
         })
     }
 
-    async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+    async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
             root_dir: self.manifest_root.to_path_buf(),

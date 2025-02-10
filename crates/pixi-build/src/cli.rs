@@ -116,7 +116,7 @@ pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>
             manifest_path,
             host_platform,
         }) => {
-            let metadata = get_conda_metadata(factory, &manifest_path, host_platform).await?;
+            let metadata = conda_get_metadata(factory, &manifest_path, host_platform).await?;
             println!("{}", serde_yaml::to_string(&metadata).unwrap());
             Ok(())
         }
@@ -175,7 +175,7 @@ async fn initialize<T: ProtocolInstantiator>(
 }
 
 /// Frontend implementation for getting conda metadata.
-async fn get_conda_metadata<T: ProtocolInstantiator>(
+async fn conda_get_metadata<T: ProtocolInstantiator>(
     factory: T,
     manifest_path: &Path,
     host_platform: Option<Platform>,
@@ -199,7 +199,7 @@ async fn get_conda_metadata<T: ProtocolInstantiator>(
         .context("failed to create a temporary directory in the current directory")?;
 
     protocol
-        .get_conda_metadata(CondaMetadataParams {
+        .conda_get_metadata(CondaMetadataParams {
             build_platform: None,
             host_platform: host_platform.map(|platform| PlatformAndVirtualPackages {
                 platform,
@@ -240,7 +240,7 @@ async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> mie
         .context("failed to create a temporary directory in the current directory")?;
 
     let result = protocol
-        .build_conda(CondaBuildParams {
+        .conda_build(CondaBuildParams {
             host_platform: None,
             build_platform_virtual_packages: None,
             channel_base_urls: None,

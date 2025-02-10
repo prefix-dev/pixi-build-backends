@@ -105,7 +105,7 @@ impl<T: ProtocolInstantiator> Server<T> {
                     let state = state.read().await;
                     state
                         .as_endpoint()?
-                        .get_conda_metadata(params)
+                        .conda_get_metadata(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))
                         .map_err(convert_error)
@@ -124,7 +124,7 @@ impl<T: ProtocolInstantiator> Server<T> {
                     let state = state.read().await;
                     state
                         .as_endpoint()?
-                        .build_conda(params)
+                        .conda_build(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))
                         .map_err(convert_error)

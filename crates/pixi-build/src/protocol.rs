@@ -32,15 +32,15 @@ pub trait ProtocolInstantiator: Send + Sync + 'static {
 #[async_trait::async_trait]
 pub trait Protocol {
     /// Called when the client requests metadata for a Conda package.
-    async fn get_conda_metadata(
+    async fn conda_get_metadata(
         &self,
         _params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
-        unimplemented!("get_conda_metadata not implemented");
+        unimplemented!("conda_get_metadata not implemented");
     }
 
     /// Called when the client requests to build a Conda package.
-    async fn build_conda(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
-        unimplemented!("build_conda not implemented");
+    async fn conda_build(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+        unimplemented!("conda_build not implemented");
     }
 }

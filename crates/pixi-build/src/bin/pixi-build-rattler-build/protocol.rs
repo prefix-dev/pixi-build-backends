@@ -47,7 +47,7 @@ impl RattlerBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl Protocol for RattlerBuildBackend {
-    async fn get_conda_metadata(
+    async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
@@ -188,7 +188,7 @@ impl Protocol for RattlerBuildBackend {
         })
     }
 
-    async fn build_conda(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+    async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         // Create the work directory if it does not exist
         fs::create_dir_all(&params.work_directory).into_diagnostic()?;
 
@@ -359,7 +359,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_get_conda_metadata() {
+    async fn test_conda_get_metadata() {
         // get cargo manifest dir
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let recipe = manifest_dir.join("../../recipe/recipe.yaml");
@@ -378,7 +378,7 @@ mod tests {
 
         let result = factory
             .0
-            .get_conda_metadata(CondaMetadataParams {
+            .conda_get_metadata(CondaMetadataParams {
                 host_platform: None,
                 build_platform: None,
                 channel_configuration: ChannelConfiguration {
@@ -414,7 +414,7 @@ mod tests {
 
         let result = factory
             .0
-            .build_conda(CondaBuildParams {
+            .conda_build(CondaBuildParams {
                 build_platform_virtual_packages: None,
                 host_platform: None,
                 channel_base_urls: None,

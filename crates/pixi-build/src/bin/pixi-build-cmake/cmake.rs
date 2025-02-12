@@ -43,7 +43,7 @@ pub struct CMakeBuildBackend {
     pub(crate) manifest_path: PathBuf,
     pub(crate) manifest_root: PathBuf,
     pub(crate) project_model: pbt::ProjectModelV1,
-    pub(crate) _config: CMakeBackendConfig,
+    pub(crate) config: CMakeBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 
@@ -67,7 +67,7 @@ impl CMakeBuildBackend {
             manifest_path: manifest_path.to_path_buf(),
             manifest_root,
             project_model,
-            _config: config,
+            config,
             logging_output_handler,
             cache_dir,
         })
@@ -202,6 +202,7 @@ impl CMakeBuildBackend {
                 BuildPlatform::Unix
             },
             source_dir: self.manifest_root.display().to_string(),
+            extra_args: self.config.extra_args.clone(),
         }
         .render();
 

@@ -5,6 +5,7 @@ use serde::Serialize;
 pub struct BuildScriptContext {
     pub build_platform: BuildPlatform,
     pub source_dir: String,
+    pub extra_args: Vec<String>,
 }
 
 #[derive(Serialize)]

@@ -201,6 +201,11 @@ impl PythonBuildBackend {
         editable: bool,
         variant: &BTreeMap<NormalizedKey, Variable>,
     ) -> miette::Result<Recipe> {
+        // TODO: remove this env var override as soon as we have profiles
+        let editable = std::env::var("BUILD_EDITABLE_PYTHON")
+            .map(|val| val == "true")
+            .unwrap_or(editable);
+
         // Parse the package name and version from the manifest
         let name = PackageName::from_str(&self.project_model.name).into_diagnostic()?;
         let version = self.project_model.version.clone().ok_or_else(|| {
@@ -235,10 +240,7 @@ impl PythonBuildBackend {
             } else {
                 BuildPlatform::Unix
             },
-            // TODO: remove this as soon as we have profiles
-            editable: std::env::var("BUILD_EDITABLE_PYTHON")
-                .map(|val| val == "true")
-                .unwrap_or(editable),
+            editable,
             manifest_root: self.manifest_root.clone(),
         }
         .render();

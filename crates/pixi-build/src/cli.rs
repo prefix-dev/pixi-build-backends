@@ -129,11 +129,12 @@ fn project_model_v1(
     channel_config: &ChannelConfig,
 ) -> miette::Result<Option<ProjectModelV1>> {
     // Load the manifest
-    let manifest = pixi_manifest::Manifest::from_path(manifest_path)?;
-    let package = manifest.package;
+    let manifest =
+        pixi_manifest::Manifests::from_workspace_manifest_path(manifest_path.to_path_buf())?;
+    let package = manifest.value.package.as_ref();
     // This can be null in the rattler-build backend
     Ok(package.map(|manifest| {
-        to_project_model_v1(&manifest, channel_config)
+        to_project_model_v1(&manifest.value, channel_config)
             .expect("failed to convert manifest to project model")
     }))
 }

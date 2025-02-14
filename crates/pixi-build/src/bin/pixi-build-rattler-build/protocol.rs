@@ -272,7 +272,6 @@ impl Protocol for RattlerBuildBackend {
             .with_keep_build(true)
             .finish();
 
-        eprintln!("before outputs ");
         for output in outputs {
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
 

@@ -1,4 +1,4 @@
-use std::{path::Path, str::FromStr, sync::OnceLock};
+use std::{path::PathBuf, str::FromStr, sync::OnceLock};
 
 use pixi_manifest::Manifests;
 use rattler_conda_types::{ChannelConfig, ParseChannelError, Platform, Version};
@@ -8,11 +8,8 @@ pub trait ManifestExt {
     fn manifest(&self) -> &Manifests;
 
     /// Returns the path to the root directory that contains the manifest.
-    fn manifest_root(&self) -> &Path {
-        self.manifest()
-            .path
-            .parent()
-            .expect("manifest path should have a parent")
+    fn manifest_root(&self) -> PathBuf {
+        self.manifest().workspace.provenance.absolute_path()
     }
 
     /// Returns the resolved channels that are specified in the manifest
@@ -25,6 +22,7 @@ pub trait ManifestExt {
     ) -> Result<Vec<Url>, ParseChannelError> {
         self.manifest()
             .workspace
+            .value
             .workspace
             .channels
             .iter()
@@ -42,9 +40,9 @@ pub trait ManifestExt {
     fn supports_target_platform(&self, platform: Platform) -> bool {
         self.manifest()
             .workspace
+            .value
             .workspace
             .platforms
-            .value
             .contains(&platform)
     }
 
@@ -53,7 +51,7 @@ pub trait ManifestExt {
     /// Note that this may be `None` because having a version is not required.
     /// Use [`Self::version_or_default`] to get a default version in that case.
     fn version(&self) -> Option<&Version> {
-        self.manifest().workspace.workspace.version.as_ref()
+        self.manifest().workspace.value.workspace.version.as_ref()
     }
 
     /// Returns the version of the project or a default version if no version is
@@ -65,8 +63,8 @@ pub trait ManifestExt {
     }
 }
 
-impl ManifestExt for Manifest {
-    fn manifest(&self) -> &Manifest {
+impl ManifestExt for Manifests {
+    fn manifest(&self) -> &Manifests {
         self
     }
 }
@@ -75,7 +73,7 @@ impl ManifestExt for Manifest {
 mod tests {
     use std::path::Path;
 
-    use pixi_manifest::Manifest;
+    use pixi_manifest::{ManifestKind, ManifestProvenance, Manifests, WithProvenance};
 
     #[test]
     fn test_manifest_root() {
@@ -97,6 +95,11 @@ mod tests {
             "#;
 
         let manifest_path = Path::new("pixi.toml");
-        Manifest::from_str(manifest_path, raw_manifest).unwrap();
+        let provenance = WithProvenance::new(
+            raw_manifest,
+            ManifestProvenance::new(manifest_path.to_path_buf(), ManifestKind::Pixi),
+        );
+
+        Manifests::from_workspace_source(provenance).unwrap();
     }
 }

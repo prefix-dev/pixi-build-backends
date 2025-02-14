@@ -406,7 +406,7 @@ mod tests {
     use std::{collections::BTreeMap, path::PathBuf};
 
     use pixi_build_type_conversions::to_project_model_v1;
-    use pixi_manifest::Manifest;
+    use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
@@ -417,10 +417,10 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let tmp_manifest = tmp_dir.path().join("pixi.toml");
         std::fs::write(&tmp_manifest, manifest_source).unwrap();
-        let manifest = pixi_manifest::Manifest::from_path(&tmp_manifest).unwrap();
-        let package = manifest.package.unwrap();
+        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
-        let project_model = to_project_model_v1(&package, &channel_config).unwrap();
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
 
         let python_backend = PythonBuildBackend::new(
             tmp_manifest,
@@ -515,12 +515,12 @@ mod tests {
         // write the raw string into the file
         std::fs::write(&tmp_manifest, package_with_host_and_build_deps).unwrap();
 
-        let manifest = Manifest::from_str(&tmp_manifest, package_with_host_and_build_deps).unwrap();
+        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
-        let project_model =
-            to_project_model_v1(&manifest.package.unwrap(), &channel_config).unwrap();
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
         let python_backend = PythonBuildBackend::new(
-            manifest.path,
+            package.provenance.path,
             project_model,
             PythonBackendConfig::default(),
             LoggingOutputHandler::default(),

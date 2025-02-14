@@ -1669,7 +1669,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "console",
 ]
@@ -3776,7 +3776,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "indexmap 2.7.1",
  "itertools 0.13.0",
@@ -3789,7 +3789,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "indexmap 2.7.1",
  "rattler_conda_types",
@@ -3803,7 +3803,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "clap",
  "console",
@@ -3829,7 +3829,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "console",
  "rattler_cache",
@@ -3840,7 +3840,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "dashmap",
  "dunce",
@@ -3861,7 +3861,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "console",
  "dunce",
@@ -3896,7 +3896,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "dirs 5.0.1",
  "file_url",
@@ -3919,7 +3919,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "digest",
  "hex",
@@ -3932,7 +3932,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?rev=70ab39d#70ab39d61445514ece0b7f9929a45b695b9fa8c1"
+source = "git+https://github.com/Hofer-Julian/pixi?branch=refactor%2Fadd-clone-params#7f4cac65f4c444a11d3ca62d4d8e2d45fdff9584"
 dependencies = [
  "async-fd-lock",
  "fs-err",

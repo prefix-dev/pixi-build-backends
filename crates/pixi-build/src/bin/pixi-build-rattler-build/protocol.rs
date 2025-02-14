@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use fs_err as fs;
+use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
@@ -14,7 +14,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, ProjectModelV1, VersionedProjectModel,
+    CondaPackageMetadata, VersionedProjectModel,
 };
 use rattler_build::{
     build::run_build,
@@ -51,8 +51,12 @@ impl Protocol for RattlerBuildBackend {
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
+        log_conda_get_metadata(&self.config, &params).await?;
+
         // Create the work directory if it does not exist
-        fs::create_dir_all(&params.work_directory).into_diagnostic()?;
+        tokio_fs::create_dir_all(&params.work_directory)
+            .await
+            .into_diagnostic()?;
 
         let host_platform = params
             .host_platform
@@ -189,8 +193,12 @@ impl Protocol for RattlerBuildBackend {
     }
 
     async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+        log_conda_build(&self.config, &params).await?;
+
         // Create the work directory if it does not exist
-        fs::create_dir_all(&params.work_directory).into_diagnostic()?;
+        tokio_fs::create_dir_all(&params.work_directory)
+            .await
+            .into_diagnostic()?;
 
         let host_platform = params
             .host_platform
@@ -365,7 +373,7 @@ async fn log_initialize(
         .context("failed to serialize project model to JSON")?;
 
     let project_model_path = debug_dir.join("project_model.json");
-    fs_err::tokio::write(&project_model_path, project_model_json)
+    tokio_fs::write(&project_model_path, project_model_json)
         .await
         .into_diagnostic()
         .context("failed to write project model JSON to file")?;
@@ -374,26 +382,51 @@ async fn log_initialize(
 
 async fn log_conda_get_metadata(
     config: &RattlerBuildBackendConfig,
-    project_model: Option<VersionedProjectModel>,
+    params: &CondaMetadataParams,
 ) -> miette::Result<()> {
     let Some(ref debug_dir) = config.debug_dir else {
         return Ok(());
     };
 
-    let project_model = project_model
-        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
-        .into_v1()
-        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
-
-    let project_model_json = serde_json::to_string(&project_model)
+    let json = serde_json::to_string(&params)
         .into_diagnostic()
-        .context("failed to serialize project model to JSON")?;
+        .context("failed to serialize parameters to JSON")?;
 
-    let project_model_path = debug_dir.join("project_model.json");
-    fs_err::tokio::write(&project_model_path, project_model_json)
+    tokio_fs::create_dir_all(&debug_dir)
         .await
         .into_diagnostic()
-        .context("failed to write project model JSON to file")?;
+        .context("failed to create data directory")?;
+
+    let path = debug_dir.join("conda_metadata_params.json");
+    tokio_fs::write(&path, json)
+        .await
+        .into_diagnostic()
+        .context("failed to write JSON to file")?;
+    Ok(())
+}
+
+async fn log_conda_build(
+    config: &RattlerBuildBackendConfig,
+    params: &CondaBuildParams,
+) -> miette::Result<()> {
+    let Some(ref debug_dir) = config.debug_dir else {
+        return Ok(());
+    };
+
+    let json = serde_json::to_string(&params)
+        .into_diagnostic()
+        .context("failed to serialize parameters to JSON")?;
+
+    tokio_fs::create_dir_all(&debug_dir)
+        .await
+        .into_diagnostic()
+        .context("failed to create data directory")?;
+
+    let path = debug_dir.join("conda_build_params.json");
+    tokio_fs::write(&path, json)
+        .await
+        .into_diagnostic()
+        .context("failed to write JSON to file")?;
     Ok(())
 }
 

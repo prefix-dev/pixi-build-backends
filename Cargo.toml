@@ -41,8 +41,8 @@ rattler_conda_types = { version = "0.30.2", default-features = false }
 rattler_package_streaming = { version = "0.22.27", default-features = false }
 rattler_virtual_packages = { version = "2.0.2", default-features = false }
 
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", rev = "70ab39d" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", rev = "70ab39d" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", rev = "70ab39d" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", rev = "70ab39d" }
-pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", rev = "70ab39d" }
+pixi_build_types = { git = "https://github.com/Hofer-Julian/pixi", branch = "refactor/add-clone-params" }
+pixi_consts = { git = "https://github.com/Hofer-Julian/pixi", branch = "refactor/add-clone-params" }
+pixi_manifest = { git = "https://github.com/Hofer-Julian/pixi", branch = "refactor/add-clone-params" }
+pixi_spec = { git = "https://github.com/Hofer-Julian/pixi", branch = "refactor/add-clone-params" }
+pixi_build_type_conversions = { git = "https://github.com/Hofer-Julian/pixi", branch = "refactor/add-clone-params" }

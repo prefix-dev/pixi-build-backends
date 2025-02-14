@@ -100,6 +100,6 @@ mod tests {
             ManifestProvenance::new(manifest_path.to_path_buf(), ManifestKind::Pixi),
         );
 
-        Manifests::from_workspace_source(provenance);
+        Manifests::from_workspace_source(provenance).unwrap();
     }
 }

@@ -8,12 +8,15 @@ use pixi_build_backend::source::Source;
 use pixi_build_types::{BackendCapabilities, FrontendCapabilities};
 use rattler_build::console_utils::LoggingOutputHandler;
 
+use crate::config::RattlerBuildBackendConfig;
+
 pub struct RattlerBuildBackend {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     /// In case of rattler-build, manifest is the raw recipe
     /// We need to apply later the selectors to get the final recipe
     pub(crate) recipe_source: Source,
     pub(crate) cache_dir: Option<PathBuf>,
+    pub(crate) config: RattlerBuildBackendConfig,
 }
 
 impl RattlerBuildBackend {
@@ -23,6 +26,7 @@ impl RattlerBuildBackend {
         manifest_path: &Path,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
+        config: RattlerBuildBackendConfig,
     ) -> miette::Result<Self> {
         // Locate the recipe
         let manifest_file_name = manifest_path.file_name().and_then(OsStr::to_str);
@@ -57,6 +61,7 @@ impl RattlerBuildBackend {
             recipe_source,
             logging_output_handler,
             cache_dir,
+            config,
         })
     }
 

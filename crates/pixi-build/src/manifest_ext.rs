@@ -1,11 +1,11 @@
 use std::{path::Path, str::FromStr, sync::OnceLock};
 
-use pixi_manifest::Manifest;
+use pixi_manifest::Manifests;
 use rattler_conda_types::{ChannelConfig, ParseChannelError, Platform, Version};
 use reqwest::Url;
 
 pub trait ManifestExt {
-    fn manifest(&self) -> &Manifest;
+    fn manifest(&self) -> &Manifests;
 
     /// Returns the path to the root directory that contains the manifest.
     fn manifest_root(&self) -> &Path {

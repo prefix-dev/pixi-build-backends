@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use fs_err as fs;
-use miette::IntoDiagnostic;
+use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,
@@ -14,7 +14,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata,
+    CondaPackageMetadata, ProjectModelV1, VersionedProjectModel,
 };
 use rattler_build::{
     build::run_build,
@@ -30,7 +30,7 @@ use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
-use crate::rattler_build::RattlerBuildBackend;
+use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
 pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
@@ -320,10 +320,20 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Self::ProtocolEndpoint, InitializeResult)> {
+        let config = if let Some(config) = params.configuration {
+            serde_json::from_value(config)
+                .into_diagnostic()
+                .context("failed to parse configuration")?
+        } else {
+            RattlerBuildBackendConfig::default()
+        };
+        log_initialize(&config, params.project_model).await?;
+
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
+            config,
         )?;
 
         Ok((instance, InitializeResult {}))
@@ -336,6 +346,56 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             capabilities: RattlerBuildBackend::capabilities(&params.capabilities),
         })
     }
+}
+
+async fn log_initialize(
+    config: &RattlerBuildBackendConfig,
+    project_model: Option<VersionedProjectModel>,
+) -> miette::Result<()> {
+    let Some(ref debug_dir) = config.debug_dir else {
+        return Ok(());
+    };
+
+    let project_model = project_model
+        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
+        .into_v1()
+        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
+
+    let project_model_json = serde_json::to_string(&project_model)
+        .into_diagnostic()
+        .context("failed to serialize project model to JSON")?;
+
+    let project_model_path = debug_dir.join("project_model.json");
+    fs_err::tokio::write(&project_model_path, project_model_json)
+        .await
+        .into_diagnostic()
+        .context("failed to write project model JSON to file")?;
+    Ok(())
+}
+
+async fn log_conda_get_metadata(
+    config: &RattlerBuildBackendConfig,
+    project_model: Option<VersionedProjectModel>,
+) -> miette::Result<()> {
+    let Some(ref debug_dir) = config.debug_dir else {
+        return Ok(());
+    };
+
+    let project_model = project_model
+        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
+        .into_v1()
+        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
+
+    let project_model_json = serde_json::to_string(&project_model)
+        .into_diagnostic()
+        .context("failed to serialize project model to JSON")?;
+
+    let project_model_path = debug_dir.join("project_model.json");
+    fs_err::tokio::write(&project_model_path, project_model_json)
+        .await
+        .into_diagnostic()
+        .context("failed to write project model JSON to file")?;
+    Ok(())
 }
 
 #[cfg(test)]

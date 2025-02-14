@@ -368,7 +368,7 @@ async fn log_initialize(
         .into_v1()
         .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
 
-    let project_model_json = serde_json::to_string(&project_model)
+    let project_model_json = serde_json::to_string_pretty(&project_model)
         .into_diagnostic()
         .context("failed to serialize project model to JSON")?;
 
@@ -388,7 +388,7 @@ async fn log_conda_get_metadata(
         return Ok(());
     };
 
-    let json = serde_json::to_string(&params)
+    let json = serde_json::to_string_pretty(&params)
         .into_diagnostic()
         .context("failed to serialize parameters to JSON")?;
 
@@ -413,7 +413,7 @@ async fn log_conda_build(
         return Ok(());
     };
 
-    let json = serde_json::to_string(&params)
+    let json = serde_json::to_string_pretty(&params)
         .into_diagnostic()
         .context("failed to serialize parameters to JSON")?;
 

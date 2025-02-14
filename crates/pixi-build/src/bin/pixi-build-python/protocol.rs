@@ -197,7 +197,6 @@ impl Protocol for PythonBuildBackend {
         Ok(CondaMetadataResult {
             packages,
             input_globs: None,
-            additional_hash: None,
         })
     }
 

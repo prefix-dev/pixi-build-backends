@@ -189,7 +189,6 @@ impl Protocol for CMakeBuildBackend {
         Ok(CondaMetadataResult {
             packages,
             input_globs: None,
-            additional_hash: None,
         })
     }
 

@@ -185,7 +185,6 @@ impl Protocol for RattlerBuildBackend {
         Ok(CondaMetadataResult {
             packages: solved_packages,
             input_globs: None,
-            additional_hash: None,
         })
     }
 

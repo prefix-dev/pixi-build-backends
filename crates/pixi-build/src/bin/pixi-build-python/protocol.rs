@@ -196,7 +196,7 @@ impl Protocol for PythonBuildBackend {
 
         Ok(CondaMetadataResult {
             packages,
-            input_globs: None,
+            input_globs: Some(input_globs()),
         })
     }
 

@@ -1,6 +1,5 @@
 recipe:
   name: pixi-build
-  version: "${{ env.get('RECIPE_VERSION', default='0.1.0dev') }}"
 
 cache:
   source:
@@ -18,21 +17,27 @@ cache:
       - if: unix
         then:
           - export OPENSSL_DIR="$PREFIX"
-          - cargo install --locked --root $PREFIX --path crates/pixi-build --no-track --bins
+          - cargo install --locked --root $PREFIX --path crates/pixi-build-cmake --no-track
+          - cargo install --locked --root $PREFIX --path crates/pixi-build-python --no-track
+          - cargo install --locked --root $PREFIX --path crates/pixi-build-rattler-build --no-track
         else:
           - cargo install --locked --root %PREFIX% --path crates/pixi-build --no-track --bins
 
 outputs:
   - package:
       name: pixi-build-python
+      version: "${{ env.get('PIXI_BUILD_PYTHON_VERSION', default='0.1.0dev') }}"
+
     build:
       files:
         - bin/pixi-build-python
         - bin/pixi-build-python.exe
     tests:
       - script: pixi-build-python --help
+
   - package:
       name: pixi-build-cmake
+      version: "${{ env.get('PIXI_BUILD_CMAKE_VERSION', default='0.1.0dev') }}"
     build:
       files:
         - bin/pixi-build-cmake
@@ -42,6 +47,8 @@ outputs:
 
   - package:
       name: pixi-build-rattler-build
+      version: "${{ env.get('PIXI_BUILD_RATTLER_BUILD_VERSION', default='0.1.0dev') }}"
+
     build:
       files:
         - bin/pixi-build-rattler-build

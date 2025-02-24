@@ -1,36 +1,41 @@
 on:
   push:
-    # Run full workflow on tags
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
-  # Run everything but publish on PRs
+      - "pixi-build-cmake-v[0-9]+.[0-9]+.[0-9]+"
+      - "pixi-build-python-v[0-9]+.[0-9]+.[0-9]+"
+      - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
   pull_request:
 
-name: "Build Conda Package"
+name: "Build and publish pixi builds backends as conda packages"
+
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  generate_version:
+  detect_bin:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set_version.outputs.version }}
+      bin_name: ${{ steps.extract_bin.outputs.bin_name }}
+      version: ${{ steps.extract_bin.outputs.version }}
     steps:
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - uses: actions/checkout@v4
-      - name: Set version
-        id: set_version
+      - name: Extract bin name and version
+        id: extract_bin
         run: |
-          # Modify this if we split up in different crates so we can version them differently
-          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | "\(.version)"')
-          echo "Generated version: $VERSION"
+          TAG=${{ github.ref_name }}
+          BIN_NAME=$(echo $TAG | cut -d '-' -f1)
+          VERSION=$(echo $TAG | cut -d '-' -f2- | sed 's/^v//')
+          echo "Detected binary: $BIN_NAME"
+          echo "Version: $VERSION"
+          echo "bin_name=$BIN_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   rattler-build:
-    needs: generate_version
+    needs: detect_bin
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
+      BIN_NAME: ${{ needs.detect_bin.outputs.bin_name }}
+      RECIPE_VERSION: ${{ needs.detect_bin.outputs.version }}
     strategy:
       matrix:
         include:
@@ -49,26 +54,23 @@ jobs:
       - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           environments: build-self
-      - name: Enable long paths
+      - name: Enable long paths (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Run rattler-build
+      - name: Build ${{ env.BIN_NAME }}
         shell: bash
         env:
           TARGET_PLATFORM: ${{ matrix.target }}
-          RECIPE_VERSION: ${{ needs.generate_version.outputs.version }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
+          pixi r -e build-self rattler-build build --recipe recipe/${{ env.BIN_NAME }}.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload OSX or Linux packages
         shell: bash
-        # do not upload on PR or fork
         if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
-          # ignore errors because we want to ignore duplicate packages
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$file"
@@ -77,7 +79,6 @@ jobs:
         shell: pwsh
         if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
-          # ignore errors because we want to ignore duplicate packages
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"
             pixi r -e build-self rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"

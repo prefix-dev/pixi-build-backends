@@ -26,7 +26,7 @@ cache:
 outputs:
   - package:
       name: pixi-build-python
-      version: "${{ env.get('PIXI_BUILD_PYTHON_VERSION', default='0.1.0dev') }}"
+      version: "${{ env.get('PIXI-BUILD-PYTHON-VERSION', default='0.1.0dev') }}"
 
     build:
       files:
@@ -37,7 +37,7 @@ outputs:
 
   - package:
       name: pixi-build-cmake
-      version: "${{ env.get('PIXI_BUILD_CMAKE_VERSION', default='0.1.0dev') }}"
+      version: "${{ env.get('PIXI-BUILD-CMAKE-VERSION', default='0.1.0dev') }}"
     build:
       files:
         - bin/pixi-build-cmake
@@ -47,7 +47,7 @@ outputs:
 
   - package:
       name: pixi-build-rattler-build
-      version: "${{ env.get('PIXI_BUILD_RATTLER_BUILD_VERSION', default='0.1.0dev') }}"
+      version: "${{ env.get('PIXI-BUILD-RATTLER-BUILD-VERSION', default='0.1.0dev') }}"
 
     build:
       files:

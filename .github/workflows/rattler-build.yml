@@ -13,29 +13,33 @@ permissions:
   contents: read
 
 jobs:
-  detect_bin:
+  generate-version:
     runs-on: ubuntu-latest
     outputs:
-      bin_name: ${{ steps.extract_bin.outputs.bin_name }}
-      version: ${{ steps.extract_bin.outputs.version }}
+      bins: ${{ steps.set_version.outputs.bins }}
     steps:
-      - name: Extract bin name and version
-        id: extract_bin
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Extract versions
+        id: set_version
         run: |
-          TAG=${{ github.ref_name }}
-          BIN_NAME=$(echo $TAG | cut -d '-' -f1)
-          VERSION=$(echo $TAG | cut -d '-' -f2- | sed 's/^v//')
-          echo "Detected binary: $BIN_NAME"
-          echo "Version: $VERSION"
-          echo "bin_name=$BIN_NAME" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
+            [
+              (.packages[] | select(.manifest_path | startswith("'"$(pwd)/crates/"'")) | 
+                { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase + "-VERSION") })
+            ]
+          ')
+
+          echo "Generated matrix: $MATRIX_JSON"
+          echo "bins=$MATRIX_JSON" >> $GITHUB_OUTPUT
+
 
   rattler-build:
-    needs: detect_bin
+    needs: generate-version
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
-      BIN_NAME: ${{ needs.detect_bin.outputs.bin_name }}
-      RECIPE_VERSION: ${{ needs.detect_bin.outputs.version }}
+      # BIN_NAME: ${{ needs.detect_bin.outputs.bin_name }}
+      # RECIPE_VERSION: ${{ needs.detect_bin.outputs.version }}
     strategy:
       matrix:
         include:
@@ -46,6 +50,8 @@ jobs:
           # force older macos-13 to get x86_64 runners
           - { target: osx-64, os: macos-13 }
           - { target: osx-arm64, os: macos-14 }
+        bins: ${{ fromJSON(needs.generate-version.outputs.bins) }}
+         
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -59,14 +65,17 @@ jobs:
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Build ${{ env.BIN_NAME }}
+      - name: set environment variable for recipe version
+        run: |
+          echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
+      - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
           TARGET_PLATFORM: ${{ matrix.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi r -e build-self rattler-build build --recipe recipe/${{ env.BIN_NAME }}.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
+          pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --skip-existing --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}

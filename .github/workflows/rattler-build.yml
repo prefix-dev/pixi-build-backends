@@ -25,7 +25,7 @@ jobs:
         run: |
           MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
             [
-              (.packages[] | select(.manifest_path | select(.targets[].kind[0]=="bin") | 
+              (.packages[] | select(.targets[].kind[0]=="bin") | 
                 { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase + "-VERSION") })
             ]
           ')

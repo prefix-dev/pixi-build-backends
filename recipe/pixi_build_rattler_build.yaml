@@ -2,10 +2,18 @@ package:
   name: pixi-build-rattler-build
   version: "${{ env.get('PIXI_BUILD_RATTLER_BUILD_VERSION', default='0.1.0dev') }}"
 
-cache:
-  source:
-    path: ..
-  requirements:
+# cache:
+#   source:
+#     path: ..
+#   requirements:
+#     build:
+#       - ${{ compiler("rust") }}
+#     host:
+#       - xz >=5.0, <6.0
+#       - if: unix
+#         then: openssl
+
+requirements:
     build:
       - ${{ compiler("rust") }}
     host:

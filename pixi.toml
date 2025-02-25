@@ -57,6 +57,9 @@ pytest = ">=8.3.2,<9"
 [feature.test.tasks]
 integration-test = { cmd = "pytest tests", depends-on = "build" }
 
+[feature.release.dependencies]
+python = ">=3.12.4,<4"
+
 [feature.schema.dependencies]
 pydantic = ">=2.8.2,<3"
 ruff = ">=0.5.7,<0.6"
@@ -91,3 +94,4 @@ test = ["test"]
 schema = { no-default-feature = true, features = ["schema"] }
 lint = { features = ["lint"], no-default-feature = true }
 build-self = { no-default-feature = true, features = ["build-self"] }
+release = { features = ["release"], no-default-feature = false }

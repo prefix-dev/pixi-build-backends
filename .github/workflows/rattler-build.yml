@@ -71,7 +71,7 @@ jobs:
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: set environment variable for recipe version
+      - name: Set environment variable for recipe version
         run: |
           echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
       - name: Build ${{ matrix.bins.bin }}

@@ -47,7 +47,7 @@ def generate_matrix():
         if any(target["kind"][0] == "bin" for target in package.get("targets", []))
     ]
 
-    matrix_json = {"bins": matrix, "git_tag": None}
+    matrix_json = json.dumps(matrix)
 
     git_tag = get_git_tag()
     if git_tag:
@@ -55,7 +55,6 @@ def generate_matrix():
         for entry in matrix:
             verify_name_and_version(git_tag, entry["bin"], entry["version"])
 
-        matrix_json["git_tag"] = git_tag
 
     print(matrix_json)
 

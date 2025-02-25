@@ -55,7 +55,7 @@ jobs:
           # force older macos-13 to get x86_64 runners
           - { target: osx-64, os: macos-13 }
           - { target: osx-arm64, os: macos-14 }
-        bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix).bins }}
+        bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix) }}
 
       fail-fast: false
 

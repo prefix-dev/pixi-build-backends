@@ -65,6 +65,9 @@ jobs:
       - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           environments: build-self
+      - name: Debug matrix expansion
+        run: echo '${{ toJSON(matrix.bins) }}'
+
       - name: Enable long paths (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |

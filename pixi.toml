@@ -64,8 +64,11 @@ python = ">=3.12.4,<4"
 pydantic = ">=2.8.2,<3"
 ruff = ">=0.5.7,<0.6"
 
-[feature.build-self.dependencies]
+[feature.build.dependencies]
 rattler-build = ">=0.30.0,<1"
+
+[feature.build.tasks]
+build-recipes = { cmd = "rattler-build build --output-dir=$RUNNER_TEMP --experimental --test native" }
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"
@@ -93,5 +96,5 @@ toml-lint = "taplo lint --verbose **/pixi.toml"
 test = ["test"]
 schema = { no-default-feature = true, features = ["schema"] }
 lint = { features = ["lint"], no-default-feature = true }
-build-self = { no-default-feature = true, features = ["build-self"] }
+build = { no-default-feature = true, features = ["build"] }
 release = { features = ["release"], no-default-feature = false }

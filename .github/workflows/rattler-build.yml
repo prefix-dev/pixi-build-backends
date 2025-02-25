@@ -26,7 +26,7 @@ jobs:
           MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
             [
               (.packages[] | select(.targets[].kind[0]=="bin") | 
-                { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase + "-VERSION") })
+                { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | | gsub("-"; "_") ) })
             ]
           ')
 
@@ -75,7 +75,7 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi r -e build-self rattler-build build --recipe recipe/recipe.yaml --skip-existing --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
+          pixi r -e build-self rattler-build build --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --skip-existing --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}

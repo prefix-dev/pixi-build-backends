@@ -46,19 +46,23 @@ def generate_matrix():
     ]
 
     # Extract bin names, versions, and generate env and recipe names
-    matrix = [
-        {
-            "bin": package["name"],
-            "version": package["version"],
-            "env_name": re.sub("-", "_", package["name"]).upper() + "_VERSION",
-            "recipe_name": re.sub("-", "_", package["name"]),
-            "target": target["target"],
-            "os": target["os"],
-        }
-        for package in metadata.get("packages", [])
-        if any(target["kind"][0] == "bin" for target in package.get("targets", []))
-        for target in targets
-    ]
+    matrix = []
+    for package in metadata.get("packages", []):
+        if any(target["kind"][0] == "bin" for target in package.get("targets", [])):
+            if git_tag:
+                tag_name, tag_version = extract_name_and_version_from_tag(git_tag)
+                if package["name"] != tag_name or package["version"] != tag_version:
+                    continue  # Skip packages that do not match the tag
+
+            for target in targets:
+                matrix.append({
+                    "bin": package["name"],
+                    "version": package["version"],
+                    "env_name": re.sub("-", "_", package["name"]).upper() + "_VERSION",
+                    "recipe_name": re.sub("-", "_", package["name"]),
+                    "target": target["target"],
+                    "os": target["os"]
+                })
 
     matrix_json = json.dumps(matrix)
 

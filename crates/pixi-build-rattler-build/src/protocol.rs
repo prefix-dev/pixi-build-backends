@@ -454,7 +454,7 @@ mod tests {
     async fn test_conda_get_metadata() {
         // get cargo manifest dir
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../recipe/recipe.yaml");
+        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -483,7 +483,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.packages.len(), 3);
+        assert_eq!(result.packages.len(), 1);
     }
 
     #[tokio::test]

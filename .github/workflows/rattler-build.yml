@@ -51,19 +51,19 @@ jobs:
       REPO_NAME: "prefix-dev/pixi-build-backends"
     strategy:
       matrix:
-        include:
-          - { target: linux-64, os: ubuntu-20.04 }
-          - { target: linux-aarch64, os: ubuntu-latest }
-          - { target: linux-ppc64le, os: ubuntu-latest }
-          # - { target: win-64, os: windows-latest }
-          # # force older macos-13 to get x86_64 runners
-          # - { target: osx-64, os: macos-13 }
-          # - { target: osx-arm64, os: macos-14 }
+        # include:
+        #   - { target: linux-64, os: ubuntu-20.04 }
+        #   - { target: linux-aarch64, os: ubuntu-latest }
+        #   - { target: linux-ppc64le, os: ubuntu-latest }
+        #   # - { target: win-64, os: windows-latest }
+        #   # # force older macos-13 to get x86_64 runners
+        #   # - { target: osx-64, os: macos-13 }
+        #   # - { target: osx-arm64, os: macos-14 }
         bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix) }}
 
       fail-fast: false
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.bins.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
@@ -75,7 +75,7 @@ jobs:
           echo '${{ toJSON(matrix.bins) }}'
 
       - name: Enable long paths (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.bins.os == 'windows-latest' }}
         run: |
           git config --global core.longpaths true
         shell: bash
@@ -85,14 +85,14 @@ jobs:
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
-          TARGET_PLATFORM: ${{ matrix.target }}
+          TARGET_PLATFORM: ${{ matrix.bins.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi r -e build-self rattler-build build --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload OSX or Linux packages
         shell: bash
-        if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ github.event_name == 'push' && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
@@ -100,7 +100,7 @@ jobs:
           done
       - name: Upload Windows packages
         shell: pwsh
-        if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ github.event_name == 'push' && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"

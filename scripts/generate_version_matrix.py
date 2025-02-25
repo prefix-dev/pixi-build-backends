@@ -34,6 +34,16 @@ def generate_matrix():
     )
 
     metadata = json.loads(result.stdout)
+    # this is to overcome the issue of matrix generation from github actions side
+    # https://github.com/orgs/community/discussions/67591
+    targets = [
+        {"target": "linux-64", "os": "ubuntu-20.04"},
+        {"target": "linux-aarch64", "os": "ubuntu-latest"},
+        {"target": "linux-ppc64le", "os": "ubuntu-latest"},
+        {"target": "win-64", "os": "windows-latest"},
+        {"target": "osx-64", "os": "macos-13"},
+        {"target": "osx-arm64", "os": "macos-14"}
+    ]
 
     # Extract bin names, versions, and generate env and recipe names
     matrix = [
@@ -42,9 +52,12 @@ def generate_matrix():
             "version": package["version"],
             "env_name": re.sub("-", "_", package["name"]).upper() + "_VERSION",
             "recipe_name": re.sub("-", "_", package["name"]),
+            "target": target["target"],
+            "os": target["os"],
         }
         for package in metadata.get("packages", [])
         if any(target["kind"][0] == "bin" for target in package.get("targets", []))
+        for target in targets
     ]
 
     matrix_json = json.dumps(matrix)

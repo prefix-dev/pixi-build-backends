@@ -23,6 +23,8 @@ jobs:
       - name: Extract versions
         id: set_version
         run: |
+          # extract names and versions from cargo metadata
+          # and generate a matrix entries for the build job
           MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
             [
               (.packages[] | select(.targets[].kind[0]=="bin") | 
@@ -38,8 +40,6 @@ jobs:
     needs: generate-version
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
-      # BIN_NAME: ${{ needs.detect_bin.outputs.bin_name }}
-      # RECIPE_VERSION: ${{ needs.detect_bin.outputs.version }}
     strategy:
       matrix:
         include:

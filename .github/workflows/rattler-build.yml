@@ -70,7 +70,9 @@ jobs:
         with:
           environments: build-self
       - name: Debug matrix expansion
-        run: echo '${{ toJSON(matrix.bins) }}'
+        run: |
+          echo '${{ toJSON(matrix) }}'
+          echo '${{ toJSON(matrix.bins) }}'
 
       - name: Enable long paths (Windows)
         if: ${{ matrix.os == 'windows-latest' }}

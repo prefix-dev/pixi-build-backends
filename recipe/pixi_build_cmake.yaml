@@ -13,6 +13,9 @@ package:
 #       - if: unix
 #         then: openssl
 
+source:
+  path: .
+
 requirements:
     build:
       - ${{ compiler("rust") }}

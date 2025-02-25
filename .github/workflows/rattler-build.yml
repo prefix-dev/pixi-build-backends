@@ -75,7 +75,7 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi r -e build-self rattler-build build --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --skip-existing --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
+          pixi r -e build-self rattler-build build --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --output-dir=$RUNNER_TEMP --target-platform=${{ env.TARGET_PLATFORM }} --experimental --test native
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}

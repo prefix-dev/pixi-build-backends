@@ -16,7 +16,7 @@ jobs:
   generate-version:
     runs-on: ubuntu-latest
     outputs:
-      bins: ${{ steps.set_version.outputs.bins }}
+      version_matrix: ${{ steps.set_version.outputs.version_matrix }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -25,15 +25,17 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
-          MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
-            [
-              (.packages[] | select(.targets[].kind[0]=="bin") |
-              { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | gsub("-"; "_") ) })
-            ]
-          ')
+          # MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
+          #   [
+          #     (.packages[] | select(.targets[].kind[0]=="bin") |
+          #     { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | gsub("-"; "_") ) })
+          #   ]
+          # ')
+
+          MATRIX_JSON=$(pixi run python scripts/generate_version_matrix.py)
 
           echo "Generated matrix: $MATRIX_JSON"
-          echo "bins=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
 
   rattler-build:
@@ -50,7 +52,7 @@ jobs:
           # force older macos-13 to get x86_64 runners
           - { target: osx-64, os: macos-13 }
           - { target: osx-arm64, os: macos-14 }
-        bins: ${{ fromJSON(needs.generate-version.outputs.bins) }}
+        bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix).bins }}
 
       fail-fast: false
 

@@ -14,7 +14,7 @@ package:
 #         then: openssl
 
 source:
-  path: .
+  path: ..
 
 requirements:
     build:

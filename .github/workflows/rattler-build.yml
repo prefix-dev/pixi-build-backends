@@ -27,8 +27,8 @@ jobs:
           # and generate a matrix entries for the build job
           MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
             [
-              (.packages[] | select(.targets[].kind[0]=="bin") | 
-                { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | gsub("-"; "_") ) })
+              (.packages[] | select(.targets[].kind[0]=="bin") |
+              { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | gsub("-"; "_") ) })
             ]
           ')
 
@@ -51,7 +51,7 @@ jobs:
           - { target: osx-64, os: macos-13 }
           - { target: osx-arm64, os: macos-14 }
         bins: ${{ fromJSON(needs.generate-version.outputs.bins) }}
-         
+
       fail-fast: false
 
     runs-on: ${{ matrix.os }}

@@ -45,6 +45,12 @@ def generate_matrix():
         {"target": "osx-arm64", "os": "macos-14"}
     ]
 
+    git_tag = get_git_tag()
+    if git_tag:
+        # Verify name and version consistency
+        for entry in matrix:
+            verify_name_and_version(git_tag, entry["bin"], entry["version"])
+
     # Extract bin names, versions, and generate env and recipe names
     matrix = []
     for package in metadata.get("packages", []):
@@ -65,12 +71,6 @@ def generate_matrix():
                 })
 
     matrix_json = json.dumps(matrix)
-
-    git_tag = get_git_tag()
-    if git_tag:
-        # Verify name and version consistency
-        for entry in matrix:
-            verify_name_and_version(git_tag, entry["bin"], entry["version"])
 
 
     print(matrix_json)

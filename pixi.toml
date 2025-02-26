@@ -68,7 +68,7 @@ ruff = ">=0.5.7,<0.6"
 rattler-build = ">=0.30.0,<1"
 
 [feature.build.tasks]
-build-recipe = { cmd = "rattler-build build --output-dir=$RUNNER_TEMP --experimental --test native" }
+build-recipe = "rattler-build build --output-dir=$RUNNER_TEMP --experimental --test native"
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"
@@ -94,7 +94,7 @@ toml-lint = "taplo lint --verbose **/pixi.toml"
 
 [environments]
 test = ["test"]
-schema = { no-default-feature = true, features = ["schema"] }
+schema = { features = ["schema"], no-default-feature = true }
 lint = { features = ["lint"], no-default-feature = true }
-build = { no-default-feature = true, features = ["build"] }
+build = { features = ["build"], no-default-feature = true }
 release = { features = ["release"], no-default-feature = false }

@@ -13,12 +13,10 @@ def extract_name_and_version_from_tag(tag):
     match = re.match(r"(pixi-build-[a-zA-Z-]+)-v(\d+\.\d+\.\d+)", tag)
     if match:
         return match.group(1), match.group(2)
-    return None, None
+    raise ValueError(f"Invalid Git tag format: {tag}. Expected format: pixi-build-[name]-v[version]")
 
 def verify_name_and_version(tag, cargo_name, cargo_version):
     tag_name, tag_version = extract_name_and_version_from_tag(tag)
-    if not tag_name or not tag_version:
-        raise ValueError(f"Invalid Git tag format: {tag}. Expected format: pixi-build-[name]-v[version]")
 
     if cargo_name == tag_name:
         if cargo_version != tag_version:
@@ -46,29 +44,41 @@ def generate_matrix():
     ]
 
     git_tag = get_git_tag()
-    if git_tag:
-        # Verify name and version consistency
-        for entry in matrix:
-            verify_name_and_version(git_tag, entry["bin"], entry["version"])
+    tagged_package = False
 
     # Extract bin names, versions, and generate env and recipe names
     matrix = []
-    for package in metadata.get("packages", []):
+
+    if not "packages" in metadata:
+        raise ValueError("No packages found using cargo metadata")
+
+    for package in metadata["packages"]:
         if any(target["kind"][0] == "bin" for target in package.get("targets", [])):
             if git_tag:
+                # verify that the git tag matches the package version
                 tag_name, tag_version = extract_name_and_version_from_tag(git_tag)
-                if package["name"] != tag_name or package["version"] != tag_version:
+                if package["name"] != tag_name:
                     continue  # Skip packages that do not match the tag
+
+                if package["version"] != tag_version:
+                    raise ValueError(f"Version mismatch: Git tag version {tag_version} does not match Cargo version {package["version"]} for {package["name"]}")
+
+                tagged_package = True
+
 
             for target in targets:
                 matrix.append({
                     "bin": package["name"],
                     "version": package["version"],
-                    "env_name": re.sub("-", "_", package["name"]).upper() + "_VERSION",
-                    "recipe_name": re.sub("-", "_", package["name"]),
+                    "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
+                    "recipe_name": package["name"].replace("-", "_"),
                     "target": target["target"],
                     "os": target["os"]
                 })
+
+    if git_tag and not tagged_package:
+        raise ValueError(f"Git tag {git_tag} does not match any package in Cargo.toml")
+
 
     matrix_json = json.dumps(matrix)
 

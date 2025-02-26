@@ -32,13 +32,6 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
-          # MATRIX_JSON=$(cargo metadata --format-version=1 --no-deps | jq -c '
-          #   [
-          #     (.packages[] | select(.targets[].kind[0]=="bin") |
-          #     { "bin": .name, "version": .version, "env_name": (.name | ascii_upcase | gsub("-"; "_") + "_VERSION"), "recipe_name": (.name | gsub("-"; "_") ) })
-          #   ]
-          # ')
-
           MATRIX_JSON=$(pixi run python scripts/generate_version_matrix.py)
 
           echo "Generated matrix: $MATRIX_JSON"
@@ -76,14 +69,14 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi r build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
+          pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ github.event_name == 'push' && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
-            pixi r -e build rattler-build upload prefix -c pixi-build-backends "$file"
+            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
           done
       - name: Upload Windows packages
         shell: pwsh
@@ -91,5 +84,5 @@ jobs:
         run: |
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"
-            pixi r -e build rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"
+            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"
           }

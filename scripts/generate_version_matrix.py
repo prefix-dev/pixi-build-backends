@@ -2,13 +2,15 @@ import subprocess
 import json
 import re
 
-def get_git_tag():
+def get_git_tags() -> list[str]:
     try:
-        result = subprocess.run(["git", "describe", "--tags", "--exact-match"], capture_output=True, text=True, check=True)
-        return result.stdout.strip()
+        result = subprocess.run(
+            ["git", "tag", "--points-at", "HEAD"], capture_output=True, text=True, check=True
+        )
+        return result.stdout.strip().splitlines()
     except subprocess.CalledProcessError:
-        # if there are not tags in the git history, return None
-        return None
+        # if no tags are found, return an empty list
+        return []
 
 def extract_name_and_version_from_tag(tag):
     match = re.match(r"(pixi-build-[a-zA-Z-]+)-v(\d+\.\d+\.\d+)", tag)
@@ -16,12 +18,6 @@ def extract_name_and_version_from_tag(tag):
         return match.group(1), match.group(2)
     raise ValueError(f"Invalid Git tag format: {tag}. Expected format: pixi-build-[name]-v[version]")
 
-def verify_name_and_version(tag, cargo_name, cargo_version):
-    tag_name, tag_version = extract_name_and_version_from_tag(tag)
-
-    if cargo_name == tag_name:
-        if cargo_version != tag_version:
-            raise ValueError(f"Version mismatch: Git tag version {tag_version} does not match Cargo version {cargo_version} for {cargo_name}")
 
 def generate_matrix():
     # Run cargo metadata
@@ -44,8 +40,7 @@ def generate_matrix():
         {"target": "osx-arm64", "os": "macos-14"}
     ]
 
-    git_tag = get_git_tag()
-    tagged_package = False
+    git_tags = get_git_tags()
 
     # Extract bin names, versions, and generate env and recipe names
     matrix = []
@@ -53,9 +48,14 @@ def generate_matrix():
     if not "packages" in metadata:
         raise ValueError("No packages found using cargo metadata")
 
+    # verify that the tags match the package versions
+    tagged_packages = {tag: False for tag in git_tags}
+
     for package in metadata["packages"]:
+        package_tagged = False
+        # we need to find only the packages that have a binary target
         if any(target["kind"][0] == "bin" for target in package.get("targets", [])):
-            if git_tag:
+            for git_tag in git_tags:
                 # verify that the git tag matches the package version
                 tag_name, tag_version = extract_name_and_version_from_tag(git_tag)
                 if package["name"] != tag_name:
@@ -64,21 +64,26 @@ def generate_matrix():
                 if package["version"] != tag_version:
                     raise ValueError(f"Version mismatch: Git tag version {tag_version} does not match Cargo version {package["version"]} for {package["name"]}")
 
-                tagged_package = True
+                tagged_packages[git_tag] = package
+                package_tagged = True
 
+            # verify that tags exist for this HEAD
+            # and that the package has been tagged
+            if tagged_packages and package_tagged:
+                for target in targets:
+                    matrix.append({
+                        "bin": package["name"],
+                        "version": package["version"],
+                        "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
+                        "recipe_name": package["name"].replace("-", "_"),
+                        "target": target["target"],
+                        "os": target["os"]
+                    })
 
-            for target in targets:
-                matrix.append({
-                    "bin": package["name"],
-                    "version": package["version"],
-                    "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
-                    "recipe_name": package["name"].replace("-", "_"),
-                    "target": target["target"],
-                    "os": target["os"]
-                })
-
-    if git_tag and not tagged_package:
-        raise ValueError(f"Git tag {git_tag} does not match any package in Cargo.toml")
+    if tagged_packages:
+        for git_tag, has_a_package in tagged_packages.items():
+            if not has_a_package:
+                raise ValueError(f"Git tag {git_tag} does not match any package in Cargo.toml")
 
 
     matrix_json = json.dumps(matrix)

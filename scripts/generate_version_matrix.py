@@ -2,7 +2,7 @@ import subprocess
 import json
 import re
 
-def get_git_tags() -> list[str]:
+def get_git_tags():
     try:
         result = subprocess.run(
             ["git", "tag", "--points-at", "HEAD"], capture_output=True, text=True, check=True

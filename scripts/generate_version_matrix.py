@@ -7,6 +7,7 @@ def get_git_tag():
         result = subprocess.run(["git", "describe", "--tags", "--exact-match"], capture_output=True, text=True, check=True)
         return result.stdout.strip()
     except subprocess.CalledProcessError:
+        # if there are not tags in the git history, return None
         return None
 
 def extract_name_and_version_from_tag(tag):

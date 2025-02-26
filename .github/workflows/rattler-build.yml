@@ -1,9 +1,11 @@
 on:
   push:
+    # Run full workflow on tags
     tags:
       - "pixi-build-cmake-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-python-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
+  # Run everything but publish on PRs
   pull_request:
 
 name: "Build and publish pixi builds backends as conda packages"

@@ -69,16 +69,18 @@ def generate_matrix():
 
             # verify that tags exist for this HEAD
             # and that the package has been tagged
-            if tagged_packages and package_tagged:
-                for target in targets:
-                    matrix.append({
-                        "bin": package["name"],
-                        "version": package["version"],
-                        "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
-                        "recipe_name": package["name"].replace("-", "_"),
-                        "target": target["target"],
-                        "os": target["os"]
-                    })
+            if tagged_packages and not package_tagged:
+                continue
+
+            for target in targets:
+                matrix.append({
+                    "bin": package["name"],
+                    "version": package["version"],
+                    "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
+                    "recipe_name": package["name"].replace("-", "_"),
+                    "target": target["target"],
+                    "os": target["os"]
+                })
 
     if tagged_packages:
         for git_tag, has_a_package in tagged_packages.items():

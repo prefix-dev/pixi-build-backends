@@ -5,7 +5,7 @@ use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
     variants::can_be_used_as_variant,
-    TargetExt,
+    ProjectModelExt, TargetsExt,
 };
 use pixi_build_types::{
     procedures::{

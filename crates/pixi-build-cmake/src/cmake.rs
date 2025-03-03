@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    dependencies::extract_dependencies, variants::can_be_used_as_variant, AnyVersion, TargetExt,
+    dependencies::extract_dependencies, variants::can_be_used_as_variant, AnyVersion, TargetsExt,
 };
 use pixi_build_types::{
     self as pbt, BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages,

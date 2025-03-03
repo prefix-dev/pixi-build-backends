@@ -1,10 +1,11 @@
-use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
+use std::{collections::BTreeMap, ffi::OsStr, marker::PhantomData, path::PathBuf, str::FromStr};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
+use pixi_build_backend::build_types_ext::PackageSpecExt;
 use pixi_build_backend::{
-    dependencies::extract_dependencies, variants::can_be_used_as_variant, AnyVersion, TargetExt,
+    dependencies::extract_dependencies, AnyVersion, ProjectModelExt, TargetsExt,
 };
 use pixi_build_types::{
     self as pbt, BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages,
@@ -36,22 +37,24 @@ use crate::{
     config::PythonBackendConfig,
 };
 
-pub struct PythonBuildBackend {
+pub struct PythonBuildBackend<'a, P: ProjectModelExt<'a>> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_path: PathBuf,
     pub(crate) manifest_root: PathBuf,
-    pub(crate) project_model: pbt::ProjectModelV1,
+    pub(crate) project_model: P,
     pub(crate) config: PythonBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) pyproject_manifest: Option<PyProjectToml>,
+    // Ensures the struct is correctly tied to the lifetime
+    _marker: PhantomData<&'a ()>,
 }
 
-impl PythonBuildBackend {
+impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
     /// Returns a new instance of [`PythonBuildBackend`] by reading the manifest
     /// at the given path.
     pub fn new(
         manifest_path: PathBuf,
-        project_model: ProjectModelV1,
+        project_model: P,
         config: PythonBackendConfig,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -85,6 +88,7 @@ impl PythonBuildBackend {
             logging_output_handler,
             cache_dir,
             pyproject_manifest,
+            _marker: PhantomData,
         })
     }
 
@@ -112,28 +116,31 @@ impl PythonBuildBackend {
 
         let targets = self
             .project_model
-            .targets
+            .targets()
             .iter()
             .flat_map(|targets| targets.resolve(Some(host_platform)))
             .collect_vec();
 
-        let run_dependencies = targets
-            .iter()
-            .flat_map(|t| t.run_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
+        let run_dependencies = self
+            .project_model
+            .targets()
+            .as_ref()
+            .map(|t| t.run_dependencies(Some(host_platform)))
+            .unwrap_or_default();
 
-        let mut host_dependencies = targets
-            .iter()
-            .flat_map(|t| t.host_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
+        let host_dependencies = self
+            .project_model
+            .targets
+            .as_ref()
+            .map(|t| t.host_dependencies(Some(host_platform)))
+            .unwrap_or_default();
 
-        let build_dependencies = targets
-            .iter()
-            .flat_map(|t| t.build_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
+        let build_dependencies = self
+            .project_model
+            .targets
+            .as_ref()
+            .map(|t| t.build_dependencies(Some(host_platform)))
+            .unwrap_or_default();
 
         let uv = "uv".to_string();
         // Determine the installer to use
@@ -195,7 +202,7 @@ impl PythonBuildBackend {
     /// Script entry points are read from the pyproject and added as entry
     /// points in the conda package.
     pub(crate) fn recipe(
-        &self,
+        &'a self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
         editable: bool,
@@ -207,8 +214,8 @@ impl PythonBuildBackend {
             .unwrap_or(editable);
 
         // Parse the package name and version from the manifest
-        let name = PackageName::from_str(&self.project_model.name).into_diagnostic()?;
-        let version = self.project_model.version.clone().ok_or_else(|| {
+        let name = PackageName::from_str(&self.project_model.name()).into_diagnostic()?;
+        let version = self.project_model.version().clone().ok_or_else(|| {
             miette::miette!("a version is missing from the package but it is required")
         })?;
 
@@ -365,7 +372,7 @@ impl PythonBuildBackend {
     /// consider as a potential variant. If an input variant configuration for
     /// it exists we add it.
     pub fn compute_variants(
-        &self,
+        &'a self,
         input_variant_configuration: Option<BTreeMap<NormalizedKey, Vec<Variable>>>,
         host_platform: Platform,
     ) -> miette::Result<Vec<BTreeMap<NormalizedKey, Variable>>> {
@@ -377,21 +384,7 @@ impl PythonBuildBackend {
         };
 
         // Determine the variant keys that are used in the recipe.
-        let used_variants = self
-            .project_model
-            .targets
-            .iter()
-            .flat_map(|target| target.resolve(Some(host_platform)))
-            .flat_map(|dep| {
-                dep.build_dependencies
-                    .iter()
-                    .flatten()
-                    .chain(dep.run_dependencies.iter().flatten())
-                    .chain(dep.host_dependencies.iter().flatten())
-            })
-            .filter(|(_, spec)| can_be_used_as_variant(spec))
-            .map(|(name, _)| name.clone().into())
-            .collect();
+        let used_variants = self.project_model.used_variants(Some(host_platform));
 
         // Determine the combinations of the used variants.
         variant_config

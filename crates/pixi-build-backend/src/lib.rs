@@ -2,15 +2,19 @@ pub mod cli;
 pub mod protocol;
 pub mod server;
 
-pub mod build_types_ext;
 mod consts;
 pub mod dependencies;
 pub mod project;
 pub mod source;
 pub mod tools;
+pub mod traits;
 pub mod utils;
 pub mod variants;
 
-pub use build_types_ext::{
-    AnyVersion, PackageSpecExt, ProjectModelExt, TargetSelectorExt, TargetsExt,
+pub use traits::{
+    // AnyVersion,
+    PackageSpec,
+    ProjectModel,
+    TargetSelector,
+    Targets,
 };

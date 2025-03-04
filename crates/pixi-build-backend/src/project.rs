@@ -1,6 +1,3 @@
-use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::Platform;
-
 // trait Target {
 //     fn matches(&self, platform: Platform) -> bool;
 // }

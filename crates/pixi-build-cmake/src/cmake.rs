@@ -4,15 +4,10 @@ use std::{
     str::FromStr,
 };
 
-use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_backend::{
-    dependencies::extract_dependencies, variants::can_be_used_as_variant, AnyVersion, TargetsExt,
-};
-use pixi_build_types::{
-    self as pbt, BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages,
-};
+use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
+use pixi_build_types::{BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -38,21 +33,21 @@ use crate::{
     stub::default_compiler,
 };
 
-pub struct CMakeBuildBackend {
+pub struct CMakeBuildBackend<P> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_path: PathBuf,
     pub(crate) manifest_root: PathBuf,
-    pub(crate) project_model: pbt::ProjectModelV1,
+    pub(crate) project_model: P,
     pub(crate) config: CMakeBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 
-impl CMakeBuildBackend {
+impl<P: ProjectModel> CMakeBuildBackend<P> {
     /// Returns a new instance of [`CMakeBuildBackend`] by reading the manifest
     /// at the given path.
     pub fn new(
         manifest_path: &Path,
-        project_model: pbt::ProjectModelV1,
+        project_model: P,
         config: CMakeBackendConfig,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -95,47 +90,30 @@ impl CMakeBuildBackend {
     ) -> miette::Result<Requirements> {
         let mut requirements = Requirements::default();
 
-        let targets = self
+        let mut dependencies = self
             .project_model
-            .targets
-            .iter()
-            .flat_map(|targets| targets.resolve(Some(host_platform)))
-            .collect_vec();
-
-        let run_dependencies = targets
-            .iter()
-            .flat_map(|t| t.run_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
-
-        let host_dependencies = targets
-            .iter()
-            .flat_map(|t| t.host_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
-
-        let mut build_dependencies = targets
-            .iter()
-            .flat_map(|t| t.build_dependencies.iter())
-            .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>();
+            .targets()
+            .map(|t| t.dependencies(Some(host_platform)))
+            .unwrap_or_default();
 
         // Ensure build tools are available in the build dependencies section.
         let build_tools = ["cmake".to_string(), "ninja".to_string()];
-        let any = pbt::PackageSpecV1::any();
+        // let any = pbt::PackageSpecV1::any();
+        let any = self.project_model.targets().unwrap().any();
+
         for pkg_name in build_tools.iter() {
-            if build_dependencies.contains_key(pkg_name) {
+            if dependencies.build.contains_key(pkg_name) {
                 // If the host dependencies already contain the package, we don't need to add it
                 // again.
                 continue;
             }
 
-            build_dependencies.insert(pkg_name, &any);
+            dependencies.build.insert(pkg_name, &any);
         }
 
-        requirements.build = extract_dependencies(channel_config, build_dependencies, variant)?;
-        requirements.host = extract_dependencies(channel_config, host_dependencies, variant)?;
-        requirements.run = extract_dependencies(channel_config, run_dependencies, variant)?;
+        requirements.build = extract_dependencies(channel_config, dependencies.build, variant)?;
+        requirements.host = extract_dependencies(channel_config, dependencies.host, variant)?;
+        requirements.run = extract_dependencies(channel_config, dependencies.run, variant)?;
 
         // Add compilers to the dependencies.
         requirements.build.extend(
@@ -184,8 +162,8 @@ impl CMakeBuildBackend {
     ) -> miette::Result<Recipe> {
         // Parse the package name from the manifest
         let project_model = &self.project_model;
-        let name = PackageName::from_str(&project_model.name).into_diagnostic()?;
-        let version = self.project_model.version.clone().ok_or_else(|| {
+        let name = PackageName::from_str(project_model.name()).into_diagnostic()?;
+        let version = self.project_model.version().clone().ok_or_else(|| {
             miette::miette!("a version is missing from the package but it is required")
         })?;
 
@@ -331,21 +309,7 @@ impl CMakeBuildBackend {
         };
 
         // Determine the variant keys that are used in the recipe.
-        let used_variants = self
-            .project_model
-            .targets
-            .iter()
-            .flat_map(|target| target.resolve(Some(host_platform)))
-            .flat_map(|dep| {
-                dep.build_dependencies
-                    .iter()
-                    .flatten()
-                    .chain(dep.run_dependencies.iter().flatten())
-                    .chain(dep.host_dependencies.iter().flatten())
-            })
-            .filter(|(_, spec)| can_be_used_as_variant(spec))
-            .map(|(name, _)| name.clone().into())
-            .collect();
+        let used_variants = self.project_model.used_variants(Some(host_platform));
 
         // Determine the combinations of the used variants.
         variant_config

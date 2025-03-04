@@ -4,8 +4,7 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
-    variants::can_be_used_as_variant,
-    ProjectModelExt, TargetsExt,
+    ProjectModel,
 };
 use pixi_build_types::{
     procedures::{
@@ -16,7 +15,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, PlatformAndVirtualPackages,
+    CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -34,7 +33,7 @@ use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 use crate::{config::PythonBackendConfig, python::PythonBuildBackend};
 
 #[async_trait::async_trait]
-impl Protocol for PythonBuildBackend {
+impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
@@ -51,7 +50,7 @@ impl Protocol for PythonBuildBackend {
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
 
-        let package_name = PackageName::from_str(&self.project_model.name)
+        let package_name = PackageName::from_str(self.project_model.name())
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
 
@@ -97,21 +96,7 @@ impl Protocol for PythonBuildBackend {
         };
 
         // Determine the variant keys that are used in the recipe.
-        let used_variants = self
-            .project_model
-            .targets
-            .iter()
-            .flat_map(|target| target.resolve(Some(host_platform)))
-            .flat_map(|dep| {
-                dep.build_dependencies
-                    .iter()
-                    .flatten()
-                    .chain(dep.run_dependencies.iter().flatten())
-                    .chain(dep.host_dependencies.iter().flatten())
-            })
-            .filter(|(_, spec)| can_be_used_as_variant(spec))
-            .map(|(name, _)| name.clone().into())
-            .collect();
+        let used_variants = self.project_model.used_variants(Some(host_platform));
 
         // Determine the combinations of the used variants.
         let combinations = variant_config
@@ -212,7 +197,7 @@ impl Protocol for PythonBuildBackend {
             .map(|p| p.platform)
             .unwrap_or_else(Platform::current);
 
-        let package_name = PackageName::from_str(&self.project_model.name)
+        let package_name = PackageName::from_str(self.project_model.name())
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
 
@@ -410,7 +395,7 @@ impl PythonBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for PythonBuildBackendInstantiator {
-    type ProtocolEndpoint = PythonBuildBackend;
+    type ProtocolEndpoint = PythonBuildBackend<ProjectModelV1>;
 
     async fn initialize(
         &self,

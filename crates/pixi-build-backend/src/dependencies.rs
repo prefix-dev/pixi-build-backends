@@ -14,10 +14,7 @@ use rattler_conda_types::{
     ChannelConfig, MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict,
 };
 
-use crate::{
-    build_types_ext::{BinarySpecExt, PackageSpecExt},
-    variants::can_be_used_as_variant,
-};
+use crate::traits::PackageSpec;
 
 /// A helper struct to extract match specs from a manifest.
 pub struct MatchspecExtractor<'a> {
@@ -68,10 +65,13 @@ impl<'a> MatchspecExtractor<'a> {
     }
 
     /// Extracts match specs from the given set of dependencies.
-    pub fn extract<'b>(
+    pub fn extract<'b, T>(
         &self,
-        dependencies: impl IntoIterator<Item = (&'b pbt::SourcePackageName, &'b dyn PackageSpecExt)>,
-    ) -> miette::Result<Vec<MatchSpec>> {
+        dependencies: impl IntoIterator<Item = (&'b pbt::SourcePackageName, &'b T)>,
+    ) -> miette::Result<Vec<MatchSpec>>
+    where
+        T: PackageSpec + 'b,
+    {
         let root_dir = &self.channel_config.root_dir;
         let mut specs = Vec::new();
         for (name, spec) in dependencies.into_iter() {
@@ -106,11 +106,14 @@ impl<'a> MatchspecExtractor<'a> {
     }
 }
 
-pub fn extract_dependencies<'a>(
+pub fn extract_dependencies<'a, T>(
     channel_config: &ChannelConfig,
-    dependencies: impl IntoIterator<Item = (&'a pbt::SourcePackageName, &'a dyn PackageSpecExt)>,
+    dependencies: impl IntoIterator<Item = (&'a pbt::SourcePackageName, &'a T)>,
     variant: &BTreeMap<NormalizedKey, Variable>,
-) -> miette::Result<Vec<Dependency>> {
+) -> miette::Result<Vec<Dependency>>
+where
+    T: PackageSpec + 'a,
+{
     Ok(MatchspecExtractor::new(channel_config)
         .with_ignore_self(true)
         .with_variant(variant)

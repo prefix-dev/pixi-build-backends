@@ -1,16 +1,8 @@
 use std::{collections::BTreeMap, ffi::OsStr, marker::PhantomData, path::PathBuf, str::FromStr};
 
-use indexmap::IndexMap;
-use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_backend::build_types_ext::PackageSpecExt;
-use pixi_build_backend::{
-    dependencies::extract_dependencies, AnyVersion, ProjectModelExt, TargetsExt,
-};
-use pixi_build_types::{
-    self as pbt, BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages,
-    ProjectModelV1,
-};
+use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
+use pixi_build_types::{BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages};
 use pyproject_toml::PyProjectToml;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
@@ -37,7 +29,7 @@ use crate::{
     config::PythonBackendConfig,
 };
 
-pub struct PythonBuildBackend<'a, P: ProjectModelExt<'a>> {
+pub struct PythonBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_path: PathBuf,
     pub(crate) manifest_root: PathBuf,
@@ -46,10 +38,10 @@ pub struct PythonBuildBackend<'a, P: ProjectModelExt<'a>> {
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) pyproject_manifest: Option<PyProjectToml>,
     // Ensures the struct is correctly tied to the lifetime
-    _marker: PhantomData<&'a ()>,
+    _marker: PhantomData<()>,
 }
 
-impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
+impl<P: ProjectModel> PythonBuildBackend<P> {
     /// Returns a new instance of [`PythonBuildBackend`] by reading the manifest
     /// at the given path.
     pub fn new(
@@ -104,6 +96,10 @@ impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
         }
     }
 
+    // fn create_package_spec() -> impl PackageSpecExt {
+    //     pbt::PackageSpecV1::any()
+    // }
+
     /// Returns the requirements of the project that should be used for a
     /// recipe.
     pub(crate) fn requirements(
@@ -114,62 +110,40 @@ impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
     ) -> miette::Result<(Requirements, Installer)> {
         let mut requirements = Requirements::default();
 
-        let targets = self
+        let mut dependencies = self
             .project_model
             .targets()
-            .iter()
-            .flat_map(|targets| targets.resolve(Some(host_platform)))
-            .collect_vec();
-
-        let run_dependencies = self
-            .project_model
-            .targets()
-            .as_ref()
-            .map(|t| t.run_dependencies(Some(host_platform)))
-            .unwrap_or_default();
-
-        let host_dependencies = self
-            .project_model
-            .targets
-            .as_ref()
-            .map(|t| t.host_dependencies(Some(host_platform)))
-            .unwrap_or_default();
-
-        let build_dependencies = self
-            .project_model
-            .targets
-            .as_ref()
-            .map(|t| t.build_dependencies(Some(host_platform)))
+            .map(|t| t.dependencies(Some(host_platform)))
             .unwrap_or_default();
 
         let uv = "uv".to_string();
         // Determine the installer to use
-        let installer = if host_dependencies.contains_key(&uv)
-            || run_dependencies.contains_key(&uv)
-            || build_dependencies.contains_key(&uv)
+        let installer = if dependencies.host.contains_key(&uv)
+            || dependencies.run.contains_key(&uv)
+            || dependencies.build.contains_key(&uv)
         {
             Installer::Uv
         } else {
             Installer::Pip
         };
 
-        let any = pbt::PackageSpecV1::any();
+        let any = self.project_model.targets().unwrap().any();
 
         // Ensure python and pip/uv are available in the host dependencies section.
         let installers = [installer.package_name().to_string(), "python".to_string()];
         for pkg_name in installers.iter() {
-            if host_dependencies.contains_key(&pkg_name) {
+            if dependencies.host.contains_key(&pkg_name) {
                 // If the host dependencies already contain the package,
                 // we don't need to add it again.
                 continue;
             }
 
-            host_dependencies.insert(pkg_name, &any);
+            dependencies.host.insert(pkg_name, &any);
         }
 
-        requirements.build = extract_dependencies(channel_config, build_dependencies, variant)?;
-        requirements.host = extract_dependencies(channel_config, host_dependencies, variant)?;
-        requirements.run = extract_dependencies(channel_config, run_dependencies, variant)?;
+        requirements.build = extract_dependencies(channel_config, dependencies.build, variant)?;
+        requirements.host = extract_dependencies(channel_config, dependencies.host, variant)?;
+        requirements.run = extract_dependencies(channel_config, dependencies.run, variant)?;
 
         Ok((requirements, installer))
     }
@@ -202,7 +176,7 @@ impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
     /// Script entry points are read from the pyproject and added as entry
     /// points in the conda package.
     pub(crate) fn recipe(
-        &'a self,
+        &self,
         host_platform: Platform,
         channel_config: &ChannelConfig,
         editable: bool,
@@ -214,7 +188,7 @@ impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
             .unwrap_or(editable);
 
         // Parse the package name and version from the manifest
-        let name = PackageName::from_str(&self.project_model.name()).into_diagnostic()?;
+        let name = PackageName::from_str(self.project_model.name()).into_diagnostic()?;
         let version = self.project_model.version().clone().ok_or_else(|| {
             miette::miette!("a version is missing from the package but it is required")
         })?;
@@ -372,7 +346,7 @@ impl<'a, P: ProjectModelExt<'a>> PythonBuildBackend<'a, P> {
     /// consider as a potential variant. If an input variant configuration for
     /// it exists we add it.
     pub fn compute_variants(
-        &'a self,
+        &self,
         input_variant_configuration: Option<BTreeMap<NormalizedKey, Vec<Variable>>>,
         host_platform: Platform,
     ) -> miette::Result<Vec<BTreeMap<NormalizedKey, Variable>>> {

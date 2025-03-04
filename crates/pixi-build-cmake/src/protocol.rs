@@ -14,7 +14,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, PlatformAndVirtualPackages,
+    CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
 };
 use rattler_build::{
     build::run_build,
@@ -54,7 +54,7 @@ impl CMakeBuildBackendInstantiator {
     }
 }
 #[async_trait::async_trait]
-impl Protocol for CMakeBuildBackend {
+impl Protocol for CMakeBuildBackend<ProjectModelV1> {
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
@@ -348,7 +348,7 @@ impl Protocol for CMakeBuildBackend {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
-    type ProtocolEndpoint = CMakeBuildBackend;
+    type ProtocolEndpoint = CMakeBuildBackend<ProjectModelV1>;
 
     async fn initialize(
         &self,

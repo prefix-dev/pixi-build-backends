@@ -93,7 +93,6 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
         }
     }
 
-
     /// Returns the requirements of the project that should be used for a
     /// recipe.
     pub(crate) fn requirements(

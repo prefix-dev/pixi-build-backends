@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ffi::OsStr, marker::PhantomData, path::PathBuf, str::FromStr};
+use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
@@ -37,8 +37,6 @@ pub struct PythonBuildBackend<P: ProjectModel> {
     pub(crate) config: PythonBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) pyproject_manifest: Option<PyProjectToml>,
-    // Ensures the struct is correctly tied to the lifetime
-    _marker: PhantomData<()>,
 }
 
 impl<P: ProjectModel> PythonBuildBackend<P> {
@@ -80,7 +78,6 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             logging_output_handler,
             cache_dir,
             pyproject_manifest,
-            _marker: PhantomData,
         })
     }
 

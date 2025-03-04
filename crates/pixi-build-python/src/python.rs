@@ -127,7 +127,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             Installer::Pip
         };
 
-        let any = self.project_model.targets().unwrap().any();
+        let any = self.project_model.new_spec();
 
         // Ensure python and pip/uv are available in the host dependencies section.
         let installers = [installer.package_name().to_string(), "python".to_string()];

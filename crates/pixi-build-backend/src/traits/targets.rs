@@ -60,7 +60,7 @@ pub trait Targets {
     fn default_target(&self) -> Option<&Self::Target>;
 
     /// Return a spec that matches any version
-    fn any(&self) -> Self::Spec;
+    fn empty_spec() -> Self::Spec;
 
     /// Returns all targets
     fn targets(&self) -> impl Iterator<Item = (&Self::Selector, &Self::Target)>;
@@ -133,7 +133,7 @@ impl Targets for pbt::TargetsV1 {
         self.targets.iter().flatten()
     }
 
-    fn any(&self) -> PackageSpecV1 {
+    fn empty_spec() -> PackageSpecV1 {
         pbt::PackageSpecV1::Binary(Box::new(rattler_conda_types::VersionSpec::Any.into()))
     }
 

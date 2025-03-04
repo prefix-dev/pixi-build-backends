@@ -98,8 +98,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         // Ensure build tools are available in the build dependencies section.
         let build_tools = ["cmake".to_string(), "ninja".to_string()];
-        // let any = pbt::PackageSpecV1::any();
-        let any = self.project_model.targets().unwrap().any();
+        let empty_spec = self.project_model.new_spec();
 
         for pkg_name in build_tools.iter() {
             if dependencies.build.contains_key(pkg_name) {
@@ -108,7 +107,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
                 continue;
             }
 
-            dependencies.build.insert(pkg_name, &any);
+            dependencies.build.insert(pkg_name, &empty_spec);
         }
 
         requirements.build = extract_dependencies(channel_config, dependencies.build, variant)?;

@@ -14,6 +14,9 @@ pub trait ProjectModel {
     /// Return the targets of the project model
     fn targets(&self) -> Option<&Self::Targets>;
 
+    /// Return a spec that matches any version
+    fn new_spec(&self) -> <<Self as ProjectModel>::Targets as Targets>::Spec;
+
     /// Return the used variants of the project model
     fn used_variants(&self, platform: Option<Platform>) -> HashSet<NormalizedKey>;
 
@@ -29,6 +32,10 @@ impl ProjectModel for pbt::ProjectModelV1 {
 
     fn targets(&self) -> Option<&Self::Targets> {
         self.targets.as_ref()
+    }
+
+    fn new_spec(&self) -> <<Self as ProjectModel>::Targets as Targets>::Spec {
+        pbt::TargetsV1::empty_spec()
     }
 
     fn name(&self) -> &str {

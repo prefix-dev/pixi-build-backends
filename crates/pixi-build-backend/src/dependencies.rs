@@ -65,12 +65,12 @@ impl<'a> MatchspecExtractor<'a> {
     }
 
     /// Extracts match specs from the given set of dependencies.
-    pub fn extract<'b, T>(
+    pub fn extract<'b, S>(
         &self,
-        dependencies: impl IntoIterator<Item = (&'b pbt::SourcePackageName, &'b T)>,
+        dependencies: impl IntoIterator<Item = (&'b pbt::SourcePackageName, &'b S)>,
     ) -> miette::Result<Vec<MatchSpec>>
     where
-        T: PackageSpec + 'b,
+        S: PackageSpec + 'b,
     {
         let root_dir = &self.channel_config.root_dir;
         let mut specs = Vec::new();

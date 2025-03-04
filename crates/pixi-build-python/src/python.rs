@@ -96,9 +96,6 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
         }
     }
 
-    // fn create_package_spec() -> impl PackageSpecExt {
-    //     pbt::PackageSpecV1::any()
-    // }
 
     /// Returns the requirements of the project that should be used for a
     /// recipe.

@@ -15,7 +15,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -395,12 +395,10 @@ impl PythonBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for PythonBuildBackendInstantiator {
-    type ProtocolEndpoint = PythonBuildBackend<ProjectModelV1>;
-
     async fn initialize(
         &self,
         params: InitializeParams,
-    ) -> miette::Result<(Self::ProtocolEndpoint, InitializeResult)> {
+    ) -> miette::Result<(Box<dyn Protocol + Send + Sync + 'static>, InitializeResult)> {
         let project_model = params
             .project_model
             .ok_or_else(|| miette::miette!("project model is required"))?;
@@ -425,13 +423,67 @@ impl ProtocolInstantiator for PythonBuildBackendInstantiator {
             params.cache_directory,
         )?;
 
-        Ok((instance, InitializeResult {}))
+        Ok((Box::new(instance), InitializeResult {}))
     }
 
     async fn negotiate_capabilities(
-        params: NegotiateCapabilitiesParams,
+        _params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
-        let capabilities = Self::ProtocolEndpoint::capabilities(&params.capabilities);
+        // Returns the capabilities of this backend based on the capabilities of
+        // the frontend.
+        let capabilities = BackendCapabilities {
+            provides_conda_metadata: Some(true),
+            provides_conda_build: Some(true),
+            highest_supported_project_model: Some(
+                pixi_build_types::VersionedProjectModel::highest_version(),
+            ),
+        };
         Ok(NegotiateCapabilitiesResult { capabilities })
     }
 }
+
+// #[async_trait::async_trait]
+// impl ProtocolCapabilities for PythonBuildBackendInstantiator {
+//     // type ProtocolEndpoint = PythonBuildBackend<ProjectModelV1>;
+//     // type ProtocolEndpoint = Box<dyn Protocol + Send + Sync + 'static>;
+
+//     // async fn initialize(
+//     //     &self,
+//     //     params: InitializeParams,
+//     // ) -> miette::Result<(Box<dyn Protocol + Send + Sync + 'static>, InitializeResult)> {
+//     //     let project_model = params
+//     //         .project_model
+//     //         .ok_or_else(|| miette::miette!("project model is required"))?;
+
+//     //     let project_model = project_model
+//     //         .into_v1()
+//     //         .ok_or_else(|| miette::miette!("project model v1 is required"))?;
+
+//     //     let config = if let Some(config) = params.configuration {
+//     //         serde_json::from_value(config)
+//     //             .into_diagnostic()
+//     //             .context("failed to parse configuration")?
+//     //     } else {
+//     //         PythonBackendConfig::default()
+//     //     };
+
+//     //     let instance = PythonBuildBackend::new(
+//     //         params.manifest_path,
+//     //         project_model,
+//     //         config,
+//     //         self.logging_output_handler.clone(),
+//     //         params.cache_directory,
+//     //     )?;
+
+//     //     Ok((Box::new(instance), InitializeResult {}))
+//     // }
+
+//     async fn negotiate_capabilities(
+//         params: NegotiateCapabilitiesParams,
+//     ) -> miette::Result<NegotiateCapabilitiesResult> {
+
+//         // let me = Self::
+//         let capabilities = PythonBuildBackend::capabilities(&params.capabilities);
+//         Ok(NegotiateCapabilitiesResult { capabilities })
+//     }
+// }

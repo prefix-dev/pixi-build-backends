@@ -19,14 +19,16 @@ enum ServerState<T: ProtocolInstantiator> {
     /// Server has not been initialized yet.
     Uninitialized(T),
     /// Server has been initialized, with a protocol.
-    Initialized(T::ProtocolEndpoint),
+    Initialized(Box<dyn Protocol + Send + Sync + 'static>),
 }
 
 impl<T: ProtocolInstantiator> ServerState<T> {
     /// Convert to a protocol, if the server has been initialized.
-    pub fn as_endpoint(&self) -> Result<&T::ProtocolEndpoint, jsonrpc_core::Error> {
+    pub fn as_endpoint(
+        &self,
+    ) -> Result<&(dyn Protocol + Send + Sync + 'static), jsonrpc_core::Error> {
         match self {
-            Self::Initialized(protocol) => Ok(protocol),
+            Self::Initialized(protocol) => Ok(protocol.as_ref()),
             _ => Err(Error::invalid_request()),
         }
     }

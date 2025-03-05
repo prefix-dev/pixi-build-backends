@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
-use pixi_build_types::{BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages};
+use pixi_build_types::PlatformAndVirtualPackages;
 use pyproject_toml::PyProjectToml;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
@@ -79,18 +79,6 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             cache_dir,
             pyproject_manifest,
         })
-    }
-
-    /// Returns the capabilities of this backend based on the capabilities of
-    /// the frontend.
-    pub fn capabilities(_frontend_capabilities: &FrontendCapabilities) -> BackendCapabilities {
-        BackendCapabilities {
-            provides_conda_metadata: Some(true),
-            provides_conda_build: Some(true),
-            highest_supported_project_model: Some(
-                pixi_build_types::VersionedProjectModel::highest_version(),
-            ),
-        }
     }
 
     /// Returns the requirements of the project that should be used for a

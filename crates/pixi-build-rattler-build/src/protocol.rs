@@ -321,12 +321,10 @@ impl Protocol for RattlerBuildBackend {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
-    type ProtocolEndpoint = RattlerBuildBackend;
-
     async fn initialize(
         &self,
         params: InitializeParams,
-    ) -> miette::Result<(Self::ProtocolEndpoint, InitializeResult)> {
+    ) -> miette::Result<(Box<dyn Protocol + Send + Sync + 'static>, InitializeResult)> {
         let config = if let Some(config) = params.configuration {
             serde_json::from_value(config)
                 .into_diagnostic()
@@ -343,7 +341,7 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             config,
         )?;
 
-        Ok((instance, InitializeResult {}))
+        Ok((Box::new(instance), InitializeResult {}))
     }
 
     async fn negotiate_capabilities(
@@ -533,15 +531,12 @@ mod tests {
     async fn try_initialize(
         manifest_path: impl AsRef<Path>,
     ) -> miette::Result<RattlerBuildBackend> {
-        RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
-            .initialize(InitializeParams {
-                project_model: None,
-                manifest_path: manifest_path.as_ref().to_path_buf(),
-                configuration: None,
-                cache_directory: None,
-            })
-            .await
-            .map(|e| e.0)
+        RattlerBuildBackend::new(
+            manifest_path.as_ref(),
+            LoggingOutputHandler::default(),
+            None,
+            RattlerBuildBackendConfig::default(),
+        )
     }
 
     #[tokio::test]

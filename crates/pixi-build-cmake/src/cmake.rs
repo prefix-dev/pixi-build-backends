@@ -7,7 +7,7 @@ use std::{
 use itertools::Itertools;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
-use pixi_build_types::{BackendCapabilities, FrontendCapabilities, PlatformAndVirtualPackages};
+use pixi_build_types::PlatformAndVirtualPackages;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -33,7 +33,7 @@ use crate::{
     stub::default_compiler,
 };
 
-pub struct CMakeBuildBackend<P> {
+pub struct CMakeBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_path: PathBuf,
     pub(crate) manifest_root: PathBuf,
@@ -66,18 +66,6 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             logging_output_handler,
             cache_dir,
         })
-    }
-
-    /// Returns the capabilities of this backend based on the capabilities of
-    /// the frontend.
-    pub fn capabilities(_frontend_capabilities: &FrontendCapabilities) -> BackendCapabilities {
-        BackendCapabilities {
-            provides_conda_metadata: Some(true),
-            provides_conda_build: Some(true),
-            highest_supported_project_model: Some(
-                pixi_build_types::VersionedProjectModel::highest_version(),
-            ),
-        }
     }
 
     /// Returns the requirements of the project that should be used for a

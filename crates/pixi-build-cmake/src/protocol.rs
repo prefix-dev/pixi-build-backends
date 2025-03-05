@@ -14,7 +14,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
 };
 use rattler_build::{
     build::run_build,
@@ -348,12 +348,12 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
-    type ProtocolEndpoint = CMakeBuildBackend<ProjectModelV1>;
+    // type ProtocolEndpoint = CMakeBuildBackend<ProjectModelV1>;
 
     async fn initialize(
         &self,
         params: InitializeParams,
-    ) -> miette::Result<(Self::ProtocolEndpoint, InitializeResult)> {
+    ) -> miette::Result<(Box<dyn Protocol + Send + Sync + 'static>, InitializeResult)> {
         let project_model = params
             .project_model
             .ok_or_else(|| miette::miette!("project model is required"))?;
@@ -378,13 +378,19 @@ impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
             params.cache_directory,
         )?;
 
-        Ok((instance, InitializeResult {}))
+        Ok((Box::new(instance), InitializeResult {}))
     }
 
     async fn negotiate_capabilities(
-        params: NegotiateCapabilitiesParams,
+        _params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
-        let capabilities = Self::ProtocolEndpoint::capabilities(&params.capabilities);
+        let capabilities = BackendCapabilities {
+            provides_conda_metadata: Some(true),
+            provides_conda_build: Some(true),
+            highest_supported_project_model: Some(
+                pixi_build_types::VersionedProjectModel::highest_version(),
+            ),
+        };
         Ok(NegotiateCapabilitiesResult { capabilities })
     }
 }

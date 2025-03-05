@@ -9,8 +9,6 @@ use pixi_build_types::procedures::{
 /// and endpoint that can handle the RPC calls.
 #[async_trait::async_trait]
 pub trait ProtocolInstantiator: Send + Sync + 'static {
-    // /// The endpoint implements the protocol RPC methods
-    // type ProtocolEndpoint: Protocol + Send + Sync + 'static;
 
     /// Called when negotiating capabilities with the client.
     /// This is determine how the rest of the initialization will proceed.

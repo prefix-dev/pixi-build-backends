@@ -229,8 +229,6 @@ async fn conda_get_metadata<T: ProtocolInstantiator>(
 
     let protocol = initialize(factory, manifest_path).await?;
 
-    // let protocol = factory.initialize()
-
     let virtual_packages: Vec<_> = VirtualPackage::detect(&VirtualPackageOverrides::from_env())
         .into_diagnostic()?
         .into_iter()

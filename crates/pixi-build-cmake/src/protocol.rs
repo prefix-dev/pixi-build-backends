@@ -348,7 +348,6 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
-
     async fn initialize(
         &self,
         params: InitializeParams,

@@ -1,3 +1,10 @@
+//! Targets behaviour traits.
+//!
+//! # Key components
+//!
+//! * [`Targets`] - A project target trait.
+//! * [`TargetSelector`] - An extension trait that extends the target selector with additional functionality.
+//! * [`Dependencies`] - A wrapper struct that contains all dependencies for a target.
 use indexmap::IndexMap;
 use itertools::{Either, Itertools};
 use pixi_build_types::{PackageSpecV1, SourcePackageName};
@@ -15,8 +22,11 @@ pub trait TargetSelector {
 #[derive(Debug)]
 /// A wrapper struct that contains all dependencies for a target
 pub struct Dependencies<'a, S> {
+    /// The run dependencies
     pub run: IndexMap<&'a SourcePackageName, &'a S>,
+    /// The host dependencies
     pub host: IndexMap<&'a SourcePackageName, &'a S>,
+    /// The build dependencies
     pub build: IndexMap<&'a SourcePackageName, &'a S>,
 }
 

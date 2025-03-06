@@ -1,3 +1,9 @@
+//! Project behaviour traits.
+//!
+//! # Key components
+//!
+//! * [`ProjectModel`] - Core trait for project model interface
+
 use std::collections::HashSet;
 
 use itertools::Itertools;
@@ -9,13 +15,11 @@ use super::{targets::Targets, PackageSpec};
 
 /// A trait that defines the project model interface
 pub trait ProjectModel {
+    /// The targets type of the project model
     type Targets: Targets;
 
     /// Return the targets of the project model
     fn targets(&self) -> Option<&Self::Targets>;
-
-    /// Return a spec that matches any version
-    fn new_spec(&self) -> <<Self as ProjectModel>::Targets as Targets>::Spec;
 
     /// Return the used variants of the project model
     fn used_variants(&self, platform: Option<Platform>) -> HashSet<NormalizedKey>;
@@ -32,10 +36,6 @@ impl ProjectModel for pbt::ProjectModelV1 {
 
     fn targets(&self) -> Option<&Self::Targets> {
         self.targets.as_ref()
-    }
-
-    fn new_spec(&self) -> <<Self as ProjectModel>::Targets as Targets>::Spec {
-        pbt::TargetsV1::empty_spec()
     }
 
     fn name(&self) -> &str {
@@ -75,4 +75,9 @@ impl ProjectModel for pbt::ProjectModelV1 {
 
         used_variants
     }
+}
+
+/// Return a spec of a project model that matches any version
+pub fn new_spec<P: ProjectModel>() -> <<P as ProjectModel>::Targets as Targets>::Spec {
+    P::Targets::empty_spec()
 }

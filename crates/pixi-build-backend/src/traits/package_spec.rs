@@ -1,3 +1,11 @@
+//! Package specification traits
+//!
+//! # Key components
+//!
+//! * [`PackageSpec`] - Core trait for package specification behavior
+//! * [`AnyVersion`] - Trait for creating wildcard version specifications that can match any version
+//! * [`BinarySpecExt`] - Extension for converting binary specs to nameless match specs
+
 use std::{path::Path, sync::Arc};
 
 use miette::IntoDiagnostic;
@@ -9,11 +17,13 @@ use crate::dependencies::resolve_path;
 
 /// Get the * version for the version type, that is currently being used
 pub trait AnyVersion {
+    /// Get the * version for the version type, that is currently being used
     fn any() -> Self;
 }
 
 /// Convert a binary spec to a nameless match spec
 pub trait BinarySpecExt {
+    /// Return a NamelessMatchSpec from the binary spec
     fn to_nameless(&self) -> NamelessMatchSpec;
 }
 

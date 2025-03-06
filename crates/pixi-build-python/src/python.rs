@@ -1,7 +1,9 @@
 use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
-use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
+use pixi_build_backend::{
+    dependencies::extract_dependencies, traits::project::new_spec, ProjectModel, Targets,
+};
 use pixi_build_types::PlatformAndVirtualPackages;
 use pyproject_toml::PyProjectToml;
 use rattler_build::{
@@ -108,7 +110,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             Installer::Pip
         };
 
-        let any = self.project_model.new_spec();
+        let any = new_spec::<P>();
 
         // Ensure python and pip/uv are available in the host dependencies section.
         let installers = [installer.package_name().to_string(), "python".to_string()];

@@ -6,7 +6,9 @@ use std::{
 
 use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_backend::{dependencies::extract_dependencies, ProjectModel, Targets};
+use pixi_build_backend::{
+    dependencies::extract_dependencies, traits::project::new_spec, ProjectModel, Targets,
+};
 use pixi_build_types::PlatformAndVirtualPackages;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
@@ -86,7 +88,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         // Ensure build tools are available in the build dependencies section.
         let build_tools = ["cmake".to_string(), "ninja".to_string()];
-        let empty_spec = self.project_model.new_spec();
+        let empty_spec = new_spec::<P>();
 
         for pkg_name in build_tools.iter() {
             if dependencies.build.contains_key(pkg_name) {

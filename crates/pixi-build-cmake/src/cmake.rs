@@ -66,89 +66,6 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         })
     }
 
-    // /// Returns the requirements of the project that should be used for a
-    // /// recipe.
-    // fn requirements(
-    //     &self,
-    //     host_platform: Platform,
-    //     channel_config: &ChannelConfig,
-    //     variant: &BTreeMap<NormalizedKey, Variable>,
-    // ) -> miette::Result<Requirements> {
-    //     // // let build_tools = ["cmake", "ninja"];
-
-    //     // let build_tools = self.build_tool_names();
-    //     // let mut dependencies = self
-    //     //     .project_model
-    //     //     .targets()
-    //     //     .map(|t| t.dependencies(Some(host_platform)))
-    //     //     .unwrap_or_default();
-
-    //     // // Ensure build tools are available in the build dependencies section.
-    //     // let build_tools = ["cmake".to_string(), "ninja".to_string()];
-    //     // let empty_spec = new_spec::<P>();
-
-    //     // let empty_spec = self.project_model.new_spec();
-
-    //     // let mut requirements = process_requirements(
-    //     //     &self.project_model,
-    //     //     &empty_spec,
-    //     //     &mut dependencies,
-    //     //     channel_config,
-    //     //     variant,
-    //     //     &build_tools,
-    //     //     |dependencies, spec, tools| {
-    //     //         // Ensure build tools are available in the build dependencies section.
-
-    //     //         // let empty_spec = self.project_model.new_spec();
-
-    //     //         for pkg_name in tools.iter() {
-    //     //             if dependencies.build.contains_key(pkg_name.as_ref()) {
-    //     //                 // If the host dependencies already contain the package, we don't need to add it
-    //     //                 // again.
-    //     //                 continue;
-    //     //             }
-
-    //     //             dependencies.build.insert(pkg_name, spec);
-    //     //         }
-    //     //     },
-    //     // )?;
-
-    //     // let mut requirements = Requirements::default();
-
-    //     // let mut dependencies = self
-    //     //     .project_model
-    //     //     .targets()
-    //     //     .map(|t| t.dependencies(Some(host_platform)))
-    //     //     .unwrap_or_default();
-
-    //     // // Ensure build tools are available in the build dependencies section.
-    //     // let build_tools = ["cmake".to_string(), "ninja".to_string()];
-    //     // let empty_spec = self.project_model.new_spec();
-
-    //     // for pkg_name in build_tools.iter() {
-    //     //     if dependencies.build.contains_key(pkg_name) {
-    //     //         // If the host dependencies already contain the package, we don't need to add it
-    //     //         // again.
-    //     //         continue;
-    //     //     }
-
-    //     //     dependencies.build.insert(pkg_name, &empty_spec);
-    //     // }
-
-    //     // requirements.build = extract_dependencies(channel_config, dependencies.build, variant)?;
-    //     // requirements.host = extract_dependencies(channel_config, dependencies.host, variant)?;
-    //     // requirements.run = extract_dependencies(channel_config, dependencies.run, variant)?;
-
-    //     // // Add compilers to the dependencies.
-    //     // requirements.build.extend(
-    //     //     self.compiler_packages(host_platform)
-    //     //         .into_iter()
-    //     //         .map(Dependency::Spec),
-    //     // );
-
-    //     Ok(requirements)
-    // }
-
     /// Returns the matchspecs for the compiler packages. That should be
     /// included in the build section of the recipe.
     fn compiler_packages(&self, target_platform: Platform) -> Vec<MatchSpec> {
@@ -257,32 +174,6 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         })
     }
 
-    // /// Determine the all the variants that can be built for this package.
-    // ///
-    // /// The variants are computed based on the dependencies of the package and
-    // /// the input variants. Each package that has a `*` as its version we
-    // /// consider as a potential variant. If an input variant configuration for
-    // /// it exists we add it.
-    // pub fn compute_variants(
-    //     &self,
-    //     input_variant_configuration: Option<BTreeMap<NormalizedKey, Vec<Variable>>>,
-    //     host_platform: Platform,
-    // ) -> miette::Result<Vec<BTreeMap<NormalizedKey, Variable>>> {
-    //     // Create a variant config from the variant configuration in the parameters.
-    //     let variant_config = VariantConfig {
-    //         variants: input_variant_configuration.unwrap_or_default(),
-    //         pin_run_as_build: None,
-    //         zip_keys: None,
-    //     };
-
-    //     // Determine the variant keys that are used in the recipe.
-    //     let used_variants = self.project_model.used_variants(Some(host_platform));
-
-    //     // Determine the combinations of the used variants.
-    //     variant_config
-    //         .combinations(&used_variants, None)
-    //         .into_diagnostic()
-    // }
 }
 
 impl<P: ProjectModel> VariantsProvider<P> for CMakeBuildBackend<P> {}

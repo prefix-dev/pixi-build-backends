@@ -173,7 +173,6 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             extra: Default::default(),
         })
     }
-
 }
 
 impl<P: ProjectModel> VariantsProvider<P> for CMakeBuildBackend<P> {}

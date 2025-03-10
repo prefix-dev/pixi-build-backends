@@ -214,8 +214,6 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             extra: Default::default(),
         })
     }
-
-
 }
 
 impl<P: ProjectModel> RequirementsProvider<P> for PythonBuildBackend<P> {

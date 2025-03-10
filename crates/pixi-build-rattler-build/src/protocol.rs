@@ -5,6 +5,7 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,
+    traits::capabilities::CapabilitiesProvider,
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
@@ -14,7 +15,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    CondaPackageMetadata, VersionedProjectModel,
+    BackendCapabilities, CondaPackageMetadata, VersionedProjectModel,
 };
 use rattler_build::{
     build::run_build,
@@ -347,9 +348,16 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
     async fn negotiate_capabilities(
         params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
-        Ok(NegotiateCapabilitiesResult {
-            capabilities: RattlerBuildBackend::capabilities(&params.capabilities),
-        })
+        RattlerBuildBackendInstantiator::capabilities(&params)
+    }
+}
+
+impl CapabilitiesProvider for RattlerBuildBackendInstantiator {
+    fn backend_capabilities(
+        _params: &NegotiateCapabilitiesParams,
+        backend: BackendCapabilities,
+    ) -> miette::Result<BackendCapabilities> {
+        Ok(backend)
     }
 }
 

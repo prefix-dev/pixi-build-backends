@@ -3,6 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
+    traits::{capabilities::CapabilitiesProvider, BuildConfigurationProvider, VariantsProvider},
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
@@ -107,8 +108,11 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 })
                 .collect()
         });
-        let variant_combinations =
-            self.compute_variants(input_variant_configuration, host_platform)?;
+        let variant_combinations = self.compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            host_platform,
+        )?;
 
         // Construct the different outputs
         let mut packages = Vec::new();
@@ -229,8 +233,11 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 })
                 .collect()
         });
-        let variant_combinations =
-            self.compute_variants(input_variant_configuration, host_platform)?;
+        let variant_combinations = self.compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            host_platform,
+        )?;
 
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
@@ -380,15 +387,17 @@ impl ProtocolInstantiator for CMakeBuildBackendInstantiator {
     }
 
     async fn negotiate_capabilities(
-        _params: NegotiateCapabilitiesParams,
+        params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
-        let capabilities = BackendCapabilities {
-            provides_conda_metadata: Some(true),
-            provides_conda_build: Some(true),
-            highest_supported_project_model: Some(
-                pixi_build_types::VersionedProjectModel::highest_version(),
-            ),
-        };
-        Ok(NegotiateCapabilitiesResult { capabilities })
+        CMakeBuildBackendInstantiator::capabilities(&params)
+    }
+}
+
+impl CapabilitiesProvider for CMakeBuildBackendInstantiator {
+    fn backend_capabilities(
+        _params: &NegotiateCapabilitiesParams,
+        backend: BackendCapabilities,
+    ) -> miette::Result<BackendCapabilities> {
+        Ok(backend)
     }
 }

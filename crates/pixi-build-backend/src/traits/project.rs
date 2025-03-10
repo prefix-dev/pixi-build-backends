@@ -11,7 +11,7 @@ use pixi_build_types::{self as pbt};
 use rattler_build::NormalizedKey;
 use rattler_conda_types::{Platform, Version};
 
-use super::{targets::Targets, PackageSpec};
+use super::{targets::Targets, Dependencies, PackageSpec};
 
 /// A trait that defines the project model interface
 pub trait ProjectModel {
@@ -20,6 +20,16 @@ pub trait ProjectModel {
 
     /// Return the targets of the project model
     fn targets(&self) -> Option<&Self::Targets>;
+
+    /// Return the dependencies of the project model
+    fn dependencies(
+        &self,
+        platform: Option<Platform>,
+    ) -> Dependencies<<<Self as ProjectModel>::Targets as Targets>::Spec> {
+        self.targets()
+            .map(|t| t.dependencies(platform))
+            .unwrap_or_default()
+    }
 
     /// Return the used variants of the project model
     fn used_variants(&self, platform: Option<Platform>) -> HashSet<NormalizedKey>;

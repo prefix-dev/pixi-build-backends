@@ -4,12 +4,11 @@ use std::{
     str::FromStr,
 };
 
-use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_backend::{
-    dependencies::extract_dependencies, traits::project::new_spec, ProjectModel, Targets,
+use pixi_build_backend::traits::{
+    BuildConfigurationProvider, Dependencies, RequirementsProvider, VariantsProvider,
 };
-use pixi_build_types::PlatformAndVirtualPackages;
+use pixi_build_backend::{ProjectModel, Targets};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -19,15 +18,12 @@ use rattler_build::{
         variable::Variable,
         Recipe,
     },
-    variant_config::VariantConfig,
     NormalizedKey,
 };
 use rattler_conda_types::{
-    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
+    package::ArchiveType, ChannelConfig, ChannelUrl, MatchSpec, NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
-use rattler_virtual_packages::VirtualPackageOverrides;
-use reqwest::Url;
 
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext},
@@ -68,50 +64,6 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             logging_output_handler,
             cache_dir,
         })
-    }
-
-    /// Returns the requirements of the project that should be used for a
-    /// recipe.
-    fn requirements(
-        &self,
-        host_platform: Platform,
-        channel_config: &ChannelConfig,
-        variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Requirements> {
-        let mut requirements = Requirements::default();
-
-        let mut dependencies = self
-            .project_model
-            .targets()
-            .map(|t| t.dependencies(Some(host_platform)))
-            .unwrap_or_default();
-
-        // Ensure build tools are available in the build dependencies section.
-        let build_tools = ["cmake".to_string(), "ninja".to_string()];
-        let empty_spec = new_spec::<P>();
-
-        for pkg_name in build_tools.iter() {
-            if dependencies.build.contains_key(pkg_name) {
-                // If the host dependencies already contain the package, we don't need to add it
-                // again.
-                continue;
-            }
-
-            dependencies.build.insert(pkg_name, &empty_spec);
-        }
-
-        requirements.build = extract_dependencies(channel_config, dependencies.build, variant)?;
-        requirements.host = extract_dependencies(channel_config, dependencies.host, variant)?;
-        requirements.run = extract_dependencies(channel_config, dependencies.run, variant)?;
-
-        // Add compilers to the dependencies.
-        requirements.build.extend(
-            self.compiler_packages(host_platform)
-                .into_iter()
-                .map(Dependency::Spec),
-        );
-
-        Ok(requirements)
     }
 
     /// Returns the matchspecs for the compiler packages. That should be
@@ -158,7 +110,8 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let requirements =
+            self.requirements(&self.project_model, host_platform, channel_config, variant)?;
         let build_platform = Platform::current();
         let build_number = 0;
 
@@ -220,44 +173,55 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             extra: Default::default(),
         })
     }
+}
 
-    /// Returns the build configuration for a recipe
-    pub fn build_configuration(
+impl<P: ProjectModel> VariantsProvider<P> for CMakeBuildBackend<P> {}
+
+impl<P: ProjectModel> RequirementsProvider<P> for CMakeBuildBackend<P> {
+    fn build_tool_names(
+        &self,
+        _dependencies: &Dependencies<<<P as ProjectModel>::Targets as Targets>::Spec>,
+    ) -> Vec<String> {
+        ["cmake".to_string(), "ninja".to_string()].to_vec()
+    }
+
+    fn add_build_tools<'a>(
+        &'a self,
+        dependencies: &mut Dependencies<'a, <<P as ProjectModel>::Targets as Targets>::Spec>,
+        empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
+        build_tools: &'a [String],
+    ) {
+        for pkg_name in build_tools.iter() {
+            if dependencies.build.contains_key(pkg_name) {
+                // If the host dependencies already contain the package, we don't need to add it
+                // again.
+                continue;
+            }
+
+            dependencies.build.insert(pkg_name, empty_spec);
+        }
+    }
+
+    fn post_process_requirements(&self, requirements: &mut Requirements, host_platform: Platform) {
+        requirements.build.extend(
+            self.compiler_packages(host_platform)
+                .into_iter()
+                .map(Dependency::Spec),
+        );
+    }
+}
+
+impl<P: ProjectModel> BuildConfigurationProvider<P> for CMakeBuildBackend<P> {
+    fn construct_configuration(
         &self,
         recipe: &Recipe,
-        channels: Vec<Url>,
-        build_platform: Option<PlatformAndVirtualPackages>,
-        host_platform: Option<PlatformAndVirtualPackages>,
+        channels: Vec<ChannelUrl>,
+        build_platform: PlatformWithVirtualPackages,
+        host_platform: PlatformWithVirtualPackages,
         variant: BTreeMap<NormalizedKey, Variable>,
         directories: Directories,
-    ) -> miette::Result<BuildConfiguration> {
-        // Parse the package name from the manifest
-        let build_platform = build_platform.map(|p| PlatformWithVirtualPackages {
-            platform: p.platform,
-            virtual_packages: p.virtual_packages.unwrap_or_default(),
-        });
-
-        let host_platform = host_platform.map(|p| PlatformWithVirtualPackages {
-            platform: p.platform,
-            virtual_packages: p.virtual_packages.unwrap_or_default(),
-        });
-
-        let (build_platform, host_platform) = match (build_platform, host_platform) {
-            (Some(build_platform), Some(host_platform)) => (build_platform, host_platform),
-            (build_platform, host_platform) => {
-                let current_platform =
-                    PlatformWithVirtualPackages::detect(&VirtualPackageOverrides::from_env())
-                        .into_diagnostic()?;
-                (
-                    build_platform.unwrap_or_else(|| current_platform.clone()),
-                    host_platform.unwrap_or(current_platform),
-                )
-            }
-        };
-
-        let channels = channels.into_iter().map(Into::into).collect_vec();
-
-        Ok(BuildConfiguration {
+    ) -> BuildConfiguration {
+        BuildConfiguration {
             target_platform: host_platform.platform,
             host_platform,
             build_platform,
@@ -276,34 +240,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             store_recipe: false,
             force_colors: true,
             sandbox_config: None,
-        })
-    }
-
-    /// Determine the all the variants that can be built for this package.
-    ///
-    /// The variants are computed based on the dependencies of the package and
-    /// the input variants. Each package that has a `*` as its version we
-    /// consider as a potential variant. If an input variant configuration for
-    /// it exists we add it.
-    pub fn compute_variants(
-        &self,
-        input_variant_configuration: Option<BTreeMap<NormalizedKey, Vec<Variable>>>,
-        host_platform: Platform,
-    ) -> miette::Result<Vec<BTreeMap<NormalizedKey, Variable>>> {
-        // Create a variant config from the variant configuration in the parameters.
-        let variant_config = VariantConfig {
-            variants: input_variant_configuration.unwrap_or_default(),
-            pin_run_as_build: None,
-            zip_keys: None,
-        };
-
-        // Determine the variant keys that are used in the recipe.
-        let used_variants = self.project_model.used_variants(Some(host_platform));
-
-        // Determine the combinations of the used variants.
-        variant_config
-            .combinations(&used_variants, None)
-            .into_diagnostic()
+        }
     }
 }
 

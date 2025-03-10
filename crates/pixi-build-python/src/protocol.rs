@@ -3,6 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
+    traits::{capabilities::CapabilitiesProvider, BuildConfigurationProvider, VariantsProvider},
     utils::TemporaryRenderedRecipe,
     ProjectModel,
 };
@@ -222,8 +223,11 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                 })
                 .collect()
         });
-        let variant_combinations =
-            self.compute_variants(input_variant_configuration, host_platform)?;
+        let variant_combinations = self.compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            host_platform,
+        )?;
 
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
@@ -339,6 +343,8 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
     }
 }
 
+impl<P: ProjectModel> VariantsProvider<P> for PythonBuildBackend<P> {}
+
 /// Determines the build input globs for given python package
 /// even this will be probably backend specific, e.g setuptools
 /// has a different way of determining the input globs than hatch etc.
@@ -427,17 +433,19 @@ impl ProtocolInstantiator for PythonBuildBackendInstantiator {
     }
 
     async fn negotiate_capabilities(
-        _params: NegotiateCapabilitiesParams,
+        params: NegotiateCapabilitiesParams,
     ) -> miette::Result<NegotiateCapabilitiesResult> {
         // Returns the capabilities of this backend based on the capabilities of
         // the frontend.
-        let capabilities = BackendCapabilities {
-            provides_conda_metadata: Some(true),
-            provides_conda_build: Some(true),
-            highest_supported_project_model: Some(
-                pixi_build_types::VersionedProjectModel::highest_version(),
-            ),
-        };
-        Ok(NegotiateCapabilitiesResult { capabilities })
+        PythonBuildBackendInstantiator::capabilities(&params)
+    }
+}
+
+impl CapabilitiesProvider for PythonBuildBackendInstantiator {
+    fn backend_capabilities(
+        _params: &NegotiateCapabilitiesParams,
+        backend: BackendCapabilities,
+    ) -> miette::Result<BackendCapabilities> {
+        Ok(backend)
     }
 }

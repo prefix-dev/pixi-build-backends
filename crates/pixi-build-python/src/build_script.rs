@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
 use minijinja::Environment;
+use pixi_build_backend::{traits::Dependencies, ProjectModel, Targets};
 use serde::Serialize;
 
+const UV: &str = "uv";
 #[derive(Serialize)]
 pub struct BuildScriptContext {
     pub installer: Installer,
@@ -24,6 +26,21 @@ impl Installer {
         match self {
             Installer::Uv => "uv",
             Installer::Pip => "pip",
+        }
+    }
+
+    pub fn determine_installer<P: ProjectModel>(
+        dependencies: &Dependencies<<<P as ProjectModel>::Targets as Targets>::Spec>,
+    ) -> Installer {
+        // Determine the installer to use
+        let uv = UV.to_string();
+        if dependencies.host.contains_key(&uv)
+            || dependencies.run.contains_key(&uv)
+            || dependencies.build.contains_key(&uv)
+        {
+            Installer::Uv
+        } else {
+            Installer::Pip
         }
     }
 }

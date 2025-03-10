@@ -7,14 +7,20 @@ use std::{
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types as pbt;
 use rattler_build::{
-    recipe::{parser::Dependency, variable::Variable},
+    recipe::{
+        parser::{Dependency, Requirements},
+        variable::Variable,
+    },
     NormalizedKey,
 };
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict,
 };
 
-use crate::traits::PackageSpec;
+use crate::{
+    traits::{Dependencies, PackageSpec},
+    Targets,
+};
 
 /// A helper struct to extract match specs from a manifest.
 pub struct MatchspecExtractor<'a> {
@@ -121,4 +127,36 @@ where
         .into_iter()
         .map(Dependency::Spec)
         .collect())
+}
+
+/// Extracts and processes dependencies for different sections of package requirements
+pub fn process_requirements<F, T>(
+    _project_model: &T,
+    empty_spec: &<T::Targets as Targets>::Spec,
+    dependencies: &mut Dependencies<<T::Targets as Targets>::Spec>,
+    channel_config: &ChannelConfig,
+    variant: &BTreeMap<NormalizedKey, Variable>,
+    build_tools: &[&str],
+    mut build_tools_processor: F,
+) -> miette::Result<Requirements>
+where
+    F: FnMut(
+        &mut Dependencies<<T::Targets as Targets>::Spec>,
+        &<T::Targets as Targets>::Spec,
+        &[&str],
+    ),
+    T: crate::ProjectModel,
+{
+    let mut requirements = Requirements::default();
+
+    // Apply build tools processor to modify dependencies as needed
+    // let empty_spec = project_model.new_spec();
+    build_tools_processor(dependencies, empty_spec, build_tools);
+
+    // Extract dependencies into requirements
+    requirements.build = extract_dependencies(channel_config, dependencies.build.clone(), variant)?;
+    requirements.host = extract_dependencies(channel_config, dependencies.host.clone(), variant)?;
+    requirements.run = extract_dependencies(channel_config, dependencies.run.clone(), variant)?;
+
+    Ok(requirements)
 }

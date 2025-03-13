@@ -2,6 +2,7 @@ pub mod cli;
 pub mod protocol;
 pub mod server;
 
+pub mod common;
 mod consts;
 pub mod dependencies;
 pub mod project;

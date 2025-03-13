@@ -5,14 +5,15 @@ use std::{
 };
 
 use miette::IntoDiagnostic;
-use pixi_build_backend::traits::{
-    BuildConfigurationProvider, Dependencies, RequirementsProvider, VariantsProvider,
+use pixi_build_backend::{
+    common::{requirements, BuildConfigurationParams},
+    traits::{project::new_spec, Dependencies},
 };
 use pixi_build_backend::{ProjectModel, Targets};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{BuildConfiguration, Directories, PackagingSettings, PlatformWithVirtualPackages},
+    metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
         parser::{Build, Dependency, Package, Requirements, ScriptContent},
         variable::Variable,
@@ -21,7 +22,7 @@ use rattler_build::{
     NormalizedKey,
 };
 use rattler_conda_types::{
-    package::ArchiveType, ChannelConfig, ChannelUrl, MatchSpec, NoArchType, PackageName, Platform,
+    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
 
@@ -110,8 +111,8 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements =
-            self.requirements(&self.project_model, host_platform, channel_config, variant)?;
+        let requirements = self.requirements(host_platform, channel_config, variant)?;
+
         let build_platform = Platform::current();
         let build_number = 0;
 
@@ -173,74 +174,79 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             extra: Default::default(),
         })
     }
-}
 
-impl<P: ProjectModel> VariantsProvider<P> for CMakeBuildBackend<P> {}
-
-impl<P: ProjectModel> RequirementsProvider<P> for CMakeBuildBackend<P> {
-    fn build_tool_names(
+    pub(crate) fn requirements(
         &self,
-        _dependencies: &Dependencies<<<P as ProjectModel>::Targets as Targets>::Spec>,
-    ) -> Vec<String> {
-        ["cmake".to_string(), "ninja".to_string()].to_vec()
-    }
+        host_platform: Platform,
+        channel_config: &ChannelConfig,
+        variant: &BTreeMap<NormalizedKey, Variable>,
+    ) -> miette::Result<Requirements> {
+        let project_model = &self.project_model;
+        let dependencies = project_model.dependencies(Some(host_platform));
 
-    fn add_build_tools<'a>(
-        &'a self,
-        dependencies: &mut Dependencies<'a, <<P as ProjectModel>::Targets as Targets>::Spec>,
-        empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
-        build_tools: &'a [String],
-    ) {
-        for pkg_name in build_tools.iter() {
-            if dependencies.build.contains_key(pkg_name) {
-                // If the host dependencies already contain the package, we don't need to add it
-                // again.
-                continue;
-            }
+        let build_tools = build_tools();
+        let empty_spec = new_spec::<P>();
+        let dependencies = add_build_tools::<P>(dependencies, &build_tools, &empty_spec);
 
-            dependencies.build.insert(pkg_name, empty_spec);
-        }
-    }
+        let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
 
-    fn post_process_requirements(&self, requirements: &mut Requirements, host_platform: Platform) {
         requirements.build.extend(
             self.compiler_packages(host_platform)
                 .into_iter()
                 .map(Dependency::Spec),
         );
+
+        Ok(requirements)
     }
 }
 
-impl<P: ProjectModel> BuildConfigurationProvider<P> for CMakeBuildBackend<P> {
-    fn construct_configuration(
-        &self,
-        recipe: &Recipe,
-        channels: Vec<ChannelUrl>,
-        build_platform: PlatformWithVirtualPackages,
-        host_platform: PlatformWithVirtualPackages,
-        variant: BTreeMap<NormalizedKey, Variable>,
-        directories: Directories,
-    ) -> BuildConfiguration {
-        BuildConfiguration {
-            target_platform: host_platform.platform,
-            host_platform,
-            build_platform,
-            hash: HashInfo::from_variant(&variant, &recipe.build.noarch),
-            variant,
-            directories,
-            channels,
-            channel_priority: Default::default(),
-            solve_strategy: Default::default(),
-            timestamp: chrono::Utc::now(),
-            subpackages: Default::default(), // TODO: ???
-            packaging_settings: PackagingSettings::from_args(
-                ArchiveType::Conda,
-                CompressionLevel::default(),
-            ),
-            store_recipe: false,
-            force_colors: true,
-            sandbox_config: None,
+/// Returns the build tools that are required to build the project.
+pub(crate) fn build_tools() -> Vec<String> {
+    vec!["cmake".to_string(), "ninja".to_string()]
+}
+
+/// Adds the build tools to the dependencies.
+pub(crate) fn add_build_tools<'a, P: ProjectModel>(
+    mut dependencies: Dependencies<'a, <P::Targets as Targets>::Spec>,
+    build_tools: &'a [String],
+    empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
+) -> Dependencies<'a, <<P as ProjectModel>::Targets as Targets>::Spec> {
+    for pkg_name in build_tools.iter() {
+        if dependencies.build.contains_key(pkg_name) {
+            // If the host dependencies already contain the package, we don't need to add it
+            // again.
+            continue;
         }
+
+        dependencies.build.insert(pkg_name, empty_spec);
+    }
+
+    dependencies
+}
+
+pub(crate) fn construct_configuration(
+    recipe: &Recipe,
+    params: BuildConfigurationParams,
+) -> BuildConfiguration {
+    BuildConfiguration {
+        target_platform: params.host_platform.platform,
+        host_platform: params.host_platform,
+        build_platform: params.build_platform,
+        hash: HashInfo::from_variant(&params.variant, &recipe.build.noarch),
+        variant: params.variant,
+        directories: params.directories,
+        channels: params.channels,
+        channel_priority: Default::default(),
+        solve_strategy: Default::default(),
+        timestamp: chrono::Utc::now(),
+        subpackages: Default::default(), // TODO: ???
+        packaging_settings: PackagingSettings::from_args(
+            ArchiveType::Conda,
+            CompressionLevel::default(),
+        ),
+        store_recipe: false,
+        force_colors: true,
+        sandbox_config: None,
     }
 }
 

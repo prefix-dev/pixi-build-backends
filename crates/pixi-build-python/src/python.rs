@@ -2,14 +2,15 @@ use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    traits::{BuildConfigurationProvider, RequirementsProvider},
+    common::{requirements, BuildConfigurationParams},
+    traits::{project::new_spec, Dependencies},
     ProjectModel, Targets,
 };
 use pyproject_toml::PyProjectToml;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{BuildConfiguration, Directories, PackagingSettings, PlatformWithVirtualPackages},
+    metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
         parser::{Build, Package, PathSource, Python, Requirements, ScriptContent, Source},
         variable::Variable,
@@ -139,12 +140,8 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             ..Python::default()
         };
 
-        let requirements =
-            self.requirements(&self.project_model, host_platform, channel_config, variant)?;
-
-        let installer = Installer::determine_installer::<P>(
-            &self.project_model.dependencies(Some(host_platform)),
-        );
+        let (installer, requirements) =
+            self.requirements(host_platform, channel_config, variant)?;
 
         // Create a build script
         let build_platform = Platform::current();
@@ -214,82 +211,85 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             extra: Default::default(),
         })
     }
-}
 
-impl<P: ProjectModel> RequirementsProvider<P> for PythonBuildBackend<P> {
-    fn build_tool_names(
+    pub(crate) fn requirements(
         &self,
-        dependencies: &pixi_build_backend::traits::Dependencies<
-            <<P as ProjectModel>::Targets as Targets>::Spec,
-        >,
-    ) -> Vec<String> {
-        let installer = Installer::determine_installer::<P>(dependencies);
+        host_platform: Platform,
+        channel_config: &ChannelConfig,
+        variant: &BTreeMap<NormalizedKey, Variable>,
+    ) -> miette::Result<(Installer, Requirements)> {
+        let dependencies = self.project_model.dependencies(Some(host_platform));
 
-        // Ensure python and pip/uv are available in the host dependencies section.
-        [installer.package_name().to_string(), "python".to_string()].to_vec()
-    }
+        let empty_spec = new_spec::<P>();
 
-    fn add_build_tools<'a>(
-        &'a self,
-        dependencies: &mut pixi_build_backend::traits::Dependencies<
-            'a,
-            <<P as ProjectModel>::Targets as Targets>::Spec,
-        >,
-        empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
-        build_tools: &'a [String],
-    ) {
-        for pkg_name in build_tools.iter() {
-            if dependencies.host.contains_key(&pkg_name) {
-                // If the host dependencies already contain the package,
-                // we don't need to add it again.
-                continue;
-            }
+        let (tool_names, installer) = build_tools::<P>(&dependencies);
 
-            dependencies.host.insert(pkg_name, empty_spec);
-        }
-    }
+        let dependencies = add_build_tools::<P>(dependencies, &tool_names, &empty_spec);
 
-    fn post_process_requirements(
-        &self,
-        _requirements: &mut Requirements,
-        _host_platform: Platform,
-    ) {
-        // No post processing is needed for python requirements
+        Ok((
+            installer,
+            requirements::<P>(dependencies, channel_config, variant)?,
+        ))
     }
 }
 
-impl<P: ProjectModel> BuildConfigurationProvider<P> for PythonBuildBackend<P> {
-    fn construct_configuration(
-        &self,
-        recipe: &Recipe,
-        channels: Vec<rattler_conda_types::ChannelUrl>,
-        build_platform: PlatformWithVirtualPackages,
-        host_platform: PlatformWithVirtualPackages,
-        variant: BTreeMap<NormalizedKey, Variable>,
-        directories: Directories,
-    ) -> BuildConfiguration {
-        BuildConfiguration {
-            // TODO: NoArch??
-            target_platform: Platform::NoArch,
-            host_platform,
-            build_platform,
-            hash: HashInfo::from_variant(&variant, &recipe.build.noarch),
-            variant,
-            directories,
-            channels,
-            channel_priority: Default::default(),
-            solve_strategy: Default::default(),
-            timestamp: chrono::Utc::now(),
-            subpackages: Default::default(), // TODO: ???
-            packaging_settings: PackagingSettings::from_args(
-                ArchiveType::Conda,
-                CompressionLevel::default(),
-            ),
-            store_recipe: false,
-            force_colors: true,
-            sandbox_config: None,
-        }
+/// Construct a build configuration for the given recipe and parameters.
+pub(crate) fn construct_configuration(
+    recipe: &Recipe,
+    params: BuildConfigurationParams,
+) -> BuildConfiguration {
+    BuildConfiguration {
+        // TODO: NoArch??
+        target_platform: Platform::NoArch,
+        host_platform: params.host_platform,
+        build_platform: params.build_platform,
+        hash: HashInfo::from_variant(&params.variant, &recipe.build.noarch),
+        variant: params.variant,
+        directories: params.directories,
+        channels: params.channels,
+        channel_priority: Default::default(),
+        solve_strategy: Default::default(),
+        timestamp: chrono::Utc::now(),
+        subpackages: Default::default(), // TODO: ???
+        packaging_settings: PackagingSettings::from_args(
+            ArchiveType::Conda,
+            CompressionLevel::default(),
+        ),
+        store_recipe: false,
+        force_colors: true,
+        sandbox_config: None,
     }
+}
+
+/// Return the installer to be used and the build tools for the given project model.
+pub(crate) fn build_tools<P: ProjectModel>(
+    dependencies: &Dependencies<<P::Targets as Targets>::Spec>,
+) -> (Vec<String>, Installer) {
+    let installer = Installer::determine_installer::<P>(dependencies);
+
+    (
+        [installer.package_name().to_string(), "python".to_string()].to_vec(),
+        installer,
+    )
+}
+
+/// Add the build tools to the dependencies if they are not already present.
+pub(crate) fn add_build_tools<'a, P: ProjectModel>(
+    mut dependencies: Dependencies<'a, <P::Targets as Targets>::Spec>,
+    build_tools: &'a [String],
+    empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
+) -> Dependencies<'a, <<P as ProjectModel>::Targets as Targets>::Spec> {
+    for pkg_name in build_tools.iter() {
+        if dependencies.host.contains_key(pkg_name) {
+            // If the host dependencies already contain the package, we don't need to add it
+            // again.
+            continue;
+        }
+
+        dependencies.host.insert(pkg_name, empty_spec);
+    }
+
+    dependencies
 }
 
 #[cfg(test)]
@@ -297,8 +297,8 @@ mod tests {
 
     use std::{collections::BTreeMap, path::PathBuf};
 
-    use pixi_build_backend::traits::RequirementsProvider;
     use pixi_build_type_conversions::to_project_model_v1;
+
     use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
@@ -426,13 +426,8 @@ mod tests {
         let host_platform = Platform::current();
         let variant = BTreeMap::new();
 
-        let reqs = python_backend
-            .requirements(
-                &python_backend.project_model,
-                host_platform,
-                &channel_config,
-                &variant,
-            )
+        let (_, reqs) = python_backend
+            .requirements(host_platform, &channel_config, &variant)
             .unwrap();
 
         insta::assert_yaml_snapshot!(reqs);

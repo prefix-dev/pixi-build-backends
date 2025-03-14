@@ -38,9 +38,9 @@ run = { cmd = "cargo run", inputs = [
 ] }
 
 
-install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-python --locked" }
-install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-cmake --locked" }
-install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build --bin pixi-build-rattler-build --locked" }
+install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }
+install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build-cmake  --locked --force" }
+install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build-rattler-build --locked --force" }
 install-pixi-backends = { depends-on = [
   "install-pixi-build-python",
   "install-pixi-build-cmake",

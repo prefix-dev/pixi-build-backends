@@ -124,14 +124,6 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
 
             let output = Output {
                 build_configuration,
-                // build_configuration: self.build_configuration(
-                //     &recipe,
-                //     channels.clone(),
-                //     params.build_platform.clone(),
-                //     params.host_platform.clone(),
-                //     variant,
-                //     directories.clone(),
-                // )?,
                 recipe,
                 finalized_dependencies: None,
                 finalized_cache_dependencies: None,

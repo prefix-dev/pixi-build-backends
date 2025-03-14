@@ -7,7 +7,6 @@
 //!
 #![deny(missing_docs)]
 
-pub mod capabilities;
 pub mod package_spec;
 pub mod project;
 pub mod targets;

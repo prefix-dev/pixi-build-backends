@@ -10,7 +10,6 @@
 pub mod package_spec;
 pub mod project;
 pub mod targets;
-// pub mod build_context;
 
 pub use package_spec::{AnyVersion, BinarySpecExt, PackageSpec};
 pub use project::ProjectModel;

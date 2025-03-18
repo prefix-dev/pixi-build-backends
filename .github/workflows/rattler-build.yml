@@ -20,27 +20,6 @@ permissions:
   contents: read
 
 jobs:
-  # generate-version:
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     version_matrix: ${{ steps.set_version.outputs.version_matrix }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions-rust-lang/setup-rust-toolchain@v1
-  #     - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
-  #       with:
-  #         environments: release
-  #     - name: Extract versions
-  #       id: set_version
-  #       run: |
-  #         # extract names and versions from cargo metadata
-  #         # and generate a matrix entries for the build job
-  #         MATRIX_JSON=$(pixi run python scripts/generate_version_matrix.py)
-
-  #         echo "Generated matrix: $MATRIX_JSON"
-  #         echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-
-
   rattler-build:
     # needs: generate-version
     env:
@@ -61,7 +40,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           environments: build

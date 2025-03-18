@@ -50,7 +50,7 @@ Even though binary versions are available on the prefix channels, its also quite
 To start development make sure you have installed [pixi](https://pixi.sh). After which, a number of command should be available:
 
 ```bash
-# To build the backens
+# To build the backends
 pixi run build
 # .. to install a backend, for example the python one:
 pixi r install-pixi-build-python

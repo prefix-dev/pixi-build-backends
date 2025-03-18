@@ -1,3 +1,4 @@
+from collections import defaultdict
 import subprocess
 import json
 import re
@@ -19,7 +20,7 @@ def extract_name_and_version_from_tag(tag):
     raise ValueError(f"Invalid Git tag format: {tag}. Expected format: pixi-build-[name]-v[version]")
 
 
-def generate_matrix():
+def generate_matrix(target):
     # Run cargo metadata
     result = subprocess.run(
         ["cargo", "metadata", "--format-version=1", "--no-deps"],
@@ -39,6 +40,8 @@ def generate_matrix():
         {"target": "osx-64", "os": "macos-13"},
         {"target": "osx-arm64", "os": "macos-14"}
     ]
+
+    targets_dict = {target["target"]: target["os"] for target in targets}
 
     git_tags = get_git_tags()
 
@@ -72,15 +75,15 @@ def generate_matrix():
             if tagged_packages and not package_tagged:
                 continue
 
-            for target in targets:
-                matrix.append({
-                    "bin": package["name"],
-                    "version": package["version"],
-                    "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
-                    "recipe_name": package["name"].replace("-", "_"),
-                    "target": target["target"],
-                    "os": target["os"]
-                })
+            # for target in targets:
+            matrix.append({
+                "bin": package["name"],
+                "version": package["version"],
+                "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
+                "recipe_name": package["name"].replace("-", "_"),
+                "target": target,
+                "os": targets_dict[target]
+            })
 
     if tagged_packages:
         for git_tag, has_a_package in tagged_packages.items():
@@ -88,10 +91,10 @@ def generate_matrix():
                 raise ValueError(f"Git tag {git_tag} does not match any package in Cargo.toml")
 
 
-    matrix_json = json.dumps(matrix)
+    # matrix_json = json.dumps(matrix)
 
+    # print(matrix_json)
+    return matrix
 
-    print(matrix_json)
-
-if __name__ == "__main__":
-    generate_matrix()
+# if __name__ == "__main__":
+#     generate_matrix()

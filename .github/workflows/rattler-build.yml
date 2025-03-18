@@ -20,62 +20,72 @@ permissions:
   contents: read
 
 jobs:
-  generate-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version_matrix: ${{ steps.set_version.outputs.version_matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
-        with:
-          environments: release
-      - name: Extract versions
-        id: set_version
-        run: |
-          # extract names and versions from cargo metadata
-          # and generate a matrix entries for the build job
-          MATRIX_JSON=$(pixi run python scripts/generate_version_matrix.py)
+  # generate-version:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     version_matrix: ${{ steps.set_version.outputs.version_matrix }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions-rust-lang/setup-rust-toolchain@v1
+  #     - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+  #       with:
+  #         environments: release
+  #     - name: Extract versions
+  #       id: set_version
+  #       run: |
+  #         # extract names and versions from cargo metadata
+  #         # and generate a matrix entries for the build job
+  #         MATRIX_JSON=$(pixi run python scripts/generate_version_matrix.py)
 
-          echo "Generated matrix: $MATRIX_JSON"
-          echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+  #         echo "Generated matrix: $MATRIX_JSON"
+  #         echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
 
   rattler-build:
-    needs: generate-version
+    # needs: generate-version
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
     strategy:
       matrix:
-        bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix) }}
+        include:
+          - { target: linux-64, os: ubuntu-20.04 }
+          - { target: linux-aarch64, os: ubuntu-latest }
+          - { target: linux-ppc64le, os: ubuntu-latest }
+          - { target: win-64, os: windows-latest }
+          # force older macos-13 to get x86_64 runners
+          - { target: osx-64, os: macos-13 }
+          - { target: osx-arm64, os: macos-14 }
+        # bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix) }}
 
       fail-fast: false
 
-    runs-on: ${{ matrix.bins.os }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           environments: build
       - name: Enable long paths (Windows)
-        if: ${{ matrix.bins.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' }}
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Set environment variable for recipe version
-        run: |
-          echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
-      - name: Build ${{ matrix.bins.bin }}
+      # - name: Set environment variable for recipe version
+      #   run: |
+      #     echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
+      - name: Build ${{ matrix.target }}
         shell: bash
         env:
-          TARGET_PLATFORM: ${{ matrix.bins.target }}
+          TARGET_PLATFORM: ${{ matrix.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
+
+          pixi run python scripts/build.py ${{ matrix.target }}
+        # pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
-        if: ${{ github.event_name == 'push' && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ github.event_name == 'push' && matrix.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
@@ -83,7 +93,7 @@ jobs:
           done
       - name: Upload Windows packages
         shell: pwsh
-        if: ${{ github.event_name == 'push' && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ github.event_name == 'push' && matrix.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"

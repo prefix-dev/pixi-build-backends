@@ -1,9 +1,8 @@
-//! This module contains some functions that I copied from rattler-build. We
-//! should refactor these.
+//! We could expose the `default_compiler` function from the `rattler-build` crate
 
 use rattler_conda_types::Platform;
 
-pub(crate) fn default_compiler(platform: Platform, language: &str) -> Option<String> {
+pub fn default_compiler(platform: Platform, language: &str) -> Option<String> {
     Some(
         match language {
             // Platform agnostic compilers

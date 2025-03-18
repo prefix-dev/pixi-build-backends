@@ -3,6 +3,7 @@ pub mod protocol;
 pub mod server;
 
 pub mod common;
+pub mod compilers;
 mod consts;
 pub mod dependencies;
 pub mod project;

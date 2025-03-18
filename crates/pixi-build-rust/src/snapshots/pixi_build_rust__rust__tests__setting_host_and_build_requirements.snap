@@ -1,0 +1,11 @@
+---
+source: crates/pixi-build-rust/src/rust.rs
+expression: reqs
+---
+build:
+  - boltons
+  - rust_osx-arm64
+host:
+  - hatchling
+run:
+  - foobar >=3.2.1

@@ -37,12 +37,10 @@ pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) project_model: P,
     pub(crate) config: RustBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
-    // pub(crate) pyproject_manifest: Option<PyProjectToml>,
 }
 
 impl<P: ProjectModel> RustBuildBackend<P> {
-    /// Returns a new instance of [`PythonBuildBackend`] by reading the manifest
-    /// at the given path.
+    /// Returns a new instance of [`RustBuildBackend`].
     pub fn new(
         manifest_path: PathBuf,
         project_model: P,
@@ -85,10 +83,6 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
     /// Constructs a [`Recipe`] that will build the python package into a conda
     /// package.
-    ///
-    ///
-    /// Script entry points are read from the pyproject and added as entry
-    /// points in the conda package.
     pub(crate) fn recipe(
         &self,
         host_platform: Platform,

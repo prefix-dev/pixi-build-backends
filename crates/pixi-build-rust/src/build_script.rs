@@ -1,4 +1,3 @@
-
 use minijinja::Environment;
 use serde::Serialize;
 

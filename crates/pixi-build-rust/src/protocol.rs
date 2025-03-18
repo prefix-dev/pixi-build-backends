@@ -356,12 +356,14 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
 ///
 /// However, lets take everything in the directory as input for now
 fn input_globs() -> Vec<String> {
-    ["**/*.rs",
+    [
+        "**/*.rs",
         // Cargo configuration files
         "Cargo.toml",
         "Cargo.lock",
         // Build scripts
-        "build.rs"]
+        "build.rs",
+    ]
     .iter()
     .map(|s| s.to_string())
     .collect()

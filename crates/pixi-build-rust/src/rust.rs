@@ -11,17 +11,14 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{
-            Build, Dependency, Package, Requirements, ScriptContent,
-        },
+        parser::{Build, Dependency, Package, Requirements, ScriptContent},
         variable::Variable,
         Recipe,
     },
     NormalizedKey,
 };
 use rattler_conda_types::{
-    package::ArchiveType,
-    ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
+    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
 

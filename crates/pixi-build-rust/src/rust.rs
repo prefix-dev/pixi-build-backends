@@ -22,10 +22,7 @@ use rattler_conda_types::{
 };
 use rattler_package_streaming::write::CompressionLevel;
 
-use crate::{
-    build_script::{BuildPlatform, BuildScriptContext},
-    config::RustBackendConfig,
-};
+use crate::{build_script::BuildScriptContext, config::RustBackendConfig};
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -96,15 +93,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let requirements = self.requirements(host_platform, channel_config, variant)?;
 
-        let build_platform = Platform::current();
         let build_number = 0;
 
         let build_script = BuildScriptContext {
-            build_platform: if build_platform.is_windows() {
-                BuildPlatform::Windows
-            } else {
-                BuildPlatform::Unix
-            },
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
         }

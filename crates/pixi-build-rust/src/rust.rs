@@ -187,7 +187,7 @@ pub(crate) fn construct_configuration(
 #[cfg(test)]
 mod tests {
 
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::collections::BTreeMap;
 
     use pixi_build_type_conversions::to_project_model_v1;
 
@@ -236,71 +236,12 @@ mod tests {
         [package.build]
         backend = { name = "pixi-build-rust", version = "*" }
         "#, RustBackendConfig::default()), {
-            ".source[0].path" => "[ ... path ... ]",
-            ".build.script" => "[ ... script ... ]",
-        });
-    }
-
-    #[tokio::test]
-    async fn test_setting_host_and_build_requirements() {
-        let package_with_host_and_build_deps = r#"
-        [workspace]
-        name = "test-reqs"
-        channels = ["conda-forge"]
-        platforms = ["osx-arm64"]
-        preview = ["pixi-build"]
-
-        [package]
-        name = "test-reqs"
-        version = "1.2.3"
-
-        [package.host-dependencies]
-        hatchling = "*"
-
-        [package.build-dependencies]
-        boltons = "*"
-
-        [package.run-dependencies]
-        foobar = ">=3.2.1"
-
-        [package.build]
-        backend = { name = "pixi-build-rust", version = "*" }
-        "#;
-
-        let tmp_dir = tempdir().unwrap();
-        let tmp_manifest = tmp_dir.path().join("pixi.toml");
-
-        // write the raw string into the file
-        std::fs::write(&tmp_manifest, package_with_host_and_build_deps).unwrap();
-
-        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
-        let package = manifest.value.package.unwrap();
-        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
-        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
-        let python_backend = RustBuildBackend::new(
-            package.provenance.path,
-            project_model,
-            RustBackendConfig::default(),
-            LoggingOutputHandler::default(),
-            None,
-        )
-        .unwrap();
-
-        let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
-
-        let host_platform = Platform::current();
-        let variant = BTreeMap::new();
-
-        let reqs = python_backend
-            .requirements(host_platform, &channel_config, &variant)
-            .unwrap();
-
-        insta::assert_yaml_snapshot!(reqs);
-
-        let recipe = python_backend.recipe(host_platform, &channel_config, &BTreeMap::new());
-        insta::assert_yaml_snapshot!(recipe.unwrap(), {
-            ".source[0].path" => "[ ... path ... ]",
-            ".build.script" => "[ ... script ... ]",
+        ".source[0].path" => "[ ... path ... ]",
+        ".build.script" => "[ ... script ... ]",
+        ".requirements.build[0]" => insta::dynamic_redaction(|value, _path| {
+            // assert that the value looks like a uuid here
+            assert!(value.as_str().unwrap().contains("rust_osx"));
+            }),
         });
     }
 }

@@ -1,2 +1,5 @@
+{% if export_openssl -%}
 export OPENSSL_DIR="$PREFIX"
-cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }}
+{% endif %}
+
+cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force

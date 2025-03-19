@@ -54,6 +54,11 @@ impl<'a, S> Dependencies<'a, S> {
             build: IndexMap::new(),
         }
     }
+
+    /// Return true if the dependencies contains the given package name
+    pub fn contains(&self, name: &SourcePackageName) -> bool {
+        self.run.contains_key(name) || self.host.contains_key(name) || self.build.contains_key(name)
+    }
 }
 
 /// A trait that represent a project target.

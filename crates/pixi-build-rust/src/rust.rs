@@ -94,6 +94,11 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let requirements = self.requirements(host_platform, channel_config, variant)?;
 
+        let export_openssl = self
+            .project_model
+            .dependencies(Some(host_platform))
+            .contains(&"openssl".into());
+
         let build_number = 0;
         let export_openssl =self.project_model.dependencies(Some(host_platform)).contains(&"openssl".into());
 

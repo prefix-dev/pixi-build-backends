@@ -1,2 +1,2 @@
 export OPENSSL_DIR="$PREFIX"
-cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }}
+cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force

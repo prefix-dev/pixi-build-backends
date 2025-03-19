@@ -5,13 +5,13 @@ description = "Showcases how to build a rust project with pixi"
 name = "pixi_build_rust"
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 preview = ["pixi-build"]
-version = "0.1.3"
+version = "0.1.4"
 
 [package]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 description = "Showcases how to build a rust project with pixi"
 name = "pixi-build-rust"
-version = "0.1.3"
+version = "0.1.4"
 
 
 [dependencies]

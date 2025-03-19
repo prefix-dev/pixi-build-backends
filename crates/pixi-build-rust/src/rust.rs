@@ -2,7 +2,10 @@ use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    common::{requirements, BuildConfigurationParams}, compilers::default_compiler, traits::Dependencies, ProjectModel, Targets
+    common::{requirements, BuildConfigurationParams},
+    compilers::default_compiler,
+    traits::Dependencies,
+    ProjectModel, Targets,
 };
 use rattler_build::{
     console_utils::LoggingOutputHandler,
@@ -92,7 +95,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let requirements = self.requirements(host_platform, channel_config, variant)?;
 
         let build_number = 0;
-        let export_openssl = export_openssl::<P>(self.project_model.dependencies(Some(host_platform)));
+        let export_openssl =self.project_model.dependencies(Some(host_platform)).contains(&"openssl".into());
 
         let build_script = BuildScriptContext {
             source_dir: self.manifest_root.display().to_string(),
@@ -174,24 +177,6 @@ pub(crate) fn construct_configuration(
         sandbox_config: None,
     }
 }
-
-// Detect if the project is using openssl
-pub(crate) fn export_openssl<'a, P: ProjectModel>(
-    dependencies: Dependencies<'a, <P::Targets as Targets>::Spec>,) -> bool {
-        if dependencies.build.iter().any(|(name, _)| name.as_str() == "openssl") {
-            return true;
-        }
-        else if dependencies.host.iter().any(|(name, _)| name.as_str() == "openssl") {
-            return true;
-        }
-        else if dependencies.run.iter().any(|(name, _)| name.as_str() == "openssl") {
-            return true;
-        } else{
-            return false;
-        }
-
-}
-
 
 #[cfg(test)]
 mod tests {

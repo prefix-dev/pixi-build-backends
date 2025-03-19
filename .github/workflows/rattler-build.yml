@@ -6,6 +6,8 @@ on:
       - "pixi-build-python-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
+    # Build all backends on main branch
+    branches: [main]
   # Run everything but publish on PRs
   pull_request:
 
@@ -74,7 +76,7 @@ jobs:
           pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
-        if: ${{ github.event_name == 'push' && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           for file in "$RUNNER_TEMP"/**/*.conda; do
             echo "Uploading ${file}"
@@ -82,7 +84,7 @@ jobs:
           done
       - name: Upload Windows packages
         shell: pwsh
-        if: ${{ github.event_name == 'push' && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"

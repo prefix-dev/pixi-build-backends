@@ -63,9 +63,6 @@ jobs:
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Set environment variable for recipe version
-        run: |
-          echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
@@ -73,7 +70,10 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi run build-package --manifest-path crates/${{ matrix.bins.recipe_name }} --target-platform=${{ env.TARGET_PLATFORM }}
+          # install pixi-build-rust backend with some fixes
+          cargo install --locked --path crates/pixi-build-rust --no-track --force
+          # ask to use the one installed locally instead of the one from the channels
+          PIXI_BUILD_BACKEND_OVERRIDE_ALL=true pixi run build-package --manifest-path crates/${{ matrix.bins.recipe_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}

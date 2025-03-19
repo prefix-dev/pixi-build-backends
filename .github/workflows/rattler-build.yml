@@ -8,6 +8,7 @@ on:
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
+  pull_request:
 
 name: "Build and publish pixi builds backends as conda packages"
 
@@ -62,6 +63,7 @@ jobs:
           git config --global core.longpaths true
         shell: bash
       - name: Set environment variable for recipe version
+        shell: bash
         run: |
           echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
       - name: Build ${{ matrix.bins.bin }}
@@ -72,19 +74,19 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
-      - name: Upload OSX or Linux packages
-        shell: bash
-        if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
-        run: |
-          for file in "$RUNNER_TEMP"/**/*.conda; do
-            echo "Uploading ${file}"
-            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
-          done
-      - name: Upload Windows packages
-        shell: pwsh
-        if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
-        run: |
-          Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
-            Write-Host "Uploading $($_.FullName)"
-            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"
-          }
+      # - name: Upload OSX or Linux packages
+      #   shell: bash
+      #   if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
+      #   run: |
+      #     for file in "$RUNNER_TEMP"/**/*.conda; do
+      #       echo "Uploading ${file}"
+      #       pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
+      #     done
+      # - name: Upload Windows packages
+      #   shell: pwsh
+      #   if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
+      #   run: |
+      #     Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
+      #       Write-Host "Uploading $($_.FullName)"
+      #       pixi run -e build rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"
+      #     }

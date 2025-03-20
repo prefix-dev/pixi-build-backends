@@ -63,13 +63,13 @@ impl<P: ProjectModel> RustBuildBackend<P> {
     /// That should be included in the build section of the recipe.
     /// TODO: Should we also take into account other compilers like
     /// c or cxx?
-    fn compiler_packages(&self, target_platform: Platform) -> Vec<MatchSpec> {
+    fn compiler_packages(&self, build_platform: Platform) -> Vec<MatchSpec> {
         let mut compilers = vec![];
 
-        if let Some(name) = default_compiler(target_platform, "rust") {
+        if let Some(name) = default_compiler(build_platform, "rust") {
             // TODO: Read this from variants
             // TODO: Read the version specification from variants
-            let compiler_package = PackageName::new_unchecked(format!("{name}_{target_platform}"));
+            let compiler_package = PackageName::new_unchecked(format!("{name}_{build_platform}"));
             compilers.push(MatchSpec::from(compiler_package));
         }
 
@@ -146,7 +146,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
 
         requirements.build.extend(
-            self.compiler_packages(host_platform)
+            self.compiler_packages(Platform::current())
                 .into_iter()
                 .map(Dependency::Spec),
         );

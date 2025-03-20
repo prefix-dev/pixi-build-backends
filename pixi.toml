@@ -46,6 +46,7 @@ install-pixi-backends = { depends-on = [
   "install-pixi-build-python",
   "install-pixi-build-cmake",
   "install-pixi-build-rattler-build",
+  "install-pixi-build-rust",
 ] }
 
 [dependencies]

@@ -77,7 +77,7 @@ def generate_matrix():
                     "bin": package["name"],
                     "version": package["version"],
                     "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
-                    "recipe_name": package["name"].replace("-", "_"),
+                    "crate_name": package["name"],
                     "target": target["target"],
                     "os": target["os"]
                 })

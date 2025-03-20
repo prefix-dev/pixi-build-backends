@@ -250,10 +250,16 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
             let build_configuration_params = build_configuration(
                 channels.clone(),
-                params.host_platform.clone(),
+                Some(PlatformAndVirtualPackages {
+                    platform: Platform::current(),
+                    virtual_packages: params.build_platform_virtual_packages.clone(),
+                }),
                 Some(PlatformAndVirtualPackages {
                     platform: host_platform,
-                    virtual_packages: params.build_platform_virtual_packages.clone(),
+                    virtual_packages: params
+                        .host_platform
+                        .clone()
+                        .and_then(|p| p.virtual_packages),
                 }),
                 variant.clone(),
                 directories.clone(),

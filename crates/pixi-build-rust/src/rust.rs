@@ -100,7 +100,6 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             .contains(&"openssl".into());
 
         let build_number = 0;
-        let export_openssl =self.project_model.dependencies(Some(host_platform)).contains(&"openssl".into());
 
         let build_script = BuildScriptContext {
             source_dir: self.manifest_root.display().to_string(),

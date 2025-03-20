@@ -33,11 +33,11 @@ def generate_matrix():
     # https://github.com/orgs/community/discussions/67591
     targets = [
         {"target": "linux-64", "os": "ubuntu-20.04"},
-        # {"target": "linux-aarch64", "os": "ubuntu-latest"},
-        # {"target": "linux-ppc64le", "os": "ubuntu-latest"},
-        # {"target": "win-64", "os": "windows-latest"},
-        # {"target": "osx-64", "os": "macos-13"},
-        # {"target": "osx-arm64", "os": "macos-14"}
+        {"target": "linux-aarch64", "os": "ubuntu-latest"},
+        {"target": "linux-ppc64le", "os": "ubuntu-latest"},
+        {"target": "win-64", "os": "windows-latest"},
+        {"target": "osx-64", "os": "macos-13"},
+        {"target": "osx-arm64", "os": "macos-14"}
     ]
 
     git_tags = get_git_tags()
@@ -77,8 +77,7 @@ def generate_matrix():
                     "bin": package["name"],
                     "version": package["version"],
                     "env_name": package["name"].replace("-", "_").upper() + "_VERSION",
-                    # "recipe_name": package["name"].replace("-", "_"),
-                    "recipe_name": package["name"],
+                    "crate_name": package["name"],
                     "target": target["target"],
                     "os": target["os"]
                 })

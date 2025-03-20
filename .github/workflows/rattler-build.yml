@@ -8,6 +8,7 @@ on:
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
+  # will be removed. just to validate that all platforms works
   pull_request:
 
 
@@ -70,21 +71,18 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi run build-package --manifest-path crates/${{ matrix.bins.recipe_name }} --target-platform=${{ env.TARGET_PLATFORM }}
+          pixi run build-package --manifest-path crates/${{ matrix.bins.crate_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
-        # if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
-        if: ${{ matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           for file in "$RUNNER_TEMP"/*.conda; do
             echo "Uploading ${file}"
-            # dry run
-            # pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
+            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
           done
       - name: Upload Windows packages
         shell: pwsh
-        # if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
-        if: ${{ matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
+        if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
           Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"

@@ -18,6 +18,7 @@ source:
 
 requirements:
     build:
+      - sccache
       - ${{ compiler("rust") }}
     host:
       - xz >=5.0, <6.0
@@ -27,12 +28,19 @@ requirements:
 
 build:
   script:
-    - if: unix
-      then:
-        - export OPENSSL_DIR="$PREFIX"
-        - cargo install --locked --root $PREFIX --path crates/pixi-build-cmake --no-track
-      else:
-        - cargo install --locked --root %PREFIX% --path crates/pixi-build-cmake --no-track
+    secrets:
+      - SCCACHE_WEBDAV_TOKEN
+
+    content:
+      - if: unix
+        then:
+          # configure sccache for cargo
+          - export RUSTC_WRAPPER=sccache
+          - export OPENSSL_DIR="$PREFIX"
+          - cargo install --locked --root $PREFIX --path crates/pixi-build-cmake --no-track
+          - sccache --show-stats
+        else:
+          - cargo install --locked --root %PREFIX% --path crates/pixi-build-cmake --no-track
   files:
     - bin/pixi-build-cmake
     - bin/pixi-build-cmake.exe

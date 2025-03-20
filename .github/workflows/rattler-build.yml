@@ -71,8 +71,11 @@ jobs:
           TARGET_PLATFORM: ${{ matrix.bins.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
+          SCCACHE_WEBDAV_TOKEN: ${{ secrets.DEPOT_TOKEN }}
+          SCCACHE_WEBDAV_ENDPOINT: "https://cache.depot.dev"
+
         run: |
-          pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
+          pixi run build-recipe --recipe recipe/${{ matrix.bins.recipe_name }}.yaml --target-platform=${{ env.TARGET_PLATFORM }} --no-build-id
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}

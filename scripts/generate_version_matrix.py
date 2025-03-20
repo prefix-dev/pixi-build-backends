@@ -32,12 +32,12 @@ def generate_matrix():
     # this is to overcome the issue of matrix generation from github actions side
     # https://github.com/orgs/community/discussions/67591
     targets = [
-        # {"target": "linux-64", "os": "ubuntu-20.04"},
-        # {"target": "linux-aarch64", "os": "ubuntu-latest"},
-        # {"target": "linux-ppc64le", "os": "ubuntu-latest"},
+        {"target": "linux-64", "os": "ubuntu-20.04"},
+        {"target": "linux-aarch64", "os": "ubuntu-latest"},
+        {"target": "linux-ppc64le", "os": "ubuntu-latest"},
         {"target": "win-64", "os": "windows-latest"},
-        # {"target": "osx-64", "os": "macos-13"},
-        # {"target": "osx-arm64", "os": "macos-14"}
+        {"target": "osx-64", "os": "macos-13"},
+        {"target": "osx-arm64", "os": "macos-14"}
     ]
 
     git_tags = get_git_tags()

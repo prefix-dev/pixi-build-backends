@@ -71,6 +71,7 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
+          # will be removed after new pixi backend is released
           pixi run install-pixi-build-rust
           PIXI_BUILD_BACKEND_OVERRIDE_ALL=true pixi run build-package --manifest-path crates/${{ matrix.bins.crate_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages

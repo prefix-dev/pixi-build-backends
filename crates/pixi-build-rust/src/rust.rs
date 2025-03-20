@@ -4,8 +4,7 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
     compilers::default_compiler,
-    traits::Dependencies,
-    ProjectModel, Targets,
+    ProjectModel,
 };
 use rattler_build::{
     console_utils::LoggingOutputHandler,

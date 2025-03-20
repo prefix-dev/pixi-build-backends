@@ -69,15 +69,15 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
     /// Returns the matchspecs for the compiler packages. That should be
     /// included in the build section of the recipe.
-    fn compiler_packages(&self, build_platform: Platform) -> Vec<MatchSpec> {
+    fn compiler_packages(&self, target_platform: Platform) -> Vec<MatchSpec> {
         let mut compilers = vec![];
 
         for lang in self.languages() {
-            if let Some(name) = default_compiler(build_platform, &lang) {
+            if let Some(name) = default_compiler(target_platform, &lang) {
                 // TODO: Read this from variants
                 // TODO: Read the version specification from variants
                 let compiler_package =
-                    PackageName::new_unchecked(format!("{name}_{build_platform}"));
+                    PackageName::new_unchecked(format!("{name}_{target_platform}"));
                 compilers.push(MatchSpec::from(compiler_package));
             }
 
@@ -191,7 +191,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
 
         requirements.build.extend(
-            self.compiler_packages(Platform::current())
+            self.compiler_packages(host_platform)
                 .into_iter()
                 .map(Dependency::Spec),
         );

@@ -24,5 +24,5 @@ channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
 [package.target.unix.host-dependencies]
 openssl = "*"
 
-[package.host-dependencies]
+[package.build-dependencies]
 xz = ">=5.0, <6.0"

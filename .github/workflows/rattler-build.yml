@@ -98,7 +98,7 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           # will be removed after new pixi backend is released
-          git config --global core.longpaths true
+          cargo install --locked --git https://github.com/nichmor/pixi.git --branch feat/pixi-build-discovery-improvements pixi
           pixi run install-pixi-build-rust
           PIXI_BUILD_BACKEND_OVERRIDE_ALL=true pixi run build-package --manifest-path crates/${{ matrix.bins.crate_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages

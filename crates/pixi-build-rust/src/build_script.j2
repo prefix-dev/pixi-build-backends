@@ -2,4 +2,4 @@
 export OPENSSL_DIR="$PREFIX"
 {% endif %}
 
-cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force
+cargo --config net.git-fetch-with-cli=true install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force

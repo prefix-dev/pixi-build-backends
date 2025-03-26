@@ -256,7 +256,10 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 }),
                 Some(PlatformAndVirtualPackages {
                     platform: host_platform,
-                    virtual_packages: params.host_platform.clone().and_then(|p| p.virtual_packages),
+                    virtual_packages: params
+                        .host_platform
+                        .clone()
+                        .and_then(|p| p.virtual_packages),
                 }),
                 variant.clone(),
                 directories.clone(),

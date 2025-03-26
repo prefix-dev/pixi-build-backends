@@ -114,24 +114,8 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
             let recipe = self.recipe(host_platform, &channel_config, false, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
-                Some(PlatformAndVirtualPackages {
-                    platform: params
-                        .build_platform
-                        .clone()
-                        .map(|p| p.platform)
-                        .unwrap_or(Platform::current()),
-                    virtual_packages: params
-                        .build_platform
-                        .clone()
-                        .and_then(|p| p.virtual_packages),
-                }),
-                Some(PlatformAndVirtualPackages {
-                    platform: host_platform,
-                    virtual_packages: params
-                        .host_platform
-                        .clone()
-                        .and_then(|p| p.virtual_packages),
-                }),
+                params.build_platform.clone(),
+                params.host_platform.clone(),
                 variant.clone(),
                 directories.clone(),
             )?;

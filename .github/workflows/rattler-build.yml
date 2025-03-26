@@ -64,32 +64,6 @@ jobs:
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Enable fs long paths (Windows)
-        if: ${{ matrix.bins.os == 'windows-latest' }}
-        run: |
-          $configPath = "$env:USERPROFILE\.cargo\config.toml"
-
-          # Ensure the .cargo directory exists
-          if (!(Test-Path "$env:USERPROFILE\.cargo")) {
-            New-Item -ItemType Directory -Path "$env:USERPROFILE\.cargo" -Force
-          }
-
-          # Ensure the file exists with proper section header
-          if (!(Test-Path $configPath)) {
-            "[net]`n" | Set-Content -Path $configPath -Encoding utf8
-          }
-
-          # Check if the setting already exists
-          $configContent = Get-Content -Path $configPath -Raw
-          if ($configContent -notmatch "git-fetch-with-cli\s*=\s*true") {
-            Add-Content -Path $configPath -Value "git-fetch-with-cli = true`n"
-          }
-
-          # Print the final config file
-          Write-Host "Modified Cargo config:"
-          Get-Content -Path $configPath
-        shell: pwsh
-
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:

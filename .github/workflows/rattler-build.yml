@@ -56,9 +56,9 @@ jobs:
     runs-on: ${{ matrix.bins.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      # - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
-      #   with:
-      #     environments: build
+      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+        with:
+          environments: build
       - name: Enable long paths (Windows)
         if: ${{ matrix.bins.os == 'windows-latest' }}
         run: |

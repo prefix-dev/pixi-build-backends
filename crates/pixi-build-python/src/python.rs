@@ -1,6 +1,5 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
-use itertools::Itertools;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
@@ -92,23 +91,13 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             .and_then(|p| p.project.as_ref())
             .and_then(|p| p.scripts.as_ref());
 
-        eprintln!("scripts: {:?}", scripts);
-        eprintln!("{:?}", self.manifest_path);
-        dbg!(&self.pyproject_manifest);
-
-        dbg!(&scripts);
-
-        let entry_point = scripts
+        scripts
             .into_iter()
             .flatten()
             .flat_map(|(name, entry_point)| {
                 EntryPoint::from_str(&format!("{name} = {entry_point}"))
             })
-            .collect_vec();
-
-        dbg!(&entry_point);
-
-        entry_point
+            .collect()
     }
 
     /// Constructs a [`Recipe`] that will build the python package into a conda

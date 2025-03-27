@@ -111,7 +111,12 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let mut requirements = self.requirements(host_platform, channel_config, variant)?;
+
+        let has_sccache = std::env::vars().any(|(key, _)| key.starts_with("SCCACHE"));
+        if has_sccache {
+            requirements.build.push(Dependency::Spec("sccache".parse().unwrap()));
+        }
 
         let build_platform = Platform::current();
         let build_number = 0;
@@ -124,6 +129,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             },
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
+            has_sccache,
         }
         .render();
 

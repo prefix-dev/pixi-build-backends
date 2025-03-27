@@ -1,5 +1,14 @@
 ninja --version
 cmake --version
+{% if has_sccache -%}
+sccache --version
+
+{% if build_platform == "windows" -%}
+set EXTRA_CMAKE_ARGS=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+{% else -%}
+export EXTRA_CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+{% endif -%}
+{% endif -%}
 
 {# Windows #}
 {% if build_platform == "windows" -%}
@@ -10,6 +19,7 @@ if not exist %SRC_DIR%\..\build\CMakeCache.txt (
           -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
           -DBUILD_SHARED_LIBS=ON ^
+          %EXTRA_CMAKE_ARGS% ^
           {{ extra_args | join(" ") }} ^
           -B %SRC_DIR%\..\build ^
           -S "{{ source_dir }}"
@@ -27,6 +37,7 @@ if [ ! -f "$SRC_DIR/../build/CMakeCache.txt" ]; then
           -DCMAKE_INSTALL_PREFIX=$PREFIX \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
           -DBUILD_SHARED_LIBS=ON \
+          $EXTRA_CMAKE_ARGS \
           {{ extra_args | join(" ") }} \
           -B $SRC_DIR/../build \
           -S "{{ source_dir }}"
@@ -36,4 +47,8 @@ cmake --build $SRC_DIR/../build --target install
 
 {% if build_platform == "windows" -%}
 @if errorlevel 1 exit 1
+{% endif %}
+
+{% if has_sccache -%}
+sccache --show-stats
 {% endif %}

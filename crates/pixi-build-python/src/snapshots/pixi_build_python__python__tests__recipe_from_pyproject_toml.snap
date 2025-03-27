@@ -1,0 +1,22 @@
+---
+source: crates/pixi-build-python/src/python.rs
+expression: recipe
+---
+schema_version: 1
+context: {}
+package:
+  name: test-scripts
+  version: 0.1.0
+source:
+  - path: "[ ... path ... ]"
+build:
+  number: 0
+  script: "[ ... script ... ]"
+  noarch: python
+  python:
+    entry_points:
+      - "rich-example-main = rich_example:main"
+requirements:
+  host:
+    - pip
+    - python

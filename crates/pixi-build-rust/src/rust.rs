@@ -103,8 +103,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         // Check if any `sccache` variables are set in the environment
         let has_sccache = std::env::vars().any(|(k, _)| k.starts_with("SCCACHE"));
         if has_sccache {
-            // tracing::info!("sccache is enabled - adding it to the build requirements");
-            requirements.build.push(Dependency::Spec("sccache".parse().unwrap()));
+            requirements
+                .build
+                .push(Dependency::Spec("sccache".parse().unwrap()));
         }
 
         let build_script = BuildScriptContext {
@@ -124,7 +125,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             context: Default::default(),
             cache: None,
             // Sometimes Rust projects are part of a workspace, so we need to
-            // include the entire source project and set the source directory 
+            // include the entire source project and set the source directory
             // to the root of the package.
             source: vec![],
             build: Build {

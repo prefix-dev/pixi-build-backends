@@ -6,6 +6,7 @@ pub struct BuildScriptContext {
     pub build_platform: BuildPlatform,
     pub source_dir: String,
     pub extra_args: Vec<String>,
+    pub has_sccache: bool,
 }
 
 #[derive(Serialize)]

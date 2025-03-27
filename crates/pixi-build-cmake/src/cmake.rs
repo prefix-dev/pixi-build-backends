@@ -115,7 +115,9 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let has_sccache = std::env::vars().any(|(key, _)| key.starts_with("SCCACHE"));
         if has_sccache {
-            requirements.build.push(Dependency::Spec("sccache".parse().unwrap()));
+            requirements
+                .build
+                .push(Dependency::Spec("sccache".parse().unwrap()));
         }
 
         let build_platform = Platform::current();

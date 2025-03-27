@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
+use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
@@ -56,31 +56,16 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
             .to_path_buf();
 
-        let pyproject_manifest = match manifest_path
-            .file_name()
-            .and_then(OsStr::to_str)
-            .map(|str| str.to_lowercase())
-            == Some("pyproject.toml".to_string())
-        {
-            true => {
-                // Load the manifest as a pyproject
-                let contents = fs_err::read_to_string(&manifest_path).into_diagnostic()?;
-
-                // Load the manifest as a pyproject
+        let pyproject_manifest = {
+            let pyproject_path = manifest_path.with_file_name("pyproject.toml");
+            if pyproject_path.exists() {
+                let contents = std::fs::read_to_string(&pyproject_path).into_diagnostic()?;
                 Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
-            }
-            false => {
-                // try to load a pyproject.toml from the same directory
-                let pyproject_path = manifest_path.with_file_name("pyproject.toml");
-
-                if pyproject_path.exists() {
-                    let contents = fs_err::read_to_string(&pyproject_path).into_diagnostic()?;
-                    Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
-                } else {
-                    None
-                }
+            } else {
+                None
             }
         };
+
         Ok(Self {
             manifest_path,
             manifest_root,

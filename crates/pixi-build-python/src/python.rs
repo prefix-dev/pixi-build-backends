@@ -518,4 +518,67 @@ requires = ["hatchling"]
             ".build.script" => "[ ... script ... ]",
         });
     }
+
+    #[tokio::test]
+    async fn test_recipe_from_pyproject_toml() {
+        let pyproject_toml_with_build = r#"
+        [project]
+        dependencies = ["rich"]
+        name = "rich_example"
+        requires-python = ">= 3.11"
+        scripts = { rich-example-main = "rich_example:main" }
+        version = "0.1.0"
+
+        [build-system]
+        build-backend = "hatchling.build"
+        requires = ["hatchling"]
+
+        [tool.pixi.workspace]
+        name = "test-scripts"
+        channels = ["conda-forge"]
+        platforms = ["osx-arm64"]
+        preview = ["pixi-build"]
+
+        [too.pixi.package]
+        name = "test-scripts"
+        version = "1.2.3"
+
+        [tool.pixi.package.build]
+        backend = { name = "pixi-build-python", version = "*" }
+"#;
+
+        let tmp_dir = tempdir().unwrap();
+
+        let tmp_pyproject_toml = tmp_dir.path().join("pyproject.toml");
+
+        // write the raw pyproject toml into the file
+        std::fs::write(&tmp_pyproject_toml, pyproject_toml_with_build).unwrap();
+
+        let manifest = Manifests::from_workspace_manifest_path(tmp_pyproject_toml.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
+        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
+        let python_backend = PythonBuildBackend::new(
+            package.provenance.path,
+            project_model,
+            PythonBackendConfig::default(),
+            LoggingOutputHandler::default(),
+            None,
+        )
+        .unwrap();
+
+        let recipe = python_backend
+            .recipe(
+                Platform::current(),
+                &channel_config,
+                false,
+                &BTreeMap::new(),
+            )
+            .unwrap();
+
+        insta::assert_yaml_snapshot!(recipe, {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        });
+    }
 }

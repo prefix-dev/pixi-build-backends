@@ -1,5 +1,6 @@
-use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf, str::FromStr};
+use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
+use itertools::Itertools;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
@@ -29,6 +30,7 @@ use crate::{
     config::PythonBackendConfig,
 };
 
+#[derive(Debug)]
 pub struct PythonBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_path: PathBuf,
@@ -55,17 +57,16 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
             .to_path_buf();
 
-        let pyproject_manifest = if manifest_path
-            .file_name()
-            .and_then(OsStr::to_str)
-            .map(|str| str.to_lowercase())
-            == Some("pyproject.toml".to_string())
-        {
-            // Load the manifest as a pyproject
-            let contents = fs_err::read_to_string(&manifest_path).into_diagnostic()?;
+        // if the manifest path is a pixi.toml, try to load a pyproject.toml from the same directory
+        let pyproject_manifest = if manifest_path.ends_with("pixi.toml") {
+            let pyproject_path = manifest_path.with_file_name("pyproject.toml");
 
-            // Load the manifest as a pyproject
-            Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
+            if pyproject_path.with_file_name("pyproject.toml").exists() {
+                let contents = fs_err::read_to_string(&pyproject_path).into_diagnostic()?;
+                Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -91,13 +92,23 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             .and_then(|p| p.project.as_ref())
             .and_then(|p| p.scripts.as_ref());
 
-        scripts
+        eprintln!("scripts: {:?}", scripts);
+        eprintln!("{:?}", self.manifest_path);
+        dbg!(&self.pyproject_manifest);
+
+        dbg!(&scripts);
+
+        let entry_point = scripts
             .into_iter()
             .flatten()
             .flat_map(|(name, entry_point)| {
                 EntryPoint::from_str(&format!("{name} = {entry_point}"))
             })
-            .collect()
+            .collect_vec();
+
+        dbg!(&entry_point);
+
+        entry_point
     }
 
     /// Constructs a [`Recipe`] that will build the python package into a conda
@@ -434,6 +445,75 @@ mod tests {
 
         let recipe = python_backend.recipe(host_platform, &channel_config, false, &BTreeMap::new());
         insta::assert_yaml_snapshot!(recipe.unwrap(), {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        });
+    }
+
+    #[tokio::test]
+    async fn test_scripts_are_respected() {
+        let package_with_host_and_build_deps = r#"
+        [workspace]
+        name = "test-scripts"
+        channels = ["conda-forge"]
+        platforms = ["osx-arm64"]
+        preview = ["pixi-build"]
+
+        [package]
+        name = "test-scripts"
+        version = "1.2.3"
+
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
+        "#;
+
+        let pyproject_toml_with_scripts = r#"
+        [project]
+dependencies = ["rich"]
+name = "rich_example"
+requires-python = ">= 3.11"
+scripts = { rich-example-main = "rich_example:main" }
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+"#;
+
+        let tmp_dir = tempdir().unwrap();
+        let tmp_manifest = tmp_dir.path().join("pixi.toml");
+
+        // write the raw pixi toml into the file
+        std::fs::write(&tmp_manifest, package_with_host_and_build_deps).unwrap();
+
+        let tmp_pyproject_toml = tmp_dir.path().join("pyproject.toml");
+
+        // write the raw pixi toml into the file
+        std::fs::write(&tmp_pyproject_toml, pyproject_toml_with_scripts).unwrap();
+
+        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
+        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
+        let python_backend = PythonBuildBackend::new(
+            package.provenance.path,
+            project_model,
+            PythonBackendConfig::default(),
+            LoggingOutputHandler::default(),
+            None,
+        )
+        .unwrap();
+
+        let recipe = python_backend
+            .recipe(
+                Platform::current(),
+                &channel_config,
+                false,
+                &BTreeMap::new(),
+            )
+            .unwrap();
+
+        insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         });

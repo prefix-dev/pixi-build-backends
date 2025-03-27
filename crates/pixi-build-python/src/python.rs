@@ -60,7 +60,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
         let pyproject_manifest = if manifest_path.ends_with("pixi.toml") {
             let pyproject_path = manifest_path.with_file_name("pyproject.toml");
 
-            if pyproject_path.with_file_name("pyproject.toml").exists() {
+            if pyproject_path.exists() {
                 let contents = fs_err::read_to_string(&pyproject_path).into_diagnostic()?;
                 Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
             } else {

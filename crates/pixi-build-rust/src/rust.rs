@@ -75,7 +75,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         compilers
     }
 
-    /// Constructs a [`Recipe`] that will build the python package into a conda
+    /// Constructs a [`Recipe`] that will build the Rust package into a conda
     /// package.
     pub(crate) fn recipe(
         &self,
@@ -91,7 +91,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let mut requirements = self.requirements(host_platform, channel_config, variant)?;
 
         let export_openssl = self
             .project_model
@@ -100,10 +100,18 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let build_number = 0;
 
+        // Check if any `sccache` variables are set in the environment
+        let has_sccache = std::env::vars().any(|(k, _)| k.starts_with("SCCACHE"));
+        if has_sccache {
+            // tracing::info!("sccache is enabled - adding it to the build requirements");
+            requirements.build.push(Dependency::Spec("sccache".parse().unwrap()));
+        }
+
         let build_script = BuildScriptContext {
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
             export_openssl,
+            has_sccache,
         }
         .render();
 
@@ -115,9 +123,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             },
             context: Default::default(),
             cache: None,
-            // Sometimes rust projects could be a part of a workspace, so we need to
-            // include entire source project
-            // and set the source directory to the root of the package.
+            // Sometimes Rust projects are part of a workspace, so we need to
+            // include the entire source project and set the source directory 
+            // to the root of the package.
             source: vec![],
             build: Build {
                 number: build_number,

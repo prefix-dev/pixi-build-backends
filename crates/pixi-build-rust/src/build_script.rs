@@ -6,6 +6,7 @@ pub struct BuildScriptContext {
     pub source_dir: String,
     pub extra_args: Vec<String>,
     pub export_openssl: bool,
+    pub has_sccache: bool,
 }
 
 impl BuildScriptContext {

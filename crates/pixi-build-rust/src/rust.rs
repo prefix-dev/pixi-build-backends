@@ -2,8 +2,10 @@ use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
+    cache::{add_sccache, enable_sccache, sccache_tools},
     common::{requirements, BuildConfigurationParams},
     compilers::default_compiler,
+    traits::project::new_spec,
     ProjectModel,
 };
 use rattler_build::{
@@ -75,7 +77,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         compilers
     }
 
-    /// Constructs a [`Recipe`] that will build the python package into a conda
+    /// Constructs a [`Recipe`] that will build the Rust package into a conda
     /// package.
     pub(crate) fn recipe(
         &self,
@@ -91,7 +93,8 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let (has_sccache, requirements) =
+            self.requirements(host_platform, channel_config, variant)?;
 
         let export_openssl = self
             .project_model
@@ -104,6 +107,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
             export_openssl,
+            has_sccache,
         }
         .render();
 
@@ -115,9 +119,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             },
             context: Default::default(),
             cache: None,
-            // Sometimes rust projects could be a part of a workspace, so we need to
-            // include entire source project
-            // and set the source directory to the root of the package.
+            // Sometimes Rust projects are part of a workspace, so we need to
+            // include the entire source project and set the source directory
+            // to the root of the package.
             source: vec![],
             build: Build {
                 number: build_number,
@@ -138,9 +142,20 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         host_platform: Platform,
         channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Requirements> {
+    ) -> miette::Result<(bool, Requirements)> {
         let project_model = &self.project_model;
-        let dependencies = project_model.dependencies(Some(host_platform));
+        let mut sccache_enabled = false;
+
+        let mut dependencies = project_model.dependencies(Some(host_platform));
+
+        let empty_spec = new_spec::<P>();
+
+        let cache_tools = sccache_tools();
+
+        if enable_sccache(std::env::vars().collect()) {
+            sccache_enabled = true;
+            add_sccache::<P>(&mut dependencies, &cache_tools, &empty_spec);
+        }
 
         let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
 
@@ -150,7 +165,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
                 .map(Dependency::Spec),
         );
 
-        Ok(requirements)
+        Ok((sccache_enabled, requirements))
     }
 }
 

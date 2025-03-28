@@ -2,4 +2,12 @@
 export OPENSSL_DIR="$PREFIX"
 {% endif %}
 
+{% if has_sccache -%}
+export RUSTC_WRAPPER="sccache"
+{% endif %}
+
 cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force
+
+{% if has_sccache -%}
+sccache --show-stats
+{% endif %}

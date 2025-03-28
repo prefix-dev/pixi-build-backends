@@ -80,8 +80,10 @@ pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>
 
     // Setup logging
     let log_handler = LoggingOutputHandler::default();
+
     let registry = tracing_subscriber::registry()
         .with(get_default_env_filter(args.verbose.log_level_filter()).into_diagnostic()?);
+
     registry.with(log_handler.clone()).init();
 
     let factory = factory(log_handler);

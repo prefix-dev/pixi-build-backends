@@ -8,7 +8,7 @@ on:
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
-  # will be removed. just to validate that all platforms works
+  workflow_dispatch:
 
 
 name: "Build and publish pixi builds backends as conda packages"

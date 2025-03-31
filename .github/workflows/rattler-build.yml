@@ -69,6 +69,9 @@ jobs:
           TARGET_PLATFORM: ${{ matrix.bins.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
+          # set the secret for the sccache depot
+          SCCACHE_WEBDAV_ENDPOINT: ${{ secrets.SCCACHE_WEBDAV_ENDPOINT }}
+          SCCACHE_WEBDAV_TOKEN: ${{ secrets.SCCACHE_WEBDAV_TOKEN }}
         run: |
           pixi run build-package --manifest-path crates/${{ matrix.bins.crate_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages

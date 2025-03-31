@@ -8,6 +8,7 @@ on:
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 

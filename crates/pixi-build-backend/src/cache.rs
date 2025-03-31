@@ -7,7 +7,7 @@ pub fn sccache_tools() -> Vec<String> {
 }
 
 pub fn enable_sccache(env: HashMap<String, String>) -> bool {
-    env.keys().any(|k| k.to_lowercase().starts_with("SCCACHE"))
+    env.keys().any(|k| k.starts_with("SCCACHE"))
 }
 
 pub fn add_sccache<'a, P: ProjectModel>(

@@ -346,6 +346,7 @@ mod tests {
         backend = { name = "pixi-build-python", version = "*" }
         "#, PythonBackendConfig {
             noarch: Some(false),
+            ..Default::default()
         }), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",

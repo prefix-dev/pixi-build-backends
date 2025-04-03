@@ -3,6 +3,14 @@
 {% set EDITABLE_OPTION = " --editable" if editable else "" -%}
 {% set COMMON_OPTIONS = "-vv --no-deps --no-build-isolation" + EDITABLE_OPTION -%}
 
+{% for var_name, var_value in env_vars.items() -%}
+{% if build_platform == "windows" -%}
+set {{ var_name }}={{ var_value }}
+{% else -%}
+export {{ var_name }}="{{ var_value }}"
+{% endif -%}
+{% endfor -%}
+
 {% if installer == "uv" -%}
 uv pip install --python {{ PYTHON }} {{ COMMON_OPTIONS }} {{ SRC_DIR }}
 {% else %}

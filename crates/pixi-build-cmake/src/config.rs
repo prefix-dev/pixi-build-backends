@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
 
 #[derive(Debug, Default, Deserialize)]
@@ -5,4 +7,6 @@ use serde::Deserialize;
 pub struct CMakeBackendConfig {
     /// Extra args for CMake invocation
     pub extra_args: Vec<String>,
+    /// Environment Variables
+    pub env_vars: HashMap<String, String>,
 }

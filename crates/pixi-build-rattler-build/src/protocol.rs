@@ -390,31 +390,6 @@ async fn log_initialize(
     Ok(())
 }
 
-async fn log_conda_build(
-    config: &RattlerBuildBackendConfig,
-    params: &CondaBuildParams,
-) -> miette::Result<()> {
-    let Some(ref debug_dir) = config.debug_dir else {
-        return Ok(());
-    };
-
-    let json = serde_json::to_string_pretty(&params)
-        .into_diagnostic()
-        .context("failed to serialize parameters to JSON")?;
-
-    tokio_fs::create_dir_all(&debug_dir)
-        .await
-        .into_diagnostic()
-        .context("failed to create data directory")?;
-
-    let path = debug_dir.join("conda_build_params.json");
-    tokio_fs::write(&path, json)
-        .await
-        .into_diagnostic()
-        .context("failed to write JSON to file")?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use std::{

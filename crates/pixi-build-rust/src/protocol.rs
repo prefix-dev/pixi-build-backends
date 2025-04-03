@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{path::PathBuf, str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -38,6 +38,10 @@ use crate::{
 
 #[async_trait::async_trait]
 impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
+    fn debug_dir(&self) -> Option<PathBuf> {
+        self.config.debug_dir.clone()
+    }
+
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,

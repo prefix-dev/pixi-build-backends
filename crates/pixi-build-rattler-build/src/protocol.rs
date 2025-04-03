@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
@@ -47,6 +47,10 @@ impl RattlerBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl Protocol for RattlerBuildBackend {
+    fn debug_dir(&self) -> Option<PathBuf> {
+        self.config.debug_dir.clone()
+    }
+
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,

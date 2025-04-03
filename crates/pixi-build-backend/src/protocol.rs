@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use pixi_build_types::procedures::{
     conda_build::{CondaBuildParams, CondaBuildResult},
@@ -43,5 +43,5 @@ pub trait Protocol {
         unimplemented!("conda_build not implemented");
     }
 
-    fn debug_dir(&self) -> Option<PathBuf>;
+    fn debug_dir(&self) -> Option<&Path>;
 }

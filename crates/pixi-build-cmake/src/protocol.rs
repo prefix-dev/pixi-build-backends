@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr, sync::Arc};
+use std::{path::Path, str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -59,8 +59,8 @@ impl CMakeBuildBackendInstantiator {
 }
 #[async_trait::async_trait]
 impl Protocol for CMakeBuildBackend<ProjectModelV1> {
-    fn debug_dir(&self) -> Option<PathBuf> {
-        self.config.debug_dir.clone()
+    fn debug_dir(&self) -> Option<&Path> {
+        self.config.debug_dir.as_deref()
     }
 
     async fn conda_get_metadata(

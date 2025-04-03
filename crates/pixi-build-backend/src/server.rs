@@ -3,9 +3,12 @@ use std::{net::SocketAddr, path::Path, sync::Arc};
 use fs_err::tokio as tokio_fs;
 use jsonrpc_core::{serde_json, to_value, Error, IoHandler, Params};
 use miette::{Context, IntoDiagnostic, JSONReportHandler};
-use pixi_build_types::procedures::{
-    self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
-    initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
+use pixi_build_types::{
+    procedures::{
+        self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
+        initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
+    },
+    VersionedProjectModel,
 };
 
 use tokio::sync::RwLock;
@@ -164,6 +167,31 @@ fn convert_error(err: miette::Report) -> jsonrpc_core::Error {
         message: err.to_string(),
         data: Some(data),
     }
+}
+
+async fn log_initialize(
+    debug_dir: Option<&Path>,
+    project_model: Option<VersionedProjectModel>,
+) -> miette::Result<()> {
+    let Some(debug_dir) = debug_dir else {
+        return Ok(());
+    };
+
+    let project_model = project_model
+        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
+        .into_v1()
+        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
+
+    let project_model_json = serde_json::to_string_pretty(&project_model)
+        .into_diagnostic()
+        .context("failed to serialize project model to JSON")?;
+
+    let project_model_path = debug_dir.join("project_model.json");
+    tokio_fs::write(&project_model_path, project_model_json)
+        .await
+        .into_diagnostic()
+        .context("failed to write project model JSON to file")?;
+    Ok(())
 }
 
 async fn log_conda_get_metadata(

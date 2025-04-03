@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use minijinja::Environment;
 use serde::Serialize;
 
@@ -7,6 +9,7 @@ pub struct BuildScriptContext {
     pub extra_args: Vec<String>,
     pub export_openssl: bool,
     pub has_sccache: bool,
+    pub env_vars: HashMap<String, String>,
 }
 
 impl BuildScriptContext {

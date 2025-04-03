@@ -152,6 +152,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             },
             editable,
             manifest_root: self.manifest_root.clone(),
+            env_vars: self.config.env_vars.clone(),
         }
         .render();
 

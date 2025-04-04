@@ -1,4 +1,7 @@
-use std::{path::Path, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
@@ -14,7 +17,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata, VersionedProjectModel,
+    BackendCapabilities, CondaPackageMetadata,
 };
 use rattler_build::{
     build::run_build,
@@ -321,6 +324,13 @@ impl Protocol for RattlerBuildBackend {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
+    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
+        configuration
+            .and_then(|config| {
+                serde_json::from_value::<RattlerBuildBackendConfig>(config.clone()).ok()
+            })
+            .and_then(|config| config.debug_dir)
+    }
     async fn initialize(
         &self,
         params: InitializeParams,

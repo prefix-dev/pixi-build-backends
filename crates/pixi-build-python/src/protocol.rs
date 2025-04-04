@@ -1,4 +1,8 @@
-use std::{path::Path, str::FromStr, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -416,6 +420,12 @@ impl PythonBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for PythonBuildBackendInstantiator {
+    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
+        configuration
+            .and_then(|config| serde_json::from_value::<PythonBackendConfig>(config.clone()).ok())
+            .and_then(|config| config.debug_dir)
+    }
+
     async fn initialize(
         &self,
         params: InitializeParams,

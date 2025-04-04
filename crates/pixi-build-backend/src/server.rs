@@ -90,6 +90,9 @@ impl<T: ProtocolInstantiator> Server<T> {
                         return Err(Error::invalid_request());
                     };
 
+                    let debug_dir = T::debug_dir(params.configuration.clone());
+                    log_initialize(debug_dir.as_deref(), params.project_model.clone());
+
                     let (protocol_endpoint, result) = initializer
                         .initialize(params)
                         .await

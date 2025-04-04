@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::convert::identity;
+use std::{convert::identity, path::PathBuf};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -8,6 +8,8 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
+    /// If set, internal state will be logged as files in that directory
+    pub debug_dir: Option<PathBuf>,
 }
 
 impl PythonBackendConfig {

@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use pixi_build_types::procedures::{
     conda_build::{CondaBuildParams, CondaBuildResult},
     conda_metadata::{CondaMetadataParams, CondaMetadataResult},
@@ -9,6 +11,10 @@ use pixi_build_types::procedures::{
 /// and endpoint that can handle the RPC calls.
 #[async_trait::async_trait]
 pub trait ProtocolInstantiator: Send + Sync + 'static {
+    /// Get the debug directory
+    /// If set, internal state will be logged as files in that directory
+    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf>;
+
     /// Called when negotiating capabilities with the client.
     /// This is determine how the rest of the initialization will proceed.
     async fn negotiate_capabilities(
@@ -28,6 +34,10 @@ pub trait ProtocolInstantiator: Send + Sync + 'static {
 /// server as an endpoint for the RPC calls.
 #[async_trait::async_trait]
 pub trait Protocol {
+    /// Get the debug directory
+    /// If set, internal state will be logged as files in that directory
+    fn debug_dir(&self) -> Option<&Path>;
+
     /// Called when the client requests metadata for a Conda package.
     async fn conda_get_metadata(
         &self,

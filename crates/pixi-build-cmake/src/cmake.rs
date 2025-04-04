@@ -124,6 +124,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             },
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
+            env_vars: self.config.env_vars.clone(),
         }
         .render();
 

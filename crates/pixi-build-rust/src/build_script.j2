@@ -6,6 +6,10 @@ export OPENSSL_DIR="$PREFIX"
 export RUSTC_WRAPPER="sccache"
 {% endif %}
 
+{% for var_name, var_value in env_vars.items() -%}
+export {{ var_name }}="{{ var_value }}"
+{% endfor -%}
+
 cargo install --locked --root $PREFIX --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force
 
 {% if has_sccache -%}

@@ -108,6 +108,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             extra_args: self.config.extra_args.clone(),
             export_openssl,
             has_sccache,
+            env_vars: self.config.env_vars.clone(),
         }
         .render();
 

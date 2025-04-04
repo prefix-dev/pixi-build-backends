@@ -3,6 +3,11 @@ cmake --version
 
 {# Windows #}
 {% if build_platform == "windows" -%}
+
+{% for var_name, var_value in env_vars.items() -%}
+set {{ var_name }}={{ var_value }}
+{% endfor -%}
+
 if not exist %SRC_DIR%\..\build\CMakeCache.txt (
     cmake %CMAKE_ARGS% ^
           -GNinja ^
@@ -20,6 +25,11 @@ cmake --build %SRC_DIR%\..\build --target install
 
 {# Non Windows #}
 {% else -%}
+
+{% for var_name, var_value in env_vars.items() -%}
+export {{ var_name }}="{{ var_value }}"
+{% endfor -%}
+
 if [ ! -f "$SRC_DIR/../build/CMakeCache.txt" ]; then
     cmake $CMAKE_ARGS \
           -GNinja \

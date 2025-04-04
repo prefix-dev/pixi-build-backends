@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use minijinja::Environment;
 use pixi_build_backend::{traits::Dependencies, ProjectModel, Targets};
@@ -11,6 +11,7 @@ pub struct BuildScriptContext {
     pub build_platform: BuildPlatform,
     pub editable: bool,
     pub manifest_root: PathBuf,
+    pub env_vars: HashMap<String, String>,
 }
 
 #[derive(Default, Serialize)]

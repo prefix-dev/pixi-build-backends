@@ -3918,6 +3918,7 @@ version = "0.1.6"
 dependencies = [
  "async-trait",
  "chrono",
+ "indexmap 2.7.1",
  "insta",
  "miette",
  "minijinja",

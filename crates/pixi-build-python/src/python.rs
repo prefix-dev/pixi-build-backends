@@ -12,7 +12,7 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Package, PathSource, Python, Requirements, ScriptContent, Source},
+        parser::{Build, Package, PathSource, Python, Requirements, Script, ScriptContent, Source},
         variable::Variable,
         Recipe,
     },
@@ -187,7 +187,11 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 string: Default::default(),
 
                 // skip: Default::default(),
-                script: ScriptContent::Commands(build_script).into(),
+                script: Script {
+                    content: ScriptContent::Commands(build_script),
+                    env: self.config.env_vars.clone(),
+                    ..Default::default()
+                },
                 noarch: noarch_type,
 
                 python,
@@ -346,6 +350,7 @@ mod tests {
         backend = { name = "pixi-build-python", version = "*" }
         "#, PythonBackendConfig {
             noarch: Some(false),
+            ..Default::default()
         }), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",

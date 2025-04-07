@@ -1,5 +1,6 @@
+use indexmap::IndexMap;
 use serde::Deserialize;
-use std::convert::identity;
+use std::{collections::HashMap, convert::identity};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -8,6 +9,9 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
+
+    /// Environment Variables
+    pub env_vars: IndexMap<String, String>,
 }
 
 impl PythonBackendConfig {

@@ -13,7 +13,7 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package, Requirements, ScriptContent},
+        parser::{Build, Dependency, Package, Requirements, Script, ScriptContent},
         variable::Variable,
         Recipe,
     },
@@ -127,7 +127,11 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             build: Build {
                 number: build_number,
                 string: Default::default(),
-                script: ScriptContent::Commands(build_script).into(),
+                script: Script {
+                    content: ScriptContent::Commands(build_script),
+                    env: self.config.env_vars.clone(),
+                    ..Default::default()
+                },
                 noarch: noarch_type,
                 ..Build::default()
             },

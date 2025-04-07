@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 chrono = { workspace = true }
+indexmap = { workspace = true }
 miette = { workspace = true }
 minijinja = { workspace = true, features = ["json"] }
 rattler_conda_types = { workspace = true }

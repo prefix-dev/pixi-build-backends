@@ -254,7 +254,7 @@ mod tests {
         ".requirements.build[0]" => insta::dynamic_redaction(|value, _path| {
             // assert that the value looks like a uuid here
             assert!(value.as_str().unwrap().contains("rust"));
-            }),
+        }),
         });
     }
 }

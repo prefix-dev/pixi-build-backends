@@ -3,25 +3,22 @@
 {% endmacro -%}
 {%- macro export(key, value) -%}
 {%- if is_bash -%}
-export {{ value }}={{ key }}
+export {{ key }}={{ value }}
 {%- else -%}
 SET {{ key }}={{ value }}
 {%- endif -%}
 {%- endmacro -%}
 
-{% if has_openssl -%}
+{%- if has_openssl %}
 {{ export("OPENSSL_DIR", env("PREFIX")|tojson) }}
 {%- endif %}
-
-{% if has_sccache -%}
+{%- if has_sccache %}
 {{ export("RUSTC_WRAPPER", "sccache") }}
 {%- endif %}
 
 cargo install --locked --root "{{ env("PREFIX") }}" --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force
-{% if not is_bash -%}
+{%- if not is_bash %}
 if errorlevel 1 exit 1
 {%- endif %}
 
-{% if has_sccache -%}
-sccache --show-stats
-{%- endif %}
+{% if has_sccache %}sccache --show-stats{% endif %}

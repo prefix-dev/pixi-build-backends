@@ -96,7 +96,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let (has_sccache, requirements) =
             self.requirements(host_platform, channel_config, variant)?;
 
-        let export_openssl = self
+        let has_openssl = self
             .project_model
             .dependencies(Some(host_platform))
             .contains(&"openssl".into());
@@ -106,8 +106,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let build_script = BuildScriptContext {
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
-            export_openssl,
+            has_openssl,
             has_sccache,
+            is_bash: !Platform::current().is_windows(),
         }
         .render();
 

@@ -3,10 +3,20 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct BuildScriptContext {
+    /// The location of the source
     pub source_dir: String,
+
+    /// Any additional args to pass to `cargo`
     pub extra_args: Vec<String>,
-    pub export_openssl: bool,
+
+    /// True if `openssl` is part of the build environment
+    pub has_openssl: bool,
+
+    /// True if `sccache` is available.
     pub has_sccache: bool,
+
+    /// The platform that is running the build.
+    pub is_bash: bool,
 }
 
 impl BuildScriptContext {

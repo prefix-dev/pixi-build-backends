@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
-use std::{collections::HashMap, convert::identity};
+use std::convert::identity;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]

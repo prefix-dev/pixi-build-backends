@@ -24,4 +24,4 @@ pixi_build_type_conversions = { workspace = true }
 
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
-rstest = { workspace = true}
+rstest = { workspace = true }

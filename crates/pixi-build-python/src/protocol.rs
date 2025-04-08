@@ -1,7 +1,12 @@
 use std::{str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::{common::{build_configuration, compute_variants}, protocol::{Protocol, ProtocolInstantiator}, utils::TemporaryRenderedRecipe, PackageSourceSpec, ProjectModel};
+use pixi_build_backend::{
+    common::{build_configuration, compute_variants},
+    protocol::{Protocol, ProtocolInstantiator},
+    utils::TemporaryRenderedRecipe,
+    PackageSourceSpec, ProjectModel,
+};
 use pixi_build_types::{
     procedures::{
         conda_build::{
@@ -238,7 +243,8 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let (recipe, _source_requirements) = self.recipe(host_platform, params.editable, &variant)?;
+            let (recipe, _source_requirements) =
+                self.recipe(host_platform, params.editable, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 Some(PlatformAndVirtualPackages {

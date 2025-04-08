@@ -4,13 +4,19 @@ use std::{
     str::FromStr,
 };
 
+use crate::{
+    build_script::{BuildPlatform, BuildScriptContext},
+    config::CMakeBackendConfig,
+};
 use miette::IntoDiagnostic;
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
     compilers::default_compiler,
     traits::{project::new_spec, Dependencies},
 };
 use pixi_build_backend::{ProjectModel, Targets};
+use rattler_build::recipe::parser::BuildString;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -22,16 +28,8 @@ use rattler_build::{
     },
     NormalizedKey,
 };
-use rattler_build::recipe::parser::BuildString;
-use rattler_conda_types::{
-    package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform,
-};
+use rattler_conda_types::{package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform};
 use rattler_package_streaming::write::CompressionLevel;
-use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
-use crate::{
-    build_script::{BuildPlatform, BuildScriptContext},
-    config::CMakeBackendConfig,
-};
 
 pub struct CMakeBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -129,52 +127,55 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let hash_info = HashInfo::from_variant(variant, &noarch_type);
 
-        Ok((Recipe {
-            schema_version: 1,
-            context: Default::default(),
-            package: Package {
-                version: version.into(),
-                name,
-            },
-            cache: None,
-            // source: vec![Source::Path(PathSource {
-            //     // TODO: How can we use a git source?
-            //     path: manifest_root.to_path_buf(),
-            //     sha256: None,
-            //     md5: None,
-            //     patches: vec![],
-            //     target_directory: None,
-            //     file_name: None,
-            //     use_gitignore: true,
-            // })],
-            // We hack the source location
-            source: vec![],
-            build: Build {
-                number: build_number,
-                string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
+        Ok((
+            Recipe {
+                schema_version: 1,
+                context: Default::default(),
+                package: Package {
+                    version: version.into(),
+                    name,
+                },
+                cache: None,
+                // source: vec![Source::Path(PathSource {
+                //     // TODO: How can we use a git source?
+                //     path: manifest_root.to_path_buf(),
+                //     sha256: None,
+                //     md5: None,
+                //     patches: vec![],
+                //     target_directory: None,
+                //     file_name: None,
+                //     use_gitignore: true,
+                // })],
+                // We hack the source location
+                source: vec![],
+                build: Build {
+                    number: build_number,
+                    string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
-                // skip: Default::default(),
-                script: ScriptContent::Commands(build_script).into(),
-                noarch: noarch_type,
+                    // skip: Default::default(),
+                    script: ScriptContent::Commands(build_script).into(),
+                    noarch: noarch_type,
 
-                // TODO: Python is not exposed properly
-                //python: Default::default(),
-                // dynamic_linking: Default::default(),
-                // always_copy_files: Default::default(),
-                // always_include_files: Default::default(),
-                // merge_build_and_host_envs: false,
-                // variant: Default::default(),
-                // prefix_detection: Default::default(),
-                // post_process: vec![],
-                // files: Default::default(),
-                ..Build::default()
+                    // TODO: Python is not exposed properly
+                    //python: Default::default(),
+                    // dynamic_linking: Default::default(),
+                    // always_copy_files: Default::default(),
+                    // always_include_files: Default::default(),
+                    // merge_build_and_host_envs: false,
+                    // variant: Default::default(),
+                    // prefix_detection: Default::default(),
+                    // post_process: vec![],
+                    // files: Default::default(),
+                    ..Build::default()
+                },
+                // TODO read from manifest
+                requirements: requirements.requirements,
+                tests: vec![],
+                about: Default::default(),
+                extra: Default::default(),
             },
-            // TODO read from manifest
-            requirements: requirements.requirements,
-            tests: vec![],
-            about: Default::default(),
-            extra: Default::default(),
-        }, requirements.source))
+            requirements.source,
+        ))
     }
 
     pub(crate) fn requirements(
@@ -253,7 +254,7 @@ pub(crate) fn construct_configuration(
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap};
+    use std::collections::BTreeMap;
 
     use pixi_build_type_conversions::to_project_model_v1;
     use pixi_manifest::Manifests;
@@ -312,7 +313,9 @@ mod tests {
 
         let host_platform = Platform::current();
 
-        let (recipe, _source_requirements) = cmake_backend.recipe(host_platform, &BTreeMap::new()).unwrap();
+        let (recipe, _source_requirements) = cmake_backend
+            .recipe(host_platform, &BTreeMap::new())
+            .unwrap();
         insta::with_settings!({
             filters => vec![
                 ("(vs2017|vs2019|gxx|clang).*", "\"[ ... compiler ... ]\""),

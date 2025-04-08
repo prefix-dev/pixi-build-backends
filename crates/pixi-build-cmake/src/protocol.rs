@@ -1,7 +1,12 @@
 use std::{str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::{common::{build_configuration, compute_variants}, protocol::{Protocol, ProtocolInstantiator}, utils::TemporaryRenderedRecipe, PackageSourceSpec};
+use pixi_build_backend::{
+    common::{build_configuration, compute_variants},
+    protocol::{Protocol, ProtocolInstantiator},
+    utils::TemporaryRenderedRecipe,
+    PackageSourceSpec,
+};
 use pixi_build_types::{
     procedures::{
         conda_build::{
@@ -187,7 +192,11 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-                sources: source_requirements.run.into_iter().map(|(name, spec)| (name, spec.to_v1())).collect(),
+                sources: source_requirements
+                    .run
+                    .into_iter()
+                    .map(|(name, spec)| (name, spec.to_v1()))
+                    .collect(),
             });
         }
 

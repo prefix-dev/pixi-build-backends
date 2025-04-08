@@ -1,12 +1,18 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
+use crate::{
+    build_script::{BuildPlatform, BuildScriptContext, Installer},
+    config::PythonBackendConfig,
+};
 use miette::IntoDiagnostic;
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
     traits::{project::new_spec, Dependencies},
     ProjectModel, Targets,
 };
 use pyproject_toml::PyProjectToml;
+use rattler_build::recipe::parser::BuildString;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -18,17 +24,11 @@ use rattler_build::{
     },
     NormalizedKey,
 };
-use rattler_build::recipe::parser::BuildString;
 use rattler_conda_types::{
     package::{ArchiveType, EntryPoint},
     NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
-use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
-use crate::{
-    build_script::{BuildPlatform, BuildScriptContext, Installer},
-    config::PythonBackendConfig,
-};
 
 #[derive(Debug)]
 pub struct PythonBuildBackend<P: ProjectModel> {
@@ -136,8 +136,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             ..Python::default()
         };
 
-        let (installer, requirements) =
-            self.requirements(host_platform, variant)?;
+        let (installer, requirements) = self.requirements(host_platform, variant)?;
 
         // Create a build script
         let build_platform = Platform::current();
@@ -175,39 +174,42 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
 
         let hash_info = HashInfo::from_variant(variant, &noarch_type);
 
-        Ok((Recipe {
-            schema_version: 1,
-            package: Package {
-                version: version.into(),
-                name,
-            },
-            context: Default::default(),
-            cache: None,
-            source,
-            build: Build {
-                number: build_number,
-                string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
+        Ok((
+            Recipe {
+                schema_version: 1,
+                package: Package {
+                    version: version.into(),
+                    name,
+                },
+                context: Default::default(),
+                cache: None,
+                source,
+                build: Build {
+                    number: build_number,
+                    string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
-                // skip: Default::default(),
-                script: ScriptContent::Commands(build_script).into(),
-                noarch: noarch_type,
+                    // skip: Default::default(),
+                    script: ScriptContent::Commands(build_script).into(),
+                    noarch: noarch_type,
 
-                python,
-                // dynamic_linking: Default::default(),
-                // always_copy_files: Default::default(),
-                // always_include_files: Default::default(),
-                // merge_build_and_host_envs: false,
-                // variant: Default::default(),
-                // prefix_detection: Default::default(),
-                // post_process: vec![],
-                // files: Default::default(),
-                ..Build::default()
+                    python,
+                    // dynamic_linking: Default::default(),
+                    // always_copy_files: Default::default(),
+                    // always_include_files: Default::default(),
+                    // merge_build_and_host_envs: false,
+                    // variant: Default::default(),
+                    // prefix_detection: Default::default(),
+                    // post_process: vec![],
+                    // files: Default::default(),
+                    ..Build::default()
+                },
+                requirements: requirements.requirements,
+                tests: vec![],
+                about: Default::default(),
+                extra: Default::default(),
             },
-            requirements: requirements.requirements,
-            tests: vec![],
-            about: Default::default(),
-            extra: Default::default(),
-        }, requirements.source))
+            requirements.source,
+        ))
     }
 
     pub(crate) fn requirements(
@@ -223,10 +225,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
 
         let dependencies = add_build_tools::<P>(dependencies, &tool_names, &empty_spec);
 
-        Ok((
-            installer,
-            requirements::<P>(dependencies, variant)?,
-        ))
+        Ok((installer, requirements::<P>(dependencies, variant)?))
     }
 }
 
@@ -292,7 +291,7 @@ pub(crate) fn add_build_tools<'a, P: ProjectModel>(
 #[cfg(test)]
 mod tests {
 
-    use std::{collections::BTreeMap};
+    use std::collections::BTreeMap;
 
     use pixi_build_type_conversions::to_project_model_v1;
 
@@ -322,12 +321,9 @@ mod tests {
         .unwrap();
 
         python_backend
-            .recipe(
-                Platform::current(),
-                false,
-                &BTreeMap::new(),
-            )
-            .unwrap().0
+            .recipe(Platform::current(), false, &BTreeMap::new())
+            .unwrap()
+            .0
     }
 
     #[test]
@@ -420,7 +416,9 @@ mod tests {
 
         let host_platform = Platform::current();
 
-        let (recipe, source_requirements) = python_backend.recipe(host_platform, false, &BTreeMap::new()).unwrap();
+        let (recipe, source_requirements) = python_backend
+            .recipe(host_platform, false, &BTreeMap::new())
+            .unwrap();
         insta::assert_yaml_snapshot!((recipe, source_requirements), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
@@ -482,12 +480,9 @@ requires = ["hatchling"]
         .unwrap();
 
         let recipe = python_backend
-            .recipe(
-                Platform::current(),
-                false,
-                &BTreeMap::new(),
-            )
-            .unwrap().0;
+            .recipe(Platform::current(), false, &BTreeMap::new())
+            .unwrap()
+            .0;
 
         insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",
@@ -544,12 +539,9 @@ requires = ["hatchling"]
         .unwrap();
 
         let recipe = python_backend
-            .recipe(
-                Platform::current(),
-                false,
-                &BTreeMap::new(),
-            )
-            .unwrap().0;
+            .recipe(Platform::current(), false, &BTreeMap::new())
+            .unwrap()
+            .0;
 
         insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",

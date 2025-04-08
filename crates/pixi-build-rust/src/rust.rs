@@ -1,6 +1,8 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
+use crate::{build_script::BuildScriptContext, config::RustBackendConfig};
 use miette::IntoDiagnostic;
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
     cache::{add_sccache, enable_sccache, sccache_tools},
     common::{requirements, BuildConfigurationParams},
@@ -8,6 +10,7 @@ use pixi_build_backend::{
     traits::project::new_spec,
     ProjectModel,
 };
+use rattler_build::recipe::parser::BuildString;
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -19,13 +22,8 @@ use rattler_build::{
     },
     NormalizedKey,
 };
-use rattler_build::recipe::parser::BuildString;
-use rattler_conda_types::{
-    package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform,
-};
+use rattler_conda_types::{package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform};
 use rattler_package_streaming::write::CompressionLevel;
-use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
-use crate::{build_script::BuildScriptContext, config::RustBackendConfig};
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -84,8 +82,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         &self,
         host_platform: Platform,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<(Recipe, SourceRequirements<P>)>
-    {
+    ) -> miette::Result<(Recipe, SourceRequirements<P>)> {
         // Parse the package name and version from the manifest
         let name = PackageName::from_str(self.project_model.name()).into_diagnostic()?;
         let version = self.project_model.version().clone().ok_or_else(|| {
@@ -94,8 +91,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let (has_sccache, requirements) =
-            self.requirements(host_platform, variant)?;
+        let (has_sccache, requirements) = self.requirements(host_platform, variant)?;
 
         let export_openssl = self
             .project_model
@@ -114,30 +110,33 @@ impl<P: ProjectModel> RustBuildBackend<P> {
 
         let hash_info = HashInfo::from_variant(variant, &noarch_type);
 
-        Ok((Recipe {
-            schema_version: 1,
-            package: Package {
-                version: version.into(),
-                name,
+        Ok((
+            Recipe {
+                schema_version: 1,
+                package: Package {
+                    version: version.into(),
+                    name,
+                },
+                context: Default::default(),
+                cache: None,
+                // Sometimes Rust projects are part of a workspace, so we need to
+                // include the entire source project and set the source directory
+                // to the root of the package.
+                source: vec![],
+                build: Build {
+                    number: build_number,
+                    string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
+                    script: ScriptContent::Commands(build_script).into(),
+                    noarch: noarch_type,
+                    ..Build::default()
+                },
+                requirements: requirements.requirements,
+                tests: vec![],
+                about: Default::default(),
+                extra: Default::default(),
             },
-            context: Default::default(),
-            cache: None,
-            // Sometimes Rust projects are part of a workspace, so we need to
-            // include the entire source project and set the source directory
-            // to the root of the package.
-            source: vec![],
-            build: Build {
-                number: build_number,
-                string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
-                script: ScriptContent::Commands(build_script).into(),
-                noarch: noarch_type,
-                ..Build::default()
-            },
-            requirements: requirements.requirements,
-            tests: vec![],
-            about: Default::default(),
-            extra: Default::default(),
-        }, requirements.source))
+            requirements.source,
+        ))
     }
 
     pub(crate) fn requirements(

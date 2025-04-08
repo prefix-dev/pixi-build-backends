@@ -1,7 +1,12 @@
 use std::{str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::{common::{build_configuration, compute_variants}, protocol::{Protocol, ProtocolInstantiator}, utils::TemporaryRenderedRecipe, PackageSourceSpec, ProjectModel};
+use pixi_build_backend::{
+    common::{build_configuration, compute_variants},
+    protocol::{Protocol, ProtocolInstantiator},
+    utils::TemporaryRenderedRecipe,
+    PackageSourceSpec, ProjectModel,
+};
 use pixi_build_types::{
     procedures::{
         conda_build::{

@@ -9,29 +9,30 @@ use rattler_build::{
     recipe::{parser::Dependency, variable::Variable},
     NormalizedKey,
 };
-use rattler_conda_types::{
-    MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict,
-};
+use rattler_conda_types::{MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict};
 
 use crate::traits::PackageSpec;
 
 /// A helper struct to extract match specs from a manifest.
+#[derive(Default)]
 pub struct MatchspecExtractor<'a> {
     variant: Option<&'a BTreeMap<NormalizedKey, Variable>>,
 }
 
+pub struct ExtractedMatchSpecs<S: PackageSpec> {
+    pub specs: Vec<MatchSpec>,
+    pub sources: HashMap<String, S::SourceSpec>,
+}
+
 impl<'a> MatchspecExtractor<'a> {
     pub fn new() -> Self {
-        Self {
-            variant: None,
-        }
+        Self::default()
     }
 
     /// Sets the variant to use for the match specs.
     pub fn with_variant(self, variant: &'a BTreeMap<NormalizedKey, Variable>) -> Self {
         Self {
             variant: Some(variant),
-            ..self
         }
     }
 
@@ -39,7 +40,7 @@ impl<'a> MatchspecExtractor<'a> {
     pub fn extract<'b, S>(
         &self,
         dependencies: impl IntoIterator<Item = (&'b pbt::SourcePackageName, &'b S)>,
-    ) -> miette::Result<(Vec<MatchSpec>, HashMap<String, S::SourceSpec>)>
+    ) -> miette::Result<ExtractedMatchSpecs<S>>
     where
         S: PackageSpec + 'b,
     {
@@ -76,23 +77,37 @@ impl<'a> MatchspecExtractor<'a> {
             }
         }
 
-        Ok((specs, source_specs))
+        Ok(ExtractedMatchSpecs {
+            specs,
+            sources: source_specs,
+        })
     }
 }
 
-pub fn extract_dependencies<'a, T>(
-    dependencies: impl IntoIterator<Item = (&'a pbt::SourcePackageName, &'a T)>,
-    variant: &BTreeMap<NormalizedKey, Variable>,
-) -> miette::Result<(Vec<Dependency>, HashMap<String, T::SourceSpec>)>
-where
-    T: PackageSpec + 'a,
-{
-    let (specs, source_specs) = MatchspecExtractor::new()
-        .with_variant(variant)
-        .extract(dependencies)?;
+pub struct ExtractedDependencies<T: PackageSpec> {
+    pub dependencies: Vec<Dependency>,
+    pub sources: HashMap<String, T::SourceSpec>,
+}
 
-    Ok((
-        specs.into_iter().map(Dependency::Spec).collect(),
-        source_specs,
-    ))
+impl<T: PackageSpec> ExtractedDependencies<T> {
+    pub fn from_dependencies<'a>(
+        dependencies: impl IntoIterator<Item = (&'a pbt::SourcePackageName, &'a T)>,
+        variant: &BTreeMap<NormalizedKey, Variable>,
+    ) -> miette::Result<Self>
+    where
+        T: 'a,
+    {
+        let extracted_specs = MatchspecExtractor::new()
+            .with_variant(variant)
+            .extract(dependencies)?;
+
+        Ok(Self {
+            dependencies: extracted_specs
+                .specs
+                .into_iter()
+                .map(Dependency::Spec)
+                .collect(),
+            sources: extracted_specs.sources,
+        })
+    }
 }

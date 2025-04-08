@@ -7,5 +7,5 @@ pub struct CMakeBackendConfig {
     /// Extra args for CMake invocation
     pub extra_args: Vec<String>,
     /// Environment Variables
-    pub env_vars: IndexMap<String, String>,
+    pub env: IndexMap<String, String>,
 }

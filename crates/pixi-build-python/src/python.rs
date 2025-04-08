@@ -189,7 +189,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 // skip: Default::default(),
                 script: Script {
                     content: ScriptContent::Commands(build_script),
-                    env: self.config.env_vars.clone(),
+                    env: self.config.env.clone(),
                     ..Default::default()
                 },
                 noarch: noarch_type,
@@ -589,16 +589,16 @@ requires = ["hatchling"]
         backend = { name = "pixi-build-python", version = "*" }
         "#;
 
-        let env_vars = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+        let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
 
         let recipe = recipe(
             manifest_source,
             PythonBackendConfig {
-                env_vars: env_vars.clone(),
+                env: env.clone(),
                 ..Default::default()
             },
         );
 
-        assert_eq!(recipe.build.script.env, env_vars);
+        assert_eq!(recipe.build.script.env, env);
     }
 }

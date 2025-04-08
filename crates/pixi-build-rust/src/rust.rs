@@ -206,6 +206,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
+    use indexmap::IndexMap;
     use pixi_build_type_conversions::to_project_model_v1;
 
     use pixi_manifest::Manifests;
@@ -260,5 +261,34 @@ mod tests {
             assert!(value.as_str().unwrap().contains("rust"));
         }),
         });
+    }
+
+    #[test]
+    fn test_env_vars_are_set() {
+        let manifest_source = r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [package.build]
+        backend = { name = "pixi-build-rust", version = "*" }
+        "#;
+
+        let env_vars = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+
+        let recipe = recipe(
+            manifest_source,
+            RustBackendConfig {
+                env_vars: env_vars.clone(),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(recipe.build.script.env, env_vars);
     }
 }

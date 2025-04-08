@@ -297,6 +297,7 @@ mod tests {
 
     use std::{collections::BTreeMap, path::PathBuf};
 
+    use indexmap::IndexMap;
     use pixi_build_type_conversions::to_project_model_v1;
 
     use pixi_manifest::Manifests;
@@ -570,5 +571,34 @@ requires = ["hatchling"]
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         });
+    }
+
+    #[test]
+    fn test_env_vars_are_set() {
+        let manifest_source = r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [package.build]
+        backend = { name = "pixi-build-python", version = "*" }
+        "#;
+
+        let env_vars = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+
+        let recipe = recipe(
+            manifest_source,
+            PythonBackendConfig {
+                env_vars: env_vars.clone(),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(recipe.build.script.env, env_vars);
     }
 }

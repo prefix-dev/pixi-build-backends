@@ -1,12 +1,7 @@
 use std::{str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::{
-    common::{build_configuration, compute_variants},
-    protocol::{Protocol, ProtocolInstantiator},
-    utils::TemporaryRenderedRecipe,
-    ProjectModel,
-};
+use pixi_build_backend::{common::{build_configuration, compute_variants}, protocol::{Protocol, ProtocolInstantiator}, utils::TemporaryRenderedRecipe, PackageSourceSpec, ProjectModel};
 use pixi_build_types::{
     procedures::{
         conda_build::{
@@ -111,7 +106,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
         let mut packages = Vec::new();
         for variant in combinations {
             // TODO: Determine how and if we can determine this from the manifest.
-            let recipe = self.recipe(host_platform, &channel_config, false, &variant)?;
+            let (recipe, source_requirements) = self.recipe(host_platform, false, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -183,6 +178,11 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: source_requirements
+                    .run
+                    .into_iter()
+                    .map(|(name, spec)| (name, spec.to_v1()))
+                    .collect(),
             });
         }
 
@@ -238,7 +238,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let recipe = self.recipe(host_platform, &channel_config, params.editable, &variant)?;
+            let (recipe, _source_requirements) = self.recipe(host_platform, params.editable, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 Some(PlatformAndVirtualPackages {

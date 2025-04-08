@@ -12,18 +12,19 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Package, PathSource, Python, Requirements, ScriptContent, Source},
+        parser::{Build, Package, PathSource, Python, ScriptContent, Source},
         variable::Variable,
         Recipe,
     },
     NormalizedKey,
 };
+use rattler_build::recipe::parser::BuildString;
 use rattler_conda_types::{
     package::{ArchiveType, EntryPoint},
-    ChannelConfig, NoArchType, PackageName, Platform,
+    NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
-
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext, Installer},
     config::PythonBackendConfig,
@@ -107,10 +108,9 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
     pub(crate) fn recipe(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         editable: bool,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Recipe> {
+    ) -> miette::Result<(Recipe, SourceRequirements<P>)> {
         // TODO: remove this env var override as soon as we have profiles
         let editable = std::env::var("BUILD_EDITABLE_PYTHON")
             .map(|val| val == "true")
@@ -137,7 +137,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
         };
 
         let (installer, requirements) =
-            self.requirements(host_platform, channel_config, variant)?;
+            self.requirements(host_platform, variant)?;
 
         // Create a build script
         let build_platform = Platform::current();
@@ -173,7 +173,9 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             })])
         };
 
-        Ok(Recipe {
+        let hash_info = HashInfo::from_variant(variant, &noarch_type);
+
+        Ok((Recipe {
             schema_version: 1,
             package: Package {
                 version: version.into(),
@@ -184,7 +186,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
             source,
             build: Build {
                 number: build_number,
-                string: Default::default(),
+                string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
                 // skip: Default::default(),
                 script: ScriptContent::Commands(build_script).into(),
@@ -201,19 +203,18 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 // files: Default::default(),
                 ..Build::default()
             },
-            requirements,
+            requirements: requirements.requirements,
             tests: vec![],
             about: Default::default(),
             extra: Default::default(),
-        })
+        }, requirements.source))
     }
 
     pub(crate) fn requirements(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<(Installer, Requirements)> {
+    ) -> miette::Result<(Installer, PackageRequirements<P>)> {
         let dependencies = self.project_model.dependencies(Some(host_platform));
 
         let empty_spec = new_spec::<P>();
@@ -224,7 +225,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
 
         Ok((
             installer,
-            requirements::<P>(dependencies, channel_config, variant)?,
+            requirements::<P>(dependencies, variant)?,
         ))
     }
 }
@@ -291,7 +292,7 @@ pub(crate) fn add_build_tools<'a, P: ProjectModel>(
 #[cfg(test)]
 mod tests {
 
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::{collections::BTreeMap};
 
     use pixi_build_type_conversions::to_project_model_v1;
 
@@ -323,11 +324,10 @@ mod tests {
         python_backend
             .recipe(
                 Platform::current(),
-                &channel_config,
                 false,
                 &BTreeMap::new(),
             )
-            .unwrap()
+            .unwrap().0
     }
 
     #[test]
@@ -393,6 +393,7 @@ mod tests {
 
         [package.run-dependencies]
         foobar = ">=3.2.1"
+        source = { path = "src" }
 
         [package.build]
         backend = { name = "pixi-build-python", version = "*" }
@@ -417,19 +418,10 @@ mod tests {
         )
         .unwrap();
 
-        let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
-
         let host_platform = Platform::current();
-        let variant = BTreeMap::new();
 
-        let (_, reqs) = python_backend
-            .requirements(host_platform, &channel_config, &variant)
-            .unwrap();
-
-        insta::assert_yaml_snapshot!(reqs);
-
-        let recipe = python_backend.recipe(host_platform, &channel_config, false, &BTreeMap::new());
-        insta::assert_yaml_snapshot!(recipe.unwrap(), {
+        let (recipe, source_requirements) = python_backend.recipe(host_platform, false, &BTreeMap::new()).unwrap();
+        insta::assert_yaml_snapshot!((recipe, source_requirements), {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         });
@@ -492,11 +484,10 @@ requires = ["hatchling"]
         let recipe = python_backend
             .recipe(
                 Platform::current(),
-                &channel_config,
                 false,
                 &BTreeMap::new(),
             )
-            .unwrap();
+            .unwrap().0;
 
         insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",
@@ -555,11 +546,10 @@ requires = ["hatchling"]
         let recipe = python_backend
             .recipe(
                 Platform::current(),
-                &channel_config,
                 false,
                 &BTreeMap::new(),
             )
-            .unwrap();
+            .unwrap().0;
 
         insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",

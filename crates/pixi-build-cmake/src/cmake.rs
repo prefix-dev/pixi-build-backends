@@ -16,17 +16,18 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package, Requirements, ScriptContent},
+        parser::{Build, Dependency, Package, ScriptContent},
         variable::Variable,
         Recipe,
     },
     NormalizedKey,
 };
+use rattler_build::recipe::parser::BuildString;
 use rattler_conda_types::{
-    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
+    package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform,
 };
 use rattler_package_streaming::write::CompressionLevel;
-
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use crate::{
     build_script::{BuildPlatform, BuildScriptContext},
     config::CMakeBackendConfig,
@@ -99,9 +100,8 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
     pub(crate) fn recipe(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Recipe> {
+    ) -> miette::Result<(Recipe, SourceRequirements<P>)> {
         // Parse the package name from the manifest
         let project_model = &self.project_model;
         let name = PackageName::from_str(project_model.name()).into_diagnostic()?;
@@ -111,7 +111,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let requirements = self.requirements(host_platform, variant)?;
 
         let build_platform = Platform::current();
         let build_number = 0;
@@ -127,7 +127,9 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         }
         .render();
 
-        Ok(Recipe {
+        let hash_info = HashInfo::from_variant(variant, &noarch_type);
+
+        Ok((Recipe {
             schema_version: 1,
             context: Default::default(),
             package: Package {
@@ -149,7 +151,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             source: vec![],
             build: Build {
                 number: build_number,
-                string: Default::default(),
+                string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
                 // skip: Default::default(),
                 script: ScriptContent::Commands(build_script).into(),
@@ -168,19 +170,18 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
                 ..Build::default()
             },
             // TODO read from manifest
-            requirements,
+            requirements: requirements.requirements,
             tests: vec![],
             about: Default::default(),
             extra: Default::default(),
-        })
+        }, requirements.source))
     }
 
     pub(crate) fn requirements(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Requirements> {
+    ) -> miette::Result<PackageRequirements<P>> {
         let project_model = &self.project_model;
         let dependencies = project_model.dependencies(Some(host_platform));
 
@@ -188,15 +189,15 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         let empty_spec = new_spec::<P>();
         let dependencies = add_build_tools::<P>(dependencies, &build_tools, &empty_spec);
 
-        let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
+        let mut package_requirements = requirements::<P>(dependencies, variant)?;
 
-        requirements.build.extend(
+        package_requirements.requirements.build.extend(
             self.compiler_packages(host_platform)
                 .into_iter()
                 .map(Dependency::Spec),
         );
 
-        Ok(requirements)
+        Ok(package_requirements)
     }
 }
 
@@ -252,7 +253,7 @@ pub(crate) fn construct_configuration(
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::{collections::BTreeMap};
 
     use pixi_build_type_conversions::to_project_model_v1;
     use pixi_manifest::Manifests;
@@ -309,17 +310,15 @@ mod tests {
         )
         .unwrap();
 
-        let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
-
         let host_platform = Platform::current();
 
-        let recipe = cmake_backend.recipe(host_platform, &channel_config, &BTreeMap::new());
+        let (recipe, _source_requirements) = cmake_backend.recipe(host_platform, &BTreeMap::new()).unwrap();
         insta::with_settings!({
             filters => vec![
                 ("(vs2017|vs2019|gxx|clang).*", "\"[ ... compiler ... ]\""),
             ]
         }, {
-            insta::assert_yaml_snapshot!(recipe.unwrap(), {
+            insta::assert_yaml_snapshot!(recipe, {
                ".build.script" => "[ ... script ... ]",
             });
         });

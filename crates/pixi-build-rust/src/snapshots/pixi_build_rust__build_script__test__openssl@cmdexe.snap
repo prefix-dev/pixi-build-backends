@@ -1,0 +1,8 @@
+---
+source: crates/pixi-build-rust/src/build_script.rs
+expression: "script.join(\"\\n\")"
+---
+SET OPENSSL_DIR="%PREFIX%"
+
+cargo install --locked --root "%PREFIX%" --path my-prefix-dir --no-track  --force
+if errorlevel 1 exit 1

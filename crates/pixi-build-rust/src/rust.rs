@@ -13,7 +13,7 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package, Requirements, ScriptContent},
+        parser::{Build, Dependency, Package, Requirements, Script, ScriptContent},
         variable::Variable,
         Recipe,
     },
@@ -96,7 +96,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let (has_sccache, requirements) =
             self.requirements(host_platform, channel_config, variant)?;
 
-        let export_openssl = self
+        let has_openssl = self
             .project_model
             .dependencies(Some(host_platform))
             .contains(&"openssl".into());
@@ -106,8 +106,9 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         let build_script = BuildScriptContext {
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
-            export_openssl,
+            has_openssl,
             has_sccache,
+            is_bash: !Platform::current().is_windows(),
         }
         .render();
 
@@ -126,7 +127,11 @@ impl<P: ProjectModel> RustBuildBackend<P> {
             build: Build {
                 number: build_number,
                 string: Default::default(),
-                script: ScriptContent::Commands(build_script).into(),
+                script: Script {
+                    content: ScriptContent::Commands(build_script),
+                    env: self.config.env.clone(),
+                    ..Default::default()
+                },
                 noarch: noarch_type,
                 ..Build::default()
             },
@@ -201,6 +206,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
+    use indexmap::IndexMap;
     use pixi_build_type_conversions::to_project_model_v1;
 
     use pixi_manifest::Manifests;
@@ -253,7 +259,36 @@ mod tests {
         ".requirements.build[0]" => insta::dynamic_redaction(|value, _path| {
             // assert that the value looks like a uuid here
             assert!(value.as_str().unwrap().contains("rust"));
-            }),
+        }),
         });
+    }
+
+    #[test]
+    fn test_env_vars_are_set() {
+        let manifest_source = r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [package.build]
+        backend = { name = "pixi-build-rust", version = "*" }
+        "#;
+
+        let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+
+        let recipe = recipe(
+            manifest_source,
+            RustBackendConfig {
+                env: env.clone(),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(recipe.build.script.env, env);
     }
 }

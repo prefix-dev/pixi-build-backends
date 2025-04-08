@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use serde::Deserialize;
 use std::{convert::identity, path::PathBuf};
 
@@ -8,6 +9,8 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
+    /// Environment Variables
+    pub env: IndexMap<String, String>,
     /// If set, internal state will be logged as files in that directory
     pub debug_dir: Option<PathBuf>,
 }

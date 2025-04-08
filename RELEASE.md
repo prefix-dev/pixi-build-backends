@@ -18,14 +18,15 @@ Pull requests will build the packages but not publish them
 ## Usage Instructions
 
 ### Triggering a Release
-1. Bump the version in the `Cargo.toml` for the backend you want to release.
-2. Create a new tag following the pattern `pixi-build-<backend>-vX.Y.Z` (e.g., `pixi-build-cmake-v1.2.3`)
-3. Push the tag to the repository:
+- Bump the version in the `Cargo.toml` for the backend you want to release.
+- Open a pull request
+- After the pull request is merged, create a new tag following the pattern `pixi-build-<backend>-vX.Y.Z` (e.g., `pixi-build-cmake-v1.2.3`)
+- Push the tag to the repository:
    ```sh
    git tag pixi-build-cmake-v1.2.3
    git push origin pixi-build-cmake-v1.2.3
    ```
-4. The workflow will automatically build and upload the package.
+- The workflow will automatically build and upload the package.
 
 ### Adding a new backend
 When adding a new backend, you will need to add a new backend tag to the `rattler-build.yml` workflow.

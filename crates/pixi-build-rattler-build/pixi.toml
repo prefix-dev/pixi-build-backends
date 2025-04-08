@@ -5,13 +5,12 @@ description = "Showcases how to build a rattler-build recipe  with pixi"
 name = "pixi-build-rattler-build"
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 preview = ["pixi-build"]
-version = "0.1.3"
 
 [package]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 description = "Showcases how to build a rattler-build recipe with pixi"
 name = "pixi-build-rattler-build"
-version = "0.1.3"
+version = "0.1.4"
 
 
 [dependencies]

@@ -11,6 +11,7 @@ source:
   - path: "[ ... path ... ]"
 build:
   number: 0
+  string: pyhbf21a9e_0
   script: "[ ... script ... ]"
   noarch: python
   python:

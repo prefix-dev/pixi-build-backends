@@ -3,10 +3,20 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct BuildScriptContext {
+    /// The location of the source
     pub source_dir: String,
+
+    /// Any additional args to pass to `cargo`
     pub extra_args: Vec<String>,
-    pub export_openssl: bool,
+
+    /// True if `openssl` is part of the build environment
+    pub has_openssl: bool,
+
+    /// True if `sccache` is available.
     pub has_sccache: bool,
+
+    /// The platform that is running the build.
+    pub is_bash: bool,
 }
 
 impl BuildScriptContext {
@@ -17,5 +27,64 @@ impl BuildScriptContext {
             .unwrap();
         let rendered = template.render(self).unwrap().to_string();
         rendered.lines().map(|s| s.to_string()).collect()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use rstest::*;
+
+    #[rstest]
+    fn test_build_script(#[values(true, false)] is_bash: bool) {
+        let context = super::BuildScriptContext {
+            source_dir: String::from("my-prefix-dir"),
+            extra_args: vec![],
+            has_openssl: false,
+            has_sccache: false,
+            is_bash,
+        };
+        let script = context.render();
+
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.bind(|| {
+            insta::assert_snapshot!(script.join("\n"));
+        });
+    }
+
+    #[rstest]
+    fn test_sccache(#[values(true, false)] is_bash: bool) {
+        let context = super::BuildScriptContext {
+            source_dir: String::from("my-prefix-dir"),
+            extra_args: vec![],
+            has_openssl: false,
+            has_sccache: true,
+            is_bash,
+        };
+        let script = context.render();
+
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.bind(|| {
+            insta::assert_snapshot!(script.join("\n"));
+        });
+    }
+
+    #[rstest]
+    fn test_openssl(#[values(true, false)] is_bash: bool) {
+        let context = super::BuildScriptContext {
+            source_dir: String::from("my-prefix-dir"),
+            extra_args: vec![],
+            has_openssl: true,
+            has_sccache: false,
+            is_bash,
+        };
+        let script = context.render();
+
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.bind(|| {
+            insta::assert_snapshot!(script.join("\n"));
+        });
     }
 }

@@ -16,13 +16,13 @@ use pixi_build_backend::{
     traits::{project::new_spec, Dependencies},
 };
 use pixi_build_backend::{ProjectModel, Targets};
-use rattler_build::recipe::parser::BuildString;
+use rattler_build::recipe::parser::{BuildString, ScriptContent};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package, ScriptContent},
+        parser::{Build, Dependency, Package,  Script},
         variable::Variable,
         Recipe,
     },
@@ -153,7 +153,11 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
                     string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
                     // skip: Default::default(),
-                    script: ScriptContent::Commands(build_script).into(),
+                    script: Script {
+                    content: ScriptContent::Commands(build_script),
+                    env: self.config.env.clone(),
+                    ..Default::default()
+                },
                     noarch: noarch_type,
 
                     // TODO: Python is not exposed properly
@@ -256,13 +260,37 @@ pub(crate) fn construct_configuration(
 mod tests {
     use std::collections::BTreeMap;
 
+    use indexmap::IndexMap;
     use pixi_build_type_conversions::to_project_model_v1;
     use pixi_manifest::Manifests;
-    use rattler_build::console_utils::LoggingOutputHandler;
+    use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
 
     use crate::{cmake::CMakeBuildBackend, config::CMakeBackendConfig};
+
+    fn recipe(manifest_source: &str, config: CMakeBackendConfig) -> Recipe {
+        let tmp_dir = tempdir().unwrap();
+        let tmp_manifest = tmp_dir.path().join("pixi.toml");
+        std::fs::write(&tmp_manifest, manifest_source).unwrap();
+        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
+        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
+
+        let cmake_backend = CMakeBuildBackend::new(
+            &tmp_manifest,
+            project_model,
+            config,
+            LoggingOutputHandler::default(),
+            None,
+        )
+        .unwrap();
+
+        cmake_backend
+            .recipe(Platform::current(), &BTreeMap::new())
+            .unwrap().0
+    }
 
     #[tokio::test]
     async fn test_setting_host_and_build_requirements() {
@@ -356,5 +384,34 @@ mod tests {
         std::fs::write(&tmp_manifest, package_with_git_and_subdir).unwrap();
 
         Manifests::from_workspace_manifest_path(tmp_manifest).unwrap();
+    }
+
+    #[test]
+    fn test_env_vars_are_set() {
+        let manifest_source = r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [package.build]
+        backend = { name = "pixi-build-rust", version = "*" }
+        "#;
+
+        let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+
+        let recipe = recipe(
+            manifest_source,
+            CMakeBackendConfig {
+                env: env.clone(),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(recipe.build.script.env, env);
     }
 }

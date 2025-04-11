@@ -6,8 +6,9 @@ edition.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 chrono = { workspace = true }
+indexmap = { workspace = true }
 miette = { workspace = true }
-minijinja = { workspace = true }
+minijinja = { workspace = true, features = ["json"] }
 rattler_conda_types = { workspace = true }
 rattler_package_streaming = { workspace = true }
 rattler-build = { workspace = true }
@@ -24,3 +25,4 @@ pixi_build_type_conversions = { workspace = true }
 
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
+rstest = { workspace = true }

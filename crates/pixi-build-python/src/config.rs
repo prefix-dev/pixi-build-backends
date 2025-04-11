@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use serde::Deserialize;
 use std::convert::identity;
 
@@ -8,6 +9,9 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
+
+    /// Environment Variables
+    pub env: IndexMap<String, String>,
 }
 
 impl PythonBackendConfig {

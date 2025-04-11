@@ -3,7 +3,7 @@ cmake --version
 
 {# Windows #}
 {% if build_platform == "windows" -%}
-if not exist %SRC_DIR%\..\build\CMakeCache.txt (
+if not exist %SRC_DIR%\..\build\build.ninja (
     cmake %CMAKE_ARGS% ^
           -GNinja ^
           -DCMAKE_BUILD_TYPE=Release ^
@@ -20,7 +20,7 @@ cmake --build %SRC_DIR%\..\build --target install
 
 {# Non Windows #}
 {% else -%}
-if [ ! -f "$SRC_DIR/../build/CMakeCache.txt" ]; then
+if [ ! -f "$SRC_DIR/../build/build.ninja" ]; then
     cmake $CMAKE_ARGS \
           -GNinja \
           -DCMAKE_BUILD_TYPE=Release \

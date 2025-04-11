@@ -8,9 +8,10 @@ expression: "(recipe, source_requirements)"
     name: test-reqs
     version: 1.2.3
   source:
-    - path: "C:\\Users\\zalms\\AppData\\Local\\Temp\\.tmpmjJWP4"
+    - path: "C:\\Users\\bas\\AppData\\Local\\Temp\\.tmpM8HM0v"
   build:
     number: 0
+    string: pyhbf21a9e_0
     script:
       - ""
       - "%PYTHON% -m pip install --ignore-installed -vv --no-deps --no-build-isolation %SRC_DIR%"

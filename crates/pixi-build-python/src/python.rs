@@ -12,7 +12,7 @@ use pixi_build_backend::{
     ProjectModel, Targets,
 };
 use pyproject_toml::PyProjectToml;
-use rattler_build::recipe::parser::BuildString;
+use rattler_build::recipe::parser::{BuildString, GlobVec};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -169,6 +169,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 target_directory: None,
                 file_name: None,
                 use_gitignore: true,
+                filter: GlobVec::default(),
             })])
         };
 

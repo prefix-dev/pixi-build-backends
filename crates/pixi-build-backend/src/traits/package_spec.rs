@@ -129,6 +129,7 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
             namespace: None,
             url: None,
             extras: None,
+            license: None,
         }
     }
 }

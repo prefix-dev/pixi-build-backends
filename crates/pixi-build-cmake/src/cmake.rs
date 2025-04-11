@@ -22,7 +22,7 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package,  Script},
+        parser::{Build, Dependency, Package, Script},
         variable::Variable,
         Recipe,
     },
@@ -154,10 +154,10 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
                     // skip: Default::default(),
                     script: Script {
-                    content: ScriptContent::Commands(build_script),
-                    env: self.config.env.clone(),
-                    ..Default::default()
-                },
+                        content: ScriptContent::Commands(build_script),
+                        env: self.config.env.clone(),
+                        ..Default::default()
+                    },
                     noarch: noarch_type,
 
                     // TODO: Python is not exposed properly
@@ -289,7 +289,8 @@ mod tests {
 
         cmake_backend
             .recipe(Platform::current(), &BTreeMap::new())
-            .unwrap().0
+            .unwrap()
+            .0
     }
 
     #[tokio::test]

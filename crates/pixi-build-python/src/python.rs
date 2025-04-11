@@ -191,10 +191,10 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
 
                     // skip: Default::default(),
                     script: Script {
-                    content: ScriptContent::Commands(build_script),
-                    env: self.config.env.clone(),
-                    ..Default::default()
-                },
+                        content: ScriptContent::Commands(build_script),
+                        env: self.config.env.clone(),
+                        ..Default::default()
+                    },
                     noarch: noarch_type,
 
                     python,

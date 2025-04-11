@@ -128,10 +128,10 @@ impl<P: ProjectModel> RustBuildBackend<P> {
                     number: build_number,
                     string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
                     script: Script {
-                    content: ScriptContent::Commands(build_script),
-                    env: self.config.env.clone(),
-                    ..Default::default()
-                },
+                        content: ScriptContent::Commands(build_script),
+                        env: self.config.env.clone(),
+                        ..Default::default()
+                    },
                     noarch: noarch_type,
                     ..Build::default()
                 },

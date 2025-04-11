@@ -37,7 +37,7 @@ jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
 rattler-build = { version = "0.39.0", default-features = false, features = [
-    "rustls-tls",
+  "rustls-tls",
 ] }
 
 rattler_conda_types = { version = "0.32.0", default-features = false }

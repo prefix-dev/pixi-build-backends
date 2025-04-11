@@ -36,17 +36,41 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/prefix-dev/rattler-build", rev = "6744398", default-features = false, features = [
+rattler-build = { version = "0.39.0", default-features = false, features = [
   "rustls-tls",
 ] }
 
-rattler_conda_types = { version = "0.30.2", default-features = false }
-rattler_package_streaming = { version = "0.22.27", default-features = false }
-rattler_virtual_packages = { version = "2.0.2", default-features = false }
+rattler_conda_types = { version = "0.32.0", default-features = false }
+rattler_package_streaming = { version = "0.22.35", default-features = false }
+rattler_virtual_packages = { version = "2.0.9", default-features = false }
 
+pixi_build_types = { version = "*" }
+pixi_consts = { version = "*" }
+pixi_manifest = { version = "*" }
+pixi_spec = { version = "*" }
+pixi_build_type_conversions = { version = "*" }
+
+pixi-build-backend = { path = "crates/pixi-build-backend" }
+
+[patch.crates-io]
 pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi-build-backend = { path = "crates/pixi-build-backend" }
+
+#pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
+#pixi_consts = { path = "../pixi/crates/pixi_consts" }
+#pixi_manifest = { path = "../pixi/crates/pixi_manifest" }
+#pixi_spec = { path = "../pixi/crates/pixi_spec" }
+#pixi_build_type_conversions = { path = "../pixi/crates/pixi_build_type_conversions" }
+
+#rattler_cache = { path = "../rattler/crates/rattler_cache" }
+#rattler_conda_types = { path = "../rattler/crates/rattler_conda_types" }
+#rattler_package_streaming = { path = "../rattler/crates/rattler_package_streaming" }
+#rattler_virtual_packages = { path = "../rattler/crates/rattler_virtual_packages" }
+#rattler_repodata_gateway = { path = "../rattler/crates/rattler_repodata_gateway" }
+#simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
+
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }
+#rattler-build = { path = "../rattler-build" }

@@ -5,6 +5,7 @@ use pixi_build_backend::{
     common::{build_configuration, compute_variants},
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
+    PackageSourceSpec,
 };
 use pixi_build_types::{
     procedures::{
@@ -121,7 +122,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         let mut packages = Vec::new();
         for variant in variant_combinations {
             // TODO: Determine how and if we can determine this from the manifest.
-            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
+            let (recipe, source_requirements) = self.recipe(host_platform, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -191,6 +192,11 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: source_requirements
+                    .run
+                    .into_iter()
+                    .map(|(name, spec)| (name, spec.to_v1()))
+                    .collect(),
             });
         }
 
@@ -246,7 +252,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
+            let (recipe, _source_requirements) = self.recipe(host_platform, &variant)?;
 
             let build_configuration_params = build_configuration(
                 channels.clone(),

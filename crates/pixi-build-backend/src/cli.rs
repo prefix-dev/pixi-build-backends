@@ -46,7 +46,7 @@ pub struct App {
 pub enum Commands {
     /// Get conda metadata for a recipe.
     GetCondaMetadata {
-        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
+        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::WORKSPACE_MANIFEST)]
         manifest_path: PathBuf,
 
         #[clap(long)]
@@ -54,7 +54,7 @@ pub enum Commands {
     },
     /// Build a conda package.
     CondaBuild {
-        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
+        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::WORKSPACE_MANIFEST)]
         manifest_path: PathBuf,
     },
     /// Get the capabilities of the backend.

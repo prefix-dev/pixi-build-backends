@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use fs_err::tokio as tokio_fs;
@@ -182,6 +183,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: HashMap::new(),
             };
             solved_packages.push(conda);
         }

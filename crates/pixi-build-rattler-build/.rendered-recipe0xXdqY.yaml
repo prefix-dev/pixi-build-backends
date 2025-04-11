@@ -1,0 +1,24 @@
+schema_version: 1
+context:
+  version: 23.0.0
+package:
+  name: boltons-with-extra
+  version: 23.0.0
+source:
+- url: https://github.com/mahmoud/boltons/archive/refs/tags/23.0.0.tar.gz
+  sha256: 9b2998cd9525ed472079c7dd90fbd216a887202e8729d5969d4f33878f0ff668
+build:
+  number: 0
+  script: python -m pip install . --no-deps -vv
+  noarch: python
+requirements:
+  host:
+  - python
+  - pip
+  - setuptools
+  run:
+  - pip
+about:
+  license: BSD-3-Clause
+  license_file:
+  - LICENSE

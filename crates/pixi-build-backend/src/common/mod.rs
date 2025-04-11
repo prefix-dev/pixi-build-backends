@@ -4,5 +4,5 @@ mod requirements;
 mod variants;
 
 pub use configuration::{build_configuration, BuildConfigurationParams};
-pub use requirements::requirements;
+pub use requirements::{requirements, PackageRequirements, SourceRequirements};
 pub use variants::compute_variants;

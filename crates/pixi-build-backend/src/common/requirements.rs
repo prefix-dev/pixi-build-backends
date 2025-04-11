@@ -1,25 +1,58 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use rattler_build::{
     recipe::{parser::Requirements, variable::Variable},
     NormalizedKey,
 };
-use rattler_conda_types::ChannelConfig;
+use serde::Serialize;
 
-use crate::{dependencies::extract_dependencies, traits::Dependencies, ProjectModel, Targets};
+use crate::{
+    dependencies::ExtractedDependencies, traits::Dependencies, PackageSpec, ProjectModel, Targets,
+};
+
+pub struct PackageRequirements<P: ProjectModel> {
+    /// Requirements for rattler-build
+    pub requirements: Requirements,
+
+    /// The source requirements
+    pub source: SourceRequirements<P>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(bound(
+    serialize = "<<P::Targets as Targets>::Spec as PackageSpec>::SourceSpec: Serialize"
+))]
+pub struct SourceRequirements<P: ProjectModel> {
+    /// Source package specification for build dependencies
+    pub build: HashMap<String, <<P::Targets as Targets>::Spec as PackageSpec>::SourceSpec>,
+
+    /// Source package specification for host dependencies
+    pub host: HashMap<String, <<P::Targets as Targets>::Spec as PackageSpec>::SourceSpec>,
+
+    /// Source package specification for runtime dependencies
+    pub run: HashMap<String, <<P::Targets as Targets>::Spec as PackageSpec>::SourceSpec>,
+}
 
 /// Return requirements for the given project model
 pub fn requirements<P: ProjectModel>(
     dependencies: Dependencies<<P::Targets as Targets>::Spec>,
-    channel_config: &ChannelConfig,
     variant: &BTreeMap<NormalizedKey, Variable>,
-) -> miette::Result<Requirements> {
-    // Extract dependencies into requirements
-    let requirements = Requirements {
-        build: extract_dependencies(channel_config, dependencies.build, variant)?,
-        host: extract_dependencies(channel_config, dependencies.host, variant)?,
-        run: extract_dependencies(channel_config, dependencies.run, variant)?,
-        ..Default::default()
-    };
-    Ok(requirements)
+) -> miette::Result<PackageRequirements<P>> {
+    let build = ExtractedDependencies::from_dependencies(dependencies.build, variant)?;
+    let host = ExtractedDependencies::from_dependencies(dependencies.host, variant)?;
+    let run = ExtractedDependencies::from_dependencies(dependencies.run, variant)?;
+
+    Ok(PackageRequirements {
+        requirements: Requirements {
+            build: build.dependencies,
+            host: host.dependencies,
+            run: run.dependencies,
+            ..Default::default()
+        },
+        source: SourceRequirements {
+            build: build.sources,
+            host: host.sources,
+            run: run.sources,
+        },
+    })
 }

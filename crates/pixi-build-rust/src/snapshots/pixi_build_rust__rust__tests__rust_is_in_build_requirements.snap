@@ -9,6 +9,7 @@ package:
   version: 0.1.0
 build:
   number: 0
+  string: hbf21a9e_0
   script: "[ ... script ... ]"
 requirements:
   build:

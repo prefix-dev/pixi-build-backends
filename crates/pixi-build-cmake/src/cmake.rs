@@ -4,33 +4,32 @@ use std::{
     str::FromStr,
 };
 
+use crate::{
+    build_script::{BuildPlatform, BuildScriptContext},
+    config::CMakeBackendConfig,
+};
 use miette::IntoDiagnostic;
+use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
     common::{requirements, BuildConfigurationParams},
     compilers::default_compiler,
     traits::{project::new_spec, Dependencies},
 };
 use pixi_build_backend::{ProjectModel, Targets};
+use rattler_build::recipe::parser::{BuildString, ScriptContent};
 use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
-        parser::{Build, Dependency, Package, Requirements, Script, ScriptContent},
+        parser::{Build, Dependency, Package, Script},
         variable::Variable,
         Recipe,
     },
     NormalizedKey,
 };
-use rattler_conda_types::{
-    package::ArchiveType, ChannelConfig, MatchSpec, NoArchType, PackageName, Platform,
-};
+use rattler_conda_types::{package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform};
 use rattler_package_streaming::write::CompressionLevel;
-
-use crate::{
-    build_script::{BuildPlatform, BuildScriptContext},
-    config::CMakeBackendConfig,
-};
 
 pub struct CMakeBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -99,9 +98,8 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
     pub(crate) fn recipe(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Recipe> {
+    ) -> miette::Result<(Recipe, SourceRequirements<P>)> {
         // Parse the package name from the manifest
         let project_model = &self.project_model;
         let name = PackageName::from_str(project_model.name()).into_diagnostic()?;
@@ -111,7 +109,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let noarch_type = NoArchType::none();
 
-        let requirements = self.requirements(host_platform, channel_config, variant)?;
+        let requirements = self.requirements(host_platform, variant)?;
 
         let build_platform = Platform::current();
         let build_number = 0;
@@ -127,64 +125,68 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         }
         .render();
 
-        Ok(Recipe {
-            schema_version: 1,
-            context: Default::default(),
-            package: Package {
-                version: version.into(),
-                name,
-            },
-            cache: None,
-            // source: vec![Source::Path(PathSource {
-            //     // TODO: How can we use a git source?
-            //     path: manifest_root.to_path_buf(),
-            //     sha256: None,
-            //     md5: None,
-            //     patches: vec![],
-            //     target_directory: None,
-            //     file_name: None,
-            //     use_gitignore: true,
-            // })],
-            // We hack the source location
-            source: vec![],
-            build: Build {
-                number: build_number,
-                string: Default::default(),
+        let hash_info = HashInfo::from_variant(variant, &noarch_type);
 
-                // skip: Default::default(),
-                script: Script {
-                    content: ScriptContent::Commands(build_script),
-                    env: self.config.env.clone(),
-                    ..Default::default()
+        Ok((
+            Recipe {
+                schema_version: 1,
+                context: Default::default(),
+                package: Package {
+                    version: version.into(),
+                    name,
                 },
-                noarch: noarch_type,
+                cache: None,
+                // source: vec![Source::Path(PathSource {
+                //     // TODO: How can we use a git source?
+                //     path: manifest_root.to_path_buf(),
+                //     sha256: None,
+                //     md5: None,
+                //     patches: vec![],
+                //     target_directory: None,
+                //     file_name: None,
+                //     use_gitignore: true,
+                // })],
+                // We hack the source location
+                source: vec![],
+                build: Build {
+                    number: build_number,
+                    string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
 
-                // TODO: Python is not exposed properly
-                //python: Default::default(),
-                // dynamic_linking: Default::default(),
-                // always_copy_files: Default::default(),
-                // always_include_files: Default::default(),
-                // merge_build_and_host_envs: false,
-                // variant: Default::default(),
-                // prefix_detection: Default::default(),
-                // post_process: vec![],
-                // files: Default::default(),
-                ..Build::default()
+                    // skip: Default::default(),
+                    script: Script {
+                        content: ScriptContent::Commands(build_script),
+                        env: self.config.env.clone(),
+                        ..Default::default()
+                    },
+                    noarch: noarch_type,
+
+                    // TODO: Python is not exposed properly
+                    //python: Default::default(),
+                    // dynamic_linking: Default::default(),
+                    // always_copy_files: Default::default(),
+                    // always_include_files: Default::default(),
+                    // merge_build_and_host_envs: false,
+                    // variant: Default::default(),
+                    // prefix_detection: Default::default(),
+                    // post_process: vec![],
+                    // files: Default::default(),
+                    ..Build::default()
+                },
+                // TODO read from manifest
+                requirements: requirements.requirements,
+                tests: vec![],
+                about: Default::default(),
+                extra: Default::default(),
             },
-            // TODO read from manifest
-            requirements,
-            tests: vec![],
-            about: Default::default(),
-            extra: Default::default(),
-        })
+            requirements.source,
+        ))
     }
 
     pub(crate) fn requirements(
         &self,
         host_platform: Platform,
-        channel_config: &ChannelConfig,
         variant: &BTreeMap<NormalizedKey, Variable>,
-    ) -> miette::Result<Requirements> {
+    ) -> miette::Result<PackageRequirements<P>> {
         let project_model = &self.project_model;
         let dependencies = project_model.dependencies(Some(host_platform));
 
@@ -192,15 +194,15 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         let empty_spec = new_spec::<P>();
         let dependencies = add_build_tools::<P>(dependencies, &build_tools, &empty_spec);
 
-        let mut requirements = requirements::<P>(dependencies, channel_config, variant)?;
+        let mut package_requirements = requirements::<P>(dependencies, variant)?;
 
-        requirements.build.extend(
+        package_requirements.requirements.build.extend(
             self.compiler_packages(host_platform)
                 .into_iter()
                 .map(Dependency::Spec),
         );
 
-        Ok(requirements)
+        Ok(package_requirements)
     }
 }
 
@@ -256,7 +258,7 @@ pub(crate) fn construct_configuration(
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::collections::BTreeMap;
 
     use indexmap::IndexMap;
     use pixi_build_type_conversions::to_project_model_v1;
@@ -286,8 +288,9 @@ mod tests {
         .unwrap();
 
         cmake_backend
-            .recipe(Platform::current(), &channel_config, &BTreeMap::new())
+            .recipe(Platform::current(), &BTreeMap::new())
             .unwrap()
+            .0
     }
 
     #[tokio::test]
@@ -337,17 +340,17 @@ mod tests {
         )
         .unwrap();
 
-        let channel_config = ChannelConfig::default_with_root_dir(PathBuf::new());
-
         let host_platform = Platform::current();
 
-        let recipe = cmake_backend.recipe(host_platform, &channel_config, &BTreeMap::new());
+        let (recipe, _source_requirements) = cmake_backend
+            .recipe(host_platform, &BTreeMap::new())
+            .unwrap();
         insta::with_settings!({
             filters => vec![
                 ("(vs2017|vs2019|gxx|clang).*", "\"[ ... compiler ... ]\""),
             ]
         }, {
-            insta::assert_yaml_snapshot!(recipe.unwrap(), {
+            insta::assert_yaml_snapshot!(recipe, {
                ".build.script" => "[ ... script ... ]",
             });
         });

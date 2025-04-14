@@ -1,0 +1,32 @@
+[package]
+name = "pixi-build-pyext"
+version = "0.1.6"
+edition.workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+miette = { workspace = true }
+minijinja = { workspace = true, features = ["json"] }
+rattler_conda_types = { workspace = true }
+rattler_package_streaming = { workspace = true }
+rattler-build = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+
+pixi-build-backend = { workspace = true }
+
+pixi_build_types = { workspace = true }
+pixi_manifest = { workspace = true }
+pixi_build_type_conversions = { workspace = true }
+pyo3 = "0.24.1"
+url.workspace = true
+rattler_virtual_packages.workspace = true
+fs-err = { workspace = true, features = ["tokio"] }
+
+[dev-dependencies]
+insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
+rstest = { workspace = true }

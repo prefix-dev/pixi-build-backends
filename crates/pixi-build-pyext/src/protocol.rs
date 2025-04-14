@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use miette::{Context, IntoDiagnostic};
 use fs_err::tokio as tokio_fs;
+use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,

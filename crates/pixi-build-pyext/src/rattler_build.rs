@@ -1,10 +1,14 @@
 use std::{
-    ffi::OsStr, io::Write, path::{Path, PathBuf}
+    io::Write,
+    path::{Path, PathBuf},
 };
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::source::Source;
-use pyo3::{types::{PyAnyMethods as _, PyModule}, PyResult, Python};
+use pyo3::{
+    types::{PyAnyMethods as _, PyModule},
+    PyResult, Python,
+};
 use rattler_build::console_utils::LoggingOutputHandler;
 use tempfile::NamedTempFile;
 
@@ -17,6 +21,8 @@ pub struct RattlerBuildBackend {
     pub(crate) recipe_source: Source,
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) config: RattlerBuildBackendConfig,
+
+    _temp_recipe_file: NamedTempFile,
 }
 
 impl RattlerBuildBackend {
@@ -51,20 +57,22 @@ impl RattlerBuildBackend {
         })?;
 
         // Write the generated recipe to the temporary file
-        std::fs::write(&temp_file, &generated_recipe_content)
+        temp_file
+            .write_all(generated_recipe_content.as_bytes())
             .into_diagnostic()
             .map_err(|e| miette::miette!("Failed to write to temporary file: {}", e))?;
 
         // Load the manifest from the source directory
         let manifest_root = manifest_path.parent().expect("manifest must have a root");
-        let recipe_source =
-            Source::from_rooted_path(manifest_root, temp_file.path().to_path_buf()).into_diagnostic()?;
+        let recipe_source = Source::from_rooted_path(manifest_root, temp_file.path().to_path_buf())
+            .into_diagnostic()?;
 
         Ok(Self {
             recipe_source,
             logging_output_handler,
             cache_dir,
             config,
+            _temp_recipe_file: temp_file,
         })
     }
 }

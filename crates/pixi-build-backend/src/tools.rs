@@ -14,7 +14,11 @@ use rattler_build::{
         BuildConfiguration, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
-    recipe::{parser::find_outputs_from_src, variable::Variable, Jinja, ParsingError, Recipe},
+    recipe::{
+        parser::{find_outputs_from_src, GlobVec},
+        variable::Variable,
+        Jinja, ParsingError, Recipe,
+    },
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
@@ -151,7 +155,7 @@ impl RattlerBuild {
                 allow_undefined: false,
             };
 
-            let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
+            let mut recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
                 .map_err(|err| {
                     let errs: ParseErrors<_> = err
                         .into_iter()
@@ -160,6 +164,25 @@ impl RattlerBuild {
                         .into();
                     errs
                 })?;
+
+            for source in &mut recipe.source {
+                if let rattler_build::recipe::parser::Source::Path(path_source) = source {
+                    let include = path_source
+                        .filter
+                        .include_globs()
+                        .iter()
+                        .map(|g| g.source())
+                        .chain([".pixi"])
+                        .collect();
+                    let exclude = path_source
+                        .filter
+                        .exclude_globs()
+                        .iter()
+                        .map(|g| g.source())
+                        .collect();
+                    path_source.filter = GlobVec::from_vec(include, Some(exclude));
+                }
+            }
 
             if recipe.build().skip() {
                 eprintln!(

@@ -169,7 +169,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 target_directory: None,
                 file_name: None,
                 use_gitignore: true,
-                filter: GlobVec::default(),
+                filter: GlobVec::from_vec(Vec::from([".pixi"]), None),
             })])
         };
 

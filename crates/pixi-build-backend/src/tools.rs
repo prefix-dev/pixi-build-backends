@@ -172,13 +172,13 @@ impl RattlerBuild {
                         .include_globs()
                         .iter()
                         .map(|g| g.source())
-                        .chain([".pixi"])
                         .collect();
                     let exclude = path_source
                         .filter
                         .exclude_globs()
                         .iter()
                         .map(|g| g.source())
+                        .chain([".pixi"])
                         .collect();
                     path_source.filter = GlobVec::from_vec(include, Some(exclude));
                 }

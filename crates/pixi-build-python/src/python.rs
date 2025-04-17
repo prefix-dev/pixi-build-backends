@@ -239,8 +239,11 @@ pub(crate) fn construct_configuration(
     params: BuildConfigurationParams,
 ) -> BuildConfiguration {
     BuildConfiguration {
-        // TODO: NoArch??
-        target_platform: Platform::NoArch,
+        target_platform: if recipe.build.noarch == NoArchType::none() {
+            params.host_platform.platform
+        } else {
+            Platform::NoArch
+        },
         host_platform: params.host_platform,
         build_platform: params.build_platform,
         hash: HashInfo::from_variant(&params.variant, &recipe.build.noarch),

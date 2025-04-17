@@ -14,7 +14,7 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata, VersionedProjectModel,
+    BackendCapabilities, CondaPackageMetadata, ProjectModelV1,
 };
 use rattler_build::{
     build::run_build,
@@ -30,7 +30,7 @@ use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
-use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
+use crate::{config::PyExtConfig, rattler_build::RattlerBuildBackend};
 pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
@@ -325,20 +325,30 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         &self,
         params: InitializeParams,
     ) -> miette::Result<(Box<dyn Protocol + Send + Sync + 'static>, InitializeResult)> {
-        let config = if let Some(config) = params.configuration {
-            serde_json::from_value(config)
+        let config = if let Some(config) = &params.configuration {
+            serde_json::from_value(config.clone())
                 .into_diagnostic()
                 .context("failed to parse configuration")?
         } else {
-            RattlerBuildBackendConfig::default()
+            PyExtConfig::default()
         };
-        log_initialize(&config, params.project_model).await?;
+
+        let project_model = params
+            .project_model
+            .ok_or_else(|| miette::miette!("project model is required"))?;
+
+        let project_model = project_model
+            .into_v1()
+            .ok_or_else(|| miette::miette!("project model v1 is required"))?;
+
+        log_initialize(&config, &project_model).await?;
 
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
             config,
+            project_model,
         )?;
 
         Ok((Box::new(instance), InitializeResult {}))
@@ -364,17 +374,12 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
 }
 
 async fn log_initialize(
-    config: &RattlerBuildBackendConfig,
-    project_model: Option<VersionedProjectModel>,
+    config: &PyExtConfig,
+    project_model: &ProjectModelV1,
 ) -> miette::Result<()> {
     let Some(ref debug_dir) = config.debug_dir else {
         return Ok(());
     };
-
-    let project_model = project_model
-        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
-        .into_v1()
-        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
 
     let project_model_json = serde_json::to_string_pretty(&project_model)
         .into_diagnostic()
@@ -389,7 +394,7 @@ async fn log_initialize(
 }
 
 async fn log_conda_get_metadata(
-    config: &RattlerBuildBackendConfig,
+    config: &PyExtConfig,
     params: &CondaMetadataParams,
 ) -> miette::Result<()> {
     let Some(ref debug_dir) = config.debug_dir else {
@@ -413,10 +418,7 @@ async fn log_conda_get_metadata(
     Ok(())
 }
 
-async fn log_conda_build(
-    config: &RattlerBuildBackendConfig,
-    params: &CondaBuildParams,
-) -> miette::Result<()> {
+async fn log_conda_build(config: &PyExtConfig, params: &CondaBuildParams) -> miette::Result<()> {
     let Some(ref debug_dir) = config.debug_dir else {
         return Ok(());
     };

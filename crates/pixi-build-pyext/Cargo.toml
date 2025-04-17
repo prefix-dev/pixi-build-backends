@@ -22,7 +22,7 @@ pixi-build-backend = { workspace = true }
 pixi_build_types = { workspace = true }
 pixi_manifest = { workspace = true }
 pixi_build_type_conversions = { workspace = true }
-pyo3 = "0.24.1"
+pyo3 = { version = "0.24.1", features = ["auto-initialize"] }
 url.workspace = true
 rattler_virtual_packages.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }

@@ -14,6 +14,7 @@ pub struct RustBackendConfig {
     pub env: IndexMap<String, String>,
 }
 
+#[cfg(test)]
 mod tests {
     use super::RustBackendConfig;
     use serde_json::json;

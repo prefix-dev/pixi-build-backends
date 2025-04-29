@@ -7,6 +7,7 @@ pub struct RattlerBuildBackendConfig {
     pub debug_dir: Option<PathBuf>,
 }
 
+#[cfg(test)]
 mod tests {
     use super::RattlerBuildBackendConfig;
     use serde_json::json;

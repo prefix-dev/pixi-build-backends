@@ -189,7 +189,7 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
                 // skip: Default::default(),
                 script: Script {
                     content: ScriptContent::Commands(build_script),
-                    env: self.config.env.clone(),
+                    env: self.config.env.clone().unwrap_or_default(),
                     ..Default::default()
                 },
                 noarch: noarch_type,
@@ -597,7 +597,7 @@ requires = ["hatchling"]
         let recipe = recipe(
             manifest_source,
             PythonBackendConfig {
-                env: env.clone(),
+                env: Some(env.clone()),
                 ..Default::default()
             },
         );

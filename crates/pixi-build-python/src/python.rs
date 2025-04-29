@@ -426,10 +426,12 @@ mod tests {
         let (recipe, source_requirements) = python_backend
             .recipe(host_platform, false, &BTreeMap::new())
             .unwrap();
-        insta::assert_yaml_snapshot!((recipe, source_requirements), {
+        insta::assert_yaml_snapshot!(recipe, {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         });
+
+        insta::assert_yaml_snapshot!(source_requirements);
     }
 
     #[tokio::test]

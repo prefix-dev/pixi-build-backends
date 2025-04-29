@@ -1,24 +1,10 @@
 ---
-source: crates/pixi-build/src/bin/pixi-build-python/python.rs
-expression: recipe.unwrap()
+source: crates/pixi-build-python/src/python.rs
+expression: source_requirements
 ---
-schema_version: 1
-context: {}
-package:
-  name: test-reqs
-  version: 1.2.3
-source:
-  - path: "[ ... path ... ]"
-build:
-  number: 0
-  script: "[ ... script ... ]"
-  noarch: python
-requirements:
-  build:
-    - boltons
-  host:
-    - hatchling
-    - pip
-    - python
-  run:
-    - foobar >=3.2.1
+build: {}
+host: {}
+run:
+  source:
+    Path:
+      path: src

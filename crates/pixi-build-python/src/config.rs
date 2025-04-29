@@ -11,7 +11,7 @@ pub struct PythonBackendConfig {
     pub noarch: Option<bool>,
 
     /// Environment Variables
-    pub env: IndexMap<String, String>,
+    pub env: Option<IndexMap<String, String>>,
 }
 
 impl PythonBackendConfig {

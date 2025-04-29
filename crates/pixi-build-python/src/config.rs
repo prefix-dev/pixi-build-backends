@@ -11,12 +11,25 @@ pub struct PythonBackendConfig {
     pub noarch: Option<bool>,
 
     /// Environment Variables
-    pub env: Option<IndexMap<String, String>>,
+    #[serde(default)]
+    pub env: IndexMap<String, String>,
 }
 
 impl PythonBackendConfig {
     /// Whether to build a noarch package or a platform-specific package.
     pub fn noarch(&self) -> bool {
         self.noarch.map_or(true, identity)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PythonBackendConfig;
+    use serde_json::json;
+
+    #[test]
+    fn test_ensure_deseralize_from_empty() {
+        let json_data = json!({});
+        serde_json::from_value::<PythonBackendConfig>(json_data).unwrap();
     }
 }

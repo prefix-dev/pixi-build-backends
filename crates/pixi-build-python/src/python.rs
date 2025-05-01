@@ -17,7 +17,7 @@ use rattler_build::{
     NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{BuildConfiguration, PackagingSettings},
+    metadata::{BuildConfiguration, PackagingSettings, Debug},
     recipe::{
         Recipe,
         parser::{Build, Package, PathSource, Python, Script, ScriptContent, Source},
@@ -262,6 +262,8 @@ pub(crate) fn construct_configuration(
         store_recipe: false,
         force_colors: true,
         sandbox_config: None,
+        // TODO: Expose to the user
+        debug: Debug::new(false),
     }
 }
 

@@ -22,6 +22,7 @@ use rattler_build::{
         variable::Variable,
     },
 };
+use rattler_build::metadata::Debug;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 
@@ -199,6 +200,7 @@ pub(crate) fn construct_configuration(
         store_recipe: false,
         force_colors: true,
         sandbox_config: None,
+        debug: Debug::new(false),
     }
 }
 

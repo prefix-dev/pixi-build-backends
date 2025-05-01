@@ -36,7 +36,7 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { version = "0.39.0", default-features = false, features = [
+rattler-build = { version = "*", default-features = false, features = [
   "rustls-tls",
 ] }
 

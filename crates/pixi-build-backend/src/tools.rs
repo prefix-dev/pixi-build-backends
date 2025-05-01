@@ -23,6 +23,7 @@ use rattler_build::{
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
+use rattler_build::metadata::Debug;
 use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
@@ -198,7 +199,7 @@ impl RattlerBuild {
                 recipe.package().name().clone(),
                 PackageIdentifier {
                     name: recipe.package().name().clone(),
-                    version: recipe.package().version().version().clone(),
+                    version: recipe.package().version().version().clone().into(),
                     build_string: recipe
                         .build()
                         .string()
@@ -243,6 +244,7 @@ impl RattlerBuild {
                     store_recipe: false,
                     force_colors: true,
                     sandbox_config: None,
+                    debug: Debug::new(false),
                 },
                 finalized_dependencies: None,
                 finalized_cache_dependencies: None,

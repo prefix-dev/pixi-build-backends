@@ -10,25 +10,25 @@ use crate::{
 };
 use miette::IntoDiagnostic;
 use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
-use pixi_build_backend::{
-    common::{requirements, BuildConfigurationParams},
-    compilers::default_compiler,
-    traits::{project::new_spec, Dependencies},
-};
 use pixi_build_backend::{ProjectModel, Targets};
+use pixi_build_backend::{
+    common::{BuildConfigurationParams, requirements},
+    compilers::default_compiler,
+    traits::{Dependencies, project::new_spec},
+};
 use rattler_build::recipe::parser::{BuildString, ScriptContent};
 use rattler_build::{
+    NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
+        Recipe,
         parser::{Build, Dependency, Package, Script},
         variable::Variable,
-        Recipe,
     },
-    NormalizedKey,
 };
-use rattler_conda_types::{package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform};
+use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 
 pub struct CMakeBuildBackend<P: ProjectModel> {

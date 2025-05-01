@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use jsonrpc_core::{serde_json, to_value, Error, IoHandler, Params};
+use jsonrpc_core::{Error, IoHandler, Params, serde_json, to_value};
 use miette::{IntoDiagnostic, JSONReportHandler};
 use pixi_build_types::procedures::{
     self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,

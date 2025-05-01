@@ -2,12 +2,13 @@ use std::{str::FromStr, sync::Arc};
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
+    PackageSourceSpec, ProjectModel,
     common::{build_configuration, compute_variants},
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
-    PackageSourceSpec, ProjectModel,
 };
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -16,7 +17,6 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -24,7 +24,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{parser::BuildString, variable::Variable, Jinja},
+    recipe::{Jinja, parser::BuildString, variable::Variable},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
     variant_config::VariantConfig,
@@ -33,7 +33,7 @@ use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 
 use crate::{
     config::PythonBackendConfig,
-    python::{construct_configuration, PythonBuildBackend},
+    python::{PythonBuildBackend, construct_configuration},
 };
 
 #[async_trait::async_trait]
@@ -315,16 +315,16 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                             subdir,
                         } = &iden;
                         name.as_ref()
-                            .map_or(true, |n| output.name().as_normalized() == n)
+                            .is_none_or(|n| output.name().as_normalized() == n)
                             && version
                                 .as_ref()
-                                .map_or(true, |v| output.version().to_string() == *v)
+                                .is_none_or(|v| output.version().to_string() == *v)
                             && build
                                 .as_ref()
-                                .map_or(true, |b| output.build_string() == b.as_str())
+                                .is_none_or(|b| output.build_string() == b.as_str())
                             && subdir
                                 .as_ref()
-                                .map_or(true, |s| output.target_platform().as_str() == s)
+                                .is_none_or(|s| output.target_platform().as_str() == s)
                     })?;
                     Some(outputs.remove(pos))
                 })

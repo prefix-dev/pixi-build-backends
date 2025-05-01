@@ -7,26 +7,26 @@ use crate::{
 use miette::IntoDiagnostic;
 use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
-    common::{requirements, BuildConfigurationParams},
-    traits::{project::new_spec, Dependencies},
     ProjectModel, Targets,
+    common::{BuildConfigurationParams, requirements},
+    traits::{Dependencies, project::new_spec},
 };
 use pyproject_toml::PyProjectToml;
 use rattler_build::recipe::parser::{BuildString, GlobVec};
 use rattler_build::{
+    NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
+        Recipe,
         parser::{Build, Package, PathSource, Python, Script, ScriptContent, Source},
         variable::Variable,
-        Recipe,
     },
-    NormalizedKey,
 };
 use rattler_conda_types::{
-    package::{ArchiveType, EntryPoint},
     NoArchType, PackageName, Platform,
+    package::{ArchiveType, EntryPoint},
 };
 use rattler_package_streaming::write::CompressionLevel;
 

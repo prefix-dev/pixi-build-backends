@@ -6,8 +6,8 @@ use std::{
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types as pbt;
 use rattler_build::{
-    recipe::{parser::Dependency, variable::Variable},
     NormalizedKey,
+    recipe::{parser::Dependency, variable::Variable},
 };
 use rattler_conda_types::{MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict};
 

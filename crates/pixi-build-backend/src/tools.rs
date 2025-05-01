@@ -15,15 +15,15 @@ use rattler_build::{
         PlatformWithVirtualPackages,
     },
     recipe::{
-        parser::{find_outputs_from_src, GlobVec},
-        variable::Variable,
         Jinja, ParsingError, Recipe,
+        parser::{GlobVec, find_outputs_from_src},
+        variable::Variable,
     },
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_conda_types::{package::ArchiveType, GenericVirtualPackage, Platform};
+use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;

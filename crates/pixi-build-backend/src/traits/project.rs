@@ -11,7 +11,7 @@ use pixi_build_types::{self as pbt};
 use rattler_build::NormalizedKey;
 use rattler_conda_types::{Platform, Version};
 
-use super::{targets::Targets, Dependencies, PackageSpec};
+use super::{Dependencies, PackageSpec, targets::Targets};
 
 /// A trait that defines the project model interface
 pub trait ProjectModel {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{traits::Dependencies, ProjectModel, Targets};
+use crate::{ProjectModel, Targets, traits::Dependencies};
 
 pub fn sccache_tools() -> Vec<String> {
     vec!["sccache".to_string()]

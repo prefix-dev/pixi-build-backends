@@ -1,13 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 
 use rattler_build::{
-    recipe::{parser::Requirements, variable::Variable},
     NormalizedKey,
+    recipe::{parser::Requirements, variable::Variable},
 };
 use serde::Serialize;
 
 use crate::{
-    dependencies::ExtractedDependencies, traits::Dependencies, PackageSpec, ProjectModel, Targets,
+    PackageSpec, ProjectModel, Targets, dependencies::ExtractedDependencies, traits::Dependencies,
 };
 
 pub struct PackageRequirements<P: ProjectModel> {

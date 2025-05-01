@@ -4,25 +4,25 @@ use crate::{build_script::BuildScriptContext, config::RustBackendConfig};
 use miette::IntoDiagnostic;
 use pixi_build_backend::common::{PackageRequirements, SourceRequirements};
 use pixi_build_backend::{
+    ProjectModel,
     cache::{add_sccache, enable_sccache, sccache_tools},
-    common::{requirements, BuildConfigurationParams},
+    common::{BuildConfigurationParams, requirements},
     compilers::default_compiler,
     traits::project::new_spec,
-    ProjectModel,
 };
 use rattler_build::recipe::parser::BuildString;
 use rattler_build::{
+    NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
     recipe::{
+        Recipe,
         parser::{Build, Dependency, Package, Script, ScriptContent},
         variable::Variable,
-        Recipe,
     },
-    NormalizedKey,
 };
-use rattler_conda_types::{package::ArchiveType, MatchSpec, NoArchType, PackageName, Platform};
+use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 
 pub struct RustBuildBackend<P: ProjectModel> {

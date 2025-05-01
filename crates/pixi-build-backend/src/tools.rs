@@ -8,6 +8,7 @@ use indexmap::IndexSet;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
 use pixi_build_types::procedures::conda_metadata::CondaMetadataParams;
+use rattler_build::metadata::Debug;
 use rattler_build::{
     hash::HashInfo,
     metadata::{
@@ -23,7 +24,6 @@ use rattler_build::{
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_build::metadata::Debug;
 use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;

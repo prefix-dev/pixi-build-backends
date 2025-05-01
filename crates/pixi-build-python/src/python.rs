@@ -17,7 +17,7 @@ use rattler_build::{
     NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{BuildConfiguration, PackagingSettings, Debug},
+    metadata::{BuildConfiguration, Debug, PackagingSettings},
     recipe::{
         Recipe,
         parser::{Build, Package, PathSource, Python, Script, ScriptContent, Source},

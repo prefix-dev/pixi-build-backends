@@ -164,7 +164,7 @@ impl Protocol for RattlerBuildBackend {
 
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
-                version: output.version().clone().into(),
+                version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,

@@ -16,6 +16,7 @@ use pixi_build_backend::{
     compilers::default_compiler,
     traits::{Dependencies, project::new_spec},
 };
+use rattler_build::metadata::Debug;
 use rattler_build::recipe::parser::{BuildString, ScriptContent};
 use rattler_build::{
     NormalizedKey,
@@ -28,7 +29,6 @@ use rattler_build::{
         variable::Variable,
     },
 };
-use rattler_build::metadata::Debug;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 

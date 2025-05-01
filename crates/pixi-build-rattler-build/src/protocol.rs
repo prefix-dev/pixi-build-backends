@@ -22,10 +22,10 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::PlatformWithVirtualPackages,
-    recipe::{Jinja, parser::BuildString},
+    recipe::{parser::BuildString, Jinja},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
-    tool_configuration::Configuration,
+    tool_configuration::{BaseClient, Configuration},
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
@@ -274,12 +274,15 @@ impl Protocol for RattlerBuildBackend {
 
         let mut built = vec![];
 
+        let base_client = BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_channel_config(channel_config.clone())
             .with_testing(false)
             .with_keep_build(true)
+            .with_reqwest_client(base_client)
             .finish();
 
         for output in outputs {

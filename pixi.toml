@@ -3,7 +3,7 @@ name = "pixi-build"
 version = "0.1.0"
 description = "Binary for building pixi projects into packages"
 authors = ["Tim de Jager <tim@prefix.dev>"]
-channels = ["conda-forge"]
+channels = ["https://prefix.dev/conda-forge"]
 platforms = ["osx-arm64", "win-64", "linux-64", "osx-64"]
 
 [tasks]
@@ -50,7 +50,7 @@ install-pixi-backends = { depends-on = [
 ] }
 
 [dependencies]
-rust = ">=1.84.0,<1.85"
+rust = ">=1.86.0,<1.87"
 python = ">=3.12.4,<4"
 
 [feature.test.dependencies]

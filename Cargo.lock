@@ -1718,7 +1718,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "console",
 ]
@@ -4007,7 +4007,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
@@ -4020,7 +4020,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "indexmap 2.9.0",
  "rattler_conda_types",
@@ -4034,7 +4034,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "clap",
  "console",
@@ -4046,6 +4046,7 @@ dependencies = [
  "rattler",
  "rattler_conda_types",
  "rattler_networking",
+ "rattler_package_streaming",
  "rattler_repodata_gateway",
  "reqwest",
  "serde",
@@ -4060,7 +4061,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4071,7 +4072,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4091,8 +4092,9 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
+ "chrono",
  "console",
  "dunce",
  "fancy_display",
@@ -4100,15 +4102,19 @@ dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
  "miette",
+ "minijinja",
+ "once_cell",
  "pathdiff",
  "pep440_rs",
  "pep508_rs",
  "pixi_consts",
- "pixi_git",
+ "pixi_pypi_spec",
  "pixi_spec",
+ "pixi_spec_containers",
  "pixi_toml",
  "pyproject-toml",
  "rattler_conda_types",
+ "rattler_solve",
  "rattler_virtual_packages",
  "regex",
  "serde",
@@ -4124,9 +4130,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi_pypi_spec"
+version = "0.1.0"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
+dependencies = [
+ "itertools 0.14.0",
+ "pep440_rs",
+ "pep508_rs",
+ "pixi_git",
+ "pixi_spec",
+ "pixi_toml",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "toml-span",
+ "toml_edit",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "dirs",
  "file_url",
@@ -4147,14 +4173,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi_spec_containers"
+version = "0.1.0"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
+dependencies = [
+ "indexmap 2.9.0",
+ "itertools 0.14.0",
+ "rattler_conda_types",
+]
+
+[[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "digest",
  "hex",
  "indexmap 2.9.0",
  "itertools 0.14.0",
+ "miette",
+ "strsim",
  "strum",
  "toml-span",
 ]
@@ -4162,7 +4200,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#347279a5003c68d623089bb1aaf6f4b3057821ed"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#ec7ddf913aca8c9332e040090696aac8e540998e"
 dependencies = [
  "async-fd-lock",
  "fs-err",

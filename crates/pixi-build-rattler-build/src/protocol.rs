@@ -121,12 +121,15 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
         )?;
 
+        let base_client = BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_channel_config(channel_config.clone())
             .with_testing(false)
             .with_keep_build(true)
+            .with_reqwest_client(base_client)
             .finish();
 
         let mut solved_packages = vec![];

@@ -22,7 +22,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::PlatformWithVirtualPackages,
-    recipe::{parser::BuildString, Jinja},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
@@ -121,7 +121,8 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
         )?;
 
-        let base_client = BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+        let base_client =
+            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
@@ -277,7 +278,8 @@ impl Protocol for RattlerBuildBackend {
 
         let mut built = vec![];
 
-        let base_client = BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+        let base_client =
+            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())

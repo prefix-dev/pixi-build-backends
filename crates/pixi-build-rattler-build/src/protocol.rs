@@ -5,6 +5,7 @@ use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
+    source::Source,
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
@@ -135,8 +136,6 @@ impl Protocol for RattlerBuildBackend {
 
         let mut solved_packages = vec![];
 
-        eprintln!("before outputs ");
-
         for output in outputs {
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
             let tool_config = &tool_config;
@@ -194,7 +193,7 @@ impl Protocol for RattlerBuildBackend {
 
         Ok(CondaMetadataResult {
             packages: solved_packages,
-            input_globs: None,
+            input_globs: Some(input_globs(&self.recipe_source, None)),
         })
     }
 
@@ -318,7 +317,7 @@ impl Protocol for RattlerBuildBackend {
 
             built.push(CondaBuiltPackage {
                 output_file: build_path,
-                input_globs: Vec::from([self.recipe_source.name.clone()]),
+                input_globs: input_globs(&self.recipe_source, output.finalized_sources.as_ref()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -327,6 +326,38 @@ impl Protocol for RattlerBuildBackend {
         }
         Ok(CondaBuildResult { packages: built })
     }
+}
+
+fn input_globs(
+    source: &Source,
+    package_sources: Option<&Vec<rattler_build::recipe::parser::Source>>,
+) -> Vec<String> {
+    let mut input_globs = vec![];
+    let parent = if source.path.is_file() {
+        // use the parent path as glob
+        if let Some(parent) = source.path.parent() {
+            parent.to_path_buf()
+        } else {
+            source.path.clone()
+        }
+    } else {
+        // use the source path as glob
+        source.path.clone()
+    };
+
+    // add the source path as glob
+    input_globs.push(format!("{}/**", parent.display()));
+
+    if let Some(package_sources) = package_sources {
+        for source in package_sources {
+            if let rattler_build::recipe::parser::Source::Path(path_source) = source {
+                // add the package source path as glob
+                input_globs.push(format!("{}/**", path_source.path.display()));
+            }
+        }
+    }
+
+    input_globs
 }
 
 #[async_trait::async_trait]

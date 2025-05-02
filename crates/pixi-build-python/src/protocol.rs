@@ -368,7 +368,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
 ///
 /// However, lets take everything in the directory as input for now
 fn input_globs(editable: bool) -> Vec<String> {
-    let mut globs = vec![
+    let mut globs: Vec<_> = vec![
         // Source files
         "**/*.c",
         "**/*.cpp",
@@ -406,6 +406,8 @@ fn input_globs(editable: bool) -> Vec<String> {
         globs.push("**/*.py".to_string());
         globs.push("**/*.pyx".to_string());
     }
+
+    globs
 }
 
 pub struct PythonBuildBackendInstantiator {

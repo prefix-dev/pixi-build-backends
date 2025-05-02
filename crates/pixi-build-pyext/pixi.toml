@@ -1,0 +1,31 @@
+[workspace]
+authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
+channels = ["conda-forge"]
+description = "Showcases how to build a rust project with pixi"
+name = "pixi-build-pyext"
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+preview = ["pixi-build"]
+
+[dependencies]
+pixi-build-pyext = { path = "." }
+
+[package]
+authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
+description = "Showcases how to build a rust project with pixi"
+name = "pixi-build-pyext"
+version = "0.1.6"
+
+[package.build]
+backend = { name = "pixi-build-rust", version = "*" }
+channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
+
+[package.build-dependencies]
+python = "3.12.*"
+
+[package.host-dependencies]
+python = "3.12.*"
+
+[package.run-dependencies]
+# python = "3.12.*"
+# "ruamel.yaml" = "0.18.*"
+# requests = "2.32.*"

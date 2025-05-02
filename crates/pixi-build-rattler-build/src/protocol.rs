@@ -189,7 +189,7 @@ impl Protocol for RattlerBuildBackend {
 
         Ok(CondaMetadataResult {
             packages: solved_packages,
-            input_globs: Some(input_globs(&self.recipe_source)),
+            input_globs: Some(input_globs(&self.recipe_source, None)),
         })
     }
 
@@ -309,7 +309,7 @@ impl Protocol for RattlerBuildBackend {
 
             built.push(CondaBuiltPackage {
                 output_file: build_path,
-                input_globs: input_globs(&self.recipe_source),
+                input_globs: input_globs(&self.recipe_source, output.finalized_sources.as_ref()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -320,16 +320,33 @@ impl Protocol for RattlerBuildBackend {
     }
 }
 
-fn input_globs(source: &Source) -> Vec<String> {
+fn input_globs(
+    source: &Source,
+    package_sources: Option<&Vec<rattler_build::recipe::parser::Source>>,
+) -> Vec<String> {
     let mut input_globs = vec![];
-    if source.path.is_file() {
+    let parent = if source.path.is_file() {
         // use the parent path as glob
         if let Some(parent) = source.path.parent() {
-            input_globs.push(format!("{}/**", parent.display()));
+            parent.to_path_buf()
+        } else {
+            source.path.clone()
         }
     } else {
         // use the source path as glob
-        input_globs.push(format!("{}/**", source.path.display()));
+        source.path.clone()
+    };
+
+    // add the source path as glob
+    input_globs.push(format!("{}/**", parent.display()));
+
+    if let Some(package_sources) = package_sources {
+        for source in package_sources {
+            if let rattler_build::recipe::parser::Source::Path(path_source) = source {
+                // add the package source path as glob
+                input_globs.push(format!("{}/**", path_source.path.display()));
+            }
+        }
     }
 
     input_globs

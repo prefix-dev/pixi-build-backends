@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use minijinja::Environment;
-use pixi_build_backend::{traits::Dependencies, ProjectModel, Targets};
+use pixi_build_backend::{ProjectModel, Targets, traits::Dependencies};
 use serde::Serialize;
 
 const UV: &str = "uv";

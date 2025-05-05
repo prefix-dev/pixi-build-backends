@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use miette::IntoDiagnostic;
-use rattler_build::{recipe::variable::Variable, variant_config::VariantConfig, NormalizedKey};
+use rattler_build::{NormalizedKey, recipe::variable::Variable, variant_config::VariantConfig};
 use rattler_conda_types::Platform;
 
 use crate::ProjectModel;

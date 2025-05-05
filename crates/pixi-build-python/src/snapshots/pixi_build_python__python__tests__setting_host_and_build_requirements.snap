@@ -1,12 +1,30 @@
 ---
-source: crates/pixi-build/src/bin/pixi-build-python/python.rs
-expression: reqs
+source: crates/pixi-build-python/src/python.rs
+expression: recipe
 ---
+schema_version: 1
+context: {}
+package:
+  name: test-reqs
+  version: 1.2.3
+source:
+  - path: "[ ... path ... ]"
+    filter:
+      include: []
+      exclude:
+        - ".pixi"
 build:
-  - boltons
-host:
-  - hatchling
-  - pip
-  - python
-run:
-  - foobar >=3.2.1
+  number: 0
+  string: pyhbf21a9e_0
+  script: "[ ... script ... ]"
+  noarch: python
+requirements:
+  build:
+    - boltons
+  host:
+    - hatchling
+    - pip
+    - python
+  run:
+    - foobar >=3.2.1
+    - source

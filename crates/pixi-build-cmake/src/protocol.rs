@@ -6,11 +6,13 @@ use std::{
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
+    PackageSourceSpec,
     common::{build_configuration, compute_variants},
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -19,21 +21,20 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
 };
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{parser::BuildString, variable::Variable, Jinja},
+    recipe::{Jinja, parser::BuildString, variable::Variable},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 
 use crate::{
-    cmake::{construct_configuration, CMakeBuildBackend},
+    cmake::{CMakeBuildBackend, construct_configuration},
     config::CMakeBackendConfig,
 };
 
@@ -129,7 +130,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         let mut packages = Vec::new();
         for variant in variant_combinations {
             // TODO: Determine how and if we can determine this from the manifest.
-            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
+            let (recipe, source_requirements) = self.recipe(host_platform, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -180,7 +181,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
             packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
-                version: output.version().clone().into(),
+                version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
@@ -199,6 +200,11 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: source_requirements
+                    .run
+                    .into_iter()
+                    .map(|(name, spec)| (name, spec.to_v1()))
+                    .collect(),
             });
         }
 
@@ -254,7 +260,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let recipe = self.recipe(host_platform, &channel_config, &variant)?;
+            let (recipe, _source_requirements) = self.recipe(host_platform, &variant)?;
 
             let build_configuration_params = build_configuration(
                 channels.clone(),
@@ -325,16 +331,16 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                             subdir,
                         } = &iden;
                         name.as_ref()
-                            .map_or(true, |n| output.name().as_normalized() == n)
+                            .is_none_or(|n| output.name().as_normalized() == n)
                             && version
                                 .as_ref()
-                                .map_or(true, |v| output.version().to_string() == *v)
+                                .is_none_or(|v| output.version().to_string() == *v)
                             && build
                                 .as_ref()
-                                .map_or(true, |b| output.build_string() == b.as_str())
+                                .is_none_or(|b| output.build_string() == b.as_str())
                             && subdir
                                 .as_ref()
-                                .map_or(true, |s| output.target_platform().as_str() == s)
+                                .is_none_or(|s| output.target_platform().as_str() == s)
                     })?;
                     Some(outputs.remove(pos))
                 })

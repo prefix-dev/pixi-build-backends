@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
@@ -11,23 +12,23 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata,
     procedures::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata,
 };
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::PlatformWithVirtualPackages,
-    recipe::{parser::BuildString, Jinja},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
-    tool_configuration::Configuration,
+    tool_configuration::{BaseClient, Configuration},
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
@@ -125,12 +126,16 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
         )?;
 
+        let base_client =
+            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_channel_config(channel_config.clone())
             .with_testing(false)
             .with_keep_build(true)
+            .with_reqwest_client(base_client)
             .finish();
 
         let mut solved_packages = vec![];
@@ -168,7 +173,7 @@ impl Protocol for RattlerBuildBackend {
 
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
-                version: output.version().clone().into(),
+                version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
@@ -187,6 +192,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: HashMap::new(),
             };
             solved_packages.push(conda);
         }
@@ -275,12 +281,16 @@ impl Protocol for RattlerBuildBackend {
 
         let mut built = vec![];
 
+        let base_client =
+            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
+
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_channel_config(channel_config.clone())
             .with_testing(false)
             .with_keep_build(true)
+            .with_reqwest_client(base_client)
             .finish();
 
         for output in outputs {
@@ -380,11 +390,11 @@ mod tests {
     };
 
     use pixi_build_types::{
+        ChannelConfiguration,
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
-        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;

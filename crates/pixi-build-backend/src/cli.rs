@@ -4,15 +4,15 @@ use clap::{Parser, Subcommand};
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
+    BackendCapabilities, ChannelConfiguration, FrontendCapabilities, PlatformAndVirtualPackages,
     procedures::{
         conda_build::CondaBuildParams,
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::InitializeParams,
         negotiate_capabilities::NegotiateCapabilitiesParams,
     },
-    BackendCapabilities, ChannelConfiguration, FrontendCapabilities, PlatformAndVirtualPackages,
 };
-use rattler_build::console_utils::{get_default_env_filter, LoggingOutputHandler};
+use rattler_build::console_utils::{LoggingOutputHandler, get_default_env_filter};
 use rattler_conda_types::{ChannelConfig, GenericVirtualPackage, Platform};
 use rattler_virtual_packages::{VirtualPackage, VirtualPackageOverrides};
 use tempfile::TempDir;
@@ -46,7 +46,7 @@ pub struct App {
 pub enum Commands {
     /// Get conda metadata for a recipe.
     GetCondaMetadata {
-        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
+        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::WORKSPACE_MANIFEST)]
         manifest_path: PathBuf,
 
         #[clap(long)]
@@ -54,7 +54,7 @@ pub enum Commands {
     },
     /// Build a conda package.
     CondaBuild {
-        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::PROJECT_MANIFEST)]
+        #[clap(env, long, env = "PIXI_PROJECT_MANIFEST", default_value = consts::WORKSPACE_MANIFEST)]
         manifest_path: PathBuf,
     },
     /// Get the capabilities of the backend.
@@ -157,7 +157,7 @@ async fn initialize<T: ProtocolInstantiator>(
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
-            project_model: project_model.map(Into::into),
+            project_model,
             cache_directory: None,
             configuration: None,
         })

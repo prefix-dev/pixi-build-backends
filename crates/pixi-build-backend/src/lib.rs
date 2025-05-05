@@ -14,4 +14,4 @@ pub mod traits;
 pub mod utils;
 pub mod variants;
 
-pub use traits::{PackageSpec, ProjectModel, TargetSelector, Targets};
+pub use traits::{PackageSourceSpec, PackageSpec, ProjectModel, TargetSelector, Targets};

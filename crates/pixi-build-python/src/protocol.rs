@@ -6,12 +6,13 @@ use std::{
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
+    PackageSourceSpec, ProjectModel,
     common::{build_configuration, compute_variants},
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
-    ProjectModel,
 };
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -20,7 +21,6 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -28,7 +28,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{parser::BuildString, variable::Variable, Jinja},
+    recipe::{Jinja, parser::BuildString, variable::Variable},
     render::resolved_dependencies::DependencyInfo,
     tool_configuration::Configuration,
     variant_config::VariantConfig,
@@ -37,7 +37,7 @@ use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 
 use crate::{
     config::PythonBackendConfig,
-    python::{construct_configuration, PythonBuildBackend},
+    python::{PythonBuildBackend, construct_configuration},
 };
 
 #[async_trait::async_trait]
@@ -119,7 +119,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
         let mut packages = Vec::new();
         for variant in combinations {
             // TODO: Determine how and if we can determine this from the manifest.
-            let recipe = self.recipe(host_platform, &channel_config, false, &variant)?;
+            let (recipe, source_requirements) = self.recipe(host_platform, false, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -172,7 +172,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
 
             packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
-                version: output.version().clone().into(),
+                version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
@@ -191,6 +191,11 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
+                sources: source_requirements
+                    .run
+                    .into_iter()
+                    .map(|(name, spec)| (name, spec.to_v1()))
+                    .collect(),
             });
         }
 
@@ -246,7 +251,8 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
         // Compute outputs for each variant
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
-            let recipe = self.recipe(host_platform, &channel_config, params.editable, &variant)?;
+            let (recipe, _source_requirements) =
+                self.recipe(host_platform, params.editable, &variant)?;
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 Some(PlatformAndVirtualPackages {
@@ -317,16 +323,16 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                             subdir,
                         } = &iden;
                         name.as_ref()
-                            .map_or(true, |n| output.name().as_normalized() == n)
+                            .is_none_or(|n| output.name().as_normalized() == n)
                             && version
                                 .as_ref()
-                                .map_or(true, |v| output.version().to_string() == *v)
+                                .is_none_or(|v| output.version().to_string() == *v)
                             && build
                                 .as_ref()
-                                .map_or(true, |b| output.build_string() == b.as_str())
+                                .is_none_or(|b| output.build_string() == b.as_str())
                             && subdir
                                 .as_ref()
-                                .map_or(true, |s| output.target_platform().as_str() == s)
+                                .is_none_or(|s| output.target_platform().as_str() == s)
                     })?;
                     Some(outputs.remove(pos))
                 })

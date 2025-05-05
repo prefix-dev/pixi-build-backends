@@ -3,17 +3,17 @@
 //! # Key components
 //!
 //! * [`PackageSpec`] - Core trait for package specification behavior
-//! * [`AnyVersion`] - Trait for creating wildcard version specifications that can match any version
-//! * [`BinarySpecExt`] - Extension for converting binary specs to nameless match specs
+//! * [`AnyVersion`] - Trait for creating wildcard version specifications that
+//!   can match any version
+//! * [`BinarySpecExt`] - Extension for converting binary specs to nameless
+//!   match specs
 
-use std::{path::Path, sync::Arc};
+use std::fmt::Debug;
+use std::sync::Arc;
 
 use miette::IntoDiagnostic;
-use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName};
-
 use pixi_build_types::{self as pbt};
-
-use crate::dependencies::resolve_path;
+use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName};
 
 /// Get the * version for the version type, that is currently being used
 pub trait AnyVersion {
@@ -28,7 +28,10 @@ pub trait BinarySpecExt {
 }
 
 /// A trait that define the package spec interface
-pub trait PackageSpec {
+pub trait PackageSpec: Send {
+    /// Source representation of a package
+    type SourceSpec: PackageSourceSpec;
+
     /// Returns true if the specified [`PackageSpec`] is a valid variant spec.
     fn can_be_used_as_variant(&self) -> bool;
 
@@ -36,12 +39,18 @@ pub trait PackageSpec {
     fn to_match_spec(
         &self,
         name: PackageName,
-        root_dir: &Path,
-        ignore_self: bool,
-    ) -> miette::Result<MatchSpec>;
+    ) -> miette::Result<(MatchSpec, Option<Self::SourceSpec>)>;
+}
+
+/// A trait that defines the package source spec interface
+pub trait PackageSourceSpec: Debug + Send {
+    /// Convert this instance into a v1 instance.
+    fn to_v1(self) -> pbt::SourcePackageSpecV1;
 }
 
 impl PackageSpec for pbt::PackageSpecV1 {
+    type SourceSpec = pbt::SourcePackageSpecV1;
+
     fn can_be_used_as_variant(&self) -> bool {
         match self {
             pbt::PackageSpecV1::Binary(boxed_spec) => {
@@ -72,44 +81,27 @@ impl PackageSpec for pbt::PackageSpecV1 {
     fn to_match_spec(
         &self,
         name: PackageName,
-        root_dir: &Path,
-        ignore_self: bool,
-    ) -> miette::Result<MatchSpec> {
+    ) -> miette::Result<(MatchSpec, Option<Self::SourceSpec>)> {
         match self {
             pbt::PackageSpecV1::Binary(binary_spec) => {
-                if binary_spec.version == Some("*".parse().unwrap()) {
+                let match_spec = if binary_spec.version == Some("*".parse().unwrap()) {
                     // Skip dependencies with wildcard versions.
                     name.as_normalized()
                         .to_string()
                         .parse::<MatchSpec>()
-                        .into_diagnostic()
+                        .into_diagnostic()?
                 } else {
-                    Ok(MatchSpec::from_nameless(
-                        binary_spec.to_nameless(),
-                        Some(name),
-                    ))
-                }
+                    MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name))
+                };
+                Ok((match_spec, None))
             }
-            pbt::PackageSpecV1::Source(source_spec) => match source_spec {
-                pbt::SourcePackageSpecV1::Path(path) => {
-                    let path = resolve_path(Path::new(&path.path), root_dir).ok_or_else(|| {
-                        miette::miette!("failed to resolve home dir for: {}", path.path)
-                    })?;
-
-                    if ignore_self && path.as_path() == root_dir {
-                        // Skip source dependencies that point to the root directory.
-                        Err(miette::miette!("Skipping self-referencing dependency"))
-                    } else {
-                        // All other source dependencies are not yet supported.
-                        Err(miette::miette!(
-                            "recursive source dependencies are not yet supported"
-                        ))
-                    }
-                }
-                _ => Err(miette::miette!(
-                    "recursive source dependencies are not yet supported"
-                )),
-            },
+            pbt::PackageSpecV1::Source(source_spec) => Ok((
+                MatchSpec {
+                    name: Some(name),
+                    ..MatchSpec::default()
+                },
+                Some(source_spec.clone()),
+            )),
         }
     }
 }
@@ -137,6 +129,13 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
             namespace: None,
             url: None,
             extras: None,
+            license: None,
         }
+    }
+}
+
+impl PackageSourceSpec for pbt::SourcePackageSpecV1 {
+    fn to_v1(self) -> pbt::SourcePackageSpecV1 {
+        self
     }
 }

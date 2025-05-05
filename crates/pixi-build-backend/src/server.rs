@@ -1,14 +1,12 @@
 use std::{net::SocketAddr, path::Path, sync::Arc};
 
 use fs_err::tokio as tokio_fs;
-use jsonrpc_core::{serde_json, to_value, Error, IoHandler, Params};
+use jsonrpc_core::{Error, IoHandler, Params, serde_json, to_value};
 use miette::{Context, IntoDiagnostic, JSONReportHandler};
-use pixi_build_types::{
-    procedures::{
-        self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
-        initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
-    },
-    VersionedProjectModel,
+use pixi_build_types::VersionedProjectModel;
+use pixi_build_types::procedures::{
+    self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
+    initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
 };
 
 use tokio::sync::RwLock;
@@ -91,7 +89,8 @@ impl<T: ProtocolInstantiator> Server<T> {
                     };
 
                     let debug_dir = T::debug_dir(params.configuration.clone());
-                    log_initialize(debug_dir.as_deref(), params.project_model.clone());
+                    let _ =
+                        log_initialize(debug_dir.as_deref(), params.project_model.clone()).await;
 
                     let (protocol_endpoint, result) = initializer
                         .initialize(params)

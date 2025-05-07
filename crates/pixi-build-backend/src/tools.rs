@@ -81,6 +81,7 @@ impl RattlerBuild {
             variant: Default::default(),
             experimental: true,
             allow_undefined: false,
+            recipe_path: None,
         }
     }
 
@@ -154,6 +155,7 @@ impl RattlerBuild {
                 build_platform: self.selector_config.build_platform,
                 experimental: true,
                 allow_undefined: false,
+                recipe_path: None,
             };
 
             let mut recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())

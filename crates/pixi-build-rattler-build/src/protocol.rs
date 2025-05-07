@@ -222,6 +222,7 @@ impl Protocol for RattlerBuildBackend {
             variant: Default::default(),
             experimental: true,
             allow_undefined: false,
+            recipe_path: None,
         };
 
         let host_vpkgs = params

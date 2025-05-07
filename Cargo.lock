@@ -1714,7 +1714,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "console",
 ]
@@ -2996,9 +2996,9 @@ dependencies = [
 
 [[package]]
 name = "libm"
-version = "0.2.13"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9627da5196e5d8ed0b0495e61e518847578da83483c37288316d9b2e03a7f72"
+checksum = "a25169bd5913a4b437588a7e3d127cd6e90127b60e0ffbd834a38f1599e016b8"
 
 [[package]]
 name = "libredox"
@@ -3008,7 +3008,7 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags 2.9.0",
  "libc",
- "redox_syscall 0.5.11",
+ "redox_syscall 0.5.12",
 ]
 
 [[package]]
@@ -3180,9 +3180,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja"
-version = "2.9.0"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98642a6dfca91122779a307b77cd07a4aa951fbe32232aaf5bad9febc66be754"
+checksum = "77ed1d8c92cf7057b4f2efb42339dcd43f435ed3d7d90e937cd3ae071563206b"
 dependencies = [
  "aho-corasick",
  "serde",
@@ -3627,7 +3627,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "redox_syscall 0.5.11",
+ "redox_syscall 0.5.12",
  "smallvec",
  "windows-targets 0.52.6",
 ]
@@ -4005,7 +4005,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
@@ -4018,7 +4018,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "indexmap 2.9.0",
  "rattler_conda_types",
@@ -4032,7 +4032,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "clap",
  "console",
@@ -4059,7 +4059,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4070,7 +4070,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4090,7 +4090,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "chrono",
  "console",
@@ -4130,7 +4130,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4150,7 +4150,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "dirs",
  "file_url",
@@ -4173,7 +4173,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
@@ -4183,7 +4183,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "digest",
  "hex",
@@ -4198,7 +4198,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#9b90192599f1fbbf9e1efacc0020c653c683c28f"
 dependencies = [
  "async-fd-lock",
  "fs-err",
@@ -4552,7 +4552,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.41.0"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#ea03f64d243260dfd06e7ec75e015233ae9e2bd2"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#ec6bcd9cc431a5a72898e56c234c3400ce1c6d94"
 dependencies = [
  "anyhow",
  "async-once-cell",
@@ -5038,9 +5038,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.11"
+version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2f103c6d277498fbceb16e84d317e2a400f160f46904d5f5410848c829511a3"
+checksum = "928fca9cf2aa042393a8325b9ead81d2f0df4cb12e1e24cef072922ccd99c5af"
 dependencies = [
  "bitflags 2.9.0",
 ]
@@ -7537,9 +7537,9 @@ checksum = "271414315aff87387382ec3d271b52d7ae78726f5d44ac98b4f4030c91880486"
 
 [[package]]
 name = "winnow"
-version = "0.7.8"
+version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e27d6ad3dac991091e4d35de9ba2d2d00647c5d0fc26c5496dee55984ae111b"
+checksum = "d9fb597c990f03753e08d3c29efbfcf2019a003b4bf4ba19225c158e1549f0f3"
 dependencies = [
  "memchr",
 ]

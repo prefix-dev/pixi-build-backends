@@ -1,4 +1,8 @@
-use std::{str::FromStr, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -38,6 +42,10 @@ use crate::{
 
 #[async_trait::async_trait]
 impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
+    fn debug_dir(&self) -> Option<&Path> {
+        self.config.debug_dir.as_deref()
+    }
+
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
@@ -394,6 +402,12 @@ impl RustBackendInstantiator {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RustBackendInstantiator {
+    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
+        configuration
+            .and_then(|config| serde_json::from_value::<RustBackendConfig>(config.clone()).ok())
+            .and_then(|config| config.debug_dir)
+    }
+
     async fn initialize(
         &self,
         params: InitializeParams,

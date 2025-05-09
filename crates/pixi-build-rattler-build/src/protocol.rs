@@ -1,5 +1,8 @@
 use std::collections::HashMap;
-use std::str::FromStr;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
@@ -9,7 +12,7 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, VersionedProjectModel,
+    BackendCapabilities, CondaPackageMetadata,
     procedures::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
@@ -48,12 +51,14 @@ impl RattlerBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl Protocol for RattlerBuildBackend {
+    fn debug_dir(&self) -> Option<&Path> {
+        self.config.debug_dir.as_deref()
+    }
+
     async fn conda_get_metadata(
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
-        log_conda_get_metadata(&self.config, &params).await?;
-
         // Create the work directory if it does not exist
         tokio_fs::create_dir_all(&params.work_directory)
             .await
@@ -199,8 +204,6 @@ impl Protocol for RattlerBuildBackend {
     }
 
     async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
-        log_conda_build(&self.config, &params).await?;
-
         // Create the work directory if it does not exist
         tokio_fs::create_dir_all(&params.work_directory)
             .await
@@ -331,6 +334,13 @@ impl Protocol for RattlerBuildBackend {
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
+    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
+        configuration
+            .and_then(|config| {
+                serde_json::from_value::<RattlerBuildBackendConfig>(config.clone()).ok()
+            })
+            .and_then(|config| config.debug_dir)
+    }
     async fn initialize(
         &self,
         params: InitializeParams,
@@ -342,7 +352,6 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         } else {
             RattlerBuildBackendConfig::default()
         };
-        log_initialize(&config, params.project_model).await?;
 
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),
@@ -371,81 +380,6 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
     }
-}
-
-async fn log_initialize(
-    config: &RattlerBuildBackendConfig,
-    project_model: Option<VersionedProjectModel>,
-) -> miette::Result<()> {
-    let Some(ref debug_dir) = config.debug_dir else {
-        return Ok(());
-    };
-
-    let project_model = project_model
-        .ok_or_else(|| miette::miette!("project model is required if debug_dir is given"))?
-        .into_v1()
-        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
-
-    let project_model_json = serde_json::to_string_pretty(&project_model)
-        .into_diagnostic()
-        .context("failed to serialize project model to JSON")?;
-
-    let project_model_path = debug_dir.join("project_model.json");
-    tokio_fs::write(&project_model_path, project_model_json)
-        .await
-        .into_diagnostic()
-        .context("failed to write project model JSON to file")?;
-    Ok(())
-}
-
-async fn log_conda_get_metadata(
-    config: &RattlerBuildBackendConfig,
-    params: &CondaMetadataParams,
-) -> miette::Result<()> {
-    let Some(ref debug_dir) = config.debug_dir else {
-        return Ok(());
-    };
-
-    let json = serde_json::to_string_pretty(&params)
-        .into_diagnostic()
-        .context("failed to serialize parameters to JSON")?;
-
-    tokio_fs::create_dir_all(&debug_dir)
-        .await
-        .into_diagnostic()
-        .context("failed to create data directory")?;
-
-    let path = debug_dir.join("conda_metadata_params.json");
-    tokio_fs::write(&path, json)
-        .await
-        .into_diagnostic()
-        .context("failed to write JSON to file")?;
-    Ok(())
-}
-
-async fn log_conda_build(
-    config: &RattlerBuildBackendConfig,
-    params: &CondaBuildParams,
-) -> miette::Result<()> {
-    let Some(ref debug_dir) = config.debug_dir else {
-        return Ok(());
-    };
-
-    let json = serde_json::to_string_pretty(&params)
-        .into_diagnostic()
-        .context("failed to serialize parameters to JSON")?;
-
-    tokio_fs::create_dir_all(&debug_dir)
-        .await
-        .into_diagnostic()
-        .context("failed to create data directory")?;
-
-    let path = debug_dir.join("conda_build_params.json");
-    tokio_fs::write(&path, json)
-        .await
-        .into_diagnostic()
-        .context("failed to write JSON to file")?;
-    Ok(())
 }
 
 #[cfg(test)]

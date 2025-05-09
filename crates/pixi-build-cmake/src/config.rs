@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use indexmap::IndexMap;
 use serde::Deserialize;
 
@@ -10,6 +12,8 @@ pub struct CMakeBackendConfig {
     /// Environment Variables
     #[serde(default)]
     pub env: IndexMap<String, String>,
+    /// If set, internal state will be logged as files in that directory
+    pub debug_dir: Option<PathBuf>,
 }
 
 #[cfg(test)]

@@ -3894,7 +3894,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-cmake"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3917,7 +3917,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-python"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3961,7 +3961,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rattler-build"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "async-trait",
  "fs-err",
@@ -3980,7 +3980,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rust"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "async-trait",
  "chrono",

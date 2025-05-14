@@ -8,6 +8,8 @@ on:
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
+  workflow_dispatch:
+
 
 name: "Build and publish pixi builds backends as conda packages"
 
@@ -61,23 +63,22 @@ jobs:
         run: |
           git config --global core.longpaths true
         shell: bash
-      - name: Set environment variable for recipe version
-        shell: bash
-        run: |
-          echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
           TARGET_PLATFORM: ${{ matrix.bins.target }}
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
+          # set the secret for the sccache depot
+          SCCACHE_WEBDAV_ENDPOINT: ${{ secrets.SCCACHE_WEBDAV_ENDPOINT }}
+          SCCACHE_WEBDAV_TOKEN: ${{ secrets.SCCACHE_WEBDAV_TOKEN }}
         run: |
-          pixi run build-recipe --recipe recipe/${{ matrix.bins.bin }}.yaml --target-platform=${{ env.TARGET_PLATFORM }}
+          pixi run build-package --manifest-path crates/${{ matrix.bins.crate_name }} --target-platform=${{ env.TARGET_PLATFORM }}
       - name: Upload OSX or Linux packages
         shell: bash
         if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os != 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
-          for file in "$RUNNER_TEMP"/**/*.conda; do
+          for file in "$RUNNER_TEMP"/*.conda; do
             echo "Uploading ${file}"
             pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
           done
@@ -85,7 +86,7 @@ jobs:
         shell: pwsh
         if: ${{ startsWith(github.ref, 'refs/tags') && matrix.bins.os == 'windows-latest' && github.repository == env.REPO_NAME }}
         run: |
-          Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda -Recurse | ForEach-Object {
+          Get-ChildItem -Path $env:RUNNER_TEMP -Filter *.conda | ForEach-Object {
             Write-Host "Uploading $($_.FullName)"
             pixi run -e build rattler-build upload prefix -c pixi-build-backends "$($_.FullName)"
           }

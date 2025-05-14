@@ -10,7 +10,7 @@ preview = ["pixi-build"]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 description = "Showcases how to build a rust project with pixi"
 name = "pixi-build-rust"
-version = "0.1.6"
+version = "0.1.7"
 
 
 [dependencies]

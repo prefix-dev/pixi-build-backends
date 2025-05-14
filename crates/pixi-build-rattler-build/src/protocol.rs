@@ -344,7 +344,11 @@ fn input_globs(
         for source in package_sources {
             if let rattler_build::recipe::parser::Source::Path(path_source) = source {
                 // add the package source path as glob
-                input_globs.push(format!("{}/**", path_source.path.display()));
+                if path_source.path.is_dir() {
+                    input_globs.push(format!("{}/**", path_source.path.display()));
+                } else {
+                    input_globs.push(path_source.path.display().to_string());
+                }
             }
         }
     }

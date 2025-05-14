@@ -70,7 +70,7 @@ ruff = ">=0.5.7,<0.6"
 rattler-build = ">=0.30.0,<1"
 
 [feature.build.tasks]
-build-package = "pixi build --output-dir=$RUNNER_TEMP --build-dir=$RUNNER_TEMP"
+build-recipe = "rattler-build build --output-dir=$RUNNER_TEMP --experimental --test native"
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"

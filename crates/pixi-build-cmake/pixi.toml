@@ -10,14 +10,14 @@ preview = ["pixi-build"]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 description = "Showcases how to build a cpp project with pixi"
 name = "pixi-build-cmake"
-version = "0.1.7"
+version = "0.1.8"
 
 
 [dependencies]
 pixi-build-cmake = { path = "." }
 
 [package.build]
-backend = { name = "pixi-build-rust", version = "==0.1.5" }
+backend = { name = "pixi-build-rust", version = "==0.1.10" }
 channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
 
 [package.target.unix.host-dependencies]

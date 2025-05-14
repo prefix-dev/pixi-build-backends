@@ -1,0 +1,40 @@
+package:
+  name: pixi-build-python
+  version: "${{ env.get('PIXI_BUILD_PYTHON_VERSION', default='0.1.0dev') }}"
+
+# cache:
+#   source:
+#     path: ..
+#   requirements:
+#     build:
+#       - ${{ compiler("rust") }}
+#     host:
+#       - xz >=5.0, <6.0
+#       - if: unix
+#         then: openssl
+
+source:
+  path: ..
+
+requirements:
+    build:
+      - ${{ compiler("rust") }}
+    host:
+      - xz >=5.0, <6.0
+      - if: unix
+        then: openssl
+
+build:
+  script:
+    - if: unix
+      then:
+        - export OPENSSL_DIR="$PREFIX"
+        - cargo install --locked --root $PREFIX --path crates/pixi-build-python --no-track
+      else:
+        - cargo install --locked --root %PREFIX% --path crates/pixi-build-python --no-track
+  files:
+    - bin/pixi-build-python
+    - bin/pixi-build-python.exe
+
+tests:
+    - script: pixi-build-python --help

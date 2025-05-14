@@ -1,0 +1,29 @@
+package:
+  name: pixi-build-rust
+  version: "${{ env.get('PIXI_BUILD_RUST_VERSION', default='0.1.0dev') }}"
+
+source:
+  path: ..
+
+requirements:
+    build:
+      - ${{ compiler("rust") }}
+    host:
+      - xz >=5.0, <6.0
+      - if: unix
+        then: openssl
+
+build:
+  script:
+    - if: unix
+      then:
+        - export OPENSSL_DIR="$PREFIX"
+        - cargo install --locked --root $PREFIX --path crates/pixi-build-rust --no-track
+      else:
+        - cargo install --locked --root %PREFIX% --path crates/pixi-build-rust --no-track
+  files:
+    - bin/pixi-build-rust
+    - bin/pixi-build-rust.exe
+
+tests:
+    - script: pixi-build-rust --help

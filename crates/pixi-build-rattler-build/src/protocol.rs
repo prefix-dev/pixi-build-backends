@@ -8,7 +8,6 @@ use fs_err::tokio as tokio_fs;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
-    source::Source,
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
@@ -196,9 +195,11 @@ impl Protocol for RattlerBuildBackend {
             solved_packages.push(conda);
         }
 
+        let input_globs = Some(Vec::from(["recipe.yaml".to_string()]));
+
         Ok(CondaMetadataResult {
             packages: solved_packages,
-            input_globs: Some(input_globs(&self.recipe_source, None)?),
+            input_globs,
         })
     }
 
@@ -318,9 +319,22 @@ impl Protocol for RattlerBuildBackend {
                 })
                 .await?;
 
+            let package_sources = output.finalized_sources.as_ref().map(|package_sources| {
+                package_sources
+                    .iter()
+                    .filter_map(|source| {
+                        if let rattler_build::recipe::parser::Source::Path(path_source) = source {
+                            Some(path_source.path.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            });
+
             built.push(CondaBuiltPackage {
                 output_file: build_path,
-                input_globs: input_globs(&self.recipe_source, output.finalized_sources.as_ref())?,
+                input_globs: build_input_globs(&self.recipe_source.path, package_sources)?,
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -345,37 +359,30 @@ pub fn relative_path_joined(
     Ok(joined)
 }
 
-fn input_globs(
-    source: &Source,
-    package_sources: Option<&Vec<rattler_build::recipe::parser::Source>>,
+fn build_input_globs(
+    source: &Path,
+    package_sources: Option<Vec<PathBuf>>,
 ) -> miette::Result<Vec<String>> {
     // Always add the current directory of the package to the globs
-    let mut input_globs = vec!["**".to_string()];
+    let mut input_globs = vec!["*/**".to_string()];
 
     // Get parent directory path
-    let parent = if source.path.is_file() {
+    let parent = if source.is_file() {
         // use the parent path as glob
-        if let Some(parent) = source.path.parent() {
-            parent.to_path_buf()
-        } else {
-            source.path.clone()
-        }
+        source.parent().unwrap_or(source).to_path_buf()
     } else {
         // use the source path as glob
-        source.path.clone()
+        source.to_path_buf()
     };
 
     // If there are sources add them to the globs as well
     if let Some(package_sources) = package_sources {
         for source in package_sources {
-            if let rattler_build::recipe::parser::Source::Path(path_source) = source {
-                // add the package source path as glob
-                let source_glob = relative_path_joined(&parent, &path_source.path)?;
-                if path_source.path.is_dir() {
-                    input_globs.push(format!("{}/**", source_glob));
-                } else {
-                    input_globs.push(source_glob);
-                }
+            let source_glob = relative_path_joined(&parent, &source)?;
+            if source.is_dir() {
+                input_globs.push(format!("{}/**", source_glob));
+            } else {
+                input_globs.push(source_glob);
             }
         }
     }

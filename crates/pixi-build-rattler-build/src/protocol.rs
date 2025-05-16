@@ -198,7 +198,7 @@ impl Protocol for RattlerBuildBackend {
 
         Ok(CondaMetadataResult {
             packages: solved_packages,
-            input_globs: Some(input_globs(&self.recipe_source, None)),
+            input_globs: Some(input_globs(&self.recipe_source, None)?),
         })
     }
 
@@ -320,7 +320,7 @@ impl Protocol for RattlerBuildBackend {
 
             built.push(CondaBuiltPackage {
                 output_file: build_path,
-                input_globs: input_globs(&self.recipe_source, output.finalized_sources.as_ref()),
+                input_globs: input_globs(&self.recipe_source, output.finalized_sources.as_ref())?,
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -331,11 +331,28 @@ impl Protocol for RattlerBuildBackend {
     }
 }
 
+/// Returns the relative path from `base` to `input`, joined by "/".
+pub fn relative_path_joined(
+    base: &std::path::Path,
+    input: &std::path::Path,
+) -> miette::Result<String> {
+    let rel = input.strip_prefix(base).into_diagnostic()?;
+    let joined = rel
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
+    Ok(joined)
+}
+
 fn input_globs(
     source: &Source,
     package_sources: Option<&Vec<rattler_build::recipe::parser::Source>>,
-) -> Vec<String> {
-    let mut input_globs = vec![];
+) -> miette::Result<Vec<String>> {
+    // Always add the current directory of the package to the globs
+    let mut input_globs = vec!["**".to_string()];
+
+    // Get parent directory path
     let parent = if source.path.is_file() {
         // use the parent path as glob
         if let Some(parent) = source.path.parent() {
@@ -348,23 +365,22 @@ fn input_globs(
         source.path.clone()
     };
 
-    // add the source path as glob
-    input_globs.push(format!("{}/**", parent.display()));
-
+    // If there are sources add them to the globs as well
     if let Some(package_sources) = package_sources {
         for source in package_sources {
             if let rattler_build::recipe::parser::Source::Path(path_source) = source {
                 // add the package source path as glob
+                let source_glob = relative_path_joined(&parent, &path_source.path)?;
                 if path_source.path.is_dir() {
-                    input_globs.push(format!("{}/**", path_source.path.display()));
+                    input_globs.push(format!("{}/**", source_glob));
                 } else {
-                    input_globs.push(path_source.path.display().to_string());
+                    input_globs.push(source_glob);
                 }
             }
         }
     }
 
-    input_globs
+    Ok(input_globs)
 }
 
 #[async_trait::async_trait]
@@ -589,5 +605,45 @@ mod tests {
                 .path,
             recipe
         );
+    }
+
+    #[test]
+    fn test_relative_path_joined() {
+        use std::path::Path;
+        // Simple case
+        let base = Path::new("/foo/bar");
+        let input = Path::new("/foo/bar/baz/qux.txt");
+        assert_eq!(
+            super::relative_path_joined(base, input).unwrap(),
+            "baz/qux.txt"
+        );
+        // Same path
+        let base = Path::new("/foo/bar");
+        let input = Path::new("/foo/bar");
+        assert_eq!(super::relative_path_joined(base, input).unwrap(), "");
+        // Input not under base
+        let base = Path::new("/foo/bar");
+        let input = Path::new("/foo/other");
+        assert!(super::relative_path_joined(base, input).is_err());
+        // Relative paths
+        let base = Path::new("foo/bar");
+        let input = Path::new("foo/bar/baz");
+        assert_eq!(super::relative_path_joined(base, input).unwrap(), "baz");
+        // Windows paths (only run on Windows)
+        #[cfg(windows)]
+        {
+            let base = Path::new(r"C:\foo\bar");
+            let input = Path::new(r"C:\foo\bar\baz\qux.txt");
+            assert_eq!(
+                super::relative_path_joined(base, input).unwrap(),
+                "baz/qux.txt"
+            );
+            let base = Path::new(r"C:\foo\bar");
+            let input = Path::new(r"C:\foo\bar");
+            assert_eq!(super::relative_path_joined(base, input).unwrap(), "");
+            let base = Path::new(r"C:\foo\bar");
+            let input = Path::new(r"C:\foo\other");
+            assert!(super::relative_path_joined(base, input).is_err());
+        }
     }
 }

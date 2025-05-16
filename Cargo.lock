@@ -3966,6 +3966,7 @@ dependencies = [
  "async-trait",
  "fs-err",
  "miette",
+ "pathdiff",
  "pixi-build-backend",
  "pixi_build_types",
  "rattler-build",

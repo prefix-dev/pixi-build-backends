@@ -350,7 +350,13 @@ pub fn relative_path_joined(
     base: &std::path::Path,
     input: &std::path::Path,
 ) -> miette::Result<String> {
-    let rel = input.strip_prefix(base).into_diagnostic()?;
+    let rel = pathdiff::diff_paths(input, base).ok_or_else(|| {
+        miette::miette!(
+            "could not compute relative path from '{:?}' to '{:?}'",
+            input,
+            base
+        )
+    })?;
     let joined = rel
         .components()
         .map(|c| c.as_os_str().to_string_lossy())
@@ -631,26 +637,83 @@ mod tests {
         // Input not under base
         let base = Path::new("/foo/bar");
         let input = Path::new("/foo/other");
-        assert!(super::relative_path_joined(base, input).is_err());
+        assert_eq!(
+            super::relative_path_joined(base, input).unwrap(),
+            "../other"
+        );
         // Relative paths
         let base = Path::new("foo/bar");
         let input = Path::new("foo/bar/baz");
         assert_eq!(super::relative_path_joined(base, input).unwrap(), "baz");
-        // Windows paths (only run on Windows)
-        #[cfg(windows)]
-        {
-            let base = Path::new(r"C:\foo\bar");
-            let input = Path::new(r"C:\foo\bar\baz\qux.txt");
-            assert_eq!(
-                super::relative_path_joined(base, input).unwrap(),
-                "baz/qux.txt"
-            );
-            let base = Path::new(r"C:\foo\bar");
-            let input = Path::new(r"C:\foo\bar");
-            assert_eq!(super::relative_path_joined(base, input).unwrap(), "");
-            let base = Path::new(r"C:\foo\bar");
-            let input = Path::new(r"C:\foo\other");
-            assert!(super::relative_path_joined(base, input).is_err());
-        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_relative_path_joined_windows() {
+        use std::path::Path;
+        let base = Path::new(r"C:\foo\bar");
+        let input = Path::new(r"C:\foo\bar\baz\qux.txt");
+        assert_eq!(
+            super::relative_path_joined(base, input).unwrap(),
+            "baz/qux.txt"
+        );
+        let base = Path::new(r"C:\foo\bar");
+        let input = Path::new(r"C:\foo\bar");
+        assert_eq!(super::relative_path_joined(base, input).unwrap(), "");
+        let base = Path::new(r"C:\foo\bar");
+        let input = Path::new(r"C:\foo\other");
+        assert_eq!(
+            super::relative_path_joined(base, input).unwrap(),
+            "../other"
+        );
+    }
+
+    #[test]
+    fn test_build_input_globs_with_tempdirs() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        // Create a temp directory to act as the base
+        let base_dir = tempdir().unwrap();
+        let base_path = base_dir.path();
+
+        // Case 1: source is a file in the base dir
+        let recipe_path = base_path.join("recipe.yaml");
+        fs::write(&recipe_path, "fake").unwrap();
+        let globs = super::build_input_globs(&recipe_path, None).unwrap();
+        assert_eq!(globs, vec!["*/**"]);
+
+        // Case 2: source is a directory, with a file and a dir as package sources
+        let pkg_dir = base_path.join("pkg");
+        let pkg_file = pkg_dir.join("file.txt");
+        let pkg_subdir = pkg_dir.join("dir");
+        fs::create_dir_all(&pkg_subdir).unwrap();
+        fs::write(&pkg_file, "fake").unwrap();
+        let globs =
+            super::build_input_globs(base_path, Some(vec![pkg_file.clone(), pkg_subdir.clone()]))
+                .unwrap();
+        assert_eq!(globs, vec!["*/**", "pkg/file.txt", "pkg/dir/**"]);
+    }
+
+    #[test]
+    fn test_build_input_globs_two_folders_in_tempdir() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        // Create a temp directory
+        let temp = tempdir().unwrap();
+        let temp_path = temp.path();
+
+        // Create two folders: source_dir and package_source_dir
+        let source_dir = temp_path.join("source");
+        let package_source_dir = temp_path.join("pkgsrc");
+        fs::create_dir_all(&source_dir).unwrap();
+        fs::create_dir_all(&package_source_dir).unwrap();
+
+        // Call build_input_globs with source_dir as source, and package_source_dir as package source
+        let globs =
+            super::build_input_globs(&source_dir, Some(vec![package_source_dir.clone()])).unwrap();
+        // The relative path from source_dir to package_source_dir should be "../pkgsrc/**"
+        assert_eq!(globs, vec!["*/**", "../pkgsrc/**"]);
     }
 }

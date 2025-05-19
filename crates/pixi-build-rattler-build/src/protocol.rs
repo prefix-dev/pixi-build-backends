@@ -370,11 +370,6 @@ fn build_input_globs(
     // Always add the current directory of the package to the globs
     let mut input_globs = vec!["*/**".to_string()];
 
-    // TODO: Remove this condition when working on https://github.com/prefix-dev/pixi/issues/3785
-    if !source.is_absolute() {
-        return Ok(input_globs);
-    }
-
     // Get parent directory path
     let parent = if source.is_file() {
         // use the parent path as glob
@@ -386,6 +381,11 @@ fn build_input_globs(
     // If there are sources add them to the globs as well
     if let Some(package_sources) = package_sources {
         for source in package_sources {
+            let source = if source.is_absolute() {
+                source
+            } else {
+                parent.join(source)
+            };
             let source_glob = relative_path_joined(&parent, &source)?;
             if source.is_dir() {
                 input_globs.push(format!("{}/**", source_glob));
@@ -717,5 +717,26 @@ mod tests {
             super::build_input_globs(&source_dir, Some(vec![package_source_dir.clone()])).unwrap();
         // The relative path from source_dir to package_source_dir should be "../pkgsrc/**"
         assert_eq!(globs, vec!["*/**", "../pkgsrc/**"]);
+    }
+
+    #[test]
+    fn test_build_input_globs_relative_source() {
+        use std::fs;
+        use std::path::PathBuf;
+        use tempfile::tempdir;
+
+        // Create a temp directory to act as the base
+        let base_dir = tempdir().unwrap();
+        let base_path = base_dir.path();
+
+        // Case: source is a directory, package_sources contains a relative path
+        let rel_dir = PathBuf::from("rel_folder");
+        let abs_rel_dir = base_path.join(&rel_dir);
+        fs::create_dir_all(&abs_rel_dir).unwrap();
+
+        // Call build_input_globs with base_path as source, and rel_dir as package source (relative)
+        let globs = super::build_input_globs(base_path, Some(vec![rel_dir.clone()])).unwrap();
+        // The relative path from base_path to rel_dir should be "rel_folder/**"
+        assert_eq!(globs, vec!["*/**", "rel_folder/**"]);
     }
 }

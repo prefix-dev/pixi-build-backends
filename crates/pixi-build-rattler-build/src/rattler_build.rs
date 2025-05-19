@@ -14,6 +14,7 @@ pub struct RattlerBuildBackend {
     /// In case of rattler-build, manifest is the raw recipe
     /// We need to apply later the selectors to get the final recipe
     pub(crate) recipe_source: Source,
+    pub(crate) manifest_root: PathBuf,
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) config: RattlerBuildBackendConfig,
 }
@@ -52,13 +53,17 @@ impl RattlerBuildBackend {
         };
 
         // Load the manifest from the source directory
-        let manifest_root = manifest_path.parent().expect("manifest must have a root");
+        let manifest_root = manifest_path
+            .parent()
+            .expect("manifest must have a root")
+            .to_path_buf();
         let recipe_source =
-            Source::from_rooted_path(manifest_root, recipe_path).into_diagnostic()?;
+            Source::from_rooted_path(&manifest_root, recipe_path).into_diagnostic()?;
 
         Ok(Self {
-            recipe_source,
             logging_output_handler,
+            recipe_source,
+            manifest_root,
             cache_dir,
             config,
         })

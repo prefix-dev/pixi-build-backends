@@ -364,32 +364,36 @@ fn relative_path_joined(base: &std::path::Path, input: &std::path::Path) -> miet
 }
 
 fn build_input_globs(
-    _source: &Path,
-    _package_sources: Option<Vec<PathBuf>>,
+    source: &Path,
+    package_sources: Option<Vec<PathBuf>>,
 ) -> miette::Result<Vec<String>> {
     // Always add the current directory of the package to the globs
-    let input_globs = vec!["*/**".to_string()];
+    let mut input_globs = vec!["*/**".to_string()];
 
-    // Enable together with https://github.com/prefix-dev/pixi/issues/3785
-    // // Get parent directory path
-    // let parent = if source.is_file() {
-    //     // use the parent path as glob
-    //     source.parent().unwrap_or(source).to_path_buf()
-    // } else {
-    //     // use the source path as glob
-    //     source.to_path_buf()
-    // };
-    // // If there are sources add them to the globs as well
-    // if let Some(package_sources) = package_sources {
-    //     for source in package_sources {
-    //         let source_glob = relative_path_joined(&parent, &source)?;
-    //         if source.is_dir() {
-    //             input_globs.push(format!("{}/**", source_glob));
-    //         } else {
-    //             input_globs.push(source_glob);
-    //         }
-    //     }
-    // }
+    // TODO: Remove this condition when working on https://github.com/prefix-dev/pixi/issues/3785
+    if !source.is_absolute() {
+        return Ok(input_globs);
+    }
+
+    // Get parent directory path
+    let parent = if source.is_file() {
+        // use the parent path as glob
+        source.parent().unwrap_or(source).to_path_buf()
+    } else {
+        // use the source path as glob
+        source.to_path_buf()
+    };
+    // If there are sources add them to the globs as well
+    if let Some(package_sources) = package_sources {
+        for source in package_sources {
+            let source_glob = relative_path_joined(&parent, &source)?;
+            if source.is_dir() {
+                input_globs.push(format!("{}/**", source_glob));
+            } else {
+                input_globs.push(source_glob);
+            }
+        }
+    }
 
     Ok(input_globs)
 }

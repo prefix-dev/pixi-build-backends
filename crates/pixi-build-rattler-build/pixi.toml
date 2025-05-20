@@ -17,7 +17,7 @@ version = "0.1.11"
 pixi-build-rattler-build = { path = "." }
 
 [package.build]
-backend = { name = "pixi-build-rust", version = "==0.1.10" }
+backend = { name = "pixi-build-rust", version = "*" }
 channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
 
 [package.target.unix.host-dependencies]

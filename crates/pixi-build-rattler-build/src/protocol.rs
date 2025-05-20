@@ -404,7 +404,7 @@ fn build_input_globs(
             } else {
                 parent.join(source)
             };
-            input_globs.push(build_relative_glob(&manifest_root, &source)?);
+            input_globs.push(build_relative_glob(manifest_root, &source)?);
         }
     }
 

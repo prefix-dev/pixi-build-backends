@@ -10,7 +10,7 @@ preview = ["pixi-build"]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 description = "Showcases how to build a rattler-build recipe with pixi"
 name = "pixi-build-rattler-build"
-version = "0.1.10"
+version = "0.1.11"
 
 
 [dependencies]

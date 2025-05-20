@@ -53,6 +53,9 @@ install-pixi-backends = { depends-on = [
 rust = ">=1.86.0,<1.87"
 python = ">=3.12.4,<4"
 
+[target.osx-64.activation]
+scripts = ["scripts/default_linker_osx_64.sh"]
+
 [feature.test.dependencies]
 pytest = ">=8.3.2,<9"
 

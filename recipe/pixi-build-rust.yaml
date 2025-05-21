@@ -10,7 +10,6 @@ requirements:
     - ${{ compiler("rust") }}
   host:
     - xz >=5.0, <6.0
-    - zlib
     - if: unix
       then: openssl
 

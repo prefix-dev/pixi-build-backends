@@ -1,0 +1,35 @@
+package:
+  name: pixi-build-rust
+  version: "${{ env.get('PIXI_BUILD_RUST_VERSION', default='0.1.0dev') }}"
+
+source:
+  path: ..
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+  host:
+    - xz >=5.0, <6.0
+    - zlib
+    - if: unix
+      then: openssl
+
+build:
+  script:
+    - if: osx and x86_64
+      then:
+        # use the default linker for osx-64 as we are hitting a bug with the conda-forge linker
+        - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
+
+    - if: unix
+      then:
+        - export OPENSSL_DIR="$PREFIX"
+        - cargo install --locked --root $PREFIX --path crates/pixi-build-rust --no-track
+      else:
+        - cargo install --locked --root %PREFIX% --path crates/pixi-build-rust --no-track
+  files:
+    - bin/pixi-build-rust
+    - bin/pixi-build-rust.exe
+
+tests:
+  - script: pixi-build-rust --help

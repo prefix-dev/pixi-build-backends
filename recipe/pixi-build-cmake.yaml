@@ -20,6 +20,7 @@ build:
     - if: osx and x86_64
       then:
         # use the default linker for osx-64 as we are hitting a bug with the conda-forge linker
+        # https://github.com/rust-lang/rust/issues/140686
         - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
 
     - if: unix

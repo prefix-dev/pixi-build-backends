@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 
-name: "Build and publish pixi builds backends as conda packages"
+name: "Build and publish backends"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}

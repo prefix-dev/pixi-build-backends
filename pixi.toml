@@ -60,8 +60,19 @@ ruff = ">=0.5.7,<0.6"
 [feature.build.dependencies]
 rattler-build = ">=0.30.0,<1"
 
-[feature.build.tasks]
-build-recipe = "rattler-build build --output-dir=$RUNNER_TEMP --experimental --test native"
+[feature.build.tasks.build-recipe-ci]
+cmd = "rattler-build build --test native --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }}"
+args = ["output_dir", "recipe", "target_platform"]
+
+[feature.build.tasks.build-recipe]
+depends-on = [
+  { task = "build-recipe-ci", args = [
+    "./output",
+    "{{ recipe }}",
+    "{{ target_platform }}",
+  ] },
+]
+args = ["recipe", "target_platform"]
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"

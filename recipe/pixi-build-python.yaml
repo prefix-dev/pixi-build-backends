@@ -9,7 +9,9 @@ requirements:
   build:
     - ${{ compiler("rust") }}
   host:
-    - xz >=5.0, <6.0
+    - pkg-config
+    - libzlib
+    - liblzma
     - if: unix
       then: openssl
 

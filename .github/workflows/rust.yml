@@ -1,0 +1,69 @@
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+name: Rust Test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_LOG: info
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-rustdoc-links:
+    name: Check intra-doc links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions-rust-lang/setup-rust-toolchain@9399c7bb15d4c7d47b27263d024f0a4978346ba4 # v1
+      - shell: bash
+        run: >
+          ./intra-doc-links.bash
+  format_and_lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: prefix-dev/setup-pixi@main
+        with:
+          cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: ". -> target/pixi"
+          key: ${{ hashFiles('pixi.lock') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Run rustfmt
+        run: pixi run cargo-fmt
+      - name: Run clippy
+        run: pixi run clippy-fmt
+
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    needs: [format_and_lint]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: prefix-dev/setup-pixi@main
+        with:
+          cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: ". -> target/pixi"
+          key: ${{ hashFiles('pixi.lock') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Test pixi
+        run: pixi run nexttest
+
+      - name: Run doctests
+        run: pixi run doctest

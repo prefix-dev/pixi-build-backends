@@ -17,7 +17,10 @@ log = "0.4.25"
 miette = "7.5.0"
 minijinja = "2.7.0"
 parking_lot = "0.12.3"
-reqwest = "0.12.12"
+reqwest = { version = "0.12.12", default-features = false, features = [
+  "rustls-tls",
+  "rustls-tls-native-roots",
+] }
 reqwest-middleware = "0.4.0"
 rstest = "0.25.0"
 serde = "1.0"

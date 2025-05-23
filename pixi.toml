@@ -65,6 +65,9 @@ depends-on = [
 ]
 args = ["recipe", "target_platform"]
 
+[feature.release.dependencies]
+python = ">=3.12.4,<4"
+
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"
 fmt-schema = "ruff format schema"
@@ -94,3 +97,4 @@ default = { solve-group = "default" }
 lint = { features = ["lint"], solve-group = "default" }
 schema = { features = ["schema"], no-default-feature = true }
 build = { features = ["build"], no-default-feature = true }
+release = { features = ["release"], no-default-feature = false }

@@ -63,7 +63,7 @@ jobs:
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Test pixi
-        run: pixi run nexttest
+        run: pixi run nextest
 
       - name: Run doctests
         run: pixi run doctest

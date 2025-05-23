@@ -42,7 +42,7 @@ jobs:
       - name: Run rustfmt
         run: pixi run cargo-fmt
       - name: Run clippy
-        run: pixi run clippy-fmt
+        run: pixi run cargo-clippy
 
   test:
     name: Test

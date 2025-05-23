@@ -1714,7 +1714,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "console",
 ]
@@ -4006,7 +4006,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
@@ -4019,7 +4019,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "indexmap 2.9.0",
  "rattler_conda_types",
@@ -4033,7 +4033,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "clap",
  "console",
@@ -4060,7 +4060,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4071,7 +4071,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4091,7 +4091,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "chrono",
  "console",
@@ -4131,7 +4131,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4151,7 +4151,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "dirs",
  "file_url",
@@ -4174,17 +4174,18 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
  "rattler_conda_types",
+ "serde",
 ]
 
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "digest",
  "hex",
@@ -4199,7 +4200,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#dfbefb4f7d1b1a7dd8dbff013e31c85dcb148e87"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "async-fd-lock",
  "fs-err",

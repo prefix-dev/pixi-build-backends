@@ -11,6 +11,7 @@ use pixi_build_backend::{
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
+use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata,
     procedures::{
@@ -298,34 +299,15 @@ impl Protocol for RattlerBuildBackend {
 
         for output in outputs {
             if let Some(ids) = &params.outputs {
-                if !ids.is_empty() {
-                    // PartialEq not yet implemented
-                    // let id = CondaOutputIdentifier {
-                    //     name: Some(output.name().as_normalized().to_string()),
-                    //     version: Some(output.version().to_string()),
-                    //     build: Some(output.recipe.build.string.to_string()),
-                    //     subdir: Some(output.target_platform().to_string()),
-                    // };
+                let id = CondaOutputIdentifier {
+                    name: Some(output.name().as_normalized().to_string()),
+                    version: Some(output.version().to_string()),
+                    build: output.recipe.build.string.clone().into(),
+                    subdir: Some(output.target_platform().to_string()),
+                };
 
-                    // if !ids.contains(&id) {
-                    //     continue;
-                    // }
-
-                    let mut found = false;
-                    let build_string: Option<String> = output.recipe.build.string.clone().into();
-                    for id in ids {
-                        if id.name.as_ref() == Some(&output.name().as_normalized().to_string())
-                            && id.version.as_ref() == Some(&output.version().to_string())
-                            && id.build.as_ref() == build_string.as_ref()
-                            && id.subdir.as_ref() == Some(&output.target_platform().to_string())
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if !found {
-                        continue;
-                    }
+                if !ids.contains(&id) {
+                    continue;
                 }
             }
 

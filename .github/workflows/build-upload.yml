@@ -106,7 +106,7 @@ jobs:
           pattern: conda-packages-*
           path: conda-packages
           merge-multiple: true
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+      - uses: prefix-dev/setup-pixi@19eac09b398e3d0c747adc7921926a6d802df4da # v0.8.8
         with:
           environments: build
       - name: Upload packages

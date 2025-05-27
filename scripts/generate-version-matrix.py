@@ -85,8 +85,8 @@ def generate_matrix():
                 matrix.append(
                     {
                         "bin": package["name"],
-                        "version": package["version"],
                         "target": target["target"],
+                        "version": package["version"],
                         "env_name": f"{package["name"].replace("-", "_").upper()}_VERSION",
                         "os": target["os"],
                     }

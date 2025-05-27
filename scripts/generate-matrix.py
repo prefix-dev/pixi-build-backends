@@ -40,11 +40,11 @@ def generate_matrix():
     # https://github.com/orgs/community/discussions/67591
     targets = [
         {"target": "linux-64", "os": "ubuntu-latest"},
-        # {"target": "linux-aarch64", "os": "ubuntu-latest"},
-        # {"target": "linux-ppc64le", "os": "ubuntu-latest"},
-        # {"target": "win-64", "os": "windows-latest"},
-        # {"target": "osx-64", "os": "macos-13"},
-        # {"target": "osx-arm64", "os": "macos-14"},
+        {"target": "linux-aarch64", "os": "ubuntu-latest"},
+        {"target": "linux-ppc64le", "os": "ubuntu-latest"},
+        {"target": "win-64", "os": "windows-latest"},
+        {"target": "osx-64", "os": "macos-13"},
+        {"target": "osx-arm64", "os": "macos-14"},
     ]
 
     git_tags = get_git_tags()

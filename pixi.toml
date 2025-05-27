@@ -14,6 +14,7 @@ build-release = "cargo build --release"
 nextest = "cargo nextest run --workspace --all-targets"
 doctest = "cargo test --doc"
 test = [{ task = "nextest" }, { task = "doctest" }]
+generate-version-matrix = "python scripts/generate-version-matrix.py"
 
 
 install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }
@@ -27,6 +28,7 @@ install-pixi-backends = { depends-on = [
   "install-pixi-build-rust",
 ] }
 
+
 [dependencies]
 rust = ">=1.86.0,<1.87"
 python = ">=3.12.4,<4"
@@ -36,6 +38,7 @@ pkg-config = ">=0.29.2,<0.30"
 libzlib = ">=1.3.1,<2"
 liblzma = ">=5.8.1,<6"
 cargo-nextest = ">=0.9.96,<0.10"
+
 
 [target.linux-64.dependencies]
 clang = ">=18.1.8,<19.0"
@@ -66,8 +69,6 @@ depends-on = [
 ]
 args = ["recipe", "target_platform"]
 
-[feature.release.dependencies]
-python = ">=3.12.4,<4"
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"
@@ -98,4 +99,3 @@ default = { solve-group = "default" }
 lint = { features = ["lint"], solve-group = "default" }
 schema = { features = ["schema"], no-default-feature = true }
 build = { features = ["build"], no-default-feature = true }
-release = { features = ["release"], no-default-feature = false }

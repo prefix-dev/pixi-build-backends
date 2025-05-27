@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 
-name: "Build Conda"
+name: "Conda Packages"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -40,7 +40,7 @@ jobs:
           echo "Generated matrix: $MATRIX_JSON"
           echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  build-conda-package:
+  build:
     needs: generate-version
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
@@ -77,8 +77,8 @@ jobs:
           name: conda-packages-${{ matrix.bins.bin }}-${{ env.TARGET_PLATFORM }}
           path: ${{ runner.temp }}/**/*.conda
 
-  aggregate-conda-packages:
-    needs: build-conda-package
+  aggregate:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Download all conda package artifacts
@@ -97,8 +97,8 @@ jobs:
           name: conda-packages-zip
           path: conda-packages.zip
 
-  upload-packages:
-    needs: aggregate-conda-packages
+  upload:
+    needs: aggregate
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags') && github.repository == 'prefix-dev/pixi-build-backends' }}
     steps:

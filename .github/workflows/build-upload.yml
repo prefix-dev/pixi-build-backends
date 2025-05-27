@@ -23,10 +23,10 @@ permissions:
   contents: read
 
 jobs:
-  generate-version:
+  generate-matrix:
     runs-on: ubuntu-latest
     outputs:
-      version_matrix: ${{ steps.set_version.outputs.version_matrix }}
+      matrix: ${{ steps.set_version.outputs.matrix }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: prefix-dev/setup-pixi@19eac09b398e3d0c747adc7921926a6d802df4da # v0.8.8
@@ -35,18 +35,18 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
-          MATRIX_JSON=$(pixi run generate-version-matrix)
+          MATRIX_JSON=$(pixi run generate-matrix)
 
           echo "Generated matrix: $MATRIX_JSON"
-          echo "version_matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
   build:
-    needs: generate-version
+    needs: generate-matrix
     env:
       REPO_NAME: "prefix-dev/pixi-build-backends"
     strategy:
       matrix:
-        bins: ${{ fromJSON(needs.generate-version.outputs.version_matrix) }}
+        bins: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
       fail-fast: false
     runs-on: ${{ matrix.bins.os }}
     steps:

@@ -18,7 +18,9 @@
     },
     {
       "groupName": "Pixi",
-      "matchManagers": ["pixi"]
+      "matchManagers": ["pixi"],
+      // We want to update Rust manually and keep it in sync with rust-toolchain
+      "excludePackagePatterns": ["rust"]
     },
     {
       "groupName": "Pixi-Lock",
@@ -26,20 +28,9 @@
       "matchUpdateTypes": ["lockFileMaintenance"]
     },
     {
-      "description": "We want to update Rust manually and keep it in sync with rust-toolchain",
-      "matchPackageNames": "rust",
-      "matchManagers": ["pixi"],
-      "enabled": false
-    },
-    {
-      "description": "Create separate PRs for rattler and file_url dependencies",
-      "matchPackagePatterns": ["rattler*", "file_url"],
-      "matchManagers": ["cargo"],
-      "separateMajorMinor": false
-    },
-    {
       "groupName": "Cargo",
       "matchManagers": ["cargo"],
+      // We want to update rattler manually
       "excludePackagePatterns": ["rattler*", "file_url"]
     },
     {

@@ -32,19 +32,20 @@
       "enabled": false
     },
     {
+      "description": "Create separate PRs for rattler and file_url dependencies",
+      "matchPackagePatterns": ["rattler*", "file_url"],
+      "matchManagers": ["cargo"],
+      "separateMajorMinor": false
+    },
+    {
       "groupName": "Cargo",
-      "matchManagers": ["cargo"]
+      "matchManagers": ["cargo"],
+      "excludePackagePatterns": ["rattler*", "file_url"]
     },
     {
       "groupName": "Cargo-Lock",
       "matchManagers": ["cargo"],
       "matchUpdateTypes": ["lockFileMaintenance"]
-    },
-    {
-      "description": "We want a separate PR for rattler crates",
-      "matchPackageNames": ["rattler*", "file_url"],
-      "matchManagers": ["cargo"],
-      "separateMajorMinor": false
     }
   ]
 }

@@ -106,13 +106,14 @@ jobs:
           pattern: conda-packages-*
           path: conda-packages
           merge-multiple: true
+          run-id: ${{ github.run_id }}
       - uses: prefix-dev/setup-pixi@19eac09b398e3d0c747adc7921926a6d802df4da # v0.8.8
         with:
           environments: build
       - name: Upload packages
         shell: bash
         run: |
-          for file in conda-packages/*.conda; do
+          for file in conda-packages/**/*.conda; do
             echo "Uploading ${file}"
             pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
           done

@@ -39,6 +39,9 @@ libzlib = ">=1.3.1,<2"
 liblzma = ">=5.8.1,<6"
 cargo-nextest = ">=0.9.96,<0.10"
 
+[activation]
+env.CARGO_TARGET_DIR = "target/pixi"
+
 
 [target.linux-64.dependencies]
 clang = ">=20.1.5,<20.2"

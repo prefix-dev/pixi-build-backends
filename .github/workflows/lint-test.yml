@@ -62,7 +62,7 @@ jobs:
           workspaces: ". -> target/pixi"
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Test pixi
+      - name: Run Rust tests
         run: pixi run nextest
 
       - name: Run doctests
@@ -70,7 +70,7 @@ jobs:
 
 
   build:
-    name: Test
+    name: Build
     strategy:
       fail-fast: false
       matrix:
@@ -87,12 +87,14 @@ jobs:
           workspaces: ". -> target/pixi"
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Test pixi
+      - name: Build backends
         run: pixi run build-release
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-${{ matrix.os }}
-          path: target/pixi/release/pixi-build-*
+          path: |
+            target/pixi/release/pixi-build-*
+            !target/pixi/release/pixi-build-*.d
           if-no-files-found: error
           retention-days: 30

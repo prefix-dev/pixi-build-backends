@@ -35,7 +35,7 @@ jobs:
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: pixi-build-backends-ubuntu-latest
+          name: pixi-build-backends-linux-x86_64
           path: |
             target/pixi/release/pixi-build-*
             !target/pixi/release/pixi-build-*.d
@@ -60,7 +60,7 @@ jobs:
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: pixi-build-backends-macos-latest
+          name: pixi-build-backends-macos-aarch64
           path: |
             target/pixi/release/pixi-build-*
             !target/pixi/release/pixi-build-*.d
@@ -92,7 +92,7 @@ jobs:
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: pixi-build-backends-windows-latest
+          name: pixi-build-backends-windows-x86_64
           path: |
             ${{ env.PIXI_WORKSPACE }}/target/pixi/release/pixi-build-*
             !${{ env.PIXI_WORKSPACE }}/target/pixi/release/pixi-build-*.d

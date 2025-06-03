@@ -101,7 +101,7 @@ jobs:
 
   test-linux-x86_64:
     timeout-minutes: 10
-    name: Build test Linux x86_64
+    name: Test Linux x86_64
     runs-on: ubuntu-latest
     needs: build-binary-linux-x86_64
     steps:
@@ -136,7 +136,7 @@ jobs:
 
   test-windows-x86_64:
     timeout-minutes: 10
-    name: Build test Windows x86_64
+    name: Test Windows x86_64
     runs-on: windows-latest
     needs: build-binary-windows-x86_64
     steps:
@@ -178,7 +178,7 @@ jobs:
 
   test-macos-aarch64:
     timeout-minutes: 10
-    name: Build test macOS aarch64
+    name: Test macOS aarch64
     runs-on: macos-14
     needs: build-binary-macos-aarch64
     steps:

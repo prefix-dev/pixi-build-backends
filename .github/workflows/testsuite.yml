@@ -126,7 +126,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup binary permissions
-        run: chmod a+x artifacts/pixi
+        run: chmod a+x artifacts/pixi*
 
       - name: Run integration tests
         run: pixi run --locked test-slow
@@ -203,7 +203,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup binary permissions
-        run: chmod a+x artifacts/pixi
+        run: chmod a+x artifacts/pixi*
 
       - name: Run integration tests
         run: pixi run --locked test-slow

@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: error
           retention-days: 60
 
-  build-windows:
+  build-binary-windows-x86_64:
     name: Build Windows
     runs-on: windows-latest
     steps:

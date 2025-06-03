@@ -1,0 +1,98 @@
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+name: Testsuite
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_LOG: info
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-binary-linux-x86_64:
+    name: Build Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: prefix-dev/setup-pixi@main
+        with:
+          cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: ". -> target/pixi"
+          key: ${{ hashFiles('pixi.lock') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build backends
+        run: pixi run build-release
+      - name: Upload executables as artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pixi-build-backends-ubuntu-latest
+          path: |
+            target/pixi/release/pixi-build-*
+            !target/pixi/release/pixi-build-*.d
+          if-no-files-found: error
+          retention-days: 60
+
+  build-binary-macos-aarch64:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: prefix-dev/setup-pixi@main
+        with:
+          cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: ". -> target/pixi"
+          key: ${{ hashFiles('pixi.lock') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build backends
+        run: pixi run build-release
+      - name: Upload executables as artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pixi-build-backends-macos-latest
+          path: |
+            target/pixi/release/pixi-build-*
+            !target/pixi/release/pixi-build-*.d
+          if-no-files-found: error
+          retention-days: 60
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Copy Git Repo to Dev Drive
+        run: |
+          Copy-Item -Path "${{ github.workspace }}" -Destination "${{ env.PIXI_WORKSPACE }}" -Recurse
+      - uses: prefix-dev/setup-pixi@main
+        with:
+          manifest-path: ${{ env.PIXI_WORKSPACE }}/pixi.toml
+          cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: ". -> ${{ env.PIXI_WORKSPACE }}/target/pixi"
+          key: ${{ hashFiles('pixi.lock') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build backends
+        run: pixi run build-release
+        working-directory: ${{ env.PIXI_WORKSPACE }}
+      - name: Upload executables as artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pixi-build-backends-windows-latest
+          path: |
+            ${{ env.PIXI_WORKSPACE }}/target/pixi/release/pixi-build-*
+            !${{ env.PIXI_WORKSPACE }}/target/pixi/release/pixi-build-*.d
+          if-no-files-found: error
+          retention-days: 60

@@ -12,8 +12,8 @@ pub fn default_compiler(platform: Platform, language: &str) -> Option<String> {
             _ => {
                 if platform.is_windows() {
                     match language {
-                        "c" => "vs2017",
-                        "cxx" => "vs2017",
+                        "c" => "vs2019",
+                        "cxx" => "vs2019",
                         _ => unreachable!(),
                     }
                 } else if platform.is_osx() {

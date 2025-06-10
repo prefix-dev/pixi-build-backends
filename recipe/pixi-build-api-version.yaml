@@ -4,7 +4,7 @@ context:
 
 
 package:
-  name: "pixi-build-mutex"
+  name: "pixi-build-api-version"
   version: ${{ version }}
 
 build:

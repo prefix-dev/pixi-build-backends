@@ -13,20 +13,20 @@ use pixi_build_backend::{
 };
 use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata,
     procedures::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata,
 };
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::PlatformWithVirtualPackages,
-    recipe::{parser::BuildString, Jinja},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
@@ -495,11 +495,11 @@ mod tests {
     };
 
     use pixi_build_types::{
+        ChannelConfiguration,
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
-        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;

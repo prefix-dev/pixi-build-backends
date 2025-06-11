@@ -10,21 +10,25 @@ use pixi_build_backend::{
     compilers::default_compiler,
     traits::project::new_spec,
 };
+use pixi_build_types::ProjectModelV1;
 use rattler_build::metadata::Debug;
+use rattler_build::recipe::Recipe;
 use rattler_build::recipe::parser::BuildString;
 use rattler_build::{
     NormalizedKey,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
-    recipe::{
-        Recipe,
-        parser::{Build, Dependency, Package, Script, ScriptContent},
-        variable::Variable,
-    },
+    // recipe::{
+    //     Recipe,
+    //     parser::{Build, Dependency, Package, Script, ScriptContent},
+    //     variable::Variable,
+    // },
 };
+use rattler_conda_types::Version;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
+use recipe_stage0::recipe::{Build, IntermediateRecipe, Package, Value, into_target_requirements};
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -33,6 +37,55 @@ pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) project_model: P,
     pub(crate) config: RustBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
+}
+
+/// this will be the public interface for the GenerateRecipe trait
+#[allow(dead_code)]
+pub fn generate_recipe(
+    model: ProjectModelV1,
+    manifest_root: PathBuf,
+    config: RustBackendConfig,
+) -> miette::Result<IntermediateRecipe> {
+    let package = Package {
+        name: Value::Concrete(model.name().to_string()),
+        version: Value::Concrete(
+            model
+                .version
+                .unwrap_or_else(|| Version::from_str("0.1.0").unwrap())
+                .to_string(),
+        ),
+    };
+
+    // Sometimes Rust projects are part of a workspace, so we need to
+    // include the entire source project and set the source directory
+    // to the root of the package.
+    let source = None;
+
+    let conditional_requirements = into_target_requirements(&model.targets.unwrap_or_default());
+    let requirements = conditional_requirements.into_conditional_requirements();
+
+    let build_script = BuildScriptContext {
+        source_dir: manifest_root.display().to_string(),
+        extra_args: config.extra_args.clone(),
+        has_openssl: false,
+        has_sccache: false,
+        is_bash: !Platform::current().is_windows(),
+    }
+    .render();
+
+    Ok(IntermediateRecipe {
+        context: None,
+        package,
+        source,
+        build: Some(Build {
+            number: Some(Value::Concrete(0)),
+            script: build_script,
+        }),
+        requirements: Some(requirements),
+        tests: None,
+        about: None,
+        extra: None,
+    })
 }
 
 impl<P: ProjectModel> RustBuildBackend<P> {
@@ -82,7 +135,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
     pub(crate) fn recipe(
         &self,
         host_platform: Platform,
-        variant: &BTreeMap<NormalizedKey, Variable>,
+        variant: &BTreeMap<NormalizedKey, rattler_build::recipe::variable::Variable>,
     ) -> miette::Result<(Recipe, SourceRequirements<P>)> {
         // Parse the package name and version from the manifest
         let name = PackageName::from_str(self.project_model.name()).into_diagnostic()?;
@@ -115,7 +168,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         Ok((
             Recipe {
                 schema_version: 1,
-                package: Package {
+                package: rattler_build::recipe::parser::Package {
                     version: version.into(),
                     name,
                 },
@@ -125,16 +178,18 @@ impl<P: ProjectModel> RustBuildBackend<P> {
                 // include the entire source project and set the source directory
                 // to the root of the package.
                 source: vec![],
-                build: Build {
+                build: rattler_build::recipe::parser::Build {
                     number: build_number,
                     string: BuildString::Resolved(BuildString::compute(&hash_info, build_number)),
-                    script: Script {
-                        content: ScriptContent::Commands(build_script),
+                    script: rattler_build::recipe::parser::Script {
+                        content: rattler_build::recipe::parser::ScriptContent::Commands(
+                            build_script,
+                        ),
                         env: self.config.env.clone(),
                         ..Default::default()
                     },
                     noarch: noarch_type,
-                    ..Build::default()
+                    ..rattler_build::recipe::parser::Build::default()
                 },
                 requirements: requirements.requirements,
                 tests: vec![],
@@ -148,7 +203,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
     pub(crate) fn requirements(
         &self,
         host_platform: Platform,
-        variant: &BTreeMap<NormalizedKey, Variable>,
+        variant: &BTreeMap<NormalizedKey, rattler_build::recipe::variable::Variable>,
     ) -> miette::Result<(bool, PackageRequirements<P>)> {
         let project_model = &self.project_model;
         let mut sccache_enabled = false;
@@ -169,7 +224,7 @@ impl<P: ProjectModel> RustBuildBackend<P> {
         package_requirements.requirements.build.extend(
             self.compiler_packages(host_platform)
                 .into_iter()
-                .map(Dependency::Spec),
+                .map(rattler_build::recipe::parser::Dependency::Spec),
         );
 
         Ok((sccache_enabled, package_requirements))
@@ -207,17 +262,36 @@ pub(crate) fn construct_configuration(
 #[cfg(test)]
 mod tests {
 
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, path::PathBuf};
 
     use indexmap::IndexMap;
+
     use pixi_build_type_conversions::to_project_model_v1;
 
+    use pixi_build_types::ProjectModelV1;
     use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use tempfile::tempdir;
 
     use crate::{config::RustBackendConfig, rust::RustBuildBackend};
+
+    use super::generate_recipe;
+
+    fn project_model_v1(
+        manifest_source: &str,
+        _config: RustBackendConfig,
+    ) -> (ProjectModelV1, PathBuf) {
+        let tmp_dir = tempdir().unwrap();
+        let tmp_manifest = tmp_dir.path().join("pixi.toml");
+        std::fs::write(&tmp_manifest, manifest_source).unwrap();
+        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
+        let package = manifest.value.package.unwrap();
+        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
+        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
+
+        (project_model, tmp_manifest)
+    }
 
     fn recipe(manifest_source: &str, config: RustBackendConfig) -> Recipe {
         let tmp_dir = tempdir().unwrap();
@@ -228,7 +302,7 @@ mod tests {
         let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
         let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
 
-        let python_backend = RustBuildBackend::new(
+        let rust_backend = RustBuildBackend::new(
             tmp_manifest,
             project_model,
             config,
@@ -237,7 +311,7 @@ mod tests {
         )
         .unwrap();
 
-        let (recipe, _) = python_backend
+        let (recipe, _) = rust_backend
             .recipe(Platform::current(), &BTreeMap::new())
             .unwrap();
 
@@ -295,5 +369,51 @@ mod tests {
         );
 
         assert_eq!(recipe.build.script.env, env);
+    }
+
+    #[test]
+    fn generate_rust_recipe_from_project_model() {
+        // take the pixi-build-examples rust package as an example
+        // and generate intermediate recipe from it.
+        // by converting it to recipe.yaml we can validate the structure
+        let manifest_source = r#"
+        [workspace]
+        authors = ["Wolf Vollprecht <wolfv@prefix.dev>"]
+        channels = ["https://prefix.dev/conda-forge"]
+        description = "Showcases how to build a Rust project with pixi"
+        name = "build-rust"
+        platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+        preview = ["pixi-build"]
+        version = "0.1.0"
+
+        [package]
+        name = "build-rust"
+        version = "0.1.0"
+
+        [package.build-dependencies]
+        boltons = "*"
+
+        [package.target.unix.build-dependencies]
+        rich = "*"
+
+        [dependencies]
+        build-rust = { path = "." }
+
+        [package.build]
+        backend = { name = "pixi-build-rust", version = "*" }
+        channels = ["https://prefix.dev/pixi-build-backends", "https://prefix.dev/conda-forge"]
+        "#;
+
+        let (project_model, manifest_path) =
+            project_model_v1(manifest_source, RustBackendConfig::default());
+
+        let ir = generate_recipe(
+            project_model,
+            manifest_path.parent().unwrap().to_path_buf(),
+            RustBackendConfig::default(),
+        )
+        .unwrap();
+
+        insta::assert_yaml_snapshot!(ir);
     }
 }

@@ -26,7 +26,11 @@ impl BuildScriptContext {
             .template_from_str(include_str!("build_script.j2"))
             .unwrap();
         let rendered = template.render(self).unwrap().to_string();
-        rendered.lines().map(|s| s.to_string()).collect()
+        rendered
+            .lines()
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
     }
 }
 

@@ -1,0 +1,31 @@
+---
+source: crates/recipe-stage0/src/recipe.rs
+expression: ir
+---
+context: ~
+package:
+  name: example-project
+  version: 1.0.0
+source:
+  path: /path/to/manifest
+  sha256: ~
+build: ~
+requirements:
+  build:
+    - boltons
+    - if: unix
+      then:
+        - rich
+        - cowpy
+      else: ~
+  host:
+    - boltons
+    - if: unix
+      then: rich
+      else: ~
+  run:
+    - boltons
+  run_constraints: ~
+tests: ~
+about: ~
+extra: ~

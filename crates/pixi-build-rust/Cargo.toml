@@ -23,6 +23,8 @@ pixi_build_types = { workspace = true }
 pixi_manifest = { workspace = true }
 pixi_build_type_conversions = { workspace = true }
 
+recipe-stage0 = { workspace = true }
+
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
 rstest = { workspace = true }

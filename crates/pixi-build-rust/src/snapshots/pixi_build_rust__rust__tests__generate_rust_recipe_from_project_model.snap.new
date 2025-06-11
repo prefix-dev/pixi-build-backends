@@ -1,0 +1,32 @@
+---
+source: crates/pixi-build-rust/src/rust.rs
+assertion_line: 418
+expression: ir
+---
+context: ~
+package:
+  name: build-rust
+  version: 0.1.0
+source: ~
+build:
+  number: 0
+  script:
+    - "cargo install --locked --root \"$PREFIX\" --path /var/folders/rf/kyk8v0zd3993kvjg2p373plm0000gn/T/.tmpslZJZM --no-track  --force"
+requirements:
+  build:
+    - boltons
+    - if: unix
+      then: rich
+      else: ~
+  host:
+    - if: unix
+      then: []
+      else: ~
+  run:
+    - if: unix
+      then: []
+      else: ~
+  run_constraints: ~
+tests: ~
+about: ~
+extra: ~

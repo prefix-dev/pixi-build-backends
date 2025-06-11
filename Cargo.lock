@@ -2199,6 +2199,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashlink"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7382cf6263419f2d8df38c55d7da83da5c18aef87fc7a7fc1fb1e344edfe14c1"
+dependencies = [
+ "hashbrown 0.15.3",
+]
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2475,7 +2484,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.61.0",
 ]
 
 [[package]]
@@ -2976,7 +2985,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if 1.0.0",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -3070,8 +3079,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2eb25a7ab146f4058d67a74dfea52e25c133c575f08ce5851da97d224e3ad8d"
 dependencies = [
  "doc-comment",
- "hashlink",
- "yaml-rust2",
+ "hashlink 0.9.1",
+ "yaml-rust2 0.9.0",
+]
+
+[[package]]
+name = "marked-yaml"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a76cf4e66a8ffccfce983161b0faafe61a5ef03fe875ef2e3deb897e4e915fa"
+dependencies = [
+ "doc-comment",
+ "hashlink 0.10.0",
+ "yaml-rust2 0.10.3",
 ]
 
 [[package]]
@@ -3810,6 +3830,7 @@ dependencies = [
  "rattler_conda_types",
  "rattler_package_streaming",
  "rattler_virtual_packages",
+ "recipe-stage0",
  "reqwest",
  "reqwest-middleware",
  "serde",
@@ -3926,6 +3947,7 @@ dependencies = [
  "rattler-build",
  "rattler_conda_types",
  "rattler_package_streaming",
+ "recipe-stage0",
  "rstest",
  "serde",
  "serde_json",
@@ -4512,7 +4534,7 @@ dependencies = [
  "indicatif",
  "itertools 0.14.0",
  "lazy_static",
- "marked-yaml",
+ "marked-yaml 0.7.2",
  "memchr",
  "memmap2",
  "miette",
@@ -4957,6 +4979,22 @@ checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "recipe-stage0"
+version = "0.1.0"
+dependencies = [
+ "hashlink 0.10.0",
+ "indexmap 2.9.0",
+ "insta",
+ "marked-yaml 0.8.0",
+ "pixi_build_types",
+ "rattler-build",
+ "rattler_conda_types",
+ "serde",
+ "serde_yaml",
+ "url",
 ]
 
 [[package]]
@@ -7561,7 +7599,18 @@ checksum = "2a1a1c0bc9823338a3bdf8c61f994f23ac004c6fa32c08cd152984499b445e8d"
 dependencies = [
  "arraydeque",
  "encoding_rs",
- "hashlink",
+ "hashlink 0.9.1",
+]
+
+[[package]]
+name = "yaml-rust2"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ce2a4ff45552406d02501cea6c18d8a7e50228e7736a872951fe2fe75c91be7"
+dependencies = [
+ "arraydeque",
+ "encoding_rs",
+ "hashlink 0.10.0",
 ]
 
 [[package]]

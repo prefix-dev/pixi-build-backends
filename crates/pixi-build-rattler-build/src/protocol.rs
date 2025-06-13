@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::{
     path::{Path, PathBuf},
@@ -13,20 +14,20 @@ use pixi_build_backend::{
 };
 use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata,
     procedures::{
         conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata,
 };
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::PlatformWithVirtualPackages,
-    recipe::{parser::BuildString, Jinja},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
@@ -141,12 +142,13 @@ impl Protocol for RattlerBuildBackend {
 
         let mut solved_packages = vec![];
 
-        for output in outputs {
+        for output in &outputs {
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
             let tool_config = &tool_config;
             let output = temp_recipe
                 .within_context_async(move || async move {
                     output
+                        .clone()
                         .resolve_dependencies(tool_config)
                         .await
                         .into_diagnostic()
@@ -170,18 +172,27 @@ impl Protocol for RattlerBuildBackend {
                 &jinja,
             );
 
+            let depends = finalized_deps.depends.iter().map(DependencyInfo::spec);
+
+            let sources_names = outputs
+                .iter()
+                .cartesian_product(depends.clone())
+                .filter_map(|(output, depend)| {
+                    if Some(output.name()) == depend.name.as_ref() {
+                        Some(output.name())
+                    } else {
+                        None
+                    }
+                })
+                .collect_vec();
+
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
-                depends: finalized_deps
-                    .depends
-                    .iter()
-                    .map(DependencyInfo::spec)
-                    .map(MatchSpec::to_string)
-                    .collect(),
+                depends: depends.map(MatchSpec::to_string).collect(),
                 constraints: finalized_deps
                     .constraints
                     .iter()
@@ -191,7 +202,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-                sources: HashMap::new(),
+                sources: todo!("Build up source records"),
             };
             solved_packages.push(conda);
         }
@@ -495,11 +506,11 @@ mod tests {
     };
 
     use pixi_build_types::{
+        ChannelConfiguration,
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
-        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;

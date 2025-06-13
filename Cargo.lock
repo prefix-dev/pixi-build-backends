@@ -3895,6 +3895,7 @@ version = "0.1.14"
 dependencies = [
  "async-trait",
  "fs-err",
+ "itertools 0.14.0",
  "miette",
  "pathdiff",
  "pixi-build-backend",

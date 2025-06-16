@@ -189,7 +189,8 @@ impl Protocol for RattlerBuildBackend {
                     (
                         name.as_source().to_string(),
                         SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
-                            path: self.manifest_root.display().to_string(),
+                            // FIXME
+                            path: ".".to_string(),
                         }),
                     )
                 })

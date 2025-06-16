@@ -144,7 +144,7 @@ impl Protocol for RattlerBuildBackend {
         let mut solved_packages = vec![];
 
         for output in &outputs {
-            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+            let temp_recipe = TemporaryRenderedRecipe::from_output(output)?;
             let tool_config = &tool_config;
             let output = temp_recipe
                 .within_context_async(move || async move {
@@ -212,7 +212,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-                sources: sources,
+                sources,
             };
             solved_packages.push(conda);
         }

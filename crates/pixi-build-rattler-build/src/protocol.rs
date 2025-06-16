@@ -189,7 +189,7 @@ impl Protocol for RattlerBuildBackend {
                     (
                         name.as_source().to_string(),
                         SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
-                            // FIXME
+                            // Our source dependency lives in the same recipe
                             path: ".".to_string(),
                         }),
                     )

@@ -16,7 +16,7 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 url = { workspace = true }
 pathdiff = { workspace = true }
-itertools = {workspace = true}
+itertools = { workspace = true }
 
 pixi-build-backend = { workspace = true }
 

@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use pixi_build_types::SourcePackageSpecV1;
 use std::collections::HashMap;
 use std::{
     path::{Path, PathBuf},
@@ -174,7 +175,7 @@ impl Protocol for RattlerBuildBackend {
 
             let depends = finalized_deps.depends.iter().map(DependencyInfo::spec);
 
-            let sources_names = outputs
+            let sources = outputs
                 .iter()
                 .cartesian_product(depends.clone())
                 .filter_map(|(output, depend)| {
@@ -184,7 +185,15 @@ impl Protocol for RattlerBuildBackend {
                         None
                     }
                 })
-                .collect_vec();
+                .map(|name| {
+                    (
+                        name.as_source().to_string(),
+                        SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+                            path: self.manifest_root.display().to_string(),
+                        }),
+                    )
+                })
+                .collect();
 
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
@@ -202,7 +211,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-                sources: todo!("Build up source records"),
+                sources: sources,
             };
             solved_packages.push(conda);
         }

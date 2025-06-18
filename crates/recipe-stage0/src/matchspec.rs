@@ -1,6 +1,6 @@
 use rattler_conda_types::{MatchSpec, ParseMatchSpecError};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 // Wrapper for MatchSpec to enable serde support
 #[derive(Debug, Clone, Default)]
@@ -51,10 +51,9 @@ impl From<String> for SerializableMatchSpec {
     }
 }
 
-// Add ToString implementation
-impl ToString for SerializableMatchSpec {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl Display for SerializableMatchSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

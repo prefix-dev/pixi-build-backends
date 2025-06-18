@@ -10,7 +10,6 @@ use pixi_build_backend::{
     compilers::default_compiler,
     traits::project::new_spec,
 };
-use pixi_build_types::ProjectModelV1;
 use rattler_build::metadata::Debug;
 use rattler_build::recipe::Recipe;
 use rattler_build::recipe::parser::BuildString;
@@ -20,12 +19,8 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
 };
-use rattler_conda_types::Version;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
-use recipe_stage0::recipe::{
-    Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
-};
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -218,14 +213,10 @@ mod tests {
 
     use pixi_build_types::ProjectModelV1;
     use pixi_manifest::Manifests;
-    use rattler_build::{
-        console_utils::LoggingOutputHandler,
-        recipe::{Recipe, parser::find_outputs_from_src},
-        source_code::Source,
-    };
+    use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
     use recipe_stage0::recipe::IntermediateRecipe;
-    use tempfile::{tempdir, tempfile};
+    use tempfile::tempdir;
 
     use crate::{
         build_script::BuildScriptContext, config::RustBackendConfig, rust::RustBuildBackend,

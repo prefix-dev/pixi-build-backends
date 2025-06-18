@@ -1,14 +1,11 @@
 use indexmap::IndexMap;
-use miette::IntoDiagnostic;
 use pixi_build_types::{PackageSpecV1, ProjectModelV1, TargetsV1};
-use rattler_build::recipe::parser::{About as RattlerBuildAbout, Script, ScriptContent};
-use rattler_conda_types::{MatchSpec, PackageName, Platform, Version, VersionWithSource};
+use rattler_conda_types::{MatchSpec, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::path::PathBuf;
 use std::str::FromStr;
-use url::Url;
 
 use pixi_build_types::TargetV1;
 
@@ -22,29 +19,21 @@ pub enum Value<T> {
     Template(String), // Jinja template like "${{ name|lower }}"
 }
 
-impl<T: ToString> Value<T> {
-    /// A dummy implementation of `ToString` for `Value<T>`.
-    pub fn to_string(&self) -> String {
+impl<T: ToString> Display for Value<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Concrete(val) => val.to_string(),
-            Value::Template(template) => template.clone(),
+            Value::Concrete(val) => write!(f, "{}", val.to_string()),
+            Value::Template(template) => write!(f, "{}", template),
         }
     }
+}
 
+impl<T: ToString> Value<T> {
     pub fn concrete(&self) -> Option<&T> {
         if let Value::Concrete(val) = self {
             Some(val)
         } else {
             None
-        }
-    }
-}
-
-impl<T: ToString> ToString for Value<T> {
-    fn to_string(&self) -> String {
-        match self {
-            Value::Concrete(val) => val.to_string().clone(),
-            Value::Template(template) => template.clone(),
         }
     }
 }
@@ -196,12 +185,13 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ListOrItem<T> 
     }
 }
 
-impl<T: ToString> ToString for ListOrItem<T> {
-    fn to_string(&self) -> String {
+impl<T: ToString> Display for ListOrItem<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0.len() {
-            0 => "[]".to_string(),
-            1 => self.0[0].to_string(),
-            _ => format!(
+            0 => write!(f, "[]"),
+            1 => write!(f, "{}", self.0[0].to_string()),
+            _ => write!(
+                f,
                 "[{}]",
                 self.0
                     .iter()
@@ -351,7 +341,7 @@ pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalR
             build_items.extend(requirements.build.iter().cloned().map(|spec| {
                 Conditional {
                     condition: selector.to_string(),
-                    then: ListOrItem(vec![spec.into()]),
+                    then: ListOrItem(vec![spec]),
                     else_value: ListOrItem::default(),
                 }
                 .into()
@@ -359,7 +349,7 @@ pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalR
             host_items.extend(requirements.host.iter().cloned().map(|spec| {
                 Conditional {
                     condition: selector.to_string(),
-                    then: ListOrItem(vec![spec.into()]),
+                    then: ListOrItem(vec![spec]),
                     else_value: ListOrItem::default(),
                 }
                 .into()
@@ -368,7 +358,7 @@ pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalR
             run_items.extend(requirements.run.iter().cloned().map(|spec| {
                 Conditional {
                     condition: selector.to_string(),
-                    then: ListOrItem(vec![spec.into()]),
+                    then: ListOrItem(vec![spec]),
                     else_value: ListOrItem::default(),
                 }
                 .into()
@@ -377,7 +367,7 @@ pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalR
                 |spec| {
                     Conditional {
                         condition: selector.to_string(),
-                        then: ListOrItem(vec![spec.into()]),
+                        then: ListOrItem(vec![spec]),
                         else_value: ListOrItem::default(),
                     }
                     .into()
@@ -496,22 +486,22 @@ impl From<PathSource> for Source {
     }
 }
 
-impl ToString for Source {
-    fn to_string(&self) -> String {
+impl Display for Source {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Source::Url(url_source) => {
                 let sha256 = url_source
                     .sha256
                     .as_ref()
                     .map_or("".to_string(), |s| s.to_string());
-                format!("url: {}, sha256: {}", url_source.url.to_string(), sha256)
+                write!(f, "url: {}, sha256: {}", url_source.url, sha256)
             }
             Source::Path(path_source) => {
                 let sha256 = path_source
                     .sha256
                     .as_ref()
                     .map_or("".to_string(), |s| s.to_string());
-                format!("path: {}, sha256: {}", path_source.path.to_string(), sha256)
+                write!(f, "path: {}, sha256: {}", path_source.path, sha256)
             }
         }
     }
@@ -641,13 +631,7 @@ impl<T: ToString> Value<T> {
 
 #[cfg(test)]
 mod tests {
-    use pixi_build_types::{ProjectModelV1, TargetSelectorV1, TargetsV1};
-
-    use crate::marked_yaml::ToMarkedYaml;
-
     use super::*;
-
-    use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
 
     #[test]

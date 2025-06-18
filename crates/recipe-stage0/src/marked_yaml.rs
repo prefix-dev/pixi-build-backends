@@ -316,12 +316,6 @@ impl ToMarkedYaml for IntermediateRecipe {
             self.package.to_marked_yaml(),
         );
 
-        // Add optional fields
-        // mapping.insert(
-        //     MarkedScalarNode::new(Span::new_blank(), "source"),
-        //     self.source.to_marked_yaml(),
-        // );
-
         if !self.source.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "build"),

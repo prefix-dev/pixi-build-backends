@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use hashlink::LinkedHashMap;
 use marked_yaml::types::{MarkedMappingNode, MarkedScalarNode, MarkedSequenceNode};
 use marked_yaml::{Node as MarkedNode, Span};
@@ -6,7 +8,7 @@ pub type MappingHash = LinkedHashMap<MarkedScalarNode, MarkedNode>;
 
 use crate::recipe::{
     About, Build, Conditional, ConditionalList, ConditionalRequirements, Extra, IntermediateRecipe,
-    Item, Package, PackageContents, Source, Test, Value,
+    Item, ListOrItem, Package, PackageContents, Source, Test, Value,
 };
 
 // Trait for converting to marked YAML nodes
@@ -29,7 +31,7 @@ where
 
 impl<T> ToMarkedYaml for Item<T>
 where
-    T: ToString,
+    T: ToString + Debug,
 {
     fn to_marked_yaml(&self) -> MarkedNode {
         match self {
@@ -39,10 +41,7 @@ where
     }
 }
 
-impl<T> ToMarkedYaml for Conditional<T>
-where
-    T: ToString,
-{
+impl<T: ToString> ToMarkedYaml for Conditional<T> {
     fn to_marked_yaml(&self) -> MarkedNode {
         let mut mapping = MappingHash::new();
 
@@ -55,20 +54,14 @@ where
         // Add the "then" value
         mapping.insert(
             MarkedScalarNode::new(Span::new_blank(), "then"),
-            MarkedNode::Scalar(MarkedScalarNode::new(
-                Span::new_blank(),
-                self.then.to_string(),
-            )),
+            self.then.to_marked_yaml(),
         );
 
         // Add the "else" value if present
-        if let Some(ref else_value) = self.else_value {
+        if !self.else_value.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "else"),
-                MarkedNode::Scalar(MarkedScalarNode::new(
-                    Span::new_blank(),
-                    else_value.to_string(),
-                )),
+                self.else_value.to_marked_yaml(),
             );
         }
 
@@ -78,7 +71,7 @@ where
 
 impl<T> ToMarkedYaml for ConditionalList<T>
 where
-    T: ToString,
+    T: ToString + Debug,
 {
     fn to_marked_yaml(&self) -> MarkedNode {
         let nodes: Vec<MarkedNode> = self.iter().map(|item| item.to_marked_yaml()).collect();
@@ -157,31 +150,31 @@ impl ToMarkedYaml for ConditionalRequirements {
     fn to_marked_yaml(&self) -> MarkedNode {
         let mut mapping = MappingHash::new();
 
-        if let Some(ref build) = self.build {
+        if !self.build.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "build"),
-                build.to_marked_yaml(),
+                self.build.to_marked_yaml(),
             );
         }
 
-        if let Some(ref host) = self.host {
+        if !self.host.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "host"),
-                host.to_marked_yaml(),
+                self.host.to_marked_yaml(),
             );
         }
 
-        if let Some(ref run) = self.run {
+        if !self.run.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "run"),
-                run.to_marked_yaml(),
+                self.run.to_marked_yaml(),
             );
         }
 
-        if let Some(ref run_constraints) = self.run_constraints {
+        if !self.run_constraints.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "run_constraints"),
-                run_constraints.to_marked_yaml(),
+                self.run_constraints.to_marked_yaml(),
             );
         }
 
@@ -287,10 +280,10 @@ impl ToMarkedYaml for Extra {
     fn to_marked_yaml(&self) -> MarkedNode {
         let mut mapping = MappingHash::new();
 
-        if let Some(ref recipe_maintainers) = self.recipe_maintainers {
+        if !self.recipe_maintainers.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "recipe-maintainers"),
-                recipe_maintainers.to_marked_yaml(),
+                self.recipe_maintainers.to_marked_yaml(),
             );
         }
 
@@ -303,9 +296,9 @@ impl ToMarkedYaml for IntermediateRecipe {
         let mut mapping = MappingHash::new();
 
         // Add context if present
-        if let Some(ref context) = self.context {
+        if !self.context.is_empty() {
             let mut context_mapping = MappingHash::new();
-            for (key, value) in context {
+            for (key, value) in self.context.iter() {
                 context_mapping.insert(
                     MarkedScalarNode::new(Span::new_blank(), key),
                     value.to_marked_yaml(),
@@ -324,30 +317,34 @@ impl ToMarkedYaml for IntermediateRecipe {
         );
 
         // Add optional fields
-        if let Some(ref source) = self.source {
-            mapping.insert(
-                MarkedScalarNode::new(Span::new_blank(), "source"),
-                source.to_marked_yaml(),
-            );
-        }
+        // mapping.insert(
+        //     MarkedScalarNode::new(Span::new_blank(), "source"),
+        //     self.source.to_marked_yaml(),
+        // );
 
-        if let Some(ref build) = self.build {
+        if !self.source.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "build"),
-                build.to_marked_yaml(),
+                self.source.to_marked_yaml(),
             );
         }
 
-        if let Some(ref requirements) = self.requirements {
-            mapping.insert(
-                MarkedScalarNode::new(Span::new_blank(), "requirements"),
-                requirements.to_marked_yaml(),
-            );
-        }
+        mapping.insert(
+            MarkedScalarNode::new(Span::new_blank(), "build"),
+            self.build.to_marked_yaml(),
+        );
 
-        if let Some(ref tests) = self.tests {
-            let test_nodes: Vec<MarkedNode> =
-                tests.iter().map(|test| test.to_marked_yaml()).collect();
+        mapping.insert(
+            MarkedScalarNode::new(Span::new_blank(), "requirements"),
+            self.requirements.to_marked_yaml(),
+        );
+
+        if !self.tests.is_empty() {
+            let test_nodes: Vec<MarkedNode> = self
+                .tests
+                .iter()
+                .map(|test| test.to_marked_yaml())
+                .collect();
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "tests"),
                 MarkedNode::Sequence(MarkedSequenceNode::new(Span::new_blank(), test_nodes)),
@@ -369,5 +366,28 @@ impl ToMarkedYaml for IntermediateRecipe {
         }
 
         MarkedNode::Mapping(MarkedMappingNode::new(Span::new_blank(), mapping))
+    }
+}
+
+impl<T> ToMarkedYaml for ListOrItem<T>
+where
+    T: ToString,
+{
+    fn to_marked_yaml(&self) -> MarkedNode {
+        if self.0.len() == 1 {
+            MarkedNode::Scalar(MarkedScalarNode::new(
+                Span::new_blank(),
+                self.0[0].to_string(),
+            ))
+        } else {
+            let nodes: Vec<MarkedNode> = self
+                .0
+                .iter()
+                .map(|item| item.to_string())
+                .map(|value| MarkedScalarNode::new(Span::new_blank(), value))
+                .map(MarkedNode::Scalar)
+                .collect();
+            MarkedNode::Sequence(MarkedSequenceNode::new(Span::new_blank(), nodes))
+        }
     }
 }

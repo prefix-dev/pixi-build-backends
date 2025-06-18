@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
 // Wrapper for MatchSpec to enable serde support
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SerializableMatchSpec(pub MatchSpec);
 
 impl Serialize for SerializableMatchSpec {

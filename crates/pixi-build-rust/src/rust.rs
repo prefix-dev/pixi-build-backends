@@ -19,16 +19,13 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
-    // recipe::{
-    //     Recipe,
-    //     parser::{Build, Dependency, Package, Script, ScriptContent},
-    //     variable::Variable,
-    // },
 };
 use rattler_conda_types::Version;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
-use recipe_stage0::recipe::{Build, IntermediateRecipe, Package, Value, into_target_requirements};
+use recipe_stage0::recipe::{
+    Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
+};
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -37,55 +34,6 @@ pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) project_model: P,
     pub(crate) config: RustBackendConfig,
     pub(crate) cache_dir: Option<PathBuf>,
-}
-
-/// this will be the public interface for the GenerateRecipe trait
-#[allow(dead_code)]
-pub fn generate_recipe(
-    model: ProjectModelV1,
-    manifest_root: PathBuf,
-    config: RustBackendConfig,
-) -> miette::Result<IntermediateRecipe> {
-    let package = Package {
-        name: Value::Concrete(model.name().to_string()),
-        version: Value::Concrete(
-            model
-                .version
-                .unwrap_or_else(|| Version::from_str("0.1.0").unwrap())
-                .to_string(),
-        ),
-    };
-
-    // Sometimes Rust projects are part of a workspace, so we need to
-    // include the entire source project and set the source directory
-    // to the root of the package.
-    let source = None;
-
-    let conditional_requirements = into_target_requirements(&model.targets.unwrap_or_default());
-    let requirements = conditional_requirements.into_conditional_requirements();
-
-    let build_script = BuildScriptContext {
-        source_dir: manifest_root.display().to_string(),
-        extra_args: config.extra_args.clone(),
-        has_openssl: false,
-        has_sccache: false,
-        is_bash: !Platform::current().is_windows(),
-    }
-    .render();
-
-    Ok(IntermediateRecipe {
-        context: None,
-        package,
-        source,
-        build: Some(Build {
-            number: Some(Value::Concrete(0)),
-            script: build_script,
-        }),
-        requirements: Some(requirements),
-        tests: None,
-        about: None,
-        extra: None,
-    })
 }
 
 impl<P: ProjectModel> RustBuildBackend<P> {
@@ -270,13 +218,18 @@ mod tests {
 
     use pixi_build_types::ProjectModelV1;
     use pixi_manifest::Manifests;
-    use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
+    use rattler_build::{
+        console_utils::LoggingOutputHandler,
+        recipe::{Recipe, parser::find_outputs_from_src},
+        source_code::Source,
+    };
     use rattler_conda_types::{ChannelConfig, Platform};
-    use tempfile::tempdir;
+    use recipe_stage0::recipe::IntermediateRecipe;
+    use tempfile::{tempdir, tempfile};
 
-    use crate::{config::RustBackendConfig, rust::RustBuildBackend};
-
-    use super::generate_recipe;
+    use crate::{
+        build_script::BuildScriptContext, config::RustBackendConfig, rust::RustBuildBackend,
+    };
 
     fn project_model_v1(
         manifest_source: &str,
@@ -316,6 +269,28 @@ mod tests {
             .unwrap();
 
         recipe
+    }
+
+    /// Im the next iterations this will be the public interface for the GenerateRecipe trait
+    pub fn generate_recipe(
+        model: ProjectModelV1,
+        manifest_root: PathBuf,
+        config: RustBackendConfig,
+    ) -> IntermediateRecipe {
+        let mut ir = IntermediateRecipe::from_model(model, manifest_root.clone());
+
+        let build_script = BuildScriptContext {
+            source_dir: manifest_root.display().to_string(),
+            extra_args: config.extra_args.clone(),
+            has_openssl: false,
+            has_sccache: false,
+            is_bash: !Platform::current().is_windows(),
+        }
+        .render();
+
+        ir.build.script = build_script;
+
+        ir
     }
 
     #[test]
@@ -411,9 +386,12 @@ mod tests {
             project_model,
             manifest_path.parent().unwrap().to_path_buf(),
             RustBackendConfig::default(),
-        )
-        .unwrap();
+        );
 
-        insta::assert_yaml_snapshot!(ir);
+        insta::assert_yaml_snapshot!(ir, {
+            ".source[0].path" => "[ ... path ... ]",
+            ".build.script" => "[ ... script ... ]",
+        }
+        );
     }
 }

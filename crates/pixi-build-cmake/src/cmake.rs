@@ -148,6 +148,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
                 //     use_gitignore: true,
                 // })],
                 // We hack the source location
+                // as we dont want to copy the files
                 source: vec![],
                 build: Build {
                     number: build_number,

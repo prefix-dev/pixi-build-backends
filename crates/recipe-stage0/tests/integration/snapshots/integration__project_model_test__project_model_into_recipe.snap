@@ -1,5 +1,5 @@
 ---
-source: crates/recipe-stage0/src/recipe.rs
+source: crates/recipe-stage0/tests/integration/project_model_test.rs
 expression: ir
 ---
 context: {}

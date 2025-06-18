@@ -1,9 +1,11 @@
 use indexmap::IndexMap;
+use miette::IntoDiagnostic;
 use pixi_build_types::{PackageSpecV1, ProjectModelV1, TargetsV1};
 use rattler_build::recipe::parser::{About as RattlerBuildAbout, Script, ScriptContent};
 use rattler_conda_types::{MatchSpec, PackageName, Platform, Version, VersionWithSource};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::path::PathBuf;
 use std::str::FromStr;
 use url::Url;
@@ -15,7 +17,7 @@ use crate::matchspec::SerializableMatchSpec;
 // Core enum for values that can be either concrete or templated
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Value<T: ToString> {
+pub enum Value<T> {
     Concrete(T),
     Template(String), // Jinja template like "${{ name|lower }}"
 }
@@ -47,18 +49,82 @@ impl<T: ToString> ToString for Value<T> {
     }
 }
 
+impl<T: ToString + FromStr> FromStr for Value<T>
+where
+    T::Err: std::fmt::Display,
+{
+    type Err = T::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains("${{") {
+            // If it contains some template syntax, treat it as a template
+            return Ok(Value::Template(s.to_string()));
+        }
+
+        Ok(Value::Concrete(T::from_str(s)?))
+    }
+}
+
+impl From<SerializableMatchSpec> for Value<SerializableMatchSpec> {
+    fn from(spec: SerializableMatchSpec) -> Self {
+        Value::Concrete(spec)
+    }
+}
+
 // Any item in a list can be either a value or a conditional
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Item<T: ToString> {
+pub enum Item<T> {
     Value(Value<T>),
     Conditional(Conditional<T>),
 }
 
-#[derive(Debug, Clone)]
-pub struct ListOrItem<T: ToString>(pub Vec<T>);
+impl<T> From<Conditional<T>> for Item<T> {
+    fn from(value: Conditional<T>) -> Self {
+        Self::Conditional(value)
+    }
+}
 
-impl<T: ToString> serde::Serialize for ListOrItem<T>
+impl From<Source> for Item<Source> {
+    fn from(source: Source) -> Self {
+        Item::Value(Value::Concrete(source))
+    }
+}
+
+impl From<SerializableMatchSpec> for Item<SerializableMatchSpec> {
+    fn from(matchspec: SerializableMatchSpec) -> Self {
+        Item::Value(Value::Concrete(matchspec))
+    }
+}
+
+impl<T: ToString + FromStr> FromStr for Item<T>
+where
+    T::Err: std::fmt::Display,
+{
+    type Err = T::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains("${{") {
+            // If it contains some template syntax, treat it as a template
+            return Ok(Item::Value(Value::Template(s.to_string())));
+        }
+
+        let value = Value::Concrete(T::from_str(s)?);
+        Ok(Item::Value(value))
+    }
+}
+#[derive(Clone, Default)]
+pub struct ListOrItem<T>(pub Vec<T>);
+
+impl<T: FromStr> FromStr for ListOrItem<T> {
+    type Err = T::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(ListOrItem::single(s.parse()?))
+    }
+}
+
+impl<T> serde::Serialize for ListOrItem<T>
 where
     T: serde::Serialize,
 {
@@ -73,10 +139,7 @@ where
     }
 }
 
-impl<'de, T: ToString> serde::Deserialize<'de> for ListOrItem<T>
-where
-    T: serde::Deserialize<'de>,
-{
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ListOrItem<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -86,7 +149,7 @@ where
 
         struct ListOrItemVisitor<T>(std::marker::PhantomData<T>);
 
-        impl<'de, T: ToString + serde::Deserialize<'de>> Visitor<'de> for ListOrItemVisitor<T> {
+        impl<'de, T: serde::Deserialize<'de>> Visitor<'de> for ListOrItemVisitor<T> {
             type Value = ListOrItem<T>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -150,7 +213,7 @@ impl<T: ToString> ToString for ListOrItem<T> {
     }
 }
 
-impl<T: ToString> ListOrItem<T> {
+impl<T> ListOrItem<T> {
     pub fn new(items: Vec<T>) -> Self {
         Self(items)
     }
@@ -173,27 +236,33 @@ impl<T: ToString> ListOrItem<T> {
 }
 
 // Conditional structure for if-else logic
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Conditional<T: ToString> {
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Conditional<T> {
     #[serde(rename = "if")]
     pub condition: String,
     pub then: ListOrItem<T>,
     #[serde(rename = "else")]
-    pub else_value: Option<T>,
+    pub else_value: ListOrItem<T>,
 }
 
 // Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;
 
+// #[derive(Debug, Serialize, Deserialize, Default)]
+// #[serde(untagged)]
+// pub struct Sources {
+//     pub sources: ConditionalList<Source>,
+// }
+
 // Main recipe structure
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct IntermediateRecipe {
-    pub context: Option<HashMap<String, Value<String>>>,
+    pub context: HashMap<String, Value<String>>,
     pub package: Package,
-    pub source: Option<Source>,
-    pub build: Option<Build>,
-    pub requirements: Option<ConditionalRequirements>,
-    pub tests: Option<Vec<Test>>,
+    pub source: ConditionalList<Source>,
+    pub build: Build,
+    pub requirements: ConditionalRequirements,
+    pub tests: Vec<Test>,
     pub about: Option<About>,
     pub extra: Option<Extra>,
 }
@@ -206,138 +275,7 @@ pub struct EvaluatedDependencies {
 }
 
 impl IntermediateRecipe {
-    /// FIXME: right now it is getting only the build dependencies
-    /// and it does not evaluate the variants.
-
-    /// Converts the recipe to the `rendered` rattler-build format.
-    /// This means that we need to evaluate the variants and conditionals
-    #[allow(dead_code)]
-    pub fn into_recipe(self, _platform: Platform) -> rattler_build::recipe::Recipe {
-        let context = {
-            // let context = self.context.unwrap_or_default();
-            IndexMap::default()
-        };
-
-        let package = {
-            let name = self.package.name.clone();
-            let version = self.package.version.clone();
-
-            // Convert the package name and version into the rattler-build format
-            rattler_build::recipe::parser::Package {
-                name: PackageName::try_from(name.to_string()).unwrap(),
-                version: VersionWithSource::from_str(&version.to_string()).unwrap(),
-            }
-        };
-
-        let source = self.source.as_ref().map(|_source| {
-            // Convert the source into the rattler-build format
-
-            rattler_build::recipe::parser::GitSource {
-                url: rattler_build::recipe::parser::GitUrl::Url(
-                    // Url::from_str(source.url.to_string().as_str()).unwrap(),
-                    Url::from_str("some_url").unwrap(),
-                ),
-                rev: rattler_build::recipe::parser::GitRev::Head,
-                depth: None,
-                patches: vec![],
-                target_directory: None,
-                lfs: false,
-            }
-        });
-
-        let build = self.build.as_ref().map(|build| {
-            let script = "$PYTHON -m pip install --ignore-installed {{ COMMON_OPTIONS }} $SRC_DIR";
-            let script_content = ScriptContent::Command(script.to_string());
-
-            // Convert the build into the rattler-build format
-            rattler_build::recipe::parser::Build {
-                number: build
-                    .number
-                    .as_ref()
-                    .map(|n| n.concrete().cloned().unwrap())
-                    .unwrap_or(1),
-                script: Script::from(script_content),
-                ..Default::default()
-            }
-        });
-
-        let requirements = {
-            let dependencies = self.dependencies(Platform::OsxArm64).unwrap();
-
-            rattler_build::recipe::parser::Requirements {
-                build: dependencies
-                    .build
-                    .map(|list| {
-                        list.into_iter()
-                            .map(|spec| rattler_build::recipe::parser::Dependency::Spec(spec.0))
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                ..Default::default()
-            }
-        };
-
-        // Convert the recipe into the rattler-build format
-        rattler_build::recipe::Recipe {
-            schema_version: 1,
-            context,
-            package,
-            cache: None,
-            source: vec![rattler_build::recipe::parser::Source::Git(source.unwrap())],
-            build: build.unwrap(),
-
-            requirements,
-            tests: vec![],
-            about: RattlerBuildAbout::default(),
-            extra: Default::default(),
-        }
-    }
-
-    /// FIXME: right now it is getting only the build dependencies
-    /// and it does not evaluate the variants.
-    ///
-    ///
-    /// Evaluates the requirements for a specific platform.
-    #[allow(dead_code)]
-    pub fn dependencies(&self, _platform: Platform) -> Option<EvaluatedDependencies> {
-        let requirements = self.requirements.as_ref()?;
-
-        let build = requirements.build.as_ref().map(|list| {
-            list.iter()
-                .filter_map(|item| match item {
-                    Item::Value(Value::Concrete(spec)) => Some(spec.clone()),
-                    Item::Value(Value::Template(template)) => {
-                        unimplemented!("Template evaluation not implemented yet: {}", template);
-                    }
-                    Item::Conditional(cond) => {
-                        // Evaluate the condition and return the then value if true
-                        // FIXME: for now we just simplify the condition check
-                        if cond.condition == "unix" {
-                            let spec = SerializableMatchSpec::from_str(&cond.then.to_string())
-                                .expect("Invalid MatchSpec in conditional");
-                            Some(spec)
-                        } else {
-                            let spec = SerializableMatchSpec::from_str(
-                                &cond.else_value.as_ref()?.to_string(),
-                            )
-                            .expect("Invalid MatchSpec in conditional else");
-                            Some(spec)
-                            // cond.else_value.clone()
-                        }
-                    }
-                })
-                .collect()
-        });
-
-        let evaluated_dependencies = EvaluatedDependencies {
-            build,
-            host: None,            // TODO: Implement host dependencies
-            run: None,             // TODO: Implement run dependencies
-            run_constraints: None, // TODO: Implement run constraints
-        };
-        Some(evaluated_dependencies)
-    }
-
+    /// Creates a new IntermediateRecipe from a ProjectModelV1.
     pub fn from_model(model: ProjectModelV1, manifest_root: PathBuf) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
@@ -349,19 +287,19 @@ impl IntermediateRecipe {
             ),
         };
 
-        let source = Source::path(manifest_root.display().to_string(), None);
+        let source = ConditionalList::from(vec![Item::Value(Value::Concrete(Source::path(
+            manifest_root.display().to_string(),
+        )))]);
 
-        let conditional_requirements = into_target_requirements(&model.targets.unwrap_or_default());
-
-        let requirements = conditional_requirements.into_conditional_requirements();
+        let requirements = into_conditional_requirements(&model.targets.unwrap_or_default());
 
         IntermediateRecipe {
-            context: None,
+            context: Default::default(),
             package,
-            source: Some(source),
-            build: None,
-            requirements: Some(requirements),
-            tests: None,
+            source,
+            build: Build::default(),
+            requirements,
+            tests: Default::default(),
             about: None,
             extra: None,
         }
@@ -385,49 +323,111 @@ pub(crate) fn package_specs_to_match_spec(
         .collect()
 }
 
-pub fn into_target_requirements(targets: &TargetsV1) -> TargetRequirements {
-    let mut target_map = HashMap::new();
+pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
+    let mut build_items: ConditionalList<SerializableMatchSpec> = ConditionalList::new();
+    let mut host_items = ConditionalList::new();
+    let mut run_items = ConditionalList::new();
+    let mut run_constraints_items = ConditionalList::new();
 
     // Add default target
     if let Some(default_target) = &targets.default_target {
-        target_map.insert(Target::Default, target_spec_to_requirements(default_target));
+        let default_requirements = target_spec_to_requirements(default_target);
+        build_items.extend(default_requirements.build.iter().cloned().map(Into::into));
+        host_items.extend(default_requirements.host.iter().cloned().map(Into::into));
+        run_items.extend(default_requirements.run.iter().cloned().map(Into::into));
+        run_constraints_items.extend(
+            default_requirements
+                .run_constraints
+                .iter()
+                .cloned()
+                .map(Into::into),
+        );
     }
 
     // Add specific targets
     if let Some(specific_targets) = &targets.targets {
         for (selector, target) in specific_targets {
             let requirements = target_spec_to_requirements(target);
-            target_map.insert(Target::Specific(selector.to_string()), requirements);
+            build_items.extend(requirements.build.iter().cloned().map(|spec| {
+                Conditional {
+                    condition: selector.to_string(),
+                    then: ListOrItem(vec![spec.into()]),
+                    else_value: ListOrItem::default(),
+                }
+                .into()
+            }));
+            host_items.extend(requirements.host.iter().cloned().map(|spec| {
+                Conditional {
+                    condition: selector.to_string(),
+                    then: ListOrItem(vec![spec.into()]),
+                    else_value: ListOrItem::default(),
+                }
+                .into()
+            }));
+
+            run_items.extend(requirements.run.iter().cloned().map(|spec| {
+                Conditional {
+                    condition: selector.to_string(),
+                    then: ListOrItem(vec![spec.into()]),
+                    else_value: ListOrItem::default(),
+                }
+                .into()
+            }));
+            run_constraints_items.extend(requirements.run_constraints.iter().cloned().map(
+                |spec| {
+                    Conditional {
+                        condition: selector.to_string(),
+                        then: ListOrItem(vec![spec.into()]),
+                        else_value: ListOrItem::default(),
+                    }
+                    .into()
+                },
+            ));
         }
     }
 
-    TargetRequirements { target: target_map }
+    ConditionalRequirements {
+        build: build_items,
+        host: host_items,
+        run: run_items,
+        run_constraints: run_constraints_items,
+    }
 }
 
+// TODO: Should it be a From implementation?
 pub(crate) fn target_spec_to_requirements(target: &TargetV1) -> Requirements {
     Requirements {
-        build: target.clone().build_dependencies.map(|deps| {
-            package_specs_to_match_spec(deps)
-                .into_iter()
-                .map(SerializableMatchSpec::from)
-                .map(Value::Concrete)
-                .collect()
-        }),
-        host: target.clone().host_dependencies.map(|deps| {
-            package_specs_to_match_spec(deps)
-                .into_iter()
-                .map(SerializableMatchSpec::from)
-                .map(Value::Concrete)
-                .collect()
-        }),
-        run: target.clone().run_dependencies.map(|deps| {
-            package_specs_to_match_spec(deps)
-                .into_iter()
-                .map(SerializableMatchSpec::from)
-                .map(Value::Concrete)
-                .collect()
-        }),
-        run_constraints: None,
+        build: target
+            .clone()
+            .build_dependencies
+            .map(|deps| {
+                package_specs_to_match_spec(deps)
+                    .into_iter()
+                    .map(SerializableMatchSpec::from)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        host: target
+            .clone()
+            .host_dependencies
+            .map(|deps| {
+                package_specs_to_match_spec(deps)
+                    .into_iter()
+                    .map(SerializableMatchSpec::from)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        run: target
+            .clone()
+            .run_dependencies
+            .map(|deps| {
+                package_specs_to_match_spec(deps)
+                    .into_iter()
+                    .map(SerializableMatchSpec::from)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        run_constraints: vec![],
     }
 }
 
@@ -435,6 +435,15 @@ pub(crate) fn target_spec_to_requirements(target: &TargetV1) -> Requirements {
 pub struct Package {
     pub name: Value<String>,
     pub version: Value<String>,
+}
+
+impl Default for Package {
+    fn default() -> Self {
+        Package {
+            name: Value::Concrete("default-package".to_string()),
+            version: Value::Concrete("0.0.1".to_string()),
+        }
+    }
 }
 
 /// Source information.
@@ -448,18 +457,63 @@ pub enum Source {
 }
 
 impl Source {
-    pub fn url(url: String, sha256: Option<String>) -> Self {
+    pub fn url(url: String) -> Self {
         Source::Url(UrlSource {
             url: Value::Concrete(url),
-            sha256: sha256.map(Value::Concrete),
+            sha256: None,
         })
     }
 
-    pub fn path(path: String, sha256: Option<String>) -> Self {
+    pub fn path(path: String) -> Self {
         Source::Path(PathSource {
             path: Value::Concrete(path),
-            sha256: sha256.map(Value::Concrete),
+            sha256: None,
         })
+    }
+
+    pub fn with_sha256(self, sha256: String) -> Self {
+        match self {
+            Source::Url(mut url_source) => {
+                url_source.sha256 = Some(Value::Concrete(sha256));
+                Source::Url(url_source)
+            }
+            Source::Path(mut path_source) => {
+                path_source.sha256 = Some(Value::Concrete(sha256));
+                Source::Path(path_source)
+            }
+        }
+    }
+}
+
+impl From<UrlSource> for Source {
+    fn from(url_source: UrlSource) -> Self {
+        Source::Url(url_source)
+    }
+}
+impl From<PathSource> for Source {
+    fn from(path_source: PathSource) -> Self {
+        Source::Path(path_source)
+    }
+}
+
+impl ToString for Source {
+    fn to_string(&self) -> String {
+        match self {
+            Source::Url(url_source) => {
+                let sha256 = url_source
+                    .sha256
+                    .as_ref()
+                    .map_or("".to_string(), |s| s.to_string());
+                format!("url: {}, sha256: {}", url_source.url.to_string(), sha256)
+            }
+            Source::Path(path_source) => {
+                let sha256 = path_source
+                    .sha256
+                    .as_ref()
+                    .map_or("".to_string(), |s| s.to_string());
+                format!("path: {}, sha256: {}", path_source.path.to_string(), sha256)
+            }
+        }
     }
 }
 
@@ -475,10 +529,19 @@ pub struct PathSource {
     pub sha256: Option<Value<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Build {
     pub number: Option<Value<u64>>,
     pub script: Vec<String>,
+}
+
+impl Build {
+    pub fn new(script: Vec<String>) -> Self {
+        Build {
+            number: None,
+            script,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -487,39 +550,34 @@ pub enum Target {
     Specific(String),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TargetRequirements {
-    pub target: HashMap<Target, Requirements>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct ConditionalRequirements {
-    pub build: Option<ConditionalList<SerializableMatchSpec>>,
-    pub host: Option<ConditionalList<SerializableMatchSpec>>,
-    pub run: Option<ConditionalList<SerializableMatchSpec>>,
-    pub run_constraints: Option<ConditionalList<SerializableMatchSpec>>,
+    pub build: ConditionalList<SerializableMatchSpec>,
+    pub host: ConditionalList<SerializableMatchSpec>,
+    pub run: ConditionalList<SerializableMatchSpec>,
+    pub run_constraints: ConditionalList<SerializableMatchSpec>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Requirements {
-    pub build: Option<Vec<Value<SerializableMatchSpec>>>,
-    pub host: Option<Vec<Value<SerializableMatchSpec>>>,
-    pub run: Option<Vec<Value<SerializableMatchSpec>>>,
-    pub run_constraints: Option<Vec<Value<SerializableMatchSpec>>>,
+pub(crate) struct Requirements {
+    pub build: Vec<SerializableMatchSpec>,
+    pub host: Vec<SerializableMatchSpec>,
+    pub run: Vec<SerializableMatchSpec>,
+    pub run_constraints: Vec<SerializableMatchSpec>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Test {
     pub package_contents: Option<PackageContents>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PackageContents {
     pub include: Option<ConditionalList<String>>,
     pub files: Option<ConditionalList<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct About {
     pub homepage: Option<Value<String>>,
     pub license: Option<Value<String>>,
@@ -530,10 +588,10 @@ pub struct About {
     pub repository: Option<Value<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Extra {
     #[serde(rename = "recipe-maintainers")]
-    pub recipe_maintainers: Option<ConditionalList<String>>,
+    pub recipe_maintainers: ConditionalList<String>,
 }
 
 // Implementation for Recipe
@@ -556,32 +614,17 @@ impl IntermediateRecipe {
     }
 }
 
-// Helper implementations
-impl<T: ToString> Item<T> {
-    pub fn value(val: T) -> Self {
-        Item::Value(Value::Concrete(val))
-    }
-
-    pub fn template(template: String) -> Self {
-        Item::Value(Value::Template(template))
-    }
-
-    pub fn conditional(condition: String, then_value: ListOrItem<T>) -> Self {
-        Item::Conditional(Conditional::new(condition, then_value))
-    }
-}
-
-impl<T: ToString> Conditional<T> {
+impl<T: ToString + Default + Debug> Conditional<T> {
     pub fn new(condition: String, then_value: ListOrItem<T>) -> Self {
         Self {
             condition,
             then: then_value,
-            else_value: None,
+            else_value: ListOrItem::default(),
         }
     }
 
-    pub fn with_else(mut self, else_value: T) -> Self {
-        self.else_value = Some(else_value);
+    pub fn with_else(mut self, else_value: ListOrItem<T>) -> Self {
+        self.else_value = else_value;
         self
     }
 }
@@ -596,140 +639,16 @@ impl<T: ToString> Value<T> {
     }
 }
 
-pub fn main() {
-    // Create your recipe
-    let recipe = IntermediateRecipe {
-        context: None,
-        package: Package {
-            name: Value::Concrete("example-package".to_string()),
-            version: Value::Concrete("1.0.0".to_string()),
-        },
-        source: Some(Source::url(
-            "https://example.com/source.tar.gz".to_string(),
-            None,
-        )),
-        build: Some(Build {
-            number: None,
-            script: vec!["echo Building...".to_string()],
-        }),
-        requirements: None,
-        tests: None,
-        about: None,
-        extra: None,
-    };
-
-    // Convert to YAML
-    match recipe.to_yaml() {
-        Ok(yaml_string) => {
-            println!("{}", yaml_string);
-            // Write to file, send over network, etc.
-        }
-        Err(e) => eprintln!("Failed to serialize: {}", e),
-    }
-}
-
-pub(crate) fn into_conditional_list(
-    target: Target,
-    values: Vec<Value<SerializableMatchSpec>>,
-) -> ConditionalList<SerializableMatchSpec> {
-    let mut result: Vec<Item<_>> = ConditionalList::new();
-
-    match target {
-        // Default target, add it directly
-        Target::Default => {
-            // result.push(Item::Value(item))
-            values.iter().for_each(|item| {
-                result.push(Item::Value(item.clone()));
-            });
-        }
-
-        Target::Specific(ref cond) => {
-            // Wrap in conditional if not already conditional
-            let conditional_item = Item::Conditional(Conditional {
-                condition: cond.clone(),
-                then: ListOrItem::new(
-                    values
-                        .iter()
-                        .map(|v| v.concrete().unwrap().clone())
-                        .collect(),
-                ),
-                else_value: None,
-            });
-
-            result.push(conditional_item);
-        }
-    }
-    result
-}
-
-/// Transform TargetRequirements into a single Requirements struct
-/// by converting target-specific requirements into conditional lists
-impl TargetRequirements {
-    pub fn into_conditional_requirements(self) -> ConditionalRequirements {
-        let mut build_items = Vec::new();
-        let mut host_items = Vec::new();
-        let mut run_items = Vec::new();
-        let mut run_constraints_items = Vec::new();
-
-        // Process each target and its requirements
-        for (target, requirements) in self.target {
-            // Process build dependencies
-            if let Some(build_deps) = requirements.build {
-                build_items.extend(into_conditional_list(target.clone(), build_deps));
-            }
-
-            // Process host dependencies
-            if let Some(host_deps) = requirements.host {
-                host_items.extend(into_conditional_list(target.clone(), host_deps));
-            }
-
-            // Process run dependencies
-            if let Some(run_deps) = requirements.run {
-                run_items.extend(into_conditional_list(target.clone(), run_deps));
-            }
-
-            // Process run constraints
-            if let Some(run_constraints_deps) = requirements.run_constraints {
-                run_constraints_items
-                    .extend(into_conditional_list(target.clone(), run_constraints_deps));
-            }
-        }
-
-        ConditionalRequirements {
-            build: if build_items.is_empty() {
-                None
-            } else {
-                Some(build_items)
-            },
-            host: if host_items.is_empty() {
-                None
-            } else {
-                Some(host_items)
-            },
-            run: if run_items.is_empty() {
-                None
-            } else {
-                Some(run_items)
-            },
-            run_constraints: if run_constraints_items.is_empty() {
-                None
-            } else {
-                Some(run_constraints_items)
-            },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    // use rattler_build::assert_miette_snapshot;
-
-    use pixi_build_types::{TargetSelectorV1, TargetsV1};
+    use pixi_build_types::{ProjectModelV1, TargetSelectorV1, TargetsV1};
 
     use crate::marked_yaml::ToMarkedYaml;
 
     use super::*;
-    // TODO: write a unit test that can convert a project model into a IR and then to recipe.yaml
+
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
 
     #[test]
     fn test_recipe_to_yaml() {
@@ -738,227 +657,67 @@ mod tests {
         context.insert("name".to_string(), Value::Concrete("xtensor".to_string()));
         context.insert("version".to_string(), Value::Concrete("0.24.6".to_string()));
 
+        let source = ConditionalList::from(vec![<Source as Into<Item<Source>>>::into(
+            UrlSource {
+                url: "https://github.com/xtensor-stack/xtensor/archive/${{ version }}.tar.gz"
+                    .parse()
+                    .unwrap(),
+                sha256: Some(
+                    "f87259b51aabafdd1183947747edfff4cff75d55375334f2e81cee6dc68ef655"
+                        .parse()
+                        .unwrap(),
+                ),
+            }
+            .into(),
+        )]);
+
         let recipe = IntermediateRecipe {
-            context: Some(context),
+            context,
             package: Package {
                 name: Value::Template("${{ name|lower }}".to_string()),
                 version: Value::Template("${{ version }}".to_string()),
             },
-            source: Some(Source::url(
-                "https://github.com/xtensor-stack/xtensor/archive/${{ version }}.tar.gz"
-                    .to_string(),
-                Some(
-                    "f87259b51aabafdd1183947747edfff4cff75d55375334f2e81cee6dc68ef655".to_string(),
-                ),
-            )),
-            build: Some(Build {
-                number: Some(Value::Concrete(0)),
-                script: vec![],
-            }),
-            requirements: Some(ConditionalRequirements {
-                build: Some(vec![
-                    Item::template("${{ compiler('cxx') }}".to_string()),
-                    Item::value("cmake".parse().unwrap()),
-                    Item::Conditional(
-                        Conditional::new(
-                            "unix".to_string(),
-                            ListOrItem::single("make".parse().unwrap()),
-                        )
-                        .with_else("ninja".parse().unwrap()),
-                    ),
-                ]),
-                host: Some(vec![Item::value("xtl >=0.7,<0.8".parse().unwrap())]),
-                run: Some(vec![Item::value("xtl >=0.7,<0.8".parse().unwrap())]),
-                run_constraints: Some(vec![Item::value("xsimd >=8.0.3,<10".parse().unwrap())]),
-            }),
-            tests: None,
+            source,
+            build: Build::default(),
+            requirements: ConditionalRequirements {
+                build: vec![
+                    "${{ compiler('cxx') }}".parse().unwrap(),
+                    "cmake".parse().unwrap(),
+                    Conditional {
+                        condition: "unix".to_owned(),
+                        then: "make".parse().unwrap(),
+                        else_value: "ninja".parse().unwrap(),
+                    }
+                    .into(),
+                ],
+                host: vec![
+                    "xtl >=0.7,<0.8".parse().unwrap(),
+                    "${{ context.name }}".parse().unwrap(),
+                ],
+                run: vec!["xtl >=0.7,<0.8".parse().unwrap()],
+                run_constraints: vec!["xsimd >=8.0.3,<10".parse().unwrap()],
+            },
             about: Some(About {
                 homepage: Some(Value::Concrete(
                     "https://github.com/xtensor-stack/xtensor".to_string(),
                 )),
-                license: Some(Value::Concrete("BSD-3-Clause".to_string())),
-                license_file: Some(Value::Concrete("LICENSE".to_string())),
-                summary: Some(Value::Concrete(
-                    "The C++ tensor algebra library".to_string(),
-                )),
-                description: Some(Value::Concrete(
-                    "Multi dimensional arrays with broadcasting and lazy computing".to_string(),
-                )),
-                documentation: Some(Value::Concrete(
-                    "https://xtensor.readthedocs.io".to_string(),
-                )),
-                repository: Some(Value::Concrete(
-                    "https://github.com/xtensor-stack/xtensor".to_string(),
-                )),
+                license: Some("BSD-3-Clause".parse().unwrap()),
+                license_file: Some("LICENSE".parse().unwrap()),
+                summary: Some("The C++ tensor algebra library".parse().unwrap()),
+                description: Some(
+                    "Multi dimensional arrays with broadcasting and lazy computing"
+                        .parse()
+                        .unwrap(),
+                ),
+                documentation: Some("https://xtensor.readthedocs.io".parse().unwrap()),
+                repository: Some("https://github.com/xtensor-stack/xtensor".parse().unwrap()),
             }),
             extra: Some(Extra {
-                recipe_maintainers: Some(vec![Item::value("some-maintainer".to_string())]),
+                recipe_maintainers: vec!["some-maintainer".parse().unwrap()],
             }),
+            ..Default::default()
         };
 
-        // Convert to YAML
-        let yaml_result = recipe.to_yaml();
-        assert!(yaml_result.is_ok());
-
-        let yaml_string = yaml_result.unwrap();
-        println!("Generated YAML:\n{}", yaml_string);
-
-        // Check that we can convert it to marked_yaml
-        let marked_yaml_result = recipe.to_marked_yaml();
-        println!("Marked YAML:\n{:?}", marked_yaml_result);
-
-        // Test round-trip: YAML -> Recipe -> YAML
-        let parsed_recipe = IntermediateRecipe::from_yaml(&yaml_string);
-        assert!(parsed_recipe.is_ok());
-    }
-
-    #[test]
-    fn test_project_model_into_recipe() {
-        // Create a dummy project model
-        let model = ProjectModelV1 {
-            name: "example-project".to_string(),
-            version: Some(Version::from_str("1.0.0").unwrap()),
-            targets: Some(TargetsV1 {
-                default_target: Some(TargetV1 {
-                    build_dependencies: Some(IndexMap::from([(
-                        "boltons".to_string(),
-                        PackageSpecV1::Binary(Box::new(
-                            rattler_conda_types::VersionSpec::Any.into(),
-                        )),
-                    )])),
-                    host_dependencies: Some(IndexMap::from([(
-                        "boltons".to_string(),
-                        PackageSpecV1::Binary(Box::new(
-                            rattler_conda_types::VersionSpec::Any.into(),
-                        )),
-                    )])),
-                    run_dependencies: Some(IndexMap::from([(
-                        "boltons".to_string(),
-                        PackageSpecV1::Binary(Box::new(
-                            rattler_conda_types::VersionSpec::Any.into(),
-                        )),
-                    )])),
-                }),
-                targets: Some(HashMap::from([(
-                    TargetSelectorV1::Unix,
-                    TargetV1 {
-                        host_dependencies: Some(IndexMap::from([(
-                            "rich".to_string(),
-                            PackageSpecV1::Binary(Box::new(
-                                rattler_conda_types::VersionSpec::Any.into(),
-                            )),
-                        )])),
-                        build_dependencies: Some(IndexMap::from([
-                            (
-                                "rich".to_string(),
-                                PackageSpecV1::Binary(Box::new(
-                                    rattler_conda_types::VersionSpec::Any.into(),
-                                )),
-                            ),
-                            (
-                                "cowpy".to_string(),
-                                PackageSpecV1::Binary(Box::new(
-                                    rattler_conda_types::VersionSpec::Any.into(),
-                                )),
-                            ),
-                        ])),
-                        run_dependencies: None,
-                    },
-                )])),
-            }),
-            description: None,
-            license: None,
-            license_file: None,
-            homepage: None,
-            repository: None,
-            documentation: None,
-            authors: None,
-            readme: None,
-        };
-
-        // Convert to IR
-        let ir = IntermediateRecipe::from_model(model, PathBuf::from("/path/to/manifest"));
-
-        insta::assert_yaml_snapshot!(ir)
-    }
-
-    #[test]
-    fn test_target_requirements_transformation() {
-        // Create a TargetRequirements with default and specific targets
-        let mut target_map = HashMap::new();
-
-        // Default target with build dependencies
-        target_map.insert(
-            Target::Default,
-            Requirements {
-                build: Some(vec![
-                    Value::Concrete("cmake".parse().unwrap()),
-                    Value::Concrete("make".parse().unwrap()),
-                ]),
-                host: Some(vec![Value::Concrete("python".parse().unwrap())]),
-                run: None,
-                run_constraints: None,
-            },
-        );
-
-        // Unix-specific target
-        target_map.insert(
-            Target::Specific("unix".to_string()),
-            Requirements {
-                build: Some(vec![Value::Concrete("gcc".parse().unwrap())]),
-                host: Some(vec![Value::Concrete("libssl".parse().unwrap())]),
-                run: Some(vec![Value::Concrete("openssl".parse().unwrap())]),
-                run_constraints: None,
-            },
-        );
-
-        // Windows-specific target
-        target_map.insert(
-            Target::Specific("win".to_string()),
-            Requirements {
-                build: Some(vec![Value::Concrete("msvc".parse().unwrap())]),
-                host: None,
-                run: Some(vec![Value::Concrete("vcredist".parse().unwrap())]),
-                run_constraints: None,
-            },
-        );
-
-        let target_requirements = TargetRequirements { target: target_map };
-
-        // Transform to Requirements
-        let requirements = target_requirements.into_conditional_requirements();
-
-        // Check that build dependencies are correctly combined
-        assert!(requirements.build.is_some());
-        let build_deps = &requirements.build.as_ref().unwrap();
-        assert_eq!(build_deps.len(), 4); // cmake, make (default) + gcc (unix) + msvc (win)
-
-        // Check that host dependencies are correctly combined
-        assert!(requirements.host.is_some());
-        let host_deps = &requirements.host.as_ref().unwrap();
-        assert_eq!(host_deps.len(), 2); // python (default) + libssl (unix)
-
-        // Check that run dependencies are correctly combined
-        assert!(requirements.run.is_some());
-        let run_deps = &requirements.run.as_ref().unwrap();
-        assert_eq!(run_deps.len(), 2); // openssl (unix) + vcredist (win)
-
-        // Check that specific target dependencies are wrapped in conditionals
-        let has_default = build_deps.iter().any(|item| matches!(item, Item::Value(_)));
-        assert!(
-            has_default,
-            "Should have default dependencies without conditionals"
-        );
-
-        // Check that specific target dependencies are wrapped in conditionals
-        let has_conditional = build_deps
-            .iter()
-            .any(|item| matches!(item, Item::Conditional(_)));
-        assert!(
-            has_conditional,
-            "Should have conditional dependencies for specific targets"
-        );
-
-        println!("Transformed requirements: {:#?}", requirements);
+        insta::assert_yaml_snapshot!(recipe)
     }
 }

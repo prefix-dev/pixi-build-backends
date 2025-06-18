@@ -3938,6 +3938,7 @@ dependencies = [
  "chrono",
  "indexmap 2.9.0",
  "insta",
+ "marked-yaml 0.8.0",
  "miette",
  "minijinja",
  "pixi-build-backend",
@@ -3951,6 +3952,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tempfile",
  "tokio",
 ]
@@ -4989,10 +4991,12 @@ dependencies = [
  "indexmap 2.9.0",
  "insta",
  "marked-yaml 0.8.0",
+ "miette",
  "pixi_build_types",
  "rattler-build",
  "rattler_conda_types",
  "serde",
+ "serde_json",
  "serde_yaml",
  "url",
 ]

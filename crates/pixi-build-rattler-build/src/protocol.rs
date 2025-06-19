@@ -1,23 +1,23 @@
-use itertools::Itertools;
-use pixi_build_types::SourcePackageSpecV1;
-use std::collections::HashMap;
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use fs_err::tokio as tokio_fs;
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
-use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata,
+    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1,
     procedures::{
-        conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
+        conda_build::{
+            CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
+        },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
@@ -33,7 +33,7 @@ use rattler_build::{
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
+use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
@@ -292,8 +292,22 @@ impl Protocol for RattlerBuildBackend {
             params.work_directory.clone(),
         );
 
-        let discovered_outputs =
+        // Discover and filter the outputs.
+        let mut discovered_outputs =
             rattler_build_tool.discover_outputs(&params.variant_configuration)?;
+        if let Some(outputs) = &params.outputs {
+            discovered_outputs.retain(|output| {
+                let name = PackageName::from_str(&output.name)
+                    .map_or_else(|_| output.name.clone(), |n| n.as_normalized().to_string());
+                let id = CondaOutputIdentifier {
+                    name: Some(name),
+                    version: Some(output.version.clone()),
+                    build: output.recipe.build.string.clone().into(),
+                    subdir: Some(output.target_platform.to_string()),
+                };
+                outputs.contains(&id)
+            });
+        }
 
         let outputs = rattler_build_tool.get_outputs(
             &discovered_outputs,
@@ -319,19 +333,6 @@ impl Protocol for RattlerBuildBackend {
             .finish();
 
         for output in outputs {
-            if let Some(ids) = &params.outputs {
-                let id = CondaOutputIdentifier {
-                    name: Some(output.name().as_normalized().to_string()),
-                    version: Some(output.version().to_string()),
-                    build: output.recipe.build.string.clone().into(),
-                    subdir: Some(output.target_platform().to_string()),
-                };
-
-                if !ids.contains(&id) {
-                    continue;
-                }
-            }
-
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
 
             let tool_config = &tool_config;
@@ -446,7 +447,8 @@ fn build_input_globs(
     Ok(input_globs)
 }
 
-/// Returns the input globs for conda_get_metadata, as used in the CondaMetadataResult.
+/// Returns the input globs for conda_get_metadata, as used in the
+/// CondaMetadataResult.
 fn get_metadata_input_globs(
     manifest_root: &Path,
     recipe_source_path: &Path,
@@ -727,6 +729,7 @@ mod tests {
     #[test]
     fn test_build_input_globs_with_tempdirs() {
         use std::fs;
+
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base
@@ -757,6 +760,7 @@ mod tests {
     #[test]
     fn test_build_input_globs_two_folders_in_tempdir() {
         use std::fs;
+
         use tempfile::tempdir;
 
         // Create a temp directory
@@ -769,7 +773,8 @@ mod tests {
         fs::create_dir_all(&source_dir).unwrap();
         fs::create_dir_all(&package_source_dir).unwrap();
 
-        // Call build_input_globs with source_dir as source, and package_source_dir as package source
+        // Call build_input_globs with source_dir as source, and package_source_dir as
+        // package source
         let globs = super::build_input_globs(
             temp_path,
             &source_dir,
@@ -781,8 +786,8 @@ mod tests {
 
     #[test]
     fn test_build_input_globs_relative_source() {
-        use std::fs;
-        use std::path::PathBuf;
+        use std::{fs, path::PathBuf};
+
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base
@@ -794,7 +799,8 @@ mod tests {
         let abs_rel_dir = base_path.join(&rel_dir);
         fs::create_dir_all(&abs_rel_dir).unwrap();
 
-        // Call build_input_globs with base_path as source, and rel_dir as package source (relative)
+        // Call build_input_globs with base_path as source, and rel_dir as package
+        // source (relative)
         let globs =
             super::build_input_globs(base_path, base_path, Some(vec![rel_dir.clone()])).unwrap();
         // The relative path from base_path to rel_dir should be "rel_folder/**"

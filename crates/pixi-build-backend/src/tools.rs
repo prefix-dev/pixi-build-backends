@@ -294,7 +294,7 @@ fn output_directory(
 ) -> Directories {
     let build_dir = match output {
         OneOrMultipleOutputs::Single(_name) => work_dir,
-        OneOrMultipleOutputs::OneOfMany(name) => work_dir.join(format!("{}", name)),
+        OneOrMultipleOutputs::OneOfMany(name) => work_dir.join(name),
     };
 
     let cache_dir = build_dir.join("cache");

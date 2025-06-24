@@ -96,9 +96,21 @@ toml-lint = "taplo lint --verbose **/pixi.toml"
 cargo-clippy = "cargo clippy --all-targets --workspace -- -D warnings"
 cargo-fmt = "cargo fmt --all"
 
+[feature.docs.dependencies]
+cairosvg = "2.8.2.*"
+mdx_truly_sane_lists = ">=1.3,<2"
+mkdocs-material = ">=9.6.14,<10"
+mkdocs-redirects = ">=1.2.1,<2"
+pillow = ">=9.4.0"
+
+[feature.docs.tasks]
+build-docs = "mkdocs build --strict"
+docs = { cmd = "mkdocs serve", description = "Serve the docs locally" }
+
 
 [environments]
 default = { solve-group = "default" }
 lint = { features = ["lint"], solve-group = "default" }
+docs = { features = ["docs"], no-default-feature = true }
 schema = { features = ["schema"], no-default-feature = true }
 build = { features = ["build"], no-default-feature = true }

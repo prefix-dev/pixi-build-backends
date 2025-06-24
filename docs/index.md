@@ -5,11 +5,41 @@ template: home.html
 
 ![pixi logo](assets/banner.svg)
 
-
 # Pixi Build Backends
 
+**Backend Implementations for Building Pixi Projects from Source**
 
-## Useful Links
+Pixi Build Backends is a collection of specialized build backend implementations designed to facilitate building [Pixi](https://pixi.sh) packages directly from their source code.
+These backends enable seamless integration with the Pixi ecosystem, supporting multiple programming languages and build systems while maintaining the conda ecosystem's cross-platform compatibility.
+
+## 🚀 What Are Build Backends?
+
+Build backends are executables that follow a specific protocol to decouple the building of conda packages from Pixi itself. This architecture allows for:
+
+- **Language-specific optimization**: Each backend is tailored for specific programming languages and build tools
+- **Modular design**: Backends can be developed, updated, and distributed independently
+- **Extensibility**: New backends can be added without modifying Pixi core
+- **Standardization**: All backends follow the same protocol and manifest specifications
+
+## 📦 Available Backends
+
+The repository currently provides four specialized build backends:
+
+| Backend   | Use Case |
+|---------|----------|
+| **`pixi-build-python`** | Building Python packages |
+| **`pixi-build-cmake`** |  Projects using CMake |
+| **`pixi-build-rust`** |  Cargo-based Rust applications and libraries |
+| **`pixi-build-rattler-build`** | Direct `recipe.yaml` builds with full control |
+
+All backends are available through the [prefix.dev/pixi-build-backends](https://prefix.dev/channels/pixi-build-backends) conda channel and work across multiple platforms (Linux, macOS, Windows).
+
+## 🛠️ Getting started
+
+Check out our [tutorial series](https://pixi.sh/latest/build/getting_started/) to learn how to use `pixi build` in practice.
+
+
+## 🔗 Useful Links
 
 - [GitHub](https://github.com/prefix-dev/pixi): Pixi source code, feel free to leave a star!
 - [Discord](https://discord.gg/kKV8ZxyzY4): Join our community and ask questions.

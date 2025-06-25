@@ -60,9 +60,6 @@ If specified, internal build state and debug information will be written to this
 debug-dir = "debug-output"
 ```
 
-## Recipe Structure
-
-
 ## Build Process
 
 The rattler-build backend follows this build process:

@@ -356,7 +356,7 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                input_globs: input_globs(),
+                input_globs: input_globs(self.config.extra_input_globs.clone()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -374,7 +374,7 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
 /// has a different way of determining the input globs than hatch etc.
 ///
 /// However, lets take everything in the directory as input for now
-fn input_globs() -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
     [
         "**/*.rs",
         // Cargo configuration files
@@ -385,6 +385,7 @@ fn input_globs() -> Vec<String> {
     ]
     .iter()
     .map(|s| s.to_string())
+    .chain(extra_globs)
     .collect()
 }
 

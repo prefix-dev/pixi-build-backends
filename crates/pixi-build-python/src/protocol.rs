@@ -357,7 +357,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                input_globs: input_globs(params.editable),
+                input_globs: input_globs(params.editable, self.config.extra_input_globs.clone()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -375,8 +375,8 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
 /// has a different way of determining the input globs than hatch etc.
 ///
 /// However, lets take everything in the directory as input for now
-fn input_globs(editable: bool) -> Vec<String> {
-    let mut globs: Vec<_> = vec![
+fn input_globs(editable: bool, extra_globs: Vec<String>) -> Vec<String> {
+    let base_globs = Vec::from([
         // Source files
         "**/*.c",
         "**/*.cpp",
@@ -405,17 +405,20 @@ fn input_globs(editable: bool) -> Vec<String> {
         // Versioning
         "VERSION",
         "version.py",
-    ]
-    .iter()
-    .map(|s| s.to_string())
-    .collect();
+    ]);
 
-    if !editable {
-        globs.push("**/*.py".to_string());
-        globs.push("**/*.pyx".to_string());
-    }
+    let python_globs = if editable {
+        Vec::new()
+    } else {
+        Vec::from(["**/*.py", "**/*.pyx"])
+    };
 
-    globs
+    base_globs
+        .iter()
+        .chain(python_globs.iter())
+        .map(|s| s.to_string())
+        .chain(extra_globs)
+        .collect()
 }
 
 pub struct PythonBuildBackendInstantiator {

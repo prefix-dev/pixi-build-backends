@@ -38,7 +38,7 @@ use crate::{
     config::CMakeBackendConfig,
 };
 
-fn input_globs() -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
     [
         // Source files
         "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
@@ -48,6 +48,7 @@ fn input_globs() -> Vec<String> {
     ]
     .iter()
     .map(|s| s.to_string())
+    .chain(extra_globs)
     .collect()
 }
 
@@ -365,7 +366,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                input_globs: input_globs(),
+                input_globs: input_globs(self.config.extra_input_globs.clone()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),

@@ -377,6 +377,7 @@ impl Protocol for RattlerBuildBackend {
                     &self.manifest_root,
                     &self.recipe_source.path,
                     package_sources,
+                    self.config.extra_input_globs.clone(),
                 )?,
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
@@ -419,6 +420,7 @@ fn build_input_globs(
     manifest_root: &Path,
     source: &Path,
     package_sources: Option<Vec<PathBuf>>,
+    extra_globs: Vec<String>,
 ) -> miette::Result<Vec<String>> {
     // Get parent directory path
     let parent = if source.is_file() {
@@ -443,6 +445,9 @@ fn build_input_globs(
             input_globs.push(build_relative_glob(manifest_root, &source)?);
         }
     }
+
+    // Extend with extra input globs
+    input_globs.extend(extra_globs);
 
     Ok(input_globs)
 }
@@ -739,7 +744,7 @@ mod tests {
         // Case 1: source is a file in the base dir
         let recipe_path = base_path.join("recipe.yaml");
         fs::write(&recipe_path, "fake").unwrap();
-        let globs = super::build_input_globs(base_path, &recipe_path, None).unwrap();
+        let globs = super::build_input_globs(base_path, &recipe_path, None, Vec::new()).unwrap();
         assert_eq!(globs, vec!["*/**"]);
 
         // Case 2: source is a directory, with a file and a dir as package sources
@@ -752,6 +757,7 @@ mod tests {
             base_path,
             base_path,
             Some(vec![pkg_file.clone(), pkg_subdir.clone()]),
+            Vec::new(),
         )
         .unwrap();
         assert_eq!(globs, vec!["*/**", "pkg/file.txt", "pkg/dir/**"]);
@@ -779,6 +785,7 @@ mod tests {
             temp_path,
             &source_dir,
             Some(vec![package_source_dir.clone()]),
+            Vec::new(),
         )
         .unwrap();
         assert_eq!(globs, vec!["source/**", "pkgsrc/**"]);
@@ -801,8 +808,13 @@ mod tests {
 
         // Call build_input_globs with base_path as source, and rel_dir as package
         // source (relative)
-        let globs =
-            super::build_input_globs(base_path, base_path, Some(vec![rel_dir.clone()])).unwrap();
+        let globs = super::build_input_globs(
+            base_path,
+            base_path,
+            Some(vec![rel_dir.clone()]),
+            Vec::new(),
+        )
+        .unwrap();
         // The relative path from base_path to rel_dir should be "rel_folder/**"
         assert_eq!(globs, vec!["*/**", "rel_folder/**"]);
     }

@@ -27,10 +27,10 @@ The repository currently provides four specialized build backends:
 
 | Backend   | Use Case |
 |---------|----------|
-| **`pixi-build-python`** | Building Python packages |
-| **`pixi-build-cmake`** |  Projects using CMake |
-| **`pixi-build-rust`** |  Cargo-based Rust applications and libraries |
-| **`pixi-build-rattler-build`** | Direct `recipe.yaml` builds with full control |
+| [**`pixi-build-cmake`**](./backends/pixi-build-cmake.md) |  Projects using CMake |
+| [**`pixi-build-python`**](./backends/pixi-build-python.md) | Building Python packages |
+| [**`pixi-build-rattler-build`**](./backends/pixi-build-rattler-build.md) | Direct `recipe.yaml` builds with full control |
+| [**`pixi-build-rust`**](./backends/pixi-build-rust.md) |  Cargo-based Rust applications and libraries |
 
 All backends are available through the [prefix.dev/pixi-build-backends](https://prefix.dev/channels/pixi-build-backends) conda channel and work across multiple platforms (Linux, macOS, Windows).
 

@@ -91,6 +91,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+### `extra-input-globs`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+
+Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include Rust source files (`**/*.rs`), Cargo configuration files (`Cargo.toml`, `Cargo.lock`), build scripts (`build.rs`), and other build-related files.
+
+```toml
+[package.build.configuration]
+extra-input-globs = [
+    "assets/**/*",
+    "migrations/*.sql",
+    "*.md"
+]
+```
+
 ## Build Process
 
 The Rust backend follows this build process:

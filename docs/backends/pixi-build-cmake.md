@@ -92,6 +92,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+### `extra-input-globs`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+
+Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include source files (`**/*.{c,cc,cxx,cpp,h,hpp,hxx}`), CMake files (`**/*.{cmake,cmake.in}`, `**/CMakeFiles.txt`), and other build-related files.
+
+```toml
+[package.build.configuration]
+extra-input-globs = [
+    "assets/**/*",
+    "config/*.ini",
+    "*.md"
+]
+```
+
 ## Build Process
 
 The CMake backend follows this build process:

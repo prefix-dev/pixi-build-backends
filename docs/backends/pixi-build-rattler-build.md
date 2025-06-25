@@ -60,6 +60,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = "debug-output"
 ```
 
+### `extra-input-globs`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+
+Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that are determined from the recipe sources and package directory structure.
+
+```toml
+[package.build.configuration]
+extra-input-globs = [
+    "patches/**/*",
+    "scripts/*.sh",
+    "*.md"
+]
+```
+
 ## Build Process
 
 The rattler-build backend follows this build process:

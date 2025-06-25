@@ -94,6 +94,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+### `extra-input-globs`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+
+Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include Python source files, configuration files (`setup.py`, `pyproject.toml`, etc.), and other build-related files.
+
+```toml
+[package.build.configuration]
+extra-input-globs = [
+    "data/**/*",
+    "templates/*.html",
+    "*.md"
+]
+```
+
 ## Build Process
 
 The Python backend follows this build process:

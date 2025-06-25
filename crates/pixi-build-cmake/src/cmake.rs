@@ -114,7 +114,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
 
         let build_platform = Platform::current();
         let build_number = 0;
-        
+
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python executable
         let has_host_python = self
@@ -459,8 +459,8 @@ mod tests {
                 rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
                  _ => unreachable!("Expected script content to be commands"),
             };
-        
+
         assert!(command.iter().any(|s| s.contains("-DPython_EXECUTABLE")));
-       
+
     }
 }

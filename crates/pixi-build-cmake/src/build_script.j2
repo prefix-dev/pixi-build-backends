@@ -10,6 +10,9 @@ if not exist %SRC_DIR%\..\build\build.ninja (
           -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
           -DBUILD_SHARED_LIBS=ON ^
+          {% if has_host_python -%}
+          -DPython_EXECUTABLE="%PYTHON%" ^
+          {% endif -%}
           {{ extra_args | join(" ") }} ^
           -B %SRC_DIR%\..\build ^
           -S "{{ source_dir }}"
@@ -26,6 +29,9 @@ if [ ! -f "$SRC_DIR/../build/build.ninja" ]; then
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=$PREFIX \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          {% if has_host_python -%}
+          -DPython_EXECUTABLE=$PYTHON \
+          {% endif -%}
           -DBUILD_SHARED_LIBS=ON \
           {{ extra_args | join(" ") }} \
           -B $SRC_DIR/../build \

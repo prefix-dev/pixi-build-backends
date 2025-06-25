@@ -106,6 +106,19 @@ The CMake backend follows this build process:
 3. **Build**: Executes `cmake --build` to compile the project
 4. **Install**: Installs the built artifacts to the conda package
 
+## CMake Flag Precedence
+
+With CMake, when duplicate flags are provided, the last flag takes precedence.
+The `pixi-build-cmake` backend places `extra-args` after the default CMake flags, allowing you to override default settings.
+
+For example, to switch from the default Release build to Debug mode:
+
+```toml
+[package.build.configuration]
+extra-args = ["-DCMAKE_BUILD_TYPE=Debug"]
+```
+
+
 ## Limitations
 
 - Currently, assumes C++ projects (hardcoded to `cxx` language)

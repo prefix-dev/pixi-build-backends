@@ -2,6 +2,16 @@
 
 The `pixi-build-cmake` backend is designed for building C and C++ projects using the [CMake](https://cmake.org/) build system. It provides seamless integration with Pixi's package management workflow while maintaining cross-platform compatibility.
 
+!!! warning
+    `pixi-build` is a preview feature, and will change until it is stabilized.
+    This is why we require users to opt in to that feature by adding "pixi-build" to `workspace.preview`.
+
+    ```toml
+    [workspace]
+    preview = ["pixi-build"]
+    ```
+
+
 ## Overview
 
 This backend automatically generates conda packages from CMake-based projects by:

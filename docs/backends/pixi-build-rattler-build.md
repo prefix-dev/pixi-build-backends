@@ -3,6 +3,16 @@
 The `pixi-build-rattler-build` backend enables building conda packages using rattler-build recipes.
 This backend is designed for projects that either have existing recipe.yaml files or where customization is necessary that isn't possible with the currently available backends.
 
+!!! warning
+    `pixi-build` is a preview feature, and will change until it is stabilized.
+    This is why we require users to opt in to that feature by adding "pixi-build" to `workspace.preview`.
+
+    ```toml
+    [workspace]
+    preview = ["pixi-build"]
+    ```
+
+
 ## Overview
 
 The rattler-build backend:

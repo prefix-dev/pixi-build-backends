@@ -492,3 +492,29 @@ fn default_capabilities() -> BackendCapabilities {
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_globs_includes_extra_globs() {
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let result = input_globs(false, extra_globs.clone());
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(
+                result.contains(extra_glob),
+                "Result should contain extra glob: {}",
+                extra_glob
+            );
+        }
+
+        // Verify that default globs are still present
+        assert!(result.contains(&"**/*.py".to_string()));
+        assert!(result.contains(&"**/*.pyx".to_string()));
+        assert!(result.contains(&"setup.py".to_string()));
+        assert!(result.contains(&"pyproject.toml".to_string()));
+    }
+}

@@ -843,4 +843,30 @@ mod tests {
         let globs = super::get_metadata_input_globs(&manifest_root, &path).unwrap();
         assert_eq!(globs, vec!["bar/recipe.yaml"]);
     }
+
+    #[test]
+    fn test_build_input_globs_includes_extra_globs() {
+        use tempfile::tempdir;
+        use std::fs;
+
+        // Create a temp directory to act as the base
+        let base_dir = tempdir().unwrap();
+        let base_path = base_dir.path();
+
+        // Create a recipe file
+        let recipe_path = base_path.join("recipe.yaml");
+        fs::write(&recipe_path, "fake").unwrap();
+
+        // Test with extra globs
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let globs = super::build_input_globs(base_path, &recipe_path, None, extra_globs.clone()).unwrap();
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(globs.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+        }
+
+        // Verify that the basic manifest glob is still present
+        assert!(globs.contains(&"*/**".to_string()));
+    }
 }

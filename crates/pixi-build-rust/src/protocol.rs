@@ -460,3 +460,25 @@ fn default_capabilities() -> BackendCapabilities {
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_globs_includes_extra_globs() {
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let result = input_globs(extra_globs.clone());
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(result.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+        }
+
+        // Verify that default globs are still present
+        assert!(result.contains(&"**/*.rs".to_string()));
+        assert!(result.contains(&"Cargo.toml".to_string()));
+        assert!(result.contains(&"Cargo.lock".to_string()));
+        assert!(result.contains(&"build.rs".to_string()));
+    }
+}

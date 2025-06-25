@@ -56,7 +56,7 @@ debug-dir = "debug-output"
 
 The rattler-build backend follows this build process:
 
-1. **Recipe Discovery**: Locates the recipe.yaml file in standard locations
+1. **Recipe Discovery**: Locates the `recipe.yaml` file in standard locations
 2. **Dependency Resolution**: Resolves build, host, and run dependencies from conda channels
 3. **Virtual Package Detection**: Automatically detects system virtual packages
 4. **Build Execution**: Runs the build script specified in the recipe

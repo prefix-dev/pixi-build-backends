@@ -55,8 +55,8 @@ You can customize the CMake backend behavior using the `[package.build.configura
 
 ### `extra-args`
 
-**Type**: `Array<String>`
-**Default**: `[]`
+- **Type**: `Array<String>`
+- **Default**: `[]`
 
 Additional command-line arguments to pass to the CMake configuration step. These arguments are inserted into the `cmake` command that configures your project.
 
@@ -70,8 +70,8 @@ extra-args = [
 
 ### `env`
 
-**Type**: `Map<String, String>`
-**Default**: `{}`
+- **Type**: `Map<String, String>`
+- **Default**: `{}`
 
 Environment variables to set during the build process. These variables are available to both the CMake configuration and build steps.
 
@@ -82,8 +82,8 @@ env = { CMAKE_VERBOSE_MAKEFILE = "ON", CXXFLAGS = "-O3 -march=native" }
 
 ### `debug-dir`
 
-**Type**: `String` (path)
-**Default**: Not set
+- **Type**: `String` (path)
+- **Default**: Not set
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 

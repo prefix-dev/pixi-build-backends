@@ -49,8 +49,9 @@ Learn more about the `rattler-build`, and its recipe format in its [high level o
 The rattler-build backend supports the following TOML configuration options:
 
 ### `debug-dir`
-- **Type**: String (path)
-- **Default**: None
+
+- **Type**: `String` (path)
+- **Default**: Not set
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 

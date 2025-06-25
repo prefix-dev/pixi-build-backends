@@ -60,8 +60,8 @@ You can customize the Python backend behavior using the `[package.build.configur
 
 ### `noarch`
 
-**Type**: `Boolean`
-**Default**: `true`
+- **Type**: `Boolean`
+- **Default**: `true`
 
 Controls whether to build a platform-independent (noarch) package or a platform-specific package. Most pure Python packages should be `noarch` and therefore don't need to set this option since the default is `noarch = true`.
 
@@ -72,8 +72,8 @@ noarch = false  # Build platform-specific package
 
 ### `env`
 
-**Type**: `Map<String, String>`
-**Default**: `{}`
+- **Type**: `Map<String, String>`
+- **Default**: `{}`
 
 Environment variables to set during the build process. These variables are available during package installation.
 
@@ -84,8 +84,8 @@ env = { SETUPTOOLS_SCM_PRETEND_VERSION = "1.0.0" }
 
 ### `debug-dir`
 
-**Type**: `String` (path)
-**Default**: Not set
+- **Type**: `String` (path)
+- **Default**: Not set
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 

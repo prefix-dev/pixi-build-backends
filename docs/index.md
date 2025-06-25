@@ -34,7 +34,7 @@ The repository currently provides four specialized build backends:
 
 All backends are available through the [prefix.dev/pixi-build-backends](https://prefix.dev/channels/pixi-build-backends) conda channel and work across multiple platforms (Linux, macOS, Windows).
 
-## 🛠️ Getting started
+## 🛠️ Getting Started
 
 Check out our [tutorial series](https://pixi.sh/latest/build/getting_started/) to learn how to use `pixi build` in practice.
 

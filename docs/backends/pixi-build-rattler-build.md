@@ -30,7 +30,7 @@ The backend expects a rattler-build recipe file in one of these locations (searc
 1. `recipe.yaml` or `recipe.yml` in the same directory as the package manifest
 2. `recipe/recipe.yaml` or `recipe/recipe.yml` in a subdirectory of the package manifest
 
-If the package is defined in the same location as the workspace, it is heavily encouraged to place the recipe file in its own directory `recipe.
+If the package is defined in the same location as the workspace, it is heavily encouraged to place the recipe file in its own directory `recipe`.
 Learn more about the `rattler-build`, and it's recipe format in its [high level overview](https://rattler.build/latest/highlevel).
 
 

@@ -486,6 +486,22 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             RattlerBuildBackendConfig::default()
         };
 
+        if let Some(t) = params
+            .project_model
+            .and_then(|m| m.into_v1())
+            .and_then(|m| m.targets)
+            .and_then(|t| t.default_target)
+        {
+            if t.build_dependencies.is_some()
+                || t.host_dependencies.is_some()
+                || t.run_dependencies.is_some()
+            {
+                return Err(miette::miette!(
+                    "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
+                ));
+            }
+        }
+
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
@@ -846,8 +862,8 @@ mod tests {
 
     #[test]
     fn test_build_input_globs_includes_extra_globs() {
-        use tempfile::tempdir;
         use std::fs;
+        use tempfile::tempdir;
 
         // Create a temp directory to act as the base
         let base_dir = tempdir().unwrap();
@@ -859,11 +875,16 @@ mod tests {
 
         // Test with extra globs
         let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
-        let globs = super::build_input_globs(base_path, &recipe_path, None, extra_globs.clone()).unwrap();
+        let globs =
+            super::build_input_globs(base_path, &recipe_path, None, extra_globs.clone()).unwrap();
 
         // Verify that all extra globs are included in the result
         for extra_glob in &extra_globs {
-            assert!(globs.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+            assert!(
+                globs.contains(extra_glob),
+                "Result should contain extra glob: {}",
+                extra_glob
+            );
         }
 
         // Verify that the basic manifest glob is still present

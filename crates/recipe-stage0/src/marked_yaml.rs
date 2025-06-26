@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use hashlink::LinkedHashMap;
 use marked_yaml::types::{MarkedMappingNode, MarkedScalarNode, MarkedSequenceNode};
 use marked_yaml::{Node as MarkedNode, Span};
@@ -31,7 +29,7 @@ where
 
 impl<T> ToMarkedYaml for Item<T>
 where
-    T: ToString + Debug,
+    T: ToString,
 {
     fn to_marked_yaml(&self) -> MarkedNode {
         match self {
@@ -71,7 +69,7 @@ impl<T: ToString> ToMarkedYaml for Conditional<T> {
 
 impl<T> ToMarkedYaml for ConditionalList<T>
 where
-    T: ToString + Debug,
+    T: ToString,
 {
     fn to_marked_yaml(&self) -> MarkedNode {
         let nodes: Vec<MarkedNode> = self.iter().map(|item| item.to_marked_yaml()).collect();

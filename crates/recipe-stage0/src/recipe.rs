@@ -1,15 +1,15 @@
-use indexmap::IndexMap;
-use pixi_build_types::{PackageSpecV1, ProjectModelV1, TargetsV1};
-use rattler_conda_types::{MatchSpec, Version};
+// use pixi_build_types::{
+//     BinaryPackageSpecV1, PackageSpecV1, ProjectModelV1, SourcePackageSpecV1, TargetSelectorV1,
+//     TargetsV1,
+// };
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
-use std::path::PathBuf;
 use std::str::FromStr;
 
-use pixi_build_types::TargetV1;
-
-use crate::matchspec::SerializableMatchSpec;
+use crate::matchspec::{PackageDependency, SerializableMatchSpec};
+// use crate::requirements::target_to_package_spec;
 
 // Core enum for values that can be either concrete or templated
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +86,12 @@ impl From<SerializableMatchSpec> for Item<SerializableMatchSpec> {
     }
 }
 
+impl From<PackageDependency> for Item<PackageDependency> {
+    fn from(dep: PackageDependency) -> Self {
+        Item::Value(Value::Concrete(dep))
+    }
+}
+
 impl<T: ToString + FromStr> FromStr for Item<T>
 where
     T::Err: std::fmt::Display,
@@ -102,8 +108,14 @@ where
         Ok(Item::Value(value))
     }
 }
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ListOrItem<T>(pub Vec<T>);
+
+impl<T> Default for ListOrItem<T> {
+    fn default() -> Self {
+        ListOrItem(Vec::new())
+    }
+}
 
 impl<T: FromStr> FromStr for ListOrItem<T> {
     type Err = T::Err;
@@ -238,14 +250,8 @@ pub struct Conditional<T> {
 // Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;
 
-// #[derive(Debug, Serialize, Deserialize, Default)]
-// #[serde(untagged)]
-// pub struct Sources {
-//     pub sources: ConditionalList<Source>,
-// }
-
 // Main recipe structure
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct IntermediateRecipe {
     pub context: HashMap<String, Value<String>>,
     pub package: Package,
@@ -262,163 +268,6 @@ pub struct EvaluatedDependencies {
     pub host: Option<Vec<SerializableMatchSpec>>,
     pub run: Option<Vec<SerializableMatchSpec>>,
     pub run_constraints: Option<Vec<SerializableMatchSpec>>,
-}
-
-impl IntermediateRecipe {
-    /// Creates a new IntermediateRecipe from a ProjectModelV1.
-    pub fn from_model(model: ProjectModelV1, manifest_root: PathBuf) -> Self {
-        let package = Package {
-            name: Value::Concrete(model.name),
-            version: Value::Concrete(
-                model
-                    .version
-                    .unwrap_or_else(|| Version::from_str("0.1.0").unwrap())
-                    .to_string(),
-            ),
-        };
-
-        let source = ConditionalList::from(vec![Item::Value(Value::Concrete(Source::path(
-            manifest_root.display().to_string(),
-        )))]);
-
-        let requirements = into_conditional_requirements(&model.targets.unwrap_or_default());
-
-        IntermediateRecipe {
-            context: Default::default(),
-            package,
-            source,
-            build: Build::default(),
-            requirements,
-            tests: Default::default(),
-            about: None,
-            extra: None,
-        }
-    }
-}
-
-pub(crate) fn package_specs_to_match_spec(
-    specs: IndexMap<String, PackageSpecV1>,
-) -> Vec<MatchSpec> {
-    specs
-        .into_iter()
-        .map(|(name, spec)| match spec {
-            PackageSpecV1::Binary(_binary_spec) => {
-                MatchSpec::from_str(name.as_str(), rattler_conda_types::ParseStrictness::Strict)
-                    .unwrap()
-            }
-            PackageSpecV1::Source(source_spec) => {
-                unimplemented!("Source dependencies not implemented yet: {:?}", source_spec)
-            }
-        })
-        .collect()
-}
-
-pub(crate) fn into_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
-    let mut build_items: ConditionalList<SerializableMatchSpec> = ConditionalList::new();
-    let mut host_items = ConditionalList::new();
-    let mut run_items = ConditionalList::new();
-    let mut run_constraints_items = ConditionalList::new();
-
-    // Add default target
-    if let Some(default_target) = &targets.default_target {
-        let default_requirements = target_spec_to_requirements(default_target);
-        build_items.extend(default_requirements.build.iter().cloned().map(Into::into));
-        host_items.extend(default_requirements.host.iter().cloned().map(Into::into));
-        run_items.extend(default_requirements.run.iter().cloned().map(Into::into));
-        run_constraints_items.extend(
-            default_requirements
-                .run_constraints
-                .iter()
-                .cloned()
-                .map(Into::into),
-        );
-    }
-
-    // Add specific targets
-    if let Some(specific_targets) = &targets.targets {
-        for (selector, target) in specific_targets {
-            let requirements = target_spec_to_requirements(target);
-            build_items.extend(requirements.build.iter().cloned().map(|spec| {
-                Conditional {
-                    condition: selector.to_string(),
-                    then: ListOrItem(vec![spec]),
-                    else_value: ListOrItem::default(),
-                }
-                .into()
-            }));
-            host_items.extend(requirements.host.iter().cloned().map(|spec| {
-                Conditional {
-                    condition: selector.to_string(),
-                    then: ListOrItem(vec![spec]),
-                    else_value: ListOrItem::default(),
-                }
-                .into()
-            }));
-
-            run_items.extend(requirements.run.iter().cloned().map(|spec| {
-                Conditional {
-                    condition: selector.to_string(),
-                    then: ListOrItem(vec![spec]),
-                    else_value: ListOrItem::default(),
-                }
-                .into()
-            }));
-            run_constraints_items.extend(requirements.run_constraints.iter().cloned().map(
-                |spec| {
-                    Conditional {
-                        condition: selector.to_string(),
-                        then: ListOrItem(vec![spec]),
-                        else_value: ListOrItem::default(),
-                    }
-                    .into()
-                },
-            ));
-        }
-    }
-
-    ConditionalRequirements {
-        build: build_items,
-        host: host_items,
-        run: run_items,
-        run_constraints: run_constraints_items,
-    }
-}
-
-// TODO: Should it be a From implementation?
-pub(crate) fn target_spec_to_requirements(target: &TargetV1) -> Requirements {
-    Requirements {
-        build: target
-            .clone()
-            .build_dependencies
-            .map(|deps| {
-                package_specs_to_match_spec(deps)
-                    .into_iter()
-                    .map(SerializableMatchSpec::from)
-                    .collect()
-            })
-            .unwrap_or_default(),
-        host: target
-            .clone()
-            .host_dependencies
-            .map(|deps| {
-                package_specs_to_match_spec(deps)
-                    .into_iter()
-                    .map(SerializableMatchSpec::from)
-                    .collect()
-            })
-            .unwrap_or_default(),
-        run: target
-            .clone()
-            .run_dependencies
-            .map(|deps| {
-                package_specs_to_match_spec(deps)
-                    .into_iter()
-                    .map(SerializableMatchSpec::from)
-                    .collect()
-            })
-            .unwrap_or_default(),
-        run_constraints: vec![],
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -540,12 +389,13 @@ pub enum Target {
     Specific(String),
 }
 
+/// A type that is very specific to rattler-build /recipe.yaml side
 #[derive(Serialize, Deserialize, Default)]
 pub struct ConditionalRequirements {
-    pub build: ConditionalList<SerializableMatchSpec>,
-    pub host: ConditionalList<SerializableMatchSpec>,
-    pub run: ConditionalList<SerializableMatchSpec>,
-    pub run_constraints: ConditionalList<SerializableMatchSpec>,
+    pub build: ConditionalList<PackageDependency>,
+    pub host: ConditionalList<PackageDependency>,
+    pub run: ConditionalList<PackageDependency>,
+    pub run_constraints: ConditionalList<PackageDependency>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

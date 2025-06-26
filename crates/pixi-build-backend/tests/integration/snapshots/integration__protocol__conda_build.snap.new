@@ -1,0 +1,12 @@
+---
+source: crates/pixi-build-backend/tests/integration/protocol.rs
+assertion_line: 132
+expression: conda_build_result
+---
+packages:
+  - output_file: /private/var/folders/rf/kyk8v0zd3993kvjg2p373plm0000gn/T/.tmp9Jojl0/osx-arm64/minimal-package-1.0.0-hbf21a9e_0.conda
+    input_globs: []
+    name: minimal-package
+    version: 1.0.0
+    build: hbf21a9e_0
+    subdir: osx-arm64

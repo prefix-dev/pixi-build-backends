@@ -209,23 +209,21 @@ mod tests {
 
     use indexmap::IndexMap;
 
+    use pixi_build_backend::generated_recipe::{GeneratedRecipe};
     use pixi_build_type_conversions::to_project_model_v1;
 
     use pixi_build_types::ProjectModelV1;
     use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
-    use recipe_stage0::recipe::IntermediateRecipe;
+
     use tempfile::tempdir;
 
     use crate::{
         build_script::BuildScriptContext, config::RustBackendConfig, rust::RustBuildBackend,
     };
 
-    fn project_model_v1(
-        manifest_source: &str,
-        _config: RustBackendConfig,
-    ) -> (ProjectModelV1, PathBuf) {
+    fn project_model_v1(manifest_source: &str) -> (ProjectModelV1, PathBuf) {
         let tmp_dir = tempdir().unwrap();
         let tmp_manifest = tmp_dir.path().join("pixi.toml");
         std::fs::write(&tmp_manifest, manifest_source).unwrap();
@@ -260,28 +258,6 @@ mod tests {
             .unwrap();
 
         recipe
-    }
-
-    /// Im the next iterations this will be the public interface for the GenerateRecipe trait
-    pub fn generate_recipe(
-        model: ProjectModelV1,
-        manifest_root: PathBuf,
-        config: RustBackendConfig,
-    ) -> IntermediateRecipe {
-        let mut ir = IntermediateRecipe::from_model(model, manifest_root.clone());
-
-        let build_script = BuildScriptContext {
-            source_dir: manifest_root.display().to_string(),
-            extra_args: config.extra_args.clone(),
-            has_openssl: false,
-            has_sccache: false,
-            is_bash: !Platform::current().is_windows(),
-        }
-        .render();
-
-        ir.build.script = build_script;
-
-        ir
     }
 
     #[test]
@@ -370,16 +346,32 @@ mod tests {
         channels = ["https://prefix.dev/pixi-build-backends", "https://prefix.dev/conda-forge"]
         "#;
 
-        let (project_model, manifest_path) =
-            project_model_v1(manifest_source, RustBackendConfig::default());
+        let config = RustBackendConfig::default();
 
-        let ir = generate_recipe(
+        let (project_model, manifest_path) = project_model_v1(manifest_source);
+
+        let build_script = BuildScriptContext {
+            source_dir: manifest_path
+                .parent()
+                .unwrap()
+                .to_path_buf()
+                .display()
+                .to_string(),
+            extra_args: config.extra_args.clone(),
+            has_openssl: false,
+            has_sccache: false,
+            is_bash: !Platform::current().is_windows(),
+        }
+        .render();
+
+        let mut generated_recipe = GeneratedRecipe::from_model(
             project_model,
             manifest_path.parent().unwrap().to_path_buf(),
-            RustBackendConfig::default(),
         );
 
-        insta::assert_yaml_snapshot!(ir, {
+        generated_recipe.recipe.build.script = build_script;
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
             ".source[0].path" => "[ ... path ... ]",
             ".build.script" => "[ ... script ... ]",
         }

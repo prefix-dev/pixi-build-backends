@@ -10,6 +10,7 @@ async-trait = "0.1.86"
 chrono = "0.4.39"
 clap = "4.5.29"
 clap-verbosity-flag = "3.0.2"
+either = "1.15.0"
 fs-err = "3.1.0"
 indexmap = "2.7.1"
 itertools = "0.14.0"
@@ -81,4 +82,4 @@ pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", bran
 #simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
 
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }
-#rattler-build = { path = "../rattler-build" }
+# rattler-build = { path = "../rattler-build" }

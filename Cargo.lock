@@ -4987,6 +4987,7 @@ dependencies = [
 name = "recipe-stage0"
 version = "0.1.0"
 dependencies = [
+ "either",
  "hashlink 0.10.0",
  "indexmap 2.9.0",
  "insta",

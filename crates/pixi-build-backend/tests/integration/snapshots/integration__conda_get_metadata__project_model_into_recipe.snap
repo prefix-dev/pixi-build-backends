@@ -1,0 +1,24 @@
+---
+source: crates/pixi-build-backend/tests/integration/conda_get_metadata.rs
+expression: conda_metadata
+---
+packages:
+  - name: minimal-package
+    version: 1.0.0
+    build: hbf21a9e_0
+    buildNumber: 0
+    subdir: osx-arm64
+    depends:
+      - "boltons[url=\"file:///path/to/boltons\"]"
+      - python
+    constraints: []
+    license: ~
+    licenseFamily: ~
+    noarch: false
+    sources:
+      boltons:
+        Url:
+          url: "file:///path/to/boltons"
+          md5: ~
+          sha256: ~
+inputGlobs: ~

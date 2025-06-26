@@ -13,10 +13,12 @@ serde_yaml = "0.9.34"
 rattler-build = { workspace = true }
 indexmap = { workspace = true }
 url = { workspace = true }
-pixi_build_types = { workspace = true }
+# pixi_build_types = { workspace = true }
 miette = { workspace = true }
+either = { workspace = true }
 
 
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
 serde_json = "1.0"
+pixi_build_types = { workspace = true }

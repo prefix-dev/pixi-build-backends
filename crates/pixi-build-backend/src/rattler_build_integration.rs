@@ -1,6 +1,5 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc};
 
-use itertools::Itertools;
 use miette::IntoDiagnostic;
 use rattler_build::{
     NormalizedKey,

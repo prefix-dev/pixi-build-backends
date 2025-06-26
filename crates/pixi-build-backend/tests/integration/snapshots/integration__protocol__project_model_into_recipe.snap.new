@@ -1,6 +1,6 @@
 ---
 source: crates/pixi-build-backend/tests/integration/protocol.rs
-assertion_line: 69
+assertion_line: 62
 expression: conda_metadata
 ---
 packages:
@@ -10,8 +10,8 @@ packages:
     buildNumber: 0
     subdir: osx-arm64
     depends:
-      - boltons
       - python
+      - boltons
     constraints: []
     license: ~
     licenseFamily: ~

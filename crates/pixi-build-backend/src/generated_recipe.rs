@@ -2,9 +2,7 @@ use std::{path::PathBuf, str::FromStr};
 
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::Version;
-use recipe_stage0::recipe::{
-    Build, ConditionalList, IntermediateRecipe, Package, Value,
-};
+use recipe_stage0::recipe::{Build, ConditionalList, IntermediateRecipe, Package, Value};
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 

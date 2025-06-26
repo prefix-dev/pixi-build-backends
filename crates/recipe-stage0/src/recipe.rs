@@ -1,15 +1,9 @@
-// use pixi_build_types::{
-//     BinaryPackageSpecV1, PackageSpecV1, ProjectModelV1, SourcePackageSpecV1, TargetSelectorV1,
-//     TargetsV1,
-// };
-
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 use crate::matchspec::{PackageDependency, SerializableMatchSpec};
-// use crate::requirements::target_to_package_spec;
 
 // Core enum for values that can be either concrete or templated
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -251,9 +245,9 @@ pub struct Conditional<T> {
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct IntermediateRecipe {
-    pub context: HashMap<String, Value<String>>,
+    pub context: IndexMap<String, Value<String>>,
     pub package: Package,
     pub source: ConditionalList<Source>,
     pub build: Build,
@@ -487,7 +481,7 @@ mod tests {
     #[test]
     fn test_recipe_to_yaml() {
         // Create a simple recipe
-        let mut context = HashMap::new();
+        let mut context = IndexMap::new();
         context.insert("name".to_string(), Value::Concrete("xtensor".to_string()));
         context.insert("version".to_string(), Value::Concrete("0.24.6".to_string()));
 

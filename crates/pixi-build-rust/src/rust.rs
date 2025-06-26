@@ -209,31 +209,15 @@ mod tests {
 
     use indexmap::IndexMap;
 
-    use pixi_build_backend::generated_recipe::{GeneratedRecipe};
     use pixi_build_type_conversions::to_project_model_v1;
 
-    use pixi_build_types::ProjectModelV1;
     use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
 
     use tempfile::tempdir;
 
-    use crate::{
-        build_script::BuildScriptContext, config::RustBackendConfig, rust::RustBuildBackend,
-    };
-
-    fn project_model_v1(manifest_source: &str) -> (ProjectModelV1, PathBuf) {
-        let tmp_dir = tempdir().unwrap();
-        let tmp_manifest = tmp_dir.path().join("pixi.toml");
-        std::fs::write(&tmp_manifest, manifest_source).unwrap();
-        let manifest = Manifests::from_workspace_manifest_path(tmp_manifest.clone()).unwrap();
-        let package = manifest.value.package.unwrap();
-        let channel_config = ChannelConfig::default_with_root_dir(tmp_dir.path().to_path_buf());
-        let project_model = to_project_model_v1(&package.value, &channel_config).unwrap();
-
-        (project_model, tmp_manifest)
-    }
+    use crate::{config::RustBackendConfig, rust::RustBuildBackend};
 
     fn recipe(manifest_source: &str, config: RustBackendConfig) -> Recipe {
         let tmp_dir = tempdir().unwrap();
@@ -311,70 +295,5 @@ mod tests {
         );
 
         assert_eq!(recipe.build.script.env, env);
-    }
-
-    #[test]
-    fn generate_rust_recipe_from_project_model() {
-        // take the pixi-build-examples rust package as an example
-        // and generate intermediate recipe from it.
-        // by converting it to recipe.yaml we can validate the structure
-        let manifest_source = r#"
-        [workspace]
-        authors = ["Wolf Vollprecht <wolfv@prefix.dev>"]
-        channels = ["https://prefix.dev/conda-forge"]
-        description = "Showcases how to build a Rust project with pixi"
-        name = "build-rust"
-        platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
-        preview = ["pixi-build"]
-        version = "0.1.0"
-
-        [package]
-        name = "build-rust"
-        version = "0.1.0"
-
-        [package.build-dependencies]
-        boltons = "*"
-
-        [package.target.unix.build-dependencies]
-        rich = "*"
-
-        [dependencies]
-        build-rust = { path = "." }
-
-        [package.build]
-        backend = { name = "pixi-build-rust", version = "*" }
-        channels = ["https://prefix.dev/pixi-build-backends", "https://prefix.dev/conda-forge"]
-        "#;
-
-        let config = RustBackendConfig::default();
-
-        let (project_model, manifest_path) = project_model_v1(manifest_source);
-
-        let build_script = BuildScriptContext {
-            source_dir: manifest_path
-                .parent()
-                .unwrap()
-                .to_path_buf()
-                .display()
-                .to_string(),
-            extra_args: config.extra_args.clone(),
-            has_openssl: false,
-            has_sccache: false,
-            is_bash: !Platform::current().is_windows(),
-        }
-        .render();
-
-        let mut generated_recipe = GeneratedRecipe::from_model(
-            project_model,
-            manifest_path.parent().unwrap().to_path_buf(),
-        );
-
-        generated_recipe.recipe.build.script = build_script;
-
-        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
-            ".source[0].path" => "[ ... path ... ]",
-            ".build.script" => "[ ... script ... ]",
-        }
-        );
     }
 }

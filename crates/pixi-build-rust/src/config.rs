@@ -14,6 +14,9 @@ pub struct RustBackendConfig {
     pub env: IndexMap<String, String>,
     /// If set, internal state will be logged as files in that directory
     pub debug_dir: Option<PathBuf>,
+    /// Extra input globs to include in addition to the default ones
+    #[serde(default)]
+    pub extra_input_globs: Vec<String>,
 }
 
 #[cfg(test)]

@@ -22,17 +22,12 @@ use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    recipe::{
-        Jinja,
-        parser::BuildString,
-    },
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::Configuration,
 };
-use rattler_conda_types::{
-    ChannelConfig, MatchSpec, Platform,
-};
+use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 use tempfile::tempdir;

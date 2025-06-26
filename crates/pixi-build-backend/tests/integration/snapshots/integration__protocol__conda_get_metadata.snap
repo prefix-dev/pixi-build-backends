@@ -9,8 +9,8 @@ packages:
     buildNumber: 0
     subdir: osx-arm64
     depends:
-      - python
       - boltons
+      - python
     constraints: []
     license: ~
     licenseFamily: ~

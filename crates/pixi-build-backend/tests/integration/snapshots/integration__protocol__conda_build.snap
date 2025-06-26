@@ -1,6 +1,5 @@
 ---
 source: crates/pixi-build-backend/tests/integration/protocol.rs
-assertion_line: 140
 expression: conda_build_result
 ---
 packages:

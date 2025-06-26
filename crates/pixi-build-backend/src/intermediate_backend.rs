@@ -285,6 +285,7 @@ impl Protocol for IntermediateBackend {
                 subdir: output.build_configuration.target_platform,
                 depends: finalized_run_deps
                     .iter()
+                    .sorted_by_key(|dep| dep.package_name())
                     .map(|package_dependency| {
                         SerializableMatchSpec::from(package_dependency.clone())
                             .0

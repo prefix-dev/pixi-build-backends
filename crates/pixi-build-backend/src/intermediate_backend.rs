@@ -27,6 +27,7 @@ use rattler_build::{
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::Configuration,
+    variant_config::VariantConfig,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
@@ -209,11 +210,35 @@ impl Protocol for IntermediateBackend {
             })
             .unwrap_or_default();
 
-        let variant_combinations = generate_combinations(variants);
+        let host_platform = params
+            .host_platform
+            .as_ref()
+            .map(|p| p.platform)
+            .unwrap_or(Platform::current());
+
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
+
+        // Determine the variant keys that are used in the recipe.
+        let resolved_dependencies = self
+            .generated_recipe
+            .recipe
+            .requirements
+            .resolve(Some(&host_platform));
+
+        let used_variants = resolved_dependencies.used_variants();
+
+        // Determine the combinations of the used variants.
+        let combinations = variant_config
+            .combinations(&used_variants, None)
+            .into_diagnostic()?;
 
         let mut packages = Vec::new();
 
-        for input_variant in variant_combinations {
+        for input_variant in combinations {
             let selector_config = SelectorConfig {
                 // We ignore noarch here
                 target_platform: params.build_platform.as_ref().unwrap().platform,
@@ -376,11 +401,35 @@ impl Protocol for IntermediateBackend {
             })
             .unwrap_or_default();
 
-        let variant_combinations = generate_combinations(variants);
+        let host_platform = params
+            .host_platform
+            .as_ref()
+            .map(|p| p.platform)
+            .unwrap_or(Platform::current());
+
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
+
+        // Determine the variant keys that are used in the recipe.
+        let resolved_dependencies = self
+            .generated_recipe
+            .recipe
+            .requirements
+            .resolve(Some(&host_platform));
+
+        let used_variants = resolved_dependencies.used_variants();
+
+        // Determine the combinations of the used variants.
+        let combinations = variant_config
+            .combinations(&used_variants, None)
+            .into_diagnostic()?;
 
         let mut packages = Vec::new();
 
-        for input_variant in variant_combinations {
+        for input_variant in combinations {
             let selector_config = SelectorConfig {
                 // We ignore noarch here
                 target_platform,
@@ -500,41 +549,4 @@ fn default_capabilities() -> BackendCapabilities {
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
     }
-}
-
-/// Generates all possible combinations from a map of keys to lists of choices.
-pub(crate) fn generate_combinations(
-    variants: BTreeMap<NormalizedKey, Vec<Variable>>,
-) -> Vec<BTreeMap<NormalizedKey, Variable>> {
-    // Start with a vector containing one empty BTreeMap. This represents the
-    // initial state with zero choices made.
-    let mut combinations = vec![BTreeMap::new()];
-
-    // Iterate over each key and its associated vector of possible variables.
-    for (key, variables) in variants {
-        // If a key has no variables, it cannot be part of any combination.
-        // We simply skip it.
-        if variables.is_empty() {
-            continue;
-        }
-
-        // This will hold the new set of combinations after processing the current key.
-        let mut new_combinations = Vec::new();
-
-        // For each combination we've built so far...
-        for existing_map in &combinations {
-            // ...create a new version of it for each possible variable choice for the current key.
-            for variable in &variables {
-                let mut new_map = existing_map.clone();
-                // We must clone the key and variable to insert them into the new map.
-                new_map.insert(key.clone(), variable.clone());
-                new_combinations.push(new_map);
-            }
-        }
-
-        // Replace the old set of combinations with the newly expanded set.
-        combinations = new_combinations;
-    }
-
-    combinations
 }

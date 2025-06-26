@@ -100,6 +100,35 @@ impl PackageDependency {
             None
         }
     }
+
+    /// Check if the dependency can be used as a variant in a recipe.
+    pub fn can_be_used_as_variant(&self) -> bool {
+        match self {
+            PackageDependency::Binary(boxed_spec) => {
+                let rattler_conda_types::MatchSpec {
+                    version,
+                    build,
+                    build_number,
+                    file_name,
+                    channel,
+                    subdir,
+                    md5,
+                    sha256,
+                    ..
+                } = boxed_spec;
+
+                version == &Some(rattler_conda_types::VersionSpec::Any)
+                    && build.is_none()
+                    && build_number.is_none()
+                    && file_name.is_none()
+                    && channel.is_none()
+                    && subdir.is_none()
+                    && md5.is_none()
+                    && sha256.is_none()
+            }
+            _ => false,
+        }
+    }
 }
 
 impl Display for PackageDependency {

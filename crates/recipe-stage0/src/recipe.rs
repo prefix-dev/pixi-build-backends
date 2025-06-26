@@ -1,9 +1,11 @@
 use indexmap::IndexMap;
+use rattler_conda_types::{PackageName, Platform};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 use crate::matchspec::{PackageDependency, SerializableMatchSpec};
+use crate::requirements::PackageSpecDependencies;
 
 // Core enum for values that can be either concrete or templated
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -377,6 +379,15 @@ impl Build {
     }
 }
 
+/// A struct to hold the fully resolved, non-conditional requirements.
+#[derive(Default)]
+pub struct ResolvedRequirements {
+    pub build: Vec<PackageDependency>,
+    pub host: Vec<PackageDependency>,
+    pub run: Vec<PackageDependency>,
+    pub run_constraints: Vec<PackageDependency>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub enum Target {
     Default,
@@ -390,6 +401,68 @@ pub struct ConditionalRequirements {
     pub host: ConditionalList<PackageDependency>,
     pub run: ConditionalList<PackageDependency>,
     pub run_constraints: ConditionalList<PackageDependency>,
+}
+
+impl ConditionalRequirements {
+    /// Resolves the conditional requirements for a given platform.
+    pub fn resolve(
+        &self,
+        platform: Option<&Platform>,
+    ) -> PackageSpecDependencies<PackageDependency> {
+        PackageSpecDependencies {
+            build: self.resolve_list(&self.build, platform),
+            host: self.resolve_list(&self.host, platform),
+            run: self.resolve_list(&self.run, platform),
+            run_constraints: self.resolve_list(&self.run_constraints, platform),
+        }
+    }
+
+    pub(crate) fn resolve_list(
+        &self,
+        list: &ConditionalList<PackageDependency>,
+        platform: Option<&Platform>,
+    ) -> IndexMap<PackageName, PackageDependency> {
+        list.iter()
+            .flat_map(|item| Self::resolve_item(item, platform))
+            .collect()
+    }
+
+    pub(crate) fn resolve_item(
+        item: &Item<PackageDependency>,
+        platform: Option<&Platform>,
+    ) -> IndexMap<PackageName, PackageDependency> {
+        match item {
+            Item::Value(v) => {
+                // Should we handle jinja here?
+                if let Some(dep) = v.concrete() {
+                    IndexMap::from([(dep.package_name(), dep.clone())])
+                } else {
+                    IndexMap::new()
+                }
+            }
+
+            Item::Conditional(cond) => {
+                if let Some(p) = platform {
+                    // This is a simple string comparison
+                    let dependencies = if cond.condition == *p.as_str() {
+                        cond.then.clone().0.to_vec()
+                    } else {
+                        cond.else_value.clone().0.to_vec()
+                    };
+
+                    let mut map: IndexMap<PackageName, PackageDependency> = IndexMap::new();
+                    for dep in dependencies {
+                        map.insert(dep.package_name(), dep.clone());
+                    }
+
+                    map
+                } else {
+                    // If no platform is specified, conditional blocks are ignored.
+                    IndexMap::new()
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

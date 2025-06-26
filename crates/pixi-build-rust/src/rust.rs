@@ -205,7 +205,7 @@ pub(crate) fn construct_configuration(
 #[cfg(test)]
 mod tests {
 
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::collections::BTreeMap;
 
     use indexmap::IndexMap;
 

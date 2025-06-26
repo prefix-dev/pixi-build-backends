@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use indexmap::IndexMap;
 use miette::IntoDiagnostic;
-use pixi_build_types::{PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1, UrlSpecV1};
+use pixi_build_types::{
+    GitSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1, UrlSpecV1,
+};
 use rattler_conda_types::{MatchSpec, PackageName};
 use recipe_stage0::{
     matchspec::{PackageDependency, SourceMatchSpec},
@@ -13,16 +15,40 @@ use url::Url;
 
 pub fn from_source_matchspec_into_package_spec(
     source_matchspec: SourceMatchSpec,
-) -> SourcePackageSpecV1 {
-    SourcePackageSpecV1::Url(UrlSpecV1 {
-        url: source_matchspec.location,
-        md5: None,
-        sha256: None,
-    })
+) -> miette::Result<SourcePackageSpecV1> {
+    let source_url = source_matchspec.location;
+    match source_url.scheme() {
+        "file" => {
+            let path = source_url.to_file_path().map_err(|_| {
+                miette::miette!("Source URL is not a valid file path: {}", source_url)
+            })?;
+            Ok(SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+                path: path.to_string_lossy().to_string(),
+            }))
+        }
+        "http" | "https" => {
+            // For now, we only support URL sources with no checksums.
+            Ok(SourcePackageSpecV1::Url(UrlSpecV1 {
+                url: source_url,
+                md5: None,
+                sha256: None,
+            }))
+        }
+        "git" => {
+            // For git URLs, we can only support the URL without any additional metadata.
+            // This is a limitation of the current implementation.
+            Ok(SourcePackageSpecV1::Git(GitSpecV1 {
+                git: source_url,
+                rev: None,
+                subdirectory: None,
+            }))
+        }
+        _ => unimplemented!("Only file, http/https and git are supported for now"),
+    }
 }
 
 pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
-    let mut build_items: ConditionalList<PackageDependency> = ConditionalList::new();
+    let mut build_items = ConditionalList::new();
     let mut host_items = ConditionalList::new();
     let mut run_items = ConditionalList::new();
     let run_constraints_items = ConditionalList::new();

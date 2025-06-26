@@ -26,6 +26,7 @@ use crate::{generated_recipe::GeneratedRecipe, utils::TemporaryRenderedRecipe};
 /// to rattler-build as a string.
 /// As a future work, `get_build_output` from rattler-build should be refactored to
 /// use the `IntermediateRecipe` directly.
+#[allow(clippy::too_many_arguments)]
 pub async fn get_build_output(
     generated_recipe: &GeneratedRecipe,
     tool_config: Arc<tool_configuration::Configuration>,
@@ -99,16 +100,6 @@ pub async fn get_build_output(
             None
         };
 
-        // priorities
-        // 1. channel_sources from variant file
-        // 2. channels from args
-        // 3. channels from pixi_config
-        // 4. conda-forge as fallback
-        // if variant_channels.is_some() && build_data.channels.is_some() {
-        //     return Err(miette::miette!(
-        //         "channel_sources and channels cannot both be set at the same time"
-        //     ));
-        // }
         let channels = variant_channels.unwrap_or_else(|| {
             channel_base_urls
                 .as_ref()

@@ -1,6 +1,5 @@
 ---
 source: crates/pixi-build-backend/tests/integration/protocol.rs
-assertion_line: 62
 expression: conda_metadata
 ---
 packages:
@@ -18,8 +17,6 @@ packages:
     noarch: false
     sources:
       boltons:
-        Url:
-          url: "file:///path/to/boltons"
-          md5: ~
-          sha256: ~
+        Path:
+          path: "[redacted]"
 inputGlobs: ~

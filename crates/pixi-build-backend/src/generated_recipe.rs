@@ -2,7 +2,9 @@ use std::{path::PathBuf, str::FromStr};
 
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::Version;
-use recipe_stage0::recipe::{Build, ConditionalList, IntermediateRecipe, Package, Value};
+use recipe_stage0::recipe::{
+    Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
+};
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
@@ -17,7 +19,9 @@ pub struct GeneratedRecipe {
 
 impl GeneratedRecipe {
     /// Creates a new GeneratedRecipe from a ProjectModelV1.
-    pub fn from_model(model: ProjectModelV1, _manifest_root: PathBuf) -> Self {
+    /// A default implementation that don't take into account the
+    /// build scripts or other fields.
+    pub fn from_model(model: ProjectModelV1, manifest_root: PathBuf) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(
@@ -28,11 +32,9 @@ impl GeneratedRecipe {
             ),
         };
 
-        // TODO: should we use the manifest root as a source
-
-        // let source = ConditionalList::from(vec![Item::Value(Value::Concrete(Source::path(
-        //     manifest_root.display().to_string(),
-        // )))]);
+        let source = ConditionalList::from(vec![Item::Value(Value::Concrete(Source::path(
+            manifest_root.display().to_string(),
+        )))]);
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());
@@ -40,8 +42,7 @@ impl GeneratedRecipe {
         let ir = IntermediateRecipe {
             context: Default::default(),
             package,
-            // source,
-            source: ConditionalList::default(),
+            source,
             build: Build::default(),
             requirements,
             tests: Default::default(),

@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, ProjectModelV1, SourcePackageSpecV1,
+    BackendCapabilities, CondaPackageMetadata, ProjectModelV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -99,7 +99,6 @@ impl IntermediateBackend {
             .to_path_buf();
 
         Ok(Self {
-            // manifest_path: manifest_path.to_path_buf(),
             manifest_root,
             generated_recipe,
             config,
@@ -270,13 +269,13 @@ impl Protocol for IntermediateBackend {
                 .filter_map(|dep| dep.as_source().cloned())
                 .collect_vec();
 
-            let source_spec_v1: HashMap<String, SourcePackageSpecV1> = source_dependencies
+            let source_spec_v1 = source_dependencies
                 .iter()
                 .map(|dep| {
                     let name = dep.spec.name.as_ref().unwrap().as_normalized().to_string();
-                    (name, from_source_matchspec_into_package_spec(dep.clone()))
+                    Ok((name, from_source_matchspec_into_package_spec(dep.clone())?))
                 })
-                .collect();
+                .collect::<miette::Result<HashMap<_, _>>>()?;
 
             packages.push(CondaPackageMetadata {
                 name: output.name().clone(),
@@ -434,7 +433,7 @@ impl Protocol for IntermediateBackend {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                // input_globs: input_globs(),
+                // TODO: we should handle input globs properly
                 input_globs: vec![],
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),

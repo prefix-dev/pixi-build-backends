@@ -19,10 +19,11 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
+    NormalizedKey,
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    recipe::{Jinja, parser::BuildString},
+    recipe::{Jinja, parser::BuildString, variable::Variable},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::Configuration,
@@ -193,121 +194,140 @@ impl Protocol for IntermediateBackend {
                 .with_keep_build(true)
                 .finish(),
         );
+        // Create a variant config from the variant configuration in the parameters.
+        let variants: BTreeMap<NormalizedKey, Vec<Variable>> = params
+            .variant_configuration
+            .map(|v| {
+                v.into_iter()
+                    .map(|(k, v)| {
+                        (
+                            k.into(),
+                            v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
 
-        let selector_config = SelectorConfig {
-            // We ignore noarch here
-            target_platform: params.build_platform.as_ref().unwrap().platform,
-            host_platform: params.host_platform.as_ref().unwrap().platform,
-            hash: None,
-            build_platform: params.build_platform.as_ref().unwrap().platform,
-            variant: BTreeMap::new(),
-            experimental: false,
-            // allow undefined while finding the variants
-            allow_undefined: true,
-        };
-
-        let host_virtual_packages = params
-            .host_platform
-            .as_ref()
-            .and_then(|p| p.virtual_packages.clone());
-
-        let build_virtual_packages = params
-            .build_platform
-            .as_ref()
-            .and_then(|p| p.virtual_packages.clone());
-
-        let outputs = rattler_build_integration::get_build_output(
-            &self.generated_recipe,
-            tool_config,
-            selector_config,
-            host_virtual_packages,
-            build_virtual_packages,
-            params.channel_base_urls,
-            tmp_dir_path.clone(),
-            tmp_dir_path.clone(),
-        )
-        .await?;
+        let variant_combinations = generate_combinations(variants);
 
         let mut packages = Vec::new();
 
-        for output in outputs {
-            let selector_config = output.build_configuration.selector_config();
+        for input_variant in variant_combinations {
+            let selector_config = SelectorConfig {
+                // We ignore noarch here
+                target_platform: params.build_platform.as_ref().unwrap().platform,
+                host_platform: params.host_platform.as_ref().unwrap().platform,
+                hash: None,
+                build_platform: params.build_platform.as_ref().unwrap().platform,
+                variant: input_variant,
+                experimental: false,
+                // allow undefined while finding the variants
+                allow_undefined: true,
+            };
 
-            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
-
-            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-            let build_string = output.recipe.build().string().resolve(
-                &hash,
-                output.recipe.build().number(),
-                &jinja,
-            );
-
-            let finalized_deps = &output
-                .finalized_dependencies
+            let host_virtual_packages = params
+                .host_platform
                 .as_ref()
-                .expect("dependencies should be resolved at this point")
-                .run;
+                .and_then(|p| p.virtual_packages.clone());
 
-            let finalized_run_deps = &output
-                .finalized_dependencies
+            let build_virtual_packages = params
+                .build_platform
                 .as_ref()
-                .expect("dependencies should be resolved at this point")
-                .run
-                .depends
-                .iter()
-                .cloned()
-                .map(|dep| {
-                    let spec = dep.spec().clone();
-                    let ser_matchspec = SerializableMatchSpec(spec);
+                .and_then(|p| p.virtual_packages.clone());
 
-                    PackageDependency::from(ser_matchspec)
-                })
-                .collect_vec();
+            let outputs = rattler_build_integration::get_build_output(
+                &self.generated_recipe,
+                tool_config.clone(),
+                selector_config,
+                host_virtual_packages,
+                build_virtual_packages,
+                params.channel_base_urls.clone(),
+                tmp_dir_path.clone(),
+                tmp_dir_path.clone(),
+            )
+            .await?;
 
-            let source_dependencies = finalized_run_deps
-                .iter()
-                .filter_map(|dep| dep.as_source().cloned())
-                .collect_vec();
+            for output in outputs {
+                let selector_config = output.build_configuration.selector_config();
 
-            let source_spec_v1 = source_dependencies
-                .iter()
-                .map(|dep| {
-                    let name = dep.spec.name.as_ref().unwrap().as_normalized().to_string();
-                    Ok((name, from_source_matchspec_into_package_spec(dep.clone())?))
-                })
-                .collect::<miette::Result<HashMap<_, _>>>()?;
+                let jinja =
+                    Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
 
-            packages.push(CondaPackageMetadata {
-                name: output.name().clone(),
-                version: output.version().clone(),
-                build: build_string.to_string(),
-                build_number: output.recipe.build.number,
-                subdir: output.build_configuration.target_platform,
-                depends: finalized_run_deps
+                let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+                let build_string = output.recipe.build().string().resolve(
+                    &hash,
+                    output.recipe.build().number(),
+                    &jinja,
+                );
+
+                let finalized_deps = &output
+                    .finalized_dependencies
+                    .as_ref()
+                    .expect("dependencies should be resolved at this point")
+                    .run;
+
+                let finalized_run_deps = &output
+                    .finalized_dependencies
+                    .as_ref()
+                    .expect("dependencies should be resolved at this point")
+                    .run
+                    .depends
                     .iter()
-                    .sorted_by_key(|dep| dep.package_name())
-                    .map(|package_dependency| {
-                        SerializableMatchSpec::from(package_dependency.clone())
-                            .0
-                            .clone()
+                    .cloned()
+                    .map(|dep| {
+                        let spec = dep.spec().clone();
+                        let ser_matchspec = SerializableMatchSpec(spec);
+
+                        PackageDependency::from(ser_matchspec)
                     })
-                    .map(|mut arg| {
-                        // reset the URL for source dependencies
-                        arg.url = None;
-                        arg.to_string()
-                    })
-                    .collect(),
-                constraints: finalized_deps
-                    .constraints
+                    .collect_vec();
+
+                let source_dependencies = finalized_run_deps
                     .iter()
-                    .map(DependencyInfo::spec)
-                    .map(MatchSpec::to_string)
-                    .collect(),
-                license: output.recipe.about.license.as_ref().map(|l| l.to_string()),
-                license_family: output.recipe.about.license_family.clone(),
-                noarch: output.recipe.build.noarch,
-                sources: source_spec_v1,
-            });
+                    .filter_map(|dep| dep.as_source().cloned())
+                    .collect_vec();
+
+                let source_spec_v1 = source_dependencies
+                    .iter()
+                    .map(|dep| {
+                        let name = dep.spec.name.as_ref().unwrap().as_normalized().to_string();
+                        Ok((name, from_source_matchspec_into_package_spec(dep.clone())?))
+                    })
+                    .collect::<miette::Result<HashMap<_, _>>>()?;
+
+                packages.push(CondaPackageMetadata {
+                    name: output.name().clone(),
+                    version: output.version().clone(),
+                    build: build_string.to_string(),
+                    build_number: output.recipe.build.number,
+                    subdir: output.build_configuration.target_platform,
+                    depends: finalized_run_deps
+                        .iter()
+                        .sorted_by_key(|dep| dep.package_name())
+                        .map(|package_dependency| {
+                            SerializableMatchSpec::from(package_dependency.clone())
+                                .0
+                                .clone()
+                        })
+                        .map(|mut arg| {
+                            // reset the URL for source dependencies
+                            arg.url = None;
+                            arg.to_string()
+                        })
+                        .collect(),
+                    constraints: finalized_deps
+                        .constraints
+                        .iter()
+                        .map(DependencyInfo::spec)
+                        .map(MatchSpec::to_string)
+                        .collect(),
+                    license: output.recipe.about.license.as_ref().map(|l| l.to_string()),
+                    license_family: output.recipe.about.license_family.clone(),
+                    noarch: output.recipe.build.noarch,
+                    sources: source_spec_v1,
+                });
+            }
         }
 
         Ok(CondaMetadataResult {
@@ -341,107 +361,130 @@ impl Protocol for IntermediateBackend {
             .map(|hp| hp.platform)
             .unwrap_or_else(Platform::current);
 
-        let selector_config = SelectorConfig {
-            // We ignore noarch here
-            target_platform,
-            host_platform: target_platform,
-            hash: None,
-            build_platform,
-            variant: BTreeMap::new(),
-            experimental: false,
-            // allow undefined while finding the variants
-            allow_undefined: true,
-        };
+        // Recompute all the variant combinations
+        let variants = params
+            .variant_configuration
+            .map(|v| {
+                v.into_iter()
+                    .map(|(k, v)| {
+                        (
+                            k.into(),
+                            v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
 
-        let host_virtual_packages = params
-            .host_platform
-            .as_ref()
-            .and_then(|p| p.virtual_packages.clone());
+        let variant_combinations = generate_combinations(variants);
 
-        let build_virtual_packages = params.build_platform_virtual_packages;
+        let mut packages = Vec::new();
 
-        let outputs = rattler_build_integration::get_build_output(
-            &self.generated_recipe,
-            tool_config.clone(),
-            selector_config,
-            host_virtual_packages,
-            build_virtual_packages,
-            params.channel_base_urls,
-            params.work_directory.clone(),
-            params.work_directory.clone(),
-        )
-        .await?;
-
-        let mut modified_outputs = Vec::with_capacity(outputs.len());
-        for mut output in outputs {
-            let selector_config = output.build_configuration.selector_config();
-            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
-            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-            let build_string = output
-                .recipe
-                .build()
-                .string()
-                .resolve(&hash, output.recipe.build().number(), &jinja)
-                .into_owned();
-            output.recipe.build.string = BuildString::Resolved(build_string);
-            modified_outputs.push(output);
-        }
-
-        // Determine the outputs to build
-        let selected_outputs = if let Some(output_identifiers) = params.outputs {
-            output_identifiers
-                .into_iter()
-                .filter_map(|iden| {
-                    let pos = modified_outputs.iter().position(|output| {
-                        let CondaOutputIdentifier {
-                            name,
-                            version,
-                            build,
-                            subdir,
-                        } = &iden;
-                        name.as_ref()
-                            .is_none_or(|n| output.name().as_normalized() == n)
-                            && version
-                                .as_ref()
-                                .is_none_or(|v| output.version().to_string() == *v)
-                            && build
-                                .as_ref()
-                                .is_none_or(|b| output.build_string() == b.as_str())
-                            && subdir
-                                .as_ref()
-                                .is_none_or(|s| output.target_platform().as_str() == s)
-                    })?;
-                    Some(modified_outputs.remove(pos))
-                })
-                .collect()
-        } else {
-            modified_outputs
-        };
-
-        let mut packages = Vec::with_capacity(selected_outputs.len());
-        for output in selected_outputs {
-            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
-            let build_string = output
-                .recipe
-                .build
-                .string
-                .as_resolved()
-                .expect("build string must have already been resolved")
-                .to_string();
-            let tool_config = tool_config.clone();
-            let (output, package) = temp_recipe
-                .within_context_async(move || async move { run_build(output, &tool_config).await })
-                .await?;
-            let built_package = CondaBuiltPackage {
-                output_file: package,
-                // TODO: we should handle input globs properly
-                input_globs: vec![],
-                name: output.name().as_normalized().to_string(),
-                version: output.version().to_string(),
-                build: build_string.to_string(),
-                subdir: output.target_platform().to_string(),
+        for input_variant in variant_combinations {
+            let selector_config = SelectorConfig {
+                // We ignore noarch here
+                target_platform,
+                host_platform: target_platform,
+                hash: None,
+                build_platform,
+                variant: input_variant,
+                experimental: false,
+                // allow undefined while finding the variants
+                allow_undefined: true,
             };
-            packages.push(built_package);
+
+            let host_virtual_packages = params
+                .host_platform
+                .as_ref()
+                .and_then(|p| p.virtual_packages.clone());
+
+            let build_virtual_packages = params.build_platform_virtual_packages.clone();
+
+            let outputs = rattler_build_integration::get_build_output(
+                &self.generated_recipe,
+                tool_config.clone(),
+                selector_config,
+                host_virtual_packages,
+                build_virtual_packages,
+                params.channel_base_urls.clone(),
+                params.work_directory.clone(),
+                params.work_directory.clone(),
+            )
+            .await?;
+
+            let mut modified_outputs = Vec::with_capacity(outputs.len());
+            for mut output in outputs {
+                let selector_config = output.build_configuration.selector_config();
+                let jinja =
+                    Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
+                let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
+                let build_string = output
+                    .recipe
+                    .build()
+                    .string()
+                    .resolve(&hash, output.recipe.build().number(), &jinja)
+                    .into_owned();
+                output.recipe.build.string = BuildString::Resolved(build_string);
+                modified_outputs.push(output);
+            }
+
+            // Determine the outputs to build
+            let selected_outputs = if let Some(output_identifiers) = params.outputs.clone() {
+                output_identifiers
+                    .into_iter()
+                    .filter_map(|iden| {
+                        let pos = modified_outputs.iter().position(|output| {
+                            let CondaOutputIdentifier {
+                                name,
+                                version,
+                                build,
+                                subdir,
+                            } = &iden;
+                            name.as_ref()
+                                .is_none_or(|n| output.name().as_normalized() == n)
+                                && version
+                                    .as_ref()
+                                    .is_none_or(|v| output.version().to_string() == *v)
+                                && build
+                                    .as_ref()
+                                    .is_none_or(|b| output.build_string() == b.as_str())
+                                && subdir
+                                    .as_ref()
+                                    .is_none_or(|s| output.target_platform().as_str() == s)
+                        })?;
+                        Some(modified_outputs.remove(pos))
+                    })
+                    .collect()
+            } else {
+                modified_outputs
+            };
+
+            for output in selected_outputs {
+                let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+                let build_string = output
+                    .recipe
+                    .build
+                    .string
+                    .as_resolved()
+                    .expect("build string must have already been resolved")
+                    .to_string();
+                let tool_config = tool_config.clone();
+                let (output, package) = temp_recipe
+                    .within_context_async(
+                        move || async move { run_build(output, &tool_config).await },
+                    )
+                    .await?;
+                let built_package = CondaBuiltPackage {
+                    output_file: package,
+                    // TODO: we should handle input globs properly
+                    input_globs: vec![],
+                    name: output.name().as_normalized().to_string(),
+                    version: output.version().to_string(),
+                    build: build_string.to_string(),
+                    subdir: output.target_platform().to_string(),
+                };
+                packages.push(built_package);
+            }
         }
 
         Ok(CondaBuildResult { packages })
@@ -457,4 +500,41 @@ fn default_capabilities() -> BackendCapabilities {
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
     }
+}
+
+/// Generates all possible combinations from a map of keys to lists of choices.
+pub(crate) fn generate_combinations(
+    variants: BTreeMap<NormalizedKey, Vec<Variable>>,
+) -> Vec<BTreeMap<NormalizedKey, Variable>> {
+    // Start with a vector containing one empty BTreeMap. This represents the
+    // initial state with zero choices made.
+    let mut combinations = vec![BTreeMap::new()];
+
+    // Iterate over each key and its associated vector of possible variables.
+    for (key, variables) in variants {
+        // If a key has no variables, it cannot be part of any combination.
+        // We simply skip it.
+        if variables.is_empty() {
+            continue;
+        }
+
+        // This will hold the new set of combinations after processing the current key.
+        let mut new_combinations = Vec::new();
+
+        // For each combination we've built so far...
+        for existing_map in &combinations {
+            // ...create a new version of it for each possible variable choice for the current key.
+            for variable in &variables {
+                let mut new_map = existing_map.clone();
+                // We must clone the key and variable to insert them into the new map.
+                new_map.insert(key.clone(), variable.clone());
+                new_combinations.push(new_map);
+            }
+        }
+
+        // Replace the old set of combinations with the newly expanded set.
+        combinations = new_combinations;
+    }
+
+    combinations
 }

@@ -3,8 +3,8 @@ source: crates/recipe-stage0/src/recipe.rs
 expression: recipe
 ---
 context:
-  version: 0.24.6
   name: xtensor
+  version: 0.24.6
 package:
   name: "${{ name|lower }}"
   version: "${{ version }}"

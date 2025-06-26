@@ -1,9 +1,8 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
-use chrono::Utc;
 use indexmap::IndexSet;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
@@ -11,19 +10,18 @@ use pixi_build_types::procedures::conda_metadata::CondaMetadataParams;
 use rattler_build::{
     hash::HashInfo,
     metadata::{
-        BuildConfiguration, Directories, Output, PackageIdentifier, PackagingSettings,
+        BuildConfiguration, Debug, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
     recipe::{
         Jinja, ParsingError, Recipe,
-        parser::{GlobVec, find_outputs_from_src},
+        parser::{BuildString, GlobVec, find_outputs_from_src},
         variable::Variable,
     },
     selectors::SelectorConfig,
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_build::{metadata::Debug, recipe::parser::BuildString};
 use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
@@ -47,6 +45,11 @@ pub struct RattlerBuild {
     pub selector_config: SelectorConfig,
     /// The directory where the build should happen.
     pub work_directory: PathBuf,
+}
+
+pub enum OneOrMultipleOutputs {
+    Single(String),
+    OneOfMany(String),
 }
 
 impl RattlerBuild {
@@ -213,8 +216,6 @@ impl RattlerBuild {
                 },
             );
 
-            let name = recipe.package().name().clone();
-
             outputs.push(Output {
                 recipe,
                 build_configuration: BuildConfiguration {
@@ -229,14 +230,15 @@ impl RattlerBuild {
                     },
                     hash,
                     variant: discovered_output.used_vars.clone(),
-                    directories: Directories::setup(
-                        name.as_normalized(),
+                    directories: output_directory(
+                        if discovered_outputs.len() == 1 {
+                            OneOrMultipleOutputs::Single(discovered_output.name.clone())
+                        } else {
+                            OneOrMultipleOutputs::OneOfMany(discovered_output.name.clone())
+                        },
+                        self.work_directory.clone(),
                         &self.recipe_source.path,
-                        &self.work_directory,
-                        true,
-                        &Utc::now(),
-                    )
-                    .into_diagnostic()?,
+                    ),
                     channels: channels.clone(),
                     channel_priority: Default::default(),
                     solve_strategy: Default::default(),
@@ -277,5 +279,56 @@ impl RattlerBuild {
             }
         };
         Ok(vpkgs)
+    }
+}
+
+/// Constructs a `Directories` which tells rattler-build where to place all the
+/// different build folders.
+///
+/// This tries to reduce the number of characters in the path to avoid being too
+/// long on Windows.
+fn output_directory(
+    output: OneOrMultipleOutputs,
+    work_dir: PathBuf,
+    recipe_path: &Path,
+) -> Directories {
+    let build_dir = match output {
+        OneOrMultipleOutputs::Single(_name) => work_dir,
+        OneOrMultipleOutputs::OneOfMany(name) => work_dir.join(name),
+    };
+
+    let cache_dir = build_dir.join("cache");
+    let recipe_dir = recipe_path
+        .parent()
+        .expect("a recipe *file* must always have a parent directory")
+        .to_path_buf();
+
+    let host_prefix = if cfg!(target_os = "windows") {
+        build_dir.join("host")
+    } else {
+        let placeholder_template = "_placehold";
+        let mut placeholder = String::new();
+        let placeholder_length: usize = 255;
+
+        while placeholder.len() < placeholder_length {
+            placeholder.push_str(placeholder_template);
+        }
+
+        let placeholder = placeholder
+            [0..placeholder_length - build_dir.join("host_env").as_os_str().len()]
+            .to_string();
+
+        build_dir.join(format!("host_env{}", placeholder))
+    };
+
+    Directories {
+        build_dir: build_dir.clone(),
+        build_prefix: build_dir.join("bld"),
+        cache_dir,
+        host_prefix,
+        work_dir: build_dir.join("work"),
+        recipe_dir,
+        recipe_path: recipe_path.to_path_buf(),
+        output_dir: build_dir,
     }
 }

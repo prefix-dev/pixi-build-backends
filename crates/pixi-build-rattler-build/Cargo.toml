@@ -1,6 +1,6 @@
 [package]
 name = "pixi-build-rattler-build"
-version = "0.1.13"
+version = "0.1.15"
 edition.workspace = true
 
 [dependencies]
@@ -16,6 +16,7 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 url = { workspace = true }
 pathdiff = { workspace = true }
+itertools = { workspace = true }
 
 pixi-build-backend = { workspace = true }
 

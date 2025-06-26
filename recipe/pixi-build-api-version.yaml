@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0"
+
+
+package:
+  name: "pixi-build-api-version"
+  version: ${{ version }}
+
+build:
+  noarch: generic
+
+about:
+  description: "This package is used to communicate capabilities between Pixi and the backends"

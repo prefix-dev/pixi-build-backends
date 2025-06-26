@@ -1,21 +1,23 @@
-use std::collections::HashMap;
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use fs_err::tokio as tokio_fs;
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     protocol::{Protocol, ProtocolInstantiator},
     tools::RattlerBuild,
     utils::TemporaryRenderedRecipe,
 };
-use pixi_build_types::procedures::conda_build::CondaOutputIdentifier;
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata,
+    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1,
     procedures::{
-        conda_build::{CondaBuildParams, CondaBuildResult, CondaBuiltPackage},
+        conda_build::{
+            CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
+        },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
@@ -31,7 +33,7 @@ use rattler_build::{
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
+use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
@@ -141,12 +143,13 @@ impl Protocol for RattlerBuildBackend {
 
         let mut solved_packages = vec![];
 
-        for output in outputs {
-            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
+        for output in &outputs {
+            let temp_recipe = TemporaryRenderedRecipe::from_output(output)?;
             let tool_config = &tool_config;
             let output = temp_recipe
                 .within_context_async(move || async move {
                     output
+                        .clone()
                         .resolve_dependencies(tool_config)
                         .await
                         .into_diagnostic()
@@ -170,18 +173,36 @@ impl Protocol for RattlerBuildBackend {
                 &jinja,
             );
 
+            let depends = finalized_deps.depends.iter().map(DependencyInfo::spec);
+
+            let sources = outputs
+                .iter()
+                .cartesian_product(depends.clone())
+                .filter_map(|(output, depend)| {
+                    if Some(output.name()) == depend.name.as_ref() {
+                        Some(output.name())
+                    } else {
+                        None
+                    }
+                })
+                .map(|name| {
+                    (
+                        name.as_source().to_string(),
+                        SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+                            // Our source dependency lives in the same recipe
+                            path: ".".to_string(),
+                        }),
+                    )
+                })
+                .collect();
+
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
                 version: output.version().clone(),
                 build: build_string.to_string(),
                 build_number: output.recipe.build.number,
                 subdir: output.build_configuration.target_platform,
-                depends: finalized_deps
-                    .depends
-                    .iter()
-                    .map(DependencyInfo::spec)
-                    .map(MatchSpec::to_string)
-                    .collect(),
+                depends: depends.map(MatchSpec::to_string).collect(),
                 constraints: finalized_deps
                     .constraints
                     .iter()
@@ -191,7 +212,7 @@ impl Protocol for RattlerBuildBackend {
                 license: output.recipe.about.license.map(|l| l.to_string()),
                 license_family: output.recipe.about.license_family,
                 noarch: output.recipe.build.noarch,
-                sources: HashMap::new(),
+                sources,
             };
             solved_packages.push(conda);
         }
@@ -271,8 +292,22 @@ impl Protocol for RattlerBuildBackend {
             params.work_directory.clone(),
         );
 
-        let discovered_outputs =
+        // Discover and filter the outputs.
+        let mut discovered_outputs =
             rattler_build_tool.discover_outputs(&params.variant_configuration)?;
+        if let Some(outputs) = &params.outputs {
+            discovered_outputs.retain(|output| {
+                let name = PackageName::from_str(&output.name)
+                    .map_or_else(|_| output.name.clone(), |n| n.as_normalized().to_string());
+                let id = CondaOutputIdentifier {
+                    name: Some(name),
+                    version: Some(output.version.clone()),
+                    build: output.recipe.build.string.clone().into(),
+                    subdir: Some(output.target_platform.to_string()),
+                };
+                outputs.contains(&id)
+            });
+        }
 
         let outputs = rattler_build_tool.get_outputs(
             &discovered_outputs,
@@ -298,19 +333,6 @@ impl Protocol for RattlerBuildBackend {
             .finish();
 
         for output in outputs {
-            if let Some(ids) = &params.outputs {
-                let id = CondaOutputIdentifier {
-                    name: Some(output.name().as_normalized().to_string()),
-                    version: Some(output.version().to_string()),
-                    build: output.recipe.build.string.clone().into(),
-                    subdir: Some(output.target_platform().to_string()),
-                };
-
-                if !ids.contains(&id) {
-                    continue;
-                }
-            }
-
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
 
             let tool_config = &tool_config;
@@ -355,6 +377,7 @@ impl Protocol for RattlerBuildBackend {
                     &self.manifest_root,
                     &self.recipe_source.path,
                     package_sources,
+                    self.config.extra_input_globs.clone(),
                 )?,
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
@@ -397,6 +420,7 @@ fn build_input_globs(
     manifest_root: &Path,
     source: &Path,
     package_sources: Option<Vec<PathBuf>>,
+    extra_globs: Vec<String>,
 ) -> miette::Result<Vec<String>> {
     // Get parent directory path
     let parent = if source.is_file() {
@@ -422,10 +446,14 @@ fn build_input_globs(
         }
     }
 
+    // Extend with extra input globs
+    input_globs.extend(extra_globs);
+
     Ok(input_globs)
 }
 
-/// Returns the input globs for conda_get_metadata, as used in the CondaMetadataResult.
+/// Returns the input globs for conda_get_metadata, as used in the
+/// CondaMetadataResult.
 fn get_metadata_input_globs(
     manifest_root: &Path,
     recipe_source_path: &Path,
@@ -706,6 +734,7 @@ mod tests {
     #[test]
     fn test_build_input_globs_with_tempdirs() {
         use std::fs;
+
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base
@@ -715,7 +744,7 @@ mod tests {
         // Case 1: source is a file in the base dir
         let recipe_path = base_path.join("recipe.yaml");
         fs::write(&recipe_path, "fake").unwrap();
-        let globs = super::build_input_globs(base_path, &recipe_path, None).unwrap();
+        let globs = super::build_input_globs(base_path, &recipe_path, None, Vec::new()).unwrap();
         assert_eq!(globs, vec!["*/**"]);
 
         // Case 2: source is a directory, with a file and a dir as package sources
@@ -728,6 +757,7 @@ mod tests {
             base_path,
             base_path,
             Some(vec![pkg_file.clone(), pkg_subdir.clone()]),
+            Vec::new(),
         )
         .unwrap();
         assert_eq!(globs, vec!["*/**", "pkg/file.txt", "pkg/dir/**"]);
@@ -736,6 +766,7 @@ mod tests {
     #[test]
     fn test_build_input_globs_two_folders_in_tempdir() {
         use std::fs;
+
         use tempfile::tempdir;
 
         // Create a temp directory
@@ -748,11 +779,13 @@ mod tests {
         fs::create_dir_all(&source_dir).unwrap();
         fs::create_dir_all(&package_source_dir).unwrap();
 
-        // Call build_input_globs with source_dir as source, and package_source_dir as package source
+        // Call build_input_globs with source_dir as source, and package_source_dir as
+        // package source
         let globs = super::build_input_globs(
             temp_path,
             &source_dir,
             Some(vec![package_source_dir.clone()]),
+            Vec::new(),
         )
         .unwrap();
         assert_eq!(globs, vec!["source/**", "pkgsrc/**"]);
@@ -760,8 +793,8 @@ mod tests {
 
     #[test]
     fn test_build_input_globs_relative_source() {
-        use std::fs;
-        use std::path::PathBuf;
+        use std::{fs, path::PathBuf};
+
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base
@@ -773,9 +806,15 @@ mod tests {
         let abs_rel_dir = base_path.join(&rel_dir);
         fs::create_dir_all(&abs_rel_dir).unwrap();
 
-        // Call build_input_globs with base_path as source, and rel_dir as package source (relative)
-        let globs =
-            super::build_input_globs(base_path, base_path, Some(vec![rel_dir.clone()])).unwrap();
+        // Call build_input_globs with base_path as source, and rel_dir as package
+        // source (relative)
+        let globs = super::build_input_globs(
+            base_path,
+            base_path,
+            Some(vec![rel_dir.clone()]),
+            Vec::new(),
+        )
+        .unwrap();
         // The relative path from base_path to rel_dir should be "rel_folder/**"
         assert_eq!(globs, vec!["*/**", "rel_folder/**"]);
     }
@@ -803,5 +842,31 @@ mod tests {
         let path = PathBuf::from("/foo/bar/recipe.yaml");
         let globs = super::get_metadata_input_globs(&manifest_root, &path).unwrap();
         assert_eq!(globs, vec!["bar/recipe.yaml"]);
+    }
+
+    #[test]
+    fn test_build_input_globs_includes_extra_globs() {
+        use tempfile::tempdir;
+        use std::fs;
+
+        // Create a temp directory to act as the base
+        let base_dir = tempdir().unwrap();
+        let base_path = base_dir.path();
+
+        // Create a recipe file
+        let recipe_path = base_path.join("recipe.yaml");
+        fs::write(&recipe_path, "fake").unwrap();
+
+        // Test with extra globs
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let globs = super::build_input_globs(base_path, &recipe_path, None, extra_globs.clone()).unwrap();
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(globs.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+        }
+
+        // Verify that the basic manifest glob is still present
+        assert!(globs.contains(&"*/**".to_string()));
     }
 }

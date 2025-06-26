@@ -38,7 +38,7 @@ use crate::{
     config::CMakeBackendConfig,
 };
 
-fn input_globs() -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
     [
         // Source files
         "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
@@ -48,6 +48,7 @@ fn input_globs() -> Vec<String> {
     ]
     .iter()
     .map(|s| s.to_string())
+    .chain(extra_globs)
     .collect()
 }
 
@@ -365,7 +366,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                input_globs: input_globs(),
+                input_globs: input_globs(self.config.extra_input_globs.clone()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -434,5 +435,30 @@ fn default_capabilities() -> BackendCapabilities {
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_globs_includes_extra_globs() {
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let result = input_globs(extra_globs.clone());
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(
+                result.contains(extra_glob),
+                "Result should contain extra glob: {}",
+                extra_glob
+            );
+        }
+
+        // Verify that default globs are still present
+        assert!(result.contains(&"**/*.{c,cc,cxx,cpp,h,hpp,hxx}".to_string()));
+        assert!(result.contains(&"**/*.{cmake,cmake.in}".to_string()));
+        assert!(result.contains(&"**/CMakeFiles.txt".to_string()));
     }
 }

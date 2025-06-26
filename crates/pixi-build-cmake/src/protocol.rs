@@ -1,13 +1,15 @@
 use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
 };
-use std::collections::BTreeSet;
+
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec,
     common::{build_configuration, compute_variants},
+    dependencies::{convert_binary_dependencies, convert_dependencies},
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
@@ -18,17 +20,22 @@ use pixi_build_types::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        conda_outputs::{
+            CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams, CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
 use rattler_build::{
+    NormalizedKey,
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
     recipe::{Jinja, parser::BuildString, variable::Variable},
     render::resolved_dependencies::DependencyInfo,
+    selectors::SelectorConfig,
     tool_configuration::Configuration,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
@@ -111,16 +118,8 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         .context("failed to setup build directories")?;
 
         // Create a variant config from the variant configuration in the parameters.
-        let input_variant_configuration = params.variant_configuration.map(|v| {
-            v.into_iter()
-                .map(|(k, v)| {
-                    (
-                        k.into(),
-                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                    )
-                })
-                .collect()
-        });
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
         let variant_combinations = compute_variants(
             &self.project_model,
             input_variant_configuration,
@@ -215,6 +214,87 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         })
     }
 
+    async fn conda_outputs(
+        &self,
+        params: CondaOutputsParams,
+    ) -> miette::Result<CondaOutputsResult> {
+        // Create a variant config from the variant configuration in the parameters.
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
+        let variant_combinations = compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            params.host_platform,
+        )?;
+
+        // Construct the different outputs
+        let target_platform = params.host_platform;
+        let mut outputs = Vec::new();
+        for variant in variant_combinations {
+            // TODO: Determine how and if we can determine this from the manifest.
+            let (recipe, sources) = self.recipe(params.host_platform, &variant)?;
+            let hash = HashInfo::from_variant(&variant, recipe.build().noarch());
+
+            // Construct selectors based on the target platform and variant
+            let selector_config = SelectorConfig {
+                target_platform,
+                host_platform: params.host_platform,
+                build_platform: Platform::current(),
+                variant: variant.clone(),
+                hash: Some(hash.clone()),
+                experimental: false,
+                allow_undefined: false,
+            };
+
+            // Determine the build string
+            let jinja = Jinja::new(selector_config.clone()).with_context(&recipe.context);
+            let build_number = recipe.build().number;
+            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
+
+            outputs.push(CondaOutputMetadata {
+                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package.version().clone(),
+                    build: build_string.to_string(),
+                    build_number,
+                    subdir: target_platform,
+                    license: recipe.about.license.map(|l| l.to_string()),
+                    license_family: recipe.about.license_family,
+                    noarch: recipe.build.noarch,
+                    purls: None,
+                },
+                build_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(recipe.requirements.build, &sources.build)?,
+                    constraints: Vec::new(),
+                }),
+                host_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(recipe.requirements.host, &sources.host)?,
+                    constraints: Vec::new(),
+                }),
+                run_dependencies: CondaOutputDependencies {
+                    depends: convert_dependencies(recipe.requirements.run, &sources.run)?,
+                    constraints: convert_binary_dependencies(recipe.requirements.run_constraints)?,
+                },
+
+                // TODO: Read from configuration
+                ignore_run_exports: Default::default(),
+
+                // TODO: Setup sane defaults
+                run_exports: Default::default(),
+
+                // The input globs are the same for all outputs
+                input_globs: None,
+
+                cache: None,
+            });
+        }
+
+        Ok(CondaOutputsResult {
+            outputs,
+            input_globs: None,
+        })
+    }
+
     async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
@@ -242,16 +322,8 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         .context("failed to setup build directories")?;
 
         // Recompute all the variant combinations
-        let input_variant_configuration = params.variant_configuration.map(|v| {
-            v.into_iter()
-                .map(|(k, v)| {
-                    (
-                        k.into(),
-                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                    )
-                })
-                .collect()
-        });
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
         let variant_combinations = compute_variants(
             &self.project_model,
             input_variant_configuration,
@@ -377,6 +449,22 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
         Ok(CondaBuildResult { packages })
     }
+}
+
+fn convert_input_variant_configuration(
+    variants: Option<HashMap<String, Vec<String>>>,
+) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
+    let input_variant_configuration = variants.map(|v| {
+        v.into_iter()
+            .map(|(k, v)| {
+                (
+                    k.into(),
+                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                )
+            })
+            .collect()
+    });
+    input_variant_configuration
 }
 
 #[async_trait::async_trait]

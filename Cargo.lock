@@ -3846,6 +3846,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tempfile",
+ "thiserror 2.0.12",
  "tokio",
  "toml_edit",
  "tracing-subscriber",
@@ -3983,7 +3984,6 @@ dependencies = [
 name = "pixi_build_types"
 version = "0.1.0"
 dependencies = [
- "clap",
  "ordermap",
  "rattler_conda_types",
  "rattler_digest",

@@ -32,6 +32,7 @@ url = { workspace = true }
 pyproject-toml = { workspace = true }
 dirs = { workspace = true }
 pathdiff = { workspace = true }
+thiserror = { workspace = true }
 
 pixi_build_types = { workspace = true }
 pixi_consts = { workspace = true }

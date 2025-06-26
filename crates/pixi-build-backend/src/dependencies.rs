@@ -3,13 +3,14 @@ use std::{
     str::FromStr,
 };
 
-use miette::{Context, IntoDiagnostic};
+use miette::{Context, Diagnostic, IntoDiagnostic};
 use pixi_build_types as pbt;
 use rattler_build::{
     NormalizedKey,
     recipe::{parser::Dependency, variable::Variable},
 };
 use rattler_conda_types::{MatchSpec, NamelessMatchSpec, PackageName, ParseStrictness::Strict};
+use thiserror::Error;
 
 use crate::traits::PackageSpec;
 
@@ -110,4 +111,91 @@ impl<T: PackageSpec> ExtractedDependencies<T> {
             sources: extracted_specs.sources,
         })
     }
+}
+
+#[derive(Debug, Error, Diagnostic)]
+pub enum ConvertDependencyError {
+    #[error("only matchspecs with define package names are supported")]
+    MissingName,
+}
+
+fn convert_nameless_matchspec(spec: NamelessMatchSpec) -> pbt::BinaryPackageSpecV1 {
+    pbt::BinaryPackageSpecV1 {
+        version: spec.version,
+        build: spec.build,
+        build_number: spec.build_number,
+        file_name: spec.file_name,
+        channel: spec.channel.map(|c| c.base_url.clone().into()),
+        subdir: spec.subdir,
+        md5: spec.md5,
+        sha256: spec.sha256,
+        url: spec.url,
+        license: spec.license,
+    }
+}
+
+fn convert_dependency(
+    dependency: Dependency,
+    sources: &HashMap<String, pbt::SourcePackageSpecV1>,
+) -> Result<pbt::NamedSpecV1<pbt::PackageSpecV1>, ConvertDependencyError> {
+    let match_spec = match dependency {
+        Dependency::Spec(spec) => spec,
+        _ => todo!("Handle other dependency types"),
+    };
+
+    let (Some(name), spec) = match_spec.into_nameless() else {
+        return Err(ConvertDependencyError::MissingName);
+    };
+
+    if let Some(source) = sources
+        .get(name.as_source())
+        .or_else(|| sources.get(name.as_normalized()))
+    {
+        Ok(pbt::NamedSpecV1 {
+            name: name.as_source().to_owned(),
+            spec: pbt::PackageSpecV1::Source(source.clone()),
+        })
+    } else {
+        Ok(pbt::NamedSpecV1 {
+            name: name.as_source().to_owned(),
+            spec: pbt::PackageSpecV1::Binary(Box::new(convert_nameless_matchspec(spec))),
+        })
+    }
+}
+
+fn convert_binary_dependency(
+    dependency: Dependency,
+) -> Result<(pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>), ConvertDependencyError> {
+    let match_spec = match dependency {
+        Dependency::Spec(spec) => spec,
+        _ => todo!("Handle other dependency types"),
+    };
+
+    let (Some(name), spec) = match_spec.into_nameless() else {
+        return Err(ConvertDependencyError::MissingName);
+    };
+
+    Ok(pbt::NamedSpecV1 {
+        name: name.as_source().to_owned(),
+        spec: convert_nameless_matchspec(spec),
+    })
+}
+
+pub fn convert_dependencies(
+    dependencies: Vec<Dependency>,
+    sources: &HashMap<String, pbt::SourcePackageSpecV1>,
+) -> Result<Vec<pbt::NamedSpecV1<pbt::PackageSpecV1>>, ConvertDependencyError> {
+    dependencies
+        .into_iter()
+        .map(|spec| convert_dependency(spec, sources))
+        .collect()
+}
+
+pub fn convert_binary_dependencies(
+    dependencies: Vec<Dependency>,
+) -> Result<Vec<pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>>, ConvertDependencyError> {
+    dependencies
+        .into_iter()
+        .map(convert_binary_dependency)
+        .collect()
 }

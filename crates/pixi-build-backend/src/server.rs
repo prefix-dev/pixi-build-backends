@@ -8,7 +8,7 @@ use pixi_build_types::procedures::{
     self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
     initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
 };
-
+use pixi_build_types::procedures::conda_outputs::CondaOutputsParams;
 use tokio::sync::RwLock;
 
 use crate::protocol::{Protocol, ProtocolInstantiator};
@@ -128,6 +128,31 @@ impl<T: ProtocolInstantiator> Server<T> {
             },
         );
 
+        let conda_outputs = state.clone();
+        io.add_method(
+            procedures::conda_outputs::METHOD_NAME,
+            move |params: Params| {
+                let state = conda_outputs.clone();
+
+                async move {
+                    let params: CondaOutputsParams = params.parse()?;
+                    let state = state.read().await;
+                    let endpoint = state.as_endpoint()?;
+
+                    let debug_dir = endpoint.debug_dir();
+                    log_conda_outputs(debug_dir, &params)
+                        .await
+                        .map_err(convert_error)?;
+
+                    endpoint
+                        .conda_outputs(params)
+                        .await
+                        .map(|value| to_value(value).expect("failed to convert to json"))
+                        .map_err(convert_error)
+                }
+            },
+        );
+
         let conda_build = state.clone();
         io.add_method(
             procedures::conda_build::METHOD_NAME,
@@ -214,6 +239,31 @@ async fn log_conda_get_metadata(
         .context("failed to create data directory")?;
 
     let path = debug_dir.join("conda_metadata_params.json");
+    tokio_fs::write(&path, json)
+        .await
+        .into_diagnostic()
+        .context("failed to write JSON to file")?;
+    Ok(())
+}
+
+async fn log_conda_outputs(
+    debug_dir: Option<&Path>,
+    params: &CondaOutputsParams,
+) -> miette::Result<()> {
+    let Some(debug_dir) = debug_dir else {
+        return Ok(());
+    };
+
+    let json = serde_json::to_string_pretty(&params)
+        .into_diagnostic()
+        .context("failed to serialize parameters to JSON")?;
+
+    tokio_fs::create_dir_all(&debug_dir)
+        .await
+        .into_diagnostic()
+        .context("failed to create data directory")?;
+
+    let path = debug_dir.join("conda_outputs.json");
     tokio_fs::write(&path, json)
         .await
         .into_diagnostic()

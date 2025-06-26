@@ -6,6 +6,7 @@ use pixi_build_types::procedures::{
     initialize::{InitializeParams, InitializeResult},
     negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
 };
+use pixi_build_types::procedures::conda_outputs::{CondaOutputsParams, CondaOutputsResult};
 
 /// A trait that is used to instantiate a new protocol connection
 /// and endpoint that can handle the RPC calls.
@@ -49,5 +50,10 @@ pub trait Protocol {
     /// Called when the client requests to build a Conda package.
     async fn conda_build(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         unimplemented!("conda_build not implemented");
+    }
+
+    /// Called when the client requests outputs for a Conda package.
+    async fn conda_outputs(&self, _params: CondaOutputsParams) -> miette::Result<CondaOutputsResult> {
+        unimplemented!("conda_outputs not implemented");
     }
 }

@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-
+use std::collections::BTreeSet;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec, ProjectModel,
@@ -375,7 +375,7 @@ impl<P: ProjectModel + Sync> Protocol for PythonBuildBackend<P> {
 /// has a different way of determining the input globs than hatch etc.
 ///
 /// However, lets take everything in the directory as input for now
-fn input_globs(editable: bool, extra_globs: Vec<String>) -> Vec<String> {
+fn input_globs(editable: bool, extra_globs: Vec<String>) -> BTreeSet<String> {
     let base_globs = Vec::from([
         // Source files
         "**/*.c",

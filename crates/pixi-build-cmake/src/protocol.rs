@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-
+use std::collections::BTreeSet;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec,
@@ -38,7 +38,7 @@ use crate::{
     config::CMakeBackendConfig,
 };
 
-fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> BTreeSet<String> {
     [
         // Source files
         "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",

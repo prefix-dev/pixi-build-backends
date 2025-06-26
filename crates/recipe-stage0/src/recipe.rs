@@ -1,11 +1,10 @@
-use indexmap::IndexMap;
 use pixi_build_types::{PackageSpecV1, ProjectModelV1, TargetsV1};
 use rattler_conda_types::{MatchSpec, Version};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::path::PathBuf;
 use std::str::FromStr;
-
+use ordermap::OrderMap;
 use pixi_build_types::TargetV1;
 
 use crate::matchspec::SerializableMatchSpec;
@@ -246,7 +245,7 @@ pub type ConditionalList<T> = Vec<Item<T>>;
 // Main recipe structure
 #[derive(Serialize, Deserialize, Default)]
 pub struct IntermediateRecipe {
-    pub context: IndexMap<String, Value<String>>,
+    pub context: OrderMap<String, Value<String>>,
     pub package: Package,
     pub source: ConditionalList<Source>,
     pub build: Build,
@@ -296,7 +295,7 @@ impl IntermediateRecipe {
 }
 
 pub(crate) fn package_specs_to_match_spec(
-    specs: IndexMap<String, PackageSpecV1>,
+    specs: OrderMap<String, PackageSpecV1>,
 ) -> Vec<MatchSpec> {
     specs
         .into_iter()
@@ -635,7 +634,7 @@ mod tests {
     #[test]
     fn test_recipe_to_yaml() {
         // Create a simple recipe
-        let mut context = IndexMap::new();
+        let mut context = OrderMap::new();
         context.insert("name".to_string(), Value::Concrete("xtensor".to_string()));
         context.insert("version".to_string(), Value::Concrete("0.24.6".to_string()));
 

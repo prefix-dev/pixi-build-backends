@@ -9,7 +9,6 @@ use crate::matchspec::PackageDependency;
 /// A package spec dependency represent dependencies for a specific target.
 #[derive(Debug, Clone)]
 pub struct PackageSpecDependencies<T> {
-    // /// Dependencies for this target.
     pub build: IndexMap<PackageName, T>,
     pub host: IndexMap<PackageName, T>,
     pub run: IndexMap<PackageName, T>,

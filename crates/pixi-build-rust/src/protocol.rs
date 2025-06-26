@@ -356,7 +356,7 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
                 .await?;
             let built_package = CondaBuiltPackage {
                 output_file: package,
-                input_globs: input_globs(),
+                input_globs: input_globs(self.config.extra_input_globs.clone()),
                 name: output.name().as_normalized().to_string(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
@@ -374,7 +374,7 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
 /// has a different way of determining the input globs than hatch etc.
 ///
 /// However, lets take everything in the directory as input for now
-fn input_globs() -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
     [
         "**/*.rs",
         // Cargo configuration files
@@ -385,6 +385,7 @@ fn input_globs() -> Vec<String> {
     ]
     .iter()
     .map(|s| s.to_string())
+    .chain(extra_globs)
     .collect()
 }
 
@@ -457,5 +458,27 @@ fn default_capabilities() -> BackendCapabilities {
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_globs_includes_extra_globs() {
+        let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
+        let result = input_globs(extra_globs.clone());
+
+        // Verify that all extra globs are included in the result
+        for extra_glob in &extra_globs {
+            assert!(result.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+        }
+
+        // Verify that default globs are still present
+        assert!(result.contains(&"**/*.rs".to_string()));
+        assert!(result.contains(&"Cargo.toml".to_string()));
+        assert!(result.contains(&"Cargo.lock".to_string()));
+        assert!(result.contains(&"build.rs".to_string()));
     }
 }

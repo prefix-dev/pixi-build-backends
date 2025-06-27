@@ -1687,7 +1687,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "976dd42dc7e85965fe702eb8164f21f450704bdde31faefd6471dba214cb594e"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1714,6 +1714,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "console",
 ]
@@ -2986,7 +2987,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if 1.0.0",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -3833,7 +3834,7 @@ dependencies = [
  "pathdiff",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts 0.1.0",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
@@ -3902,7 +3903,7 @@ dependencies = [
  "pixi-build-backend",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts 0.1.0",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
@@ -3974,6 +3975,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "itertools 0.14.0",
  "ordermap",
@@ -3986,6 +3988,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -3999,6 +4002,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "clap",
  "console",
@@ -4006,7 +4010,7 @@ dependencies = [
  "fs-err",
  "itertools 0.14.0",
  "miette",
- "pixi_consts 0.1.0",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "rattler",
  "rattler_conda_types",
  "rattler_networking",
@@ -4052,6 +4056,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4073,6 +4078,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4092,6 +4098,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "chrono",
  "console",
@@ -4106,7 +4113,7 @@ dependencies = [
  "pathdiff",
  "pep440_rs",
  "pep508_rs",
- "pixi_consts 0.1.0",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_pypi_spec",
  "pixi_spec",
  "pixi_spec_containers",
@@ -4131,6 +4138,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4150,6 +4158,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "dirs",
  "file_url",
@@ -4172,6 +4181,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
@@ -4183,6 +4193,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "digest",
  "hex",
@@ -4197,6 +4208,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "async-fd-lock",
  "fs-err",
@@ -4204,8 +4216,8 @@ dependencies = [
  "itertools 0.14.0",
  "miette",
  "pep508_rs",
- "pixi_config 0.1.0",
- "pixi_consts 0.1.0",
+ "pixi_config 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "rattler_conda_types",
  "rattler_networking",
  "reqwest",
@@ -4420,7 +4432,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5420,7 +5432,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5433,7 +5445,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6199,7 +6211,7 @@ dependencies = [
  "getrandom 0.3.2",
  "once_cell",
  "rustix 1.0.7",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7012,7 +7024,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

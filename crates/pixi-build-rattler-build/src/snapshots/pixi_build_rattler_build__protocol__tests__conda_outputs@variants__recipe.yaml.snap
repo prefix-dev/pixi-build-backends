@@ -1,0 +1,93 @@
+---
+source: crates/pixi-build-rattler-build/src/protocol.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+input_file: tests/recipe/variants/recipe.yaml
+---
+{
+  "outputs": [
+    {
+      "identifier": {
+        "name": "foobar",
+        "version": "1.0.0",
+        "build": "py38h0891c58_0",
+        "buildNumber": 0,
+        "subdir": "linux-64",
+        "noarch": false
+      },
+      "hostDependencies": {
+        "depends": [
+          {
+            "name": "python",
+            "binary": {
+              "version": "3.8.*"
+            }
+          }
+        ]
+      },
+      "runDependencies": {
+        "depends": [
+          {
+            "name": "python"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": {
+        "name": "foobar",
+        "version": "1.0.0",
+        "build": "py39h2e92cda_0",
+        "buildNumber": 0,
+        "subdir": "linux-64",
+        "noarch": false
+      },
+      "hostDependencies": {
+        "depends": [
+          {
+            "name": "python",
+            "binary": {
+              "version": "3.9.*"
+            }
+          }
+        ]
+      },
+      "runDependencies": {
+        "depends": [
+          {
+            "name": "python"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": {
+        "name": "foobar",
+        "version": "1.0.0",
+        "build": "py310h8e7c8fa_0",
+        "buildNumber": 0,
+        "subdir": "linux-64",
+        "noarch": false
+      },
+      "hostDependencies": {
+        "depends": [
+          {
+            "name": "python",
+            "binary": {
+              "version": "3.10.*"
+            }
+          }
+        ]
+      },
+      "runDependencies": {
+        "depends": [
+          {
+            "name": "python"
+          }
+        ]
+      }
+    }
+  ],
+  "inputGlobs": [
+    "variants.yaml"
+  ]
+}

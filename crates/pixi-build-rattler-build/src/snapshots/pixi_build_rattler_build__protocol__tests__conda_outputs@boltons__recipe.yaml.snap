@@ -1,0 +1,43 @@
+---
+source: crates/pixi-build-rattler-build/src/protocol.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+input_file: tests/recipe/boltons/recipe.yaml
+---
+{
+  "outputs": [
+    {
+      "identifier": {
+        "name": "boltons-with-extra",
+        "version": "23.0.0",
+        "build": "pyh4616a5c_0",
+        "buildNumber": 0,
+        "subdir": "noarch",
+        "license": "BSD-3-Clause",
+        "noarch": "python"
+      },
+      "hostDependencies": {
+        "depends": [
+          {
+            "name": "python"
+          },
+          {
+            "name": "pip"
+          },
+          {
+            "name": "setuptools"
+          }
+        ]
+      },
+      "runDependencies": {
+        "depends": [
+          {
+            "name": "pip"
+          }
+        ]
+      }
+    }
+  ],
+  "inputGlobs": [
+    "variants.yaml"
+  ]
+}

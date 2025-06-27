@@ -11,6 +11,7 @@ chrono = "0.4.39"
 clap = "4.5.29"
 clap-verbosity-flag = "3.0.2"
 fs-err = "3.1.0"
+insta = "1.43.1"
 indexmap = "2.7.1"
 ordermap = "0.5.7"
 itertools = "0.14.0"
@@ -19,8 +20,8 @@ miette = "7.5.0"
 minijinja = "2.7.0"
 parking_lot = "0.12.3"
 reqwest = { version = "0.12.12", default-features = false, features = [
-  "rustls-tls",
-  "rustls-tls-native-roots",
+    "rustls-tls",
+    "rustls-tls-native-roots",
 ] }
 reqwest-middleware = "0.4.0"
 rstest = "0.25.0"
@@ -42,7 +43,7 @@ jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
 rattler-build = { version = "*", default-features = false, features = [
-  "rustls-tls",
+    "rustls-tls",
 ] }
 
 

@@ -2708,12 +2708,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "154934ea70c58054b556dd430b99a98c2a7ff5309ac9891597e339b5c28f4371"
 dependencies = [
  "console",
+ "globset",
  "once_cell",
  "pest",
  "pest_derive",
  "regex",
  "serde",
  "similar",
+ "walkdir",
 ]
 
 [[package]]
@@ -3926,6 +3928,7 @@ version = "0.1.15"
 dependencies = [
  "async-trait",
  "fs-err",
+ "insta",
  "itertools 0.14.0",
  "miette",
  "pathdiff",

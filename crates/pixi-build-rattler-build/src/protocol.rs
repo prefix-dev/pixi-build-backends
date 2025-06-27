@@ -1,24 +1,23 @@
-use std::{
-    collections::{BTreeSet, HashMap},
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-
 use fs_err::tokio as tokio_fs;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
+    dependencies::{convert_binary_dependencies, convert_dependencies},
     protocol::{Protocol, ProtocolInstantiator},
-    tools::RattlerBuild,
+    tools::{LoadedVariantConfig, RattlerBuild},
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1,
+    BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        conda_outputs::{
+            CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
+            CondaOutputRunExports, CondaOutputsParams, CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
@@ -27,14 +26,24 @@ use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::PlatformWithVirtualPackages,
-    recipe::{Jinja, parser::BuildString},
+    metadata::{PackageIdentifier, PlatformWithVirtualPackages},
+    recipe::{
+        Jinja, ParsingError, Recipe,
+        parser::{BuildString, find_outputs_from_src},
+    },
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
+    variant_config::ParseErrors,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
+use std::collections::BTreeMap;
+use std::{
+    collections::{BTreeSet, HashMap},
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use url::Url;
 
 use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
@@ -225,6 +234,198 @@ impl Protocol for RattlerBuildBackend {
         Ok(CondaMetadataResult {
             packages: solved_packages,
             input_globs,
+        })
+    }
+
+    async fn conda_outputs(
+        &self,
+        params: CondaOutputsParams,
+    ) -> miette::Result<CondaOutputsResult> {
+        let build_platform = Platform::current();
+
+        // Determine the variant configuration to use. This loads the variant
+        // configuration from disk as well as including the variants from the input
+        // parameters.
+        let selector_config = SelectorConfig {
+            target_platform: params.host_platform,
+            host_platform: params.host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: true,
+            allow_undefined: false,
+        };
+        let variant_config = LoadedVariantConfig::from_recipe_path(
+            &self.source_dir,
+            &self.recipe_source.path,
+            &selector_config,
+        )
+        .into_diagnostic()?
+        .extend_with_input_variants(params.variant_configuration.unwrap_or_default());
+
+        // Find all outputs from the recipe
+        let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
+        let discovered_outputs = variant_config
+            .variant_config
+            .find_variants(&output_nodes, self.recipe_source.clone(), &selector_config)
+            .into_diagnostic()?;
+
+        // Construct a mapping that for packages that we want from source.
+        //
+        // By default, this includes all the outputs in the recipe. These should all be
+        // build from source, in particular from the current source.
+        let sources = discovered_outputs
+            .iter()
+            .map(|output| {
+                (
+                    output.name.clone(),
+                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
+                )
+            })
+            .collect();
+
+        let mut subpackages = HashMap::new();
+        let mut outputs = Vec::new();
+        for discovered_output in discovered_outputs {
+            let variant = discovered_output.used_vars;
+            let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
+
+            let selector_config = SelectorConfig {
+                variant: variant.clone(),
+                hash: Some(hash.clone()),
+                target_platform: discovered_output.target_platform,
+                host_platform: params.host_platform,
+                build_platform,
+                experimental: false,
+                allow_undefined: false,
+            };
+
+            let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
+                .map_err(|err| {
+                    let errs: ParseErrors<_> = err
+                        .into_iter()
+                        .map(|err| ParsingError::from_partial(self.recipe_source.clone(), err))
+                        .collect::<Vec<_>>()
+                        .into();
+                    errs
+                })?;
+
+            if recipe.build().skip() {
+                continue;
+            }
+
+            let jinja = Jinja::new(selector_config);
+            let build_number = recipe.build().number;
+            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
+
+            subpackages.insert(
+                recipe.package().name().clone(),
+                PackageIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package().version().version().clone().into(),
+                    build_string: build_string.to_string(),
+                },
+            );
+
+            outputs.push(CondaOutputMetadata {
+                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package.version().clone(),
+                    build: build_string.to_string(),
+                    build_number,
+                    subdir: discovered_output.target_platform,
+                    license: recipe.about.license.map(|l| l.to_string()),
+                    license_family: recipe.about.license_family,
+                    noarch: recipe.build.noarch,
+                    purls: None,
+                },
+                build_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.build,
+                        &variant,
+                        &subpackages,
+                        &sources,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                host_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.host,
+                        &variant,
+                        &subpackages,
+                        &sources,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                run_dependencies: CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.run,
+                        &BTreeMap::default(), // Variants are not applied to run dependencies
+                        &subpackages,
+                        &sources,
+                    )?,
+                    constraints: convert_binary_dependencies(
+                        recipe.requirements.run_constraints,
+                        &BTreeMap::default(), // Variants are not applied to run constraints
+                        &subpackages,
+                    )?,
+                },
+                ignore_run_exports: CondaOutputIgnoreRunExports {
+                    by_name: recipe
+                        .requirements
+                        .ignore_run_exports
+                        .by_name
+                        .into_iter()
+                        .collect(),
+                    from_package: recipe
+                        .requirements
+                        .ignore_run_exports
+                        .from_package
+                        .into_iter()
+                        .collect(),
+                },
+                run_exports: CondaOutputRunExports {
+                    weak: convert_dependencies(
+                        recipe.requirements.run_exports.weak,
+                        &variant,
+                        &subpackages,
+                        &sources,
+                    )?,
+                    strong: convert_dependencies(
+                        recipe.requirements.run_exports.strong,
+                        &variant,
+                        &subpackages,
+                        &sources,
+                    )?,
+                    noarch: convert_dependencies(
+                        recipe.requirements.run_exports.noarch,
+                        &variant,
+                        &subpackages,
+                        &sources,
+                    )?,
+                    weak_constrains: convert_binary_dependencies(
+                        recipe.requirements.run_exports.weak_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                    strong_constrains: convert_binary_dependencies(
+                        recipe.requirements.run_exports.strong_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                },
+
+                // TODO: Properly implement cache!
+                cache: None,
+
+                // The input globs are the same for all outputs
+                input_globs: None,
+            });
+        }
+
+        Ok(CondaOutputsResult {
+            outputs,
+            input_globs: Some(variant_config.input_globs),
         })
     }
 
@@ -487,6 +688,7 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         };
 
         let instance = RattlerBuildBackend::new(
+            params.source_dir,
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
@@ -509,6 +711,7 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
+        provides_conda_outputs: Some(false),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
@@ -530,6 +733,7 @@ mod tests {
         },
     };
     use rattler_build::console_utils::LoggingOutputHandler;
+    use serde_json::Value;
     use tempfile::tempdir;
     use url::Url;
 
@@ -572,11 +776,77 @@ mod tests {
         assert_eq!(result.packages.len(), 1);
     }
 
+    #[test]
+    fn test_conda_outputs() {
+        insta::glob!("../../../tests/recipe", "*/recipe.yaml", |recipe_path| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap();
+            runtime.block_on(async move {
+                let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+                    .initialize(InitializeParams {
+                        source_dir: None,
+                        manifest_path: recipe_path.to_path_buf(),
+                        project_model: None,
+                        configuration: None,
+                        cache_directory: None,
+                    })
+                    .await
+                    .unwrap();
+
+                let current_dir = std::env::current_dir().unwrap();
+
+                let result = factory
+                    .0
+                    .conda_outputs(CondaOutputsParams {
+                        host_platform: Platform::Linux64,
+                        variant_configuration: None,
+                        work_directory: current_dir,
+                    })
+                    .await
+                    .unwrap();
+
+                let mut value = serde_json::to_value(result).unwrap();
+                remove_empty_values(&mut value);
+                insta::assert_snapshot!(serde_json::to_string_pretty(&value).unwrap());
+            });
+        });
+    }
+
+    /// A utility function to remove empty values from a JSON object.
+
+    fn remove_empty_values(value: &mut Value) {
+        fn keep_value(value: &Value) -> bool {
+            match value {
+                Value::Object(map) => !map.is_empty(),
+                Value::Array(arr) => !arr.is_empty(),
+                Value::Null => false,
+                _ => true,
+            }
+        }
+
+        match value {
+            Value::Object(map) => {
+                map.retain(|_, v| {
+                    remove_empty_values(v);
+                    keep_value(v)
+                });
+            }
+            Value::Array(arr) => {
+                arr.retain_mut(|v| {
+                    remove_empty_values(v);
+                    keep_value(v)
+                });
+            }
+            _ => {}
+        }
+    }
+
     #[tokio::test]
     async fn test_conda_build() {
         // get cargo manifest dir
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
+        let recipe = manifest_dir.join("../../tests/recipe");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -621,6 +891,7 @@ mod tests {
         manifest_path: impl AsRef<Path>,
     ) -> miette::Result<RattlerBuildBackend> {
         RattlerBuildBackend::new(
+            None,
             manifest_path.as_ref(),
             LoggingOutputHandler::default(),
             None,

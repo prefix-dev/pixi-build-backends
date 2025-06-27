@@ -1,20 +1,17 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
 };
 
-use crate::{
-    cmake::{CMakeBuildBackend, construct_configuration},
-    config::CMakeBackendConfig,
-};
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::dependencies::convert_input_variant_configuration;
 use pixi_build_backend::{
     PackageSourceSpec,
     common::{build_configuration, compute_variants},
-    dependencies::{convert_binary_dependencies, convert_dependencies},
+    dependencies::{
+        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+    },
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
@@ -32,6 +29,7 @@ use pixi_build_types::{
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
+use rattler_build::metadata::PackageIdentifier;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -43,6 +41,11 @@ use rattler_build::{
     tool_configuration::Configuration,
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
+
+use crate::{
+    cmake::{CMakeBuildBackend, construct_configuration},
+    config::CMakeBackendConfig,
+};
 
 fn input_globs(extra_globs: Vec<String>) -> BTreeSet<String> {
     [
@@ -227,6 +230,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         )?;
 
         // Construct the different outputs
+        let mut subpackages = HashMap::new();
         let mut outputs = Vec::new();
         for variant in variant_combinations {
             // TODO: Determine how and if we can determine this from the manifest.
@@ -256,6 +260,15 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
             let build_number = recipe.build().number;
             let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
 
+            subpackages.insert(
+                recipe.package().name().clone(),
+                PackageIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package().version().version().clone().into(),
+                    build_string: build_string.to_string(),
+                },
+            );
+
             outputs.push(CondaOutputMetadata {
                 identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
                     name: recipe.package().name().clone(),
@@ -269,16 +282,35 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                     purls: None,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
-                    depends: convert_dependencies(recipe.requirements.build, &sources.build)?,
+                    depends: convert_dependencies(
+                        recipe.requirements.build,
+                        &variant,
+                        &subpackages,
+                        &sources.build,
+                    )?,
                     constraints: Vec::new(),
                 }),
                 host_dependencies: Some(CondaOutputDependencies {
-                    depends: convert_dependencies(recipe.requirements.host, &sources.host)?,
+                    depends: convert_dependencies(
+                        recipe.requirements.host,
+                        &variant,
+                        &subpackages,
+                        &sources.host,
+                    )?,
                     constraints: Vec::new(),
                 }),
                 run_dependencies: CondaOutputDependencies {
-                    depends: convert_dependencies(recipe.requirements.run, &sources.run)?,
-                    constraints: convert_binary_dependencies(recipe.requirements.run_constraints)?,
+                    depends: convert_dependencies(
+                        recipe.requirements.run,
+                        &variant,
+                        &subpackages,
+                        &sources.run,
+                    )?,
+                    constraints: convert_binary_dependencies(
+                        recipe.requirements.run_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
                 },
 
                 // TODO: Read from configuration
@@ -509,6 +541,7 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
+        provides_conda_outputs: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

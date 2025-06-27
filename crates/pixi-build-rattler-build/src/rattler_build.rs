@@ -11,6 +11,7 @@ use crate::config::RattlerBuildBackendConfig;
 
 pub struct RattlerBuildBackend {
     pub(crate) logging_output_handler: LoggingOutputHandler,
+    pub(crate) source_dir: PathBuf,
     /// In case of rattler-build, manifest is the raw recipe
     /// We need to apply later the selectors to get the final recipe
     pub(crate) recipe_source: Source,
@@ -23,6 +24,7 @@ impl RattlerBuildBackend {
     /// Returns a new instance of [`RattlerBuildBackend`] by reading the
     /// manifest at the given path.
     pub fn new(
+        source_dir: Option<PathBuf>,
         manifest_path: &Path,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -30,10 +32,24 @@ impl RattlerBuildBackend {
     ) -> miette::Result<Self> {
         // Locate the recipe
         let manifest_file_name = manifest_path.file_name().and_then(OsStr::to_str);
-        let recipe_path = match manifest_file_name {
-            Some("recipe.yaml") | Some("recipe.yml") => manifest_path.to_path_buf(),
+        let (recipe_path, source_dir) = match manifest_file_name {
+            Some("recipe.yaml") | Some("recipe.yml") => {
+                let source_dir = source_dir.unwrap_or_else(|| {
+                    manifest_path
+                        .parent()
+                        .expect("file always has parent")
+                        .to_path_buf()
+                });
+                (manifest_path.to_path_buf(), source_dir)
+            }
             _ => {
                 // The manifest is not a recipe, so we need to find the recipe.yaml file.
+                let source_dir = source_dir.unwrap_or_else(|| {
+                    manifest_path
+                        .parent()
+                        .unwrap_or(manifest_path)
+                        .to_path_buf()
+                });
                 let recipe_path = manifest_path.parent().and_then(|manifest_dir| {
                     [
                         "recipe.yaml",
@@ -48,7 +64,7 @@ impl RattlerBuildBackend {
                     })
                 });
 
-                recipe_path.ok_or_else(|| miette::miette!("Could not find a recipe.yaml in the source directory to use as the recipe manifest."))?
+                (recipe_path.ok_or_else(|| miette::miette!("Could not find a recipe.yaml in the source directory to use as the recipe manifest."))?, source_dir)
             }
         };
 
@@ -62,6 +78,7 @@ impl RattlerBuildBackend {
 
         Ok(Self {
             logging_output_handler,
+            source_dir,
             recipe_source,
             manifest_root,
             cache_dir,

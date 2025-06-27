@@ -2,22 +2,29 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec, ProjectModel,
     common::{build_configuration, compute_variants},
+    dependencies::{
+        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+    },
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages,
+    BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        conda_outputs::{
+            CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams, CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
-use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::{
+    collections::BTreeSet,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -33,7 +40,8 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::VariantConfig,
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
+use rattler_build::{metadata::PackageIdentifier, selectors::SelectorConfig};
+use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
 
 use crate::{
     config::RustBackendConfig,
@@ -41,7 +49,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
+impl Protocol for RustBuildBackend<ProjectModelV1> {
     fn debug_dir(&self) -> Option<&Path> {
         self.config.debug_dir.as_deref()
     }
@@ -201,6 +209,122 @@ impl<P: ProjectModel + Sync> Protocol for RustBuildBackend<P> {
 
         Ok(CondaMetadataResult {
             packages,
+            input_globs: None,
+        })
+    }
+
+    async fn conda_outputs(
+        &self,
+        params: CondaOutputsParams,
+    ) -> miette::Result<CondaOutputsResult> {
+        // Create a variant config from the variant configuration in the parameters.
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
+        let variant_combinations = compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            params.host_platform,
+        )?;
+
+        // Construct the different outputs
+        let mut subpackages = HashMap::new();
+        let mut outputs = Vec::new();
+        for variant in variant_combinations {
+            // TODO: Determine how and if we can determine this from the manifest.
+            let (recipe, sources) = self.recipe(params.host_platform, &variant)?;
+            let hash = HashInfo::from_variant(&variant, recipe.build().noarch());
+
+            // Determine the target platform based on the recipe's noarch type.
+            let target_platform = if recipe.build.noarch == NoArchType::none() {
+                params.host_platform
+            } else {
+                Platform::NoArch
+            };
+
+            // Construct selectors based on the target platform and variant
+            let selector_config = SelectorConfig {
+                target_platform,
+                host_platform: params.host_platform,
+                build_platform: Platform::current(),
+                variant: variant.clone(),
+                hash: Some(hash.clone()),
+                experimental: false,
+                allow_undefined: false,
+            };
+
+            // Determine the build string
+            let jinja = Jinja::new(selector_config.clone()).with_context(&recipe.context);
+            let build_number = recipe.build().number;
+            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
+
+            subpackages.insert(
+                recipe.package().name().clone(),
+                PackageIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package().version().version().clone().into(),
+                    build_string: build_string.to_string(),
+                },
+            );
+
+            outputs.push(CondaOutputMetadata {
+                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package.version().clone(),
+                    build: build_string.to_string(),
+                    build_number,
+                    subdir: target_platform,
+                    license: recipe.about.license.map(|l| l.to_string()),
+                    license_family: recipe.about.license_family,
+                    noarch: recipe.build.noarch,
+                    purls: None,
+                },
+                build_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.build,
+                        &variant,
+                        &subpackages,
+                        &sources.build,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                host_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.host,
+                        &variant,
+                        &subpackages,
+                        &sources.host,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                run_dependencies: CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.run,
+                        &variant,
+                        &subpackages,
+                        &sources.run,
+                    )?,
+                    constraints: convert_binary_dependencies(
+                        recipe.requirements.run_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                },
+
+                // TODO: Read from configuration
+                ignore_run_exports: Default::default(),
+
+                // TODO: Setup sane defaults
+                run_exports: Default::default(),
+
+                // The input globs are the same for all outputs
+                input_globs: None,
+
+                cache: None,
+            });
+        }
+
+        Ok(CondaOutputsResult {
+            outputs,
             input_globs: None,
         })
     }
@@ -455,6 +579,7 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
+        provides_conda_outputs: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

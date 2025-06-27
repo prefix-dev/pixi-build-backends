@@ -68,6 +68,7 @@ async fn test_conda_get_metadata() {
 
     insta::assert_yaml_snapshot!(conda_metadata, {
         ".packages[0].sources.boltons.path" => "[redacted]",
+        ".packages[0].subdir" => "[redacted]",
     })
 }
 
@@ -124,5 +125,6 @@ async fn test_conda_build() {
 
     insta::assert_yaml_snapshot!(conda_build_result, {
         ".packages[0].output_file" => "[redacted]",
+        ".packages[0].subdir" => "[redacted]",
     });
 }

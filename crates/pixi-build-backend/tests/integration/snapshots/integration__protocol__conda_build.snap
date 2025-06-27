@@ -8,4 +8,4 @@ packages:
     name: minimal-package
     version: 1.0.0
     build: hbf21a9e_0
-    subdir: osx-arm64
+    subdir: "[redacted]"

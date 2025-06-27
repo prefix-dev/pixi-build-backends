@@ -7,7 +7,7 @@ packages:
     version: 1.0.0
     build: hbf21a9e_0
     buildNumber: 0
-    subdir: osx-arm64
+    subdir: "[redacted]"
     depends:
       - boltons
       - python

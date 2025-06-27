@@ -3917,6 +3917,7 @@ version = "0.1.15"
 dependencies = [
  "async-trait",
  "fs-err",
+ "indexmap 2.9.0",
  "itertools 0.14.0",
  "miette",
  "pathdiff",

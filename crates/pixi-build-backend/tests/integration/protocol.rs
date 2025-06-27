@@ -94,7 +94,7 @@ async fn test_conda_build() {
     generated_recipe.recipe.build.script = vec!["echo 'Hello, World!'".to_string()];
 
     let channel_configuration = ChannelConfiguration {
-        base_url: Url::parse("https://prefix.dev/conda-forge").unwrap(),
+        base_url: Url::parse("https://prefix.dev").unwrap(),
     };
 
     let build_params = CondaBuildParams {

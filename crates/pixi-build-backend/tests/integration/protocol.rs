@@ -35,7 +35,7 @@ async fn test_conda_get_metadata() {
     let generated_recipe = GeneratedRecipe::from_model(project_model_v1, pixi_manifest.clone());
 
     let platform = PlatformAndVirtualPackages {
-        platform: Platform::current(),
+        platform: Platform::Linux64,
         virtual_packages: None,
     };
 
@@ -43,10 +43,12 @@ async fn test_conda_get_metadata() {
         base_url: Url::parse("https://prefix.dev").unwrap(),
     };
 
+    let channel_base_urls = vec![Url::parse("https://prefix.dev/conda-forge").unwrap()];
+
     let params = CondaMetadataParams {
         build_platform: Some(platform.clone()),
         host_platform: Some(platform.clone()),
-        channel_base_urls: Some(vec![]),
+        channel_base_urls: Some(channel_base_urls),
         channel_configuration,
         variant_configuration: None,
         work_directory: build_dir,
@@ -98,10 +100,12 @@ async fn test_conda_build() {
         base_url: Url::parse("https://prefix.dev").unwrap(),
     };
 
+    let channel_base_urls = vec![Url::parse("https://prefix.dev/conda-forge").unwrap()];
+
     let build_params = CondaBuildParams {
         build_platform_virtual_packages: None,
         host_platform: None,
-        channel_base_urls: None,
+        channel_base_urls: Some(channel_base_urls),
         channel_configuration,
         outputs: None,
         variant_configuration: None,

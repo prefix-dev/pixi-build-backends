@@ -18,20 +18,15 @@
           "binary": {
             "version": ">=3.8"
           }
-        },
-        "boltons": {
-          "source":{
-            "path": "/path/to/boltons"
-          }
         }
       }
     },
     "targets": {
       "Linux": {
         "host_dependencies": {
-            "boltons": {
+            "rich": {
                 "binary": {
-                "version": ">=1.0"
+                "version": ">=10.0"
                 }
             }
         },

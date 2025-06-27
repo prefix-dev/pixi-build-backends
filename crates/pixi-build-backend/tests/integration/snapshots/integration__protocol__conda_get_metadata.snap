@@ -9,14 +9,10 @@ packages:
     buildNumber: 0
     subdir: "[redacted]"
     depends:
-      - boltons
       - python
     constraints: []
     license: ~
     licenseFamily: ~
     noarch: false
-    sources:
-      boltons:
-        Path:
-          path: "[redacted]"
+    sources: {}
 inputGlobs: ~

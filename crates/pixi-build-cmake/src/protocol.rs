@@ -1,11 +1,16 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::BTreeSet,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
 };
 
+use crate::{
+    cmake::{CMakeBuildBackend, construct_configuration},
+    config::CMakeBackendConfig,
+};
 use miette::{Context, IntoDiagnostic};
+use pixi_build_backend::dependencies::convert_input_variant_configuration;
 use pixi_build_backend::{
     PackageSourceSpec,
     common::{build_configuration, compute_variants},
@@ -28,22 +33,16 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
-    NormalizedKey,
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{Directories, Output},
-    recipe::{Jinja, parser::BuildString, variable::Variable},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::Configuration,
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
-
-use crate::{
-    cmake::{CMakeBuildBackend, construct_configuration},
-    config::CMakeBackendConfig,
-};
+use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
 
 fn input_globs(extra_globs: Vec<String>) -> BTreeSet<String> {
     [
@@ -228,12 +227,18 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         )?;
 
         // Construct the different outputs
-        let target_platform = params.host_platform;
         let mut outputs = Vec::new();
         for variant in variant_combinations {
             // TODO: Determine how and if we can determine this from the manifest.
             let (recipe, sources) = self.recipe(params.host_platform, &variant)?;
             let hash = HashInfo::from_variant(&variant, recipe.build().noarch());
+
+            // Determine the target platform based on the recipe's noarch type.
+            let target_platform = if recipe.build.noarch == NoArchType::none() {
+                params.host_platform
+            } else {
+                Platform::NoArch
+            };
 
             // Construct selectors based on the target platform and variant
             let selector_config = SelectorConfig {
@@ -449,22 +454,6 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
         Ok(CondaBuildResult { packages })
     }
-}
-
-fn convert_input_variant_configuration(
-    variants: Option<HashMap<String, Vec<String>>>,
-) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
-    let input_variant_configuration = variants.map(|v| {
-        v.into_iter()
-            .map(|(k, v)| {
-                (
-                    k.into(),
-                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                )
-            })
-            .collect()
-    });
-    input_variant_configuration
 }
 
 #[async_trait::async_trait]

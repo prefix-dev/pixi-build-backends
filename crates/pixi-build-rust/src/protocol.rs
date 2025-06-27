@@ -1,9 +1,3 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
-use std::collections::BTreeSet;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec, ProjectModel,
@@ -21,6 +15,12 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
+};
+use std::collections::BTreeSet;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -472,7 +472,11 @@ mod tests {
 
         // Verify that all extra globs are included in the result
         for extra_glob in &extra_globs {
-            assert!(result.contains(extra_glob), "Result should contain extra glob: {}", extra_glob);
+            assert!(
+                result.contains(extra_glob),
+                "Result should contain extra glob: {}",
+                extra_glob
+            );
         }
 
         // Verify that default globs are still present

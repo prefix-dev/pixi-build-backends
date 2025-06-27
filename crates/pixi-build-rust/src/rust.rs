@@ -211,16 +211,13 @@ mod tests {
 
     use pixi_build_type_conversions::to_project_model_v1;
 
-
     use pixi_manifest::Manifests;
     use rattler_build::{console_utils::LoggingOutputHandler, recipe::Recipe};
     use rattler_conda_types::{ChannelConfig, Platform};
 
     use tempfile::tempdir;
 
-    use crate::{
-        config::RustBackendConfig, rust::RustBuildBackend,
-    };
+    use crate::{config::RustBackendConfig, rust::RustBuildBackend};
 
     fn recipe(manifest_source: &str, config: RustBackendConfig) -> Recipe {
         let tmp_dir = tempdir().unwrap();

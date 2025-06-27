@@ -1,11 +1,11 @@
+use ordermap::OrderMap;
+use pixi_build_types::TargetV1;
 use pixi_build_types::{PackageSpecV1, ProjectModelV1, TargetsV1};
 use rattler_conda_types::{MatchSpec, Version};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::path::PathBuf;
 use std::str::FromStr;
-use ordermap::OrderMap;
-use pixi_build_types::TargetV1;
 
 use crate::matchspec::SerializableMatchSpec;
 

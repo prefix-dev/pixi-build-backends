@@ -113,6 +113,24 @@ impl<T: PackageSpec> ExtractedDependencies<T> {
     }
 }
 
+/// Converts the input variant configuration passed from pixi to something that
+/// rattler build can deal with.
+pub fn convert_input_variant_configuration(
+    variants: Option<HashMap<String, Vec<String>>>,
+) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
+    let input_variant_configuration = variants.map(|v| {
+        v.into_iter()
+            .map(|(k, v)| {
+                (
+                    k.into(),
+                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                )
+            })
+            .collect()
+    });
+    input_variant_configuration
+}
+
 #[derive(Debug, Error, Diagnostic)]
 pub enum ConvertDependencyError {
     #[error("only matchspecs with define package names are supported")]
@@ -165,7 +183,7 @@ fn convert_dependency(
 
 fn convert_binary_dependency(
     dependency: Dependency,
-) -> Result<(pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>), ConvertDependencyError> {
+) -> Result<pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>, ConvertDependencyError> {
     let match_spec = match dependency {
         Dependency::Spec(spec) => spec,
         _ => todo!("Handle other dependency types"),

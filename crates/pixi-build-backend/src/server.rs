@@ -4,11 +4,11 @@ use fs_err::tokio as tokio_fs;
 use jsonrpc_core::{Error, IoHandler, Params, serde_json, to_value};
 use miette::{Context, IntoDiagnostic, JSONReportHandler};
 use pixi_build_types::VersionedProjectModel;
+use pixi_build_types::procedures::conda_outputs::CondaOutputsParams;
 use pixi_build_types::procedures::{
     self, conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
     initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
 };
-use pixi_build_types::procedures::conda_outputs::CondaOutputsParams;
 use tokio::sync::RwLock;
 
 use crate::protocol::{Protocol, ProtocolInstantiator};

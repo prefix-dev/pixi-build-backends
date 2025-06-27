@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-
+use std::collections::BTreeSet;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
@@ -549,7 +549,7 @@ impl Protocol for IntermediateBackend {
                 let built_package = CondaBuiltPackage {
                     output_file: package,
                     // TODO: we should handle input globs properly
-                    input_globs: vec![],
+                    input_globs: BTreeSet::default(),
                     name: output.name().as_normalized().to_string(),
                     version: output.version().to_string(),
                     build: build_string.to_string(),
@@ -568,6 +568,7 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
+        provides_conda_outputs: Some(false),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

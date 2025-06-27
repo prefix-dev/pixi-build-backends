@@ -1,6 +1,7 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use indexmap::IndexSet;
@@ -20,7 +21,7 @@ use rattler_build::{
     },
     selectors::SelectorConfig,
     system_tools::SystemTools,
-    variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
+    variant_config::{DiscoveredOutput, ParseErrors, VariantConfig, VariantConfigError},
 };
 use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_package_streaming::write::CompressionLevel;
@@ -45,6 +46,65 @@ pub struct RattlerBuild {
     pub selector_config: SelectorConfig,
     /// The directory where the build should happen.
     pub work_directory: PathBuf,
+}
+
+/// Variant configuration that was loaded from the recipe.
+#[derive(Debug)]
+pub struct LoadedVariantConfig {
+    /// The variant configuration that was loaded.
+    pub variant_config: VariantConfig,
+
+    /// Input globs that identity the files that were loaded.
+    pub input_globs: BTreeSet<String>,
+}
+
+impl LoadedVariantConfig {
+    pub fn from_recipe_path(
+        source_dir: &Path,
+        recipe_path: &Path,
+        selector_config: &SelectorConfig,
+    ) -> Result<Self, VariantConfigError<Arc<str>>> {
+        let mut variant_files = Vec::new();
+        let mut input_globs = BTreeSet::new();
+
+        // Check if there is a `variants.yaml` file next to the recipe that we should
+        // potentially use.
+        if let Some(variant_path) = recipe_path
+            .parent()
+            .map(|parent| parent.join(VARIANTS_CONFIG_FILE))
+        {
+            if let Some(path) = pathdiff::diff_paths(&variant_path, source_dir) {
+                // Normalize paths on windows
+                let normalized_path = if cfg!(target_os = "windows") {
+                    path.to_string_lossy().replace("\\", "/")
+                } else {
+                    path.to_string_lossy().to_string()
+                };
+                input_globs.insert(normalized_path);
+            }
+            if variant_path.is_file() {
+                variant_files.push(variant_path);
+            }
+        };
+
+        Ok(Self {
+            variant_config: VariantConfig::from_files(&variant_files, selector_config)?,
+            input_globs,
+        })
+    }
+
+    pub fn extend_with_input_variants(
+        mut self,
+        input_variant_configuration: HashMap<String, Vec<String>>,
+    ) -> Self {
+        for (k, v) in input_variant_configuration.iter() {
+            let variables = v.iter().map(|v| Variable::from_string(v)).collect();
+            self.variant_config
+                .variants
+                .insert(k.as_str().into(), variables);
+        }
+        self
+    }
 }
 
 pub enum OneOrMultipleOutputs {

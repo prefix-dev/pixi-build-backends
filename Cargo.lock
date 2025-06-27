@@ -1061,9 +1061,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.39"
+version = "4.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd60e63e9be68e5fb56422e397cf9baddded06dae1d2e523401542383bc72a9f"
+checksum = "40b6887a1d8685cebccf115538db5c0efe625ccac9696ad45c409d96566e910f"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1082,9 +1082,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.39"
+version = "4.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89cc6392a1f72bbeb820d71f32108f61fdaf18bc526e1d23954168a67759ef51"
+checksum = "e0c66c08ce9f0c698cbce5c0279d0bb6ac936d8674174fe48f736533b964f59e"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1113,9 +1113,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.32"
+version = "4.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09176aae279615badda0765c0c0b3f6ed53f4709118af73cf4655d85d1530cd7"
+checksum = "d2c7947ae4cc3d851207c1adb5b5e260ff0cca11446b1d6d1423788e442257ce"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -1714,7 +1714,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "console",
 ]
@@ -2709,12 +2709,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "154934ea70c58054b556dd430b99a98c2a7ff5309ac9891597e339b5c28f4371"
 dependencies = [
  "console",
+ "globset",
  "once_cell",
  "pest",
  "pest_derive",
  "regex",
  "serde",
  "similar",
+ "walkdir",
 ]
 
 [[package]]
@@ -3500,6 +3502,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ordermap"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d31b8b7a99f71bdff4235faf9ce9eada0ad3562c8fbeb7d607d9f41a6ec569d"
+dependencies = [
+ "indexmap 2.9.0",
+ "serde",
+]
+
+[[package]]
 name = "outref"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3818,11 +3830,12 @@ dependencies = [
  "log",
  "miette",
  "minijinja",
+ "ordermap",
  "parking_lot 0.12.4",
  "pathdiff",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
@@ -3837,6 +3850,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tempfile",
+ "thiserror 2.0.12",
  "tokio",
  "toml 0.7.8",
  "toml_edit 0.22.26",
@@ -3891,7 +3905,7 @@ dependencies = [
  "pixi-build-backend",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
@@ -3917,6 +3931,7 @@ version = "0.1.15"
 dependencies = [
  "async-trait",
  "fs-err",
+ "insta",
  "itertools 0.14.0",
  "miette",
  "pathdiff",
@@ -3962,10 +3977,10 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
- "indexmap 2.9.0",
  "itertools 0.14.0",
+ "ordermap",
  "pixi_build_types",
  "pixi_manifest",
  "pixi_spec",
@@ -3975,14 +3990,41 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
- "indexmap 2.9.0",
+ "ordermap",
  "rattler_conda_types",
  "rattler_digest",
  "serde",
  "serde_json",
  "serde_with",
+ "url",
+]
+
+[[package]]
+name = "pixi_config"
+version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
+dependencies = [
+ "clap",
+ "console",
+ "dirs",
+ "fs-err",
+ "itertools 0.14.0",
+ "miette",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
+ "rattler",
+ "rattler_conda_types",
+ "rattler_networking",
+ "rattler_package_streaming",
+ "rattler_repodata_gateway",
+ "reqwest",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "thiserror 2.0.12",
+ "toml_edit 0.22.26",
+ "tracing",
  "url",
 ]
 
@@ -3997,7 +4039,7 @@ dependencies = [
  "fs-err",
  "itertools 0.14.0",
  "miette",
- "pixi_consts",
+ "pixi_consts 0.1.0 (git+https://github.com/prefix-dev/pixi?branch=main)",
  "rattler",
  "rattler_conda_types",
  "rattler_networking",
@@ -4016,6 +4058,17 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
+dependencies = [
+ "console",
+ "rattler_cache",
+ "rattler_conda_types",
+ "url",
+]
+
+[[package]]
+name = "pixi_consts"
+version = "0.1.0"
 source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
 dependencies = [
  "console",
@@ -4027,7 +4080,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4047,7 +4100,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "chrono",
  "console",
@@ -4062,7 +4115,7 @@ dependencies = [
  "pathdiff",
  "pep440_rs",
  "pep508_rs",
- "pixi_consts",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "pixi_pypi_spec",
  "pixi_spec",
  "pixi_spec_containers",
@@ -4087,7 +4140,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4107,7 +4160,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "dirs",
  "file_url",
@@ -4130,10 +4183,11 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
+ "pixi_spec",
  "rattler_conda_types",
  "serde",
 ]
@@ -4141,7 +4195,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "digest",
  "hex",
@@ -4156,7 +4210,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#1ca9578b0ad73dbd5a889849f3bff47ddb91a81f"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4a11e8ec66b0446ed3154e71a49cdcf826e3d926"
 dependencies = [
  "async-fd-lock",
  "fs-err",
@@ -4164,8 +4218,8 @@ dependencies = [
  "itertools 0.14.0",
  "miette",
  "pep508_rs",
- "pixi_config",
- "pixi_consts",
+ "pixi_config 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
+ "pixi_consts 0.1.0 (git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol)",
  "rattler_conda_types",
  "rattler_networking",
  "reqwest",
@@ -4547,7 +4601,7 @@ dependencies = [
  "opendal 0.53.1",
  "pathdiff",
  "petgraph 0.8.1",
- "pixi_config",
+ "pixi_config 0.1.0 (git+https://github.com/prefix-dev/pixi?branch=main)",
  "rattler",
  "rattler_cache",
  "rattler_conda_types",
@@ -4989,12 +5043,10 @@ dependencies = [
 name = "recipe-stage0"
 version = "0.1.0"
 dependencies = [
- "either",
  "hashlink 0.10.0",
  "indexmap 2.9.0",
  "insta",
  "marked-yaml 0.8.0",
- "miette",
  "pixi_build_types",
  "rattler-build",
  "rattler_conda_types",

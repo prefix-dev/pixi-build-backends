@@ -10,6 +10,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 clap-verbosity-flag = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true }
+ordermap = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 miette = { workspace = true }
@@ -49,3 +50,4 @@ recipe-stage0 = { workspace = true }
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
 toml_edit = { version = "0.22.24" }
+toml = { version = "0.7.4" }

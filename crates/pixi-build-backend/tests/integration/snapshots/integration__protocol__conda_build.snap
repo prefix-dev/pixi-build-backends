@@ -1,0 +1,11 @@
+---
+source: crates/pixi-build-backend/tests/integration/protocol.rs
+expression: conda_build_result
+---
+packages:
+  - output_file: "[redacted]"
+    input_globs: []
+    name: minimal-package
+    version: 1.0.0
+    build: hbf21a9e_0
+    subdir: "[redacted]"

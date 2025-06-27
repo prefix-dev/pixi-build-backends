@@ -115,6 +115,13 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
         let build_platform = Platform::current();
         let build_number = 0;
 
+        // Check if the host platform has a host python dependency
+        // This is used to determine if we need to the cmake argument for the python executable
+        let has_host_python = self
+            .project_model
+            .dependencies(Some(host_platform))
+            .contains(&"python".into());
+
         let build_script = BuildScriptContext {
             build_platform: if build_platform.is_windows() {
                 BuildPlatform::Windows
@@ -123,6 +130,7 @@ impl<P: ProjectModel> CMakeBuildBackend<P> {
             },
             source_dir: self.manifest_root.display().to_string(),
             extra_args: self.config.extra_args.clone(),
+            has_host_python,
         }
         .render();
 
@@ -417,5 +425,43 @@ mod tests {
         );
 
         assert_eq!(recipe.build.script.env, env);
+    }
+
+    #[test]
+    fn test_python_host_dependency() {
+        let manifest_source = r#"
+        [workspace]
+        platforms = []
+        channels = []
+        preview = ["pixi-build"]
+
+        [package]
+        name = "foobar"
+        version = "0.1.0"
+
+        [package.host-dependencies]
+        python = "*"
+
+        [package.build]
+        backend = { name = "pixi-build-cmake", version = "*" }
+        "#;
+
+        let recipe = recipe(
+            manifest_source,
+            CMakeBackendConfig {
+                ..Default::default()
+            },
+        );
+
+        let command = match recipe
+            .build
+            .script
+            .content {
+                rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
+                 _ => unreachable!("Expected script content to be commands"),
+            };
+
+        assert!(command.iter().any(|s| s.contains("-DPython_EXECUTABLE")));
+
     }
 }

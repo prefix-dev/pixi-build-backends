@@ -1137,7 +1137,6 @@ mod tests {
     #[test]
     fn test_build_input_globs_includes_extra_globs() {
         use std::fs;
-
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base

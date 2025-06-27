@@ -1,7 +1,8 @@
 /// This file contains the test model, which is a minimal example of a ProjectModelV1
 /// that can be used to create a ProjectModelV1 from a JSON fixture file.
 use pixi_build_types::{
-    BinaryPackageSpecV1, PackageSpecV1, ProjectModelV1, TargetSelectorV1, TargetV1, TargetsV1,
+    BinaryPackageSpecV1, PackageSpecV1, PathSpecV1, ProjectModelV1, SourcePackageSpecV1,
+    TargetSelectorV1, TargetV1, TargetsV1,
 };
 
 use rattler_conda_types::{ParseStrictness, Version, VersionSpec};
@@ -194,7 +195,13 @@ fn convert_package_spec_to_v1(spec: &PackageSpec) -> PackageSpecV1 {
             }))
         }
         PackageSpec::Source(source_spec) => {
-            unimplemented!("Source dependencies not implemented yet: {:?}", source_spec);
+            let inside_source = source_spec.source.clone();
+            if let Some(path) = inside_source.path {
+                let source_package_spec = SourcePackageSpecV1::Path(PathSpecV1 { path });
+                PackageSpecV1::Source(source_package_spec)
+            } else {
+                unimplemented!("Only path source specs are supported for now");
+            }
         }
     }
 }

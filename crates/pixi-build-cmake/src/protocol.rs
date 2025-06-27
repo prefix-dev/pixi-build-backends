@@ -567,8 +567,8 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.{c,cc,cxx,cpp,h,hpp,hxx}".to_string()));
-        assert!(result.contains(&"**/*.{cmake,cmake.in}".to_string()));
-        assert!(result.contains(&"**/CMakeFiles.txt".to_string()));
+        assert!(result.contains("**/*.{c,cc,cxx,cpp,h,hpp,hxx}"));
+        assert!(result.contains("**/*.{cmake,cmake.in}"));
+        assert!(result.contains("**/CMakeFiles.txt"));
     }
 }

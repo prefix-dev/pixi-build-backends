@@ -1,3 +1,9 @@
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    path::{Path, PathBuf},
+    str::FromStr,
+};
+
 use fs_err::tokio as tokio_fs;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
@@ -38,12 +44,6 @@ use rattler_build::{
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
 use rattler_virtual_packages::VirtualPackageOverrides;
-use std::collections::BTreeMap;
-use std::{
-    collections::{BTreeSet, HashMap},
-    path::{Path, PathBuf},
-    str::FromStr,
-};
 use url::Url;
 
 use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
@@ -814,7 +814,6 @@ mod tests {
     }
 
     /// A utility function to remove empty values from a JSON object.
-
     fn remove_empty_values(value: &mut Value) {
         fn keep_value(value: &Value) -> bool {
             match value {
@@ -846,7 +845,7 @@ mod tests {
     async fn test_conda_build() {
         // get cargo manifest dir
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../tests/recipe");
+        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -1126,7 +1125,7 @@ mod tests {
         let manifest_root = PathBuf::from("/foo/bar");
         let path = PathBuf::from("/foo/bar/recipe.yml");
         let globs = super::get_metadata_input_globs(&manifest_root, &path).unwrap();
-        assert_eq!(globs, BTreeSet::from([String::from("recipe.yaml")]));
+        assert_eq!(globs, BTreeSet::from([String::from("recipe.yml")]));
         // Case: file in subdir
         let manifest_root = PathBuf::from("/foo");
         let path = PathBuf::from("/foo/bar/recipe.yaml");
@@ -1137,6 +1136,7 @@ mod tests {
     #[test]
     fn test_build_input_globs_includes_extra_globs() {
         use std::fs;
+
         use tempfile::tempdir;
 
         // Create a temp directory to act as the base
@@ -1162,6 +1162,6 @@ mod tests {
         }
 
         // Verify that the basic manifest glob is still present
-        assert!(globs.contains(&"*/**".to_string()));
+        assert!(globs.contains("*/**"));
     }
 }

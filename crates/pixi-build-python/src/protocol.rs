@@ -637,9 +637,9 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.py".to_string()));
-        assert!(result.contains(&"**/*.pyx".to_string()));
-        assert!(result.contains(&"setup.py".to_string()));
-        assert!(result.contains(&"pyproject.toml".to_string()));
+        assert!(result.contains("**/*.py"));
+        assert!(result.contains("**/*.pyx"));
+        assert!(result.contains("setup.py"));
+        assert!(result.contains("pyproject.toml"));
     }
 }

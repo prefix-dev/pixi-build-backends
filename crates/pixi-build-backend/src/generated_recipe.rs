@@ -27,7 +27,9 @@ impl GeneratedRecipe {
             version: Value::Concrete(
                 model
                     .version
-                    .unwrap_or_else(|| Version::from_str("0.1.0").unwrap())
+                    .unwrap_or_else(|| {
+                        Version::from_str("0.1.0").expect("Default version should be valid")
+                    })
                     .to_string(),
             ),
         };

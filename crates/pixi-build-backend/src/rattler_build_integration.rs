@@ -37,17 +37,22 @@ pub async fn get_build_output(
     recipe_folder: PathBuf,
     output_dir: PathBuf,
 ) -> miette::Result<Vec<Output>> {
-    // let tmp_dir = tempdir().unwrap();
     let recipe_path = recipe_folder.join("recipe.yaml");
 
     // First find all outputs from the recipe
     let named_source = Source {
         name: "recipe".to_string(),
-        code: Arc::from(generated_recipe.recipe.to_yaml_pretty().unwrap().as_str()),
+        code: Arc::from(
+            generated_recipe
+                .recipe
+                .to_yaml_pretty()
+                .into_diagnostic()?
+                .as_str(),
+        ),
         path: recipe_path.clone(),
     };
 
-    let outputs = find_outputs_from_src(named_source.clone()).unwrap();
+    let outputs = find_outputs_from_src(named_source.clone()).into_diagnostic()?;
 
     let variant_config = VariantConfig::default();
 

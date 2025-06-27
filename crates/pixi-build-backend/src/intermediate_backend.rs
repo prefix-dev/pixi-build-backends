@@ -176,10 +176,6 @@ impl Protocol for IntermediateBackend {
         &self,
         params: CondaMetadataParams,
     ) -> miette::Result<CondaMetadataResult> {
-        let tmp_dir = tempdir().unwrap();
-
-        let tmp_dir_path = tmp_dir.path().to_path_buf();
-
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
             root_dir: self.manifest_root.to_path_buf(),
@@ -238,13 +234,25 @@ impl Protocol for IntermediateBackend {
 
         let mut packages = Vec::new();
 
+        let target_platform = params
+            .build_platform
+            .as_ref()
+            .map(|bp| bp.platform)
+            .unwrap_or_else(Platform::current);
+
+        let host_platform = params
+            .host_platform
+            .as_ref()
+            .map(|hp| hp.platform)
+            .unwrap_or_else(Platform::current);
+
         for input_variant in combinations {
             let selector_config = SelectorConfig {
                 // We ignore noarch here
-                target_platform: params.build_platform.as_ref().unwrap().platform,
-                host_platform: params.host_platform.as_ref().unwrap().platform,
+                target_platform,
+                host_platform,
                 hash: None,
-                build_platform: params.build_platform.as_ref().unwrap().platform,
+                build_platform: target_platform,
                 variant: input_variant,
                 experimental: false,
                 // allow undefined while finding the variants
@@ -260,6 +268,10 @@ impl Protocol for IntermediateBackend {
                 .build_platform
                 .as_ref()
                 .and_then(|p| p.virtual_packages.clone());
+
+            let tmp_dir = tempdir().into_diagnostic()?;
+
+            let tmp_dir_path = tmp_dir.path().to_path_buf();
 
             let outputs = rattler_build_integration::get_build_output(
                 &self.generated_recipe,
@@ -316,7 +328,18 @@ impl Protocol for IntermediateBackend {
                 let source_spec_v1 = source_dependencies
                     .iter()
                     .map(|dep| {
-                        let name = dep.spec.name.as_ref().unwrap().as_normalized().to_string();
+                        let name = dep
+                            .spec
+                            .name
+                            .as_ref()
+                            .ok_or_else(|| {
+                                miette::miette!(
+                                    "source dependency {} does not have a name",
+                                    dep.spec
+                                )
+                            })?
+                            .as_normalized()
+                            .to_string();
                         Ok((name, from_source_matchspec_into_package_spec(dep.clone())?))
                     })
                     .collect::<miette::Result<HashMap<_, _>>>()?;

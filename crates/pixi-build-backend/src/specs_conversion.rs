@@ -151,7 +151,7 @@ pub(crate) fn package_specs_to_package_dependency(
         .map(|(name, spec)| match spec {
             PackageSpecV1::Binary(_binary_spec) => Ok(PackageDependency::Binary(
                 MatchSpec::from_str(name.as_str(), rattler_conda_types::ParseStrictness::Strict)
-                    .unwrap(),
+                    .into_diagnostic()?,
             )),
 
             PackageSpecV1::Source(source_spec) => {
@@ -163,7 +163,9 @@ pub(crate) fn package_specs_to_package_dependency(
                 };
                 let url_from_spec = match source_spec {
                     SourcePackageSpecV1::Path(path_spec) => {
-                        Url::from_file_path(path_spec.path.clone()).unwrap()
+                        Url::from_file_path(path_spec.path.clone()).map_err(|_| {
+                            miette::miette!("Invalid file path in source spec: {}", path_spec.path)
+                        })?
                     }
                     _ => {
                         unimplemented!("Only URL source specs are supported for now")

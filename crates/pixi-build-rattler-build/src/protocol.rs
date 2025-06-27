@@ -5,6 +5,7 @@ use std::{
 };
 
 use fs_err::tokio as tokio_fs;
+use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -13,7 +14,8 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1,
+    BackendCapabilities, CondaPackageMetadata, PackageSpecV1, SourcePackageName,
+    SourcePackageSpecV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -486,20 +488,28 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             RattlerBuildBackendConfig::default()
         };
 
-        if let Some(t) = params
+        if let Some(target) = params
             .project_model
             .and_then(|m| m.into_v1())
             .and_then(|m| m.targets)
             .and_then(|t| t.default_target)
         {
-            if t.build_dependencies.is_some()
-                || t.host_dependencies.is_some()
-                || t.run_dependencies.is_some()
-            {
-                return Err(miette::miette!(
-                    "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
-                ));
+            fn check_empty_deps(
+                deps: Option<IndexMap<SourcePackageName, PackageSpecV1>>,
+            ) -> miette::Result<()> {
+                if let Some(d) = deps {
+                    if !d.is_empty() {
+                        return Err(miette::miette!(
+                            "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
+                        ));
+                    }
+                }
+                Ok(())
             }
+
+            check_empty_deps(target.build_dependencies)?;
+            check_empty_deps(target.host_dependencies)?;
+            check_empty_deps(target.run_dependencies)?;
         }
 
         let instance = RattlerBuildBackend::new(

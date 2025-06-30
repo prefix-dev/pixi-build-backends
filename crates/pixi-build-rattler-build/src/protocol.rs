@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    default,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -15,7 +16,7 @@ use pixi_build_backend::{
 };
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PackageSpecV1, SourcePackageName,
-    SourcePackageSpecV1,
+    SourcePackageSpecV1, TargetV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -492,13 +493,18 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             .project_model
             .and_then(|m| m.into_v1())
             .and_then(|m| m.targets)
-            .and_then(|t| t.default_target)
         {
-            fn check_empty_deps(
-                deps: Option<IndexMap<SourcePackageName, PackageSpecV1>>,
-            ) -> miette::Result<()> {
-                if let Some(d) = deps {
-                    if !d.is_empty() {
+            fn enforce_empty_deps(target: TargetV1) -> miette::Result<()> {
+                for dep in [
+                    target.build_dependencies,
+                    target.host_dependencies,
+                    target.run_dependencies,
+                ] {
+                    let Some(dep) = dep else {
+                        continue;
+                    };
+
+                    if !dep.is_empty() {
                         return Err(miette::miette!(
                             "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
                         ));
@@ -506,10 +512,15 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
                 }
                 Ok(())
             }
+            if let Some(default_target) = target.default_target {
+                enforce_empty_deps(default_target)?;
+            }
 
-            check_empty_deps(target.build_dependencies)?;
-            check_empty_deps(target.host_dependencies)?;
-            check_empty_deps(target.run_dependencies)?;
+            if let Some(targets) = target.targets {
+                for (_, target) in targets {
+                    enforce_empty_deps(target)?;
+                }
+            }
         }
 
         let instance = RattlerBuildBackend::new(

@@ -104,7 +104,6 @@ pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) project_model: ProjectModelV1,
     pub(crate) generate_recipe: T,
     pub(crate) config: T::Config,
-    // pub(crate) config: serde_json::Value,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
@@ -112,7 +111,6 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
         manifest_path: PathBuf,
         project_model: ProjectModelV1,
         generate_recipe: T,
-        // config: IntermediateBackendConfig,
         config: serde_json::Value,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -150,8 +148,6 @@ where
             .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
 
         config
-
-        // config.into_iter().cloned()
     }
 
     async fn initialize(
@@ -176,10 +172,6 @@ where
             serde_json::Value::Object(Default::default())
             // C::default()
         };
-
-        // let generated_recipe = self
-        //     .generator
-        //     .generate_recipe(&project_model, params.manifest_path.clone())?;
 
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
@@ -212,10 +204,6 @@ where
 {
     fn debug_dir(&self) -> Option<&Path> {
         self.config.debug_dir()
-
-        // let concrete_config = serde_json::from_value::<T::Config>(self.config.clone()).ok()?;
-
-        // concrete_config.debug_dir()
     }
 
     async fn conda_get_metadata(

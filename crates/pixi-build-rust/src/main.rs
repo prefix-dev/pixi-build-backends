@@ -1,6 +1,5 @@
 mod build_script;
 mod config;
-mod rust;
 
 use std::path::PathBuf;
 
@@ -13,8 +12,8 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
-// use protocol::RustBackendInstantiator;
 use rattler_conda_types::Platform;
+use recipe_stage0::recipe::Script;
 
 #[derive(Default, Clone)]
 pub struct RustGenerator {}
@@ -54,7 +53,10 @@ impl GenerateRecipe for RustGenerator {
         }
         .render();
 
-        generated_recipe.recipe.build.script = build_script;
+        generated_recipe.recipe.build.script = Script {
+            script: build_script,
+            env: config.env.clone(),
+        };
 
         Ok(generated_recipe)
     }
@@ -88,6 +90,8 @@ pub async fn main() {
 
 #[cfg(test)]
 mod tests {
+    use indexmap::IndexMap;
+
     use super::*;
 
     #[test]
@@ -97,10 +101,6 @@ mod tests {
             ..Default::default()
         };
 
-        // rust_generator.config.extra_input_globs =
-        //     vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
-
-        // let extra_globs = vec!["custom/*.txt".to_string(), "extra/**/*.py".to_string()];
         let result = RustGenerator::build_input_globs(config.clone(), PathBuf::new());
 
         // Verify that all extra globs are included in the result
@@ -117,5 +117,81 @@ mod tests {
         assert!(result.contains(&"Cargo.toml".to_string()));
         assert!(result.contains(&"Cargo.lock".to_string()));
         assert!(result.contains(&"build.rs".to_string()));
+    }
+
+    #[macro_export]
+    macro_rules! project_fixture {
+        ($($json:tt)+) => {
+            serde_json::from_value::<ProjectModelV1>(
+                serde_json::json!($($json)+)
+            ).expect("Failed to create TestProjectModel from JSON fixture.")
+        };
+    }
+
+    #[test]
+    fn test_rust_is_in_build_requirements() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "boltons": "*"
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default(),
+                PathBuf::from("."),
+                Platform::Linux64,
+            )
+            .expect("Failed to generate recipe");
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
+        ".source[0].path" => "[ ... path ... ]",
+        ".build.script" => "[ ... script ... ]",
+        ".requirements.build[0]" => insta::dynamic_redaction(|value, _path| {
+            // assert that the value looks like a uuid here
+            assert!(value.as_str().unwrap().contains("rust"));
+        }),
+        });
+    }
+
+    #[test]
+    fn test_env_vars_are_set() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "boltons": "*"
+                    }
+                },
+            }
+        });
+
+        let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
+
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig {
+                    env: env.clone(),
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+            )
+            .expect("Failed to generate recipe");
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
+        {
+            ".script" => "[ ... script ... ]",
+        });
     }
 }

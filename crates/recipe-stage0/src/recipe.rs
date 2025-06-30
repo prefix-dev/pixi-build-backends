@@ -365,16 +365,25 @@ pub struct PathSource {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Script {
+    pub script: Vec<String>,
+    pub env: IndexMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Build {
     pub number: Option<Value<u64>>,
-    pub script: Vec<String>,
+    pub script: Script,
 }
 
 impl Build {
     pub fn new(script: Vec<String>) -> Self {
         Build {
             number: None,
-            script,
+            script: Script {
+                script,
+                env: IndexMap::new(),
+            },
         }
     }
 }

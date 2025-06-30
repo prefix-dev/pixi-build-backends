@@ -24,7 +24,7 @@ pub trait GenerateRecipe: Clone {
         host_platform: Platform,
     ) -> miette::Result<GeneratedRecipe>;
 
-    fn build_input_globs(_config: Self::Config, workdir: PathBuf) -> Vec<String> {
+    fn build_input_globs(_config: Self::Config, _workdir: PathBuf) -> Vec<String> {
         vec![]
     }
 

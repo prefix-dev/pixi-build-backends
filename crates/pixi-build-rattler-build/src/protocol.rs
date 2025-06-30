@@ -1,12 +1,10 @@
 use std::{
     collections::HashMap,
-    default,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use fs_err::tokio as tokio_fs;
-use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
@@ -15,8 +13,7 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, PackageSpecV1, SourcePackageName,
-    SourcePackageSpecV1, TargetV1,
+    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1, TargetV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,

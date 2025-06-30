@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
@@ -5,7 +6,6 @@ use std::{
 };
 
 use indexmap::IndexMap;
-use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, ProjectModelV1,
@@ -35,23 +35,43 @@ use serde::Deserialize;
 use tempfile::tempdir;
 
 use crate::{
-    generated_recipe::{GenerateRecipe, GeneratedRecipe},
+    generated_recipe::{BackendConfig, GenerateRecipe},
     protocol::{Protocol, ProtocolInstantiator},
     rattler_build_integration,
     specs_conversion::from_source_matchspec_into_package_spec,
     utils::TemporaryRenderedRecipe,
 };
 
-impl<F> GenerateRecipe for F
-where
-    F: Fn(&ProjectModelV1) -> GeneratedRecipe,
-{
-    fn generate_recipe(&self, model: &ProjectModelV1) -> miette::Result<GeneratedRecipe> {
-        // Just like in your `MyTrait` example, call `self` to execute
-        // the closure's logic.
-        Ok(self(model))
-    }
-}
+// impl<F> BackendConfig for F
+// where
+//     F: Fn() -> GeneratedRecipe + Clo,
+// {
+//     fn debug_dir(&self) -> Option<PathBuf> {
+//         self.debug_dir.clone()
+//     }
+// }
+// /// At least debug dir should be provided by the backend config
+// pub trait BackendConfig: DeserializeOwned + Default {
+//     fn debug_dir(&self) -> Option<PathBuf>;
+// }
+
+// impl<F> GenerateRecipe for F
+// where
+//     F: Fn(&ProjectModelV1, PathBuf, Platform) -> GeneratedRecipe + Clone,
+// {
+
+//     type Config = IntermediateBackendConfig;
+
+//     fn generate_recipe(
+//         &self,
+//         model: &ProjectModelV1,
+//         manifest_path: PathBuf,
+//         host_platform: Platform,
+//     ) -> miette::Result<GeneratedRecipe> {
+//         Ok(self(model, manifest_path, host_platform))
+//     }
+
+// }
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -69,7 +89,7 @@ pub struct IntermediateBackendInstantiator<T: GenerateRecipe> {
     generator: T,
 }
 
-impl<T: GenerateRecipe + Default> IntermediateBackendInstantiator<T> {
+impl<T: GenerateRecipe + Default + Clone> IntermediateBackendInstantiator<T> {
     pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
         Self {
             logging_output_handler,
@@ -78,19 +98,22 @@ impl<T: GenerateRecipe + Default> IntermediateBackendInstantiator<T> {
     }
 }
 
-pub struct IntermediateBackend {
+pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) manifest_root: PathBuf,
-    pub(crate) generated_recipe: GeneratedRecipe,
-    pub(crate) config: IntermediateBackendConfig,
+    pub(crate) project_model: ProjectModelV1,
+    pub(crate) generate_recipe: T,
+    pub(crate) config: T::Config,
+    // pub(crate) config: serde_json::Value,
     pub(crate) cache_dir: Option<PathBuf>,
 }
-
-impl IntermediateBackend {
+impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
-        generated_recipe: GeneratedRecipe,
-        config: IntermediateBackendConfig,
+        project_model: ProjectModelV1,
+        generate_recipe: T,
+        // config: IntermediateBackendConfig,
+        config: serde_json::Value,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -100,9 +123,14 @@ impl IntermediateBackend {
             .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
             .to_path_buf();
 
+        let config = serde_json::from_value::<T::Config>(config)
+            .into_diagnostic()
+            .context("failed to parse configuration")?;
+
         Ok(Self {
             manifest_root,
-            generated_recipe,
+            project_model,
+            generate_recipe,
             config,
             logging_output_handler,
             cache_dir,
@@ -111,15 +139,19 @@ impl IntermediateBackend {
 }
 
 #[async_trait::async_trait]
-impl<T: GenerateRecipe + 'static + Sync + Send> ProtocolInstantiator
-    for IntermediateBackendInstantiator<T>
+impl<T> ProtocolInstantiator for IntermediateBackendInstantiator<T>
+where
+    T: GenerateRecipe + Clone + Send + Sync + 'static,
+    T::Config: BackendConfig + Send + Sync + 'static,
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        configuration
-            .and_then(|config| {
-                serde_json::from_value::<IntermediateBackendConfig>(config.clone()).ok()
-            })
-            .and_then(|config| config.debug_dir)
+        let config = configuration
+            .and_then(|config| serde_json::from_value::<T::Config>(config.clone()).ok())
+            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
+
+        config
+
+        // config.into_iter().cloned()
     }
 
     async fn initialize(
@@ -135,18 +167,24 @@ impl<T: GenerateRecipe + 'static + Sync + Send> ProtocolInstantiator
             .ok_or_else(|| miette::miette!("project model v1 is required"))?;
 
         let config = if let Some(config) = params.configuration {
-            serde_json::from_value(config)
-                .into_diagnostic()
-                .context("failed to parse configuration")?
+            // serde_json::from_value(config)
+            //     .into_diagnostic()
+            //     .context("failed to parse configuration")?
+            config
         } else {
-            IntermediateBackendConfig::default()
+            // IntermediateBackendConfig::default()
+            serde_json::Value::Object(Default::default())
+            // C::default()
         };
 
-        let generated_recipe = self.generator.generate_recipe(&project_model)?;
+        // let generated_recipe = self
+        //     .generator
+        //     .generate_recipe(&project_model, params.manifest_path.clone())?;
 
-        let instance = IntermediateBackend::new(
+        let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
-            generated_recipe,
+            project_model,
+            self.generator.clone(),
             config,
             self.logging_output_handler.clone(),
             params.cache_directory,
@@ -167,9 +205,17 @@ impl<T: GenerateRecipe + 'static + Sync + Send> ProtocolInstantiator
 }
 
 #[async_trait::async_trait]
-impl Protocol for IntermediateBackend {
+impl<T> Protocol for IntermediateBackend<T>
+where
+    T: GenerateRecipe + Clone + Send + Sync + 'static,
+    T::Config: BackendConfig + Send + Sync + 'static,
+{
     fn debug_dir(&self) -> Option<&Path> {
-        self.config.debug_dir.as_deref()
+        self.config.debug_dir()
+
+        // let concrete_config = serde_json::from_value::<T::Config>(self.config.clone()).ok()?;
+
+        // concrete_config.debug_dir()
     }
 
     async fn conda_get_metadata(
@@ -218,9 +264,15 @@ impl Protocol for IntermediateBackend {
             zip_keys: None,
         };
 
+        let generated_recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &self.config,
+            self.manifest_root.clone(),
+            host_platform,
+        )?;
+
         // Determine the variant keys that are used in the recipe.
-        let resolved_dependencies = self
-            .generated_recipe
+        let resolved_dependencies = generated_recipe
             .recipe
             .requirements
             .resolve(Some(&host_platform));
@@ -274,7 +326,7 @@ impl Protocol for IntermediateBackend {
             let tmp_dir_path = tmp_dir.path().to_path_buf();
 
             let outputs = rattler_build_integration::get_build_output(
-                &self.generated_recipe,
+                &generated_recipe,
                 tool_config.clone(),
                 selector_config,
                 host_virtual_packages,
@@ -436,12 +488,15 @@ impl Protocol for IntermediateBackend {
             zip_keys: None,
         };
 
+        let recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &self.config,
+            self.manifest_root.clone(),
+            host_platform,
+        )?;
+
         // Determine the variant keys that are used in the recipe.
-        let resolved_dependencies = self
-            .generated_recipe
-            .recipe
-            .requirements
-            .resolve(Some(&host_platform));
+        let resolved_dependencies = recipe.recipe.requirements.resolve(Some(&host_platform));
 
         let used_variants = resolved_dependencies.used_variants();
 
@@ -473,7 +528,7 @@ impl Protocol for IntermediateBackend {
             let build_virtual_packages = params.build_platform_virtual_packages.clone();
 
             let outputs = rattler_build_integration::get_build_output(
-                &self.generated_recipe,
+                &recipe,
                 tool_config.clone(),
                 selector_config,
                 host_virtual_packages,
@@ -546,10 +601,14 @@ impl Protocol for IntermediateBackend {
                         move || async move { run_build(output, &tool_config).await },
                     )
                     .await?;
+
+                let input_globs =
+                    T::build_input_globs(self.config.clone(), params.work_directory.clone());
+
                 let built_package = CondaBuiltPackage {
                     output_file: package,
                     // TODO: we should handle input globs properly
-                    input_globs: vec![],
+                    input_globs,
                     name: output.name().as_normalized().to_string(),
                     version: output.version().to_string(),
                     build: build_string.to_string(),

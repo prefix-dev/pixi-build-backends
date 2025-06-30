@@ -1,16 +1,41 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::Version;
+use rattler_conda_types::{Platform, Version};
 use recipe_stage0::recipe::{
     Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
 };
+use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
-pub trait GenerateRecipe {
+pub trait GenerateRecipe: Clone {
+    type Config: BackendConfig;
+
     /// Generates an IntermediateRecipe from a ProjectModelV1.
-    fn generate_recipe(&self, model: &ProjectModelV1) -> miette::Result<GeneratedRecipe>;
+    fn generate_recipe(
+        &self,
+        model: &ProjectModelV1,
+        config: &Self::Config,
+        manifest_path: PathBuf,
+        host_platform: Platform,
+    ) -> miette::Result<GeneratedRecipe>;
+
+    fn build_input_globs(_config: Self::Config, workdir: PathBuf) -> Vec<String> {
+        vec![]
+    }
+
+    fn metadata_input_globs(_config: Self::Config) -> Vec<String> {
+        vec![]
+    }
+}
+
+/// At least debug dir should be provided by the backend config
+pub trait BackendConfig: DeserializeOwned + Default + Clone {
+    fn debug_dir(&self) -> Option<&Path>;
 }
 
 pub struct GeneratedRecipe {

@@ -15,12 +15,12 @@ serde_json = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 url = { workspace = true }
+indexmap = { workspace = true }
 pathdiff = { workspace = true }
 itertools = { workspace = true }
 
 pixi-build-backend = { workspace = true }
 
 pixi_build_types = { workspace = true }
-indexmap.workspace = true
 
 [dev-dependencies]

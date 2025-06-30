@@ -42,37 +42,6 @@ use crate::{
     utils::TemporaryRenderedRecipe,
 };
 
-// impl<F> BackendConfig for F
-// where
-//     F: Fn() -> GeneratedRecipe + Clo,
-// {
-//     fn debug_dir(&self) -> Option<PathBuf> {
-//         self.debug_dir.clone()
-//     }
-// }
-// /// At least debug dir should be provided by the backend config
-// pub trait BackendConfig: DeserializeOwned + Default {
-//     fn debug_dir(&self) -> Option<PathBuf>;
-// }
-
-// impl<F> GenerateRecipe for F
-// where
-//     F: Fn(&ProjectModelV1, PathBuf, Platform) -> GeneratedRecipe + Clone,
-// {
-
-//     type Config = IntermediateBackendConfig;
-
-//     fn generate_recipe(
-//         &self,
-//         model: &ProjectModelV1,
-//         manifest_path: PathBuf,
-//         host_platform: Platform,
-//     ) -> miette::Result<GeneratedRecipe> {
-//         Ok(self(model, manifest_path, host_platform))
-//     }
-
-// }
-
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct IntermediateBackendConfig {

@@ -1,0 +1,7 @@
+---
+source: crates/pixi-build-rust/src/main.rs
+expression: generated_recipe.recipe.build.script
+---
+script: "[ ... script ... ]"
+env:
+  foo: bar

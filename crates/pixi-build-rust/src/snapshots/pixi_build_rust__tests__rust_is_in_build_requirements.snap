@@ -14,7 +14,7 @@ build:
   script: "[ ... script ... ]"
 requirements:
   build:
-    - ~
+    - rust
   host: []
   run: []
   run_constraints: []

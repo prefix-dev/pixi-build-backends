@@ -366,7 +366,7 @@ pub struct PathSource {
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Script {
-    pub script: Vec<String>,
+    pub content: Vec<String>,
     pub env: IndexMap<String, String>,
 }
 
@@ -377,11 +377,11 @@ pub struct Build {
 }
 
 impl Build {
-    pub fn new(script: Vec<String>) -> Self {
+    pub fn new(content: Vec<String>) -> Self {
         Build {
             number: None,
             script: Script {
-                script,
+                content,
                 env: IndexMap::new(),
             },
         }

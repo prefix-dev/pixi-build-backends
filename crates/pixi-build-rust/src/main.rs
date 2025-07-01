@@ -7,13 +7,17 @@ use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
+    cache::{enable_sccache, sccache_tools},
     compilers::{Language, compiler_requirements},
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::Platform;
-use recipe_stage0::recipe::Script;
+use recipe_stage0::{
+    matchspec::PackageDependency,
+    recipe::{Item, Script},
+};
 
 #[derive(Default, Clone)]
 pub struct RustGenerator {}
@@ -43,18 +47,30 @@ impl GenerateRecipe for RustGenerator {
             .resolve(Some(&host_platform))
             .contains(&"openssl".parse().into_diagnostic()?);
 
+        let mut has_sccache = false;
+
+        if enable_sccache(std::env::vars().collect()) {
+            let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
+                .iter()
+                .map(|tool| tool.parse().into_diagnostic())
+                .collect::<miette::Result<Vec<_>>>()?;
+
+            requirements.build.extend(sccache_dep);
+
+            has_sccache = true;
+        }
+
         let build_script = BuildScriptContext {
             source_dir: manifest_root.display().to_string(),
-            // extra_args: self.config.extra_args.clone(),
             extra_args: config.extra_args.clone(),
             has_openssl,
-            has_sccache: false,
+            has_sccache,
             is_bash: !Platform::current().is_windows(),
         }
         .render();
 
         generated_recipe.recipe.build.script = Script {
-            script: build_script,
+            content: build_script,
             env: config.env.clone(),
         };
 
@@ -154,10 +170,6 @@ mod tests {
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script" => "[ ... script ... ]",
-        ".requirements.build[0]" => insta::dynamic_redaction(|value, _path| {
-            // assert that the value looks like a uuid here
-            assert!(value.as_str().unwrap().contains("rust"));
-        }),
         });
     }
 

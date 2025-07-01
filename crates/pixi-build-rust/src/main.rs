@@ -1,19 +1,22 @@
 mod build_script;
 mod config;
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{enable_sccache, sccache_tools},
-    compilers::{Language, compiler_requirements},
+    compilers::{Language, compiler_requirement},
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::Platform;
+use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Script},
@@ -36,16 +39,23 @@ impl GenerateRecipe for RustGenerator {
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
 
         // we need to add compilers
-        let conditional_compiler_requirements = compiler_requirements(&Language::Rust);
+        let compiler_function = compiler_requirement(&Language::Rust);
 
         let requirements = &mut generated_recipe.recipe.requirements;
-        requirements
-            .build
-            .extend(conditional_compiler_requirements.clone());
 
-        let has_openssl = requirements
-            .resolve(Some(&host_platform))
-            .contains(&"openssl".parse().into_diagnostic()?);
+        let resolved_requirements = requirements.resolve(Some(&host_platform));
+
+        // Ensure the compiler function is added to the build requirements
+        // only if it is not already present.
+
+        if !resolved_requirements.build.contains_key(
+            &PackageName::from_str(&Language::Rust.to_string())
+                .expect("we expect Language::Rust to be a valid package name"),
+        ) {
+            requirements.build.push(compiler_function.clone());
+        }
+
+        let has_openssl = resolved_requirements.contains(&"openssl".parse().into_diagnostic()?);
 
         let mut has_sccache = false;
 
@@ -55,7 +65,15 @@ impl GenerateRecipe for RustGenerator {
                 .map(|tool| tool.parse().into_diagnostic())
                 .collect::<miette::Result<Vec<_>>>()?;
 
-            requirements.build.extend(sccache_dep);
+            // Add sccache tools to the build requirements
+            // only if they are not already present
+            let existing_reqs: Vec<_> = requirements.build.clone().into_iter().collect();
+
+            requirements.build.extend(
+                sccache_dep
+                    .into_iter()
+                    .filter(|dep| !existing_reqs.contains(dep)),
+            );
 
             has_sccache = true;
         }
@@ -150,9 +168,54 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "default_target": {
-                    "run_dependencies": {
-                        "boltons": "*"
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default(),
+                PathBuf::from("."),
+                Platform::Linux64,
+            )
+            .expect("Failed to generate recipe");
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
+        ".source[0].path" => "[ ... path ... ]",
+        ".build.script" => "[ ... script ... ]",
+        });
+    }
+
+    #[test]
+    fn test_rust_is_not_added_if_already_present() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    },
+                    "buildDependencies": {
+                        "rust": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
                     }
                 },
             }
@@ -179,9 +242,13 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "default_target": {
-                    "run_dependencies": {
-                        "boltons": "*"
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
                     }
                 },
             }
@@ -203,7 +270,7 @@ mod tests {
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
         {
-            ".script" => "[ ... script ... ]",
+            ".script.content" => "[ ... script ... ]",
         });
     }
 

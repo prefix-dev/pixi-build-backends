@@ -2,4 +2,4 @@
 source: crates/pixi-build-backend/src/compilers.rs
 expression: result
 ---
-- gfortran
+"${{ compiler('fortran') }}"

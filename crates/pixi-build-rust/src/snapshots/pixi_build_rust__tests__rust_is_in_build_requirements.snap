@@ -14,9 +14,10 @@ build:
   script: "[ ... script ... ]"
 requirements:
   build:
-    - rust
+    - "${{ compiler('rust') }}"
   host: []
-  run: []
+  run:
+    - boltons
   run_constraints: []
 tests: []
 about: ~

@@ -13,7 +13,7 @@ use pixi_build_backend::{
     utils::TemporaryRenderedRecipe,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1,
+    BackendCapabilities, CondaPackageMetadata, SourcePackageSpecV1, TargetV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -485,6 +485,40 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         } else {
             RattlerBuildBackendConfig::default()
         };
+
+        if let Some(target) = params
+            .project_model
+            .and_then(|m| m.into_v1())
+            .and_then(|m| m.targets)
+        {
+            fn enforce_empty_deps(target: TargetV1) -> miette::Result<()> {
+                for dep in [
+                    target.build_dependencies,
+                    target.host_dependencies,
+                    target.run_dependencies,
+                ] {
+                    let Some(dep) = dep else {
+                        continue;
+                    };
+
+                    if !dep.is_empty() {
+                        return Err(miette::miette!(
+                            "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
+                        ));
+                    }
+                }
+                Ok(())
+            }
+            if let Some(default_target) = target.default_target {
+                enforce_empty_deps(default_target)?;
+            }
+
+            if let Some(targets) = target.targets {
+                for (_, target) in targets {
+                    enforce_empty_deps(target)?;
+                }
+            }
+        }
 
         let instance = RattlerBuildBackend::new(
             params.manifest_path.as_path(),

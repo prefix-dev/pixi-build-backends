@@ -91,3 +91,4 @@ The rattler-build backend follows this build process:
 
 - Requires an existing rattler-build recipe file - cannot infer build instructions automatically
 - Build configuration is primarily controlled through the recipe file rather than `pixi.toml`
+- Cannot specify dependencies in the manifest — all dependencies are handled by the recipe

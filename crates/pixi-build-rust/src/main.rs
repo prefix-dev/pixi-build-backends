@@ -1,13 +1,13 @@
 mod build_script;
 mod config;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    compilers::compiler_requirements,
+    compilers::{Language, compiler_requirements},
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
 };
@@ -32,7 +32,7 @@ impl GenerateRecipe for RustGenerator {
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
 
         // we need to add compilers
-        let conditional_compiler_requirements = compiler_requirements("rust");
+        let conditional_compiler_requirements = compiler_requirements(&Language::Rust);
 
         let requirements = &mut generated_recipe.recipe.requirements;
         requirements
@@ -62,7 +62,7 @@ impl GenerateRecipe for RustGenerator {
     }
 
     /// Returns the build input globs used by the backend.
-    fn build_input_globs(config: Self::Config, _workdir: PathBuf) -> Vec<String> {
+    fn build_input_globs(config: &Self::Config, _workdir: impl AsRef<Path>) -> Vec<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -73,7 +73,7 @@ impl GenerateRecipe for RustGenerator {
         ]
         .iter()
         .map(|s| s.to_string())
-        .chain(config.extra_input_globs)
+        .chain(config.extra_input_globs.clone())
         .collect()
     }
 }
@@ -101,7 +101,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = RustGenerator::build_input_globs(config.clone(), PathBuf::new());
+        let result = RustGenerator::build_input_globs(&config, PathBuf::new());
 
         // Verify that all extra globs are included in the result
         for extra_glob in &config.extra_input_globs {

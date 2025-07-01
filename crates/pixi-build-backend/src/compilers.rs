@@ -1,10 +1,32 @@
 //! We could expose the `default_compiler` function from the `rattler-build` crate
 
+use std::fmt::Display;
+
 use rattler_conda_types::Platform;
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Conditional, Item, ListOrItem, Value},
 };
+
+pub enum Language<'a> {
+    C,
+    Cxx,
+    Fortran,
+    Rust,
+    Other(&'a str),
+}
+
+impl Display for Language<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Language::C => write!(f, "c"),
+            Language::Cxx => write!(f, "cxx"),
+            Language::Fortran => write!(f, "fortran"),
+            Language::Rust => write!(f, "rust"),
+            Language::Other(name) => write!(f, "{}", name),
+        }
+    }
+}
 
 pub fn default_compiler(platform: Platform, language: &str) -> Option<String> {
     Some(
@@ -45,17 +67,20 @@ pub fn default_compiler(platform: Platform, language: &str) -> Option<String> {
     )
 }
 
-pub fn compiler_requirements(language: &str) -> Vec<Item<PackageDependency>> {
+/// Returns a list of compiler requirements that needs to be present in the final recipe
+/// based on the specified language and platform.
+/// For example, when building a fortran project, we will add `gfortran`
+/// as a build requirement in the trecipe.
+pub fn compiler_requirements(language: &Language) -> Vec<Item<PackageDependency>> {
     match language {
-        "fortran" => vec!["gfortran".parse().unwrap()],
-        lang if !["c", "cxx"].contains(&lang) => vec![language.parse().unwrap()],
-        _ => {
+        Language::Fortran => vec!["gfortran".parse().unwrap()],
+        Language::C | Language::Cxx => {
             let mut items: Vec<Item<PackageDependency>> = vec![];
 
             // for windows
             let windows_compiler = match language {
-                "c" => "vs2019",
-                "cxx" => "vs2019",
+                Language::C => "vs2019",
+                Language::Cxx => "vs2019",
                 _ => unreachable!(),
             };
 
@@ -69,8 +94,8 @@ pub fn compiler_requirements(language: &str) -> Vec<Item<PackageDependency>> {
 
             // for osx
             let osx_compiler = match language {
-                "c" => "clang",
-                "cxx" => "clangxx",
+                Language::C => "clang",
+                Language::Cxx => "clangxx",
                 _ => unreachable!(),
             };
 
@@ -84,8 +109,8 @@ pub fn compiler_requirements(language: &str) -> Vec<Item<PackageDependency>> {
 
             // emscripten
             let emscripten_compiler = match language {
-                "c" => "emscripten",
-                "cxx" => "emscripten",
+                Language::C => "emscripten",
+                Language::Cxx => "emscripten",
                 _ => unreachable!(),
             };
 
@@ -99,8 +124,8 @@ pub fn compiler_requirements(language: &str) -> Vec<Item<PackageDependency>> {
 
             // default compiler
             let default_compiler = match language {
-                "c" => "gcc",
-                "cxx" => "gxx",
+                Language::C => "gcc",
+                Language::Cxx => "gxx",
                 _ => unreachable!(),
             };
 
@@ -109,5 +134,42 @@ pub fn compiler_requirements(language: &str) -> Vec<Item<PackageDependency>> {
 
             items
         }
+        _ => vec![language.to_string().parse().unwrap()],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_yaml_snapshot;
+
+    #[test]
+    fn test_compiler_requirements_fortran() {
+        let result = compiler_requirements(&Language::Fortran);
+        assert_yaml_snapshot!(result);
+    }
+
+    #[test]
+    fn test_compiler_requirements_c() {
+        let result = compiler_requirements(&Language::C);
+        assert_yaml_snapshot!(result);
+    }
+
+    #[test]
+    fn test_compiler_requirements_cxx() {
+        let result = compiler_requirements(&Language::Cxx);
+        assert_yaml_snapshot!(result);
+    }
+
+    #[test]
+    fn test_compiler_requirements_rust() {
+        let result = compiler_requirements(&Language::Other("rust"));
+        assert_yaml_snapshot!(result);
+    }
+
+    #[test]
+    fn test_compiler_requirements_python() {
+        let result = compiler_requirements(&Language::Other("python"));
+        assert_yaml_snapshot!(result);
     }
 }

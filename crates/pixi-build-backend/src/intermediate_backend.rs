@@ -559,8 +559,7 @@ where
                     )
                     .await?;
 
-                let input_globs =
-                    T::build_input_globs(self.config.clone(), params.work_directory.clone());
+                let input_globs = T::build_input_globs(&self.config, &params.work_directory);
 
                 let built_package = CondaBuiltPackage {
                     output_file: package,

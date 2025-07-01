@@ -12,7 +12,16 @@ use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
-pub trait GenerateRecipe: Clone {
+/// The trait responsible of converting a certain `ProjectModelV1` ( or others in future )
+/// into an `IntermediateRecipe`.
+/// By implementing this trait, you can create a new backend for `pixi-build`.
+///
+/// It also use a `BackendConfig` to provide additional configuration options.
+///
+///
+/// An instance of this trait is used by the `IntermediateBackend`
+/// further to generate the recipe.
+pub trait GenerateRecipe {
     type Config: BackendConfig;
 
     /// Generates an IntermediateRecipe from a ProjectModelV1.
@@ -21,20 +30,32 @@ pub trait GenerateRecipe: Clone {
         model: &ProjectModelV1,
         config: &Self::Config,
         manifest_path: PathBuf,
+        // The host_platform will be removed in the future.
+        // Right now it is used to determine if certain dependencies are present
+        // for the host platform.
+        // Instead, we should rely on recipe selectors and offload all the
+        // evaluation logic to the rattler-build.
         host_platform: Platform,
     ) -> miette::Result<GeneratedRecipe>;
 
-    fn build_input_globs(_config: Self::Config, _workdir: PathBuf) -> Vec<String> {
+    /// Returns a list of globs that should be used to find the input files
+    /// for the build process.
+    /// For example, this could be a list of source files or configuration files
+    /// used by Cmake.
+    fn build_input_globs(_config: &Self::Config, _workdir: impl AsRef<Path>) -> Vec<String> {
         vec![]
     }
 
-    fn metadata_input_globs(_config: Self::Config) -> Vec<String> {
+    /// Returns a list of globs that should be used to find the metadata files
+    /// for the build process.
+    /// For example, this could be a `Cargo.toml` file for Rust projects.
+    fn metadata_input_globs(_config: &Self::Config) -> Vec<String> {
         vec![]
     }
 }
 
 /// At least debug dir should be provided by the backend config
-pub trait BackendConfig: DeserializeOwned + Default + Clone {
+pub trait BackendConfig: DeserializeOwned + Default {
     fn debug_dir(&self) -> Option<&Path>;
 }
 

@@ -90,7 +90,7 @@ async fn test_conda_get_metadata() {
     };
 
     let some_config = json!({
-        "debug_dir": "some_debug_dir",
+        "debug-dir": "some_debug_dir",
     });
 
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
@@ -149,7 +149,7 @@ async fn test_conda_build() {
     };
 
     let some_config = json!({
-        "debug_dir": "some_debug_dir",
+        "debug-dir": "some_debug_dir",
     });
 
     let intermediate_backend = IntermediateBackend::new(

@@ -1,0 +1,14 @@
+---
+source: crates/pixi-build-backend/src/compilers.rs
+expression: result
+---
+- if: win
+  then: vs2019
+  else: []
+- if: osx
+  then: clang
+  else: []
+- if: emscripten
+  then: emscripten
+  else: []
+- gcc

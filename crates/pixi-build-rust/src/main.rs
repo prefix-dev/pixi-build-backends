@@ -206,4 +206,40 @@ mod tests {
             ".script" => "[ ... script ... ]",
         });
     }
+
+    #[test]
+    fn test_sccache_is_enabled() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "boltons": "*"
+                    }
+                },
+            }
+        });
+
+        let env = IndexMap::from([("SCCACHE_BUCKET".to_string(), "my-bucket".to_string())]);
+
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig {
+                    env,
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify that sccache is added to the build requirements
+        // when some env variables are set
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
+        ".source[0].path" => "[ ... path ... ]",
+        ".build.script" => "[ ... script ... ]",
+        });
+    }
 }

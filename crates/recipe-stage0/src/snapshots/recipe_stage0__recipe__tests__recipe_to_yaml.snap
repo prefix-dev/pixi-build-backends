@@ -14,7 +14,7 @@ source:
 build:
   number: ~
   script:
-    script: []
+    content: []
     env: {}
 requirements:
   build:

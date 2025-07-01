@@ -2,7 +2,6 @@
 source: crates/pixi-build-rust/src/main.rs
 expression: generated_recipe.recipe.build.script
 ---
-content:
-  - "cargo install --locked --root \"$PREFIX\" --path . --no-track  --force"
+content: "[ ... script ... ]"
 env:
   foo: bar

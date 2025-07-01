@@ -85,7 +85,6 @@ impl<T: Debug> Debug for Item<T> {
     }
 }
 
-
 impl<T> From<Conditional<T>> for Item<T> {
     fn from(value: Conditional<T>) -> Self {
         Self::Conditional(value)
@@ -283,8 +282,6 @@ pub struct Conditional<T> {
     pub else_value: ListOrItem<T>,
 }
 
-
-
 impl<T: Debug> Debug for Conditional<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -294,8 +291,6 @@ impl<T: Debug> Debug for Conditional<T> {
         )
     }
 }
-
-
 
 // Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;

@@ -59,7 +59,14 @@ impl GenerateRecipe for RustGenerator {
 
         let mut has_sccache = false;
 
-        if enable_sccache(std::env::vars().collect()) {
+        let env_vars = config
+            .env
+            .clone()
+            .into_iter()
+            .chain(std::env::vars())
+            .collect();
+
+        if enable_sccache(env_vars) {
             let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
                 .iter()
                 .map(|tool| tool.parse().into_diagnostic())
@@ -180,7 +187,6 @@ mod tests {
             }
         });
 
-
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
@@ -270,7 +276,7 @@ mod tests {
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
         {
-            ".script.content" => "[ ... script ... ]",
+            ".content" => "[ ... script ... ]",
         });
     }
 

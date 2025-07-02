@@ -55,6 +55,18 @@ impl GenerateRecipe for RustGenerator {
             requirements.build.push(compiler_function.clone());
         }
 
+        if !resolved_requirements
+            .build
+            .contains_key(&PackageName::new_unchecked(Language::Python.to_string()))
+        {
+            requirements.build.push(
+                Language::Python
+                    .to_string()
+                    .parse()
+                    .expect("Should always be able to parse"),
+            );
+        }
+
         let has_openssl = resolved_requirements.contains(&"openssl".parse().into_diagnostic()?);
 
         let mut has_sccache = false;

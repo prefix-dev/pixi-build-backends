@@ -17,6 +17,9 @@ pub struct BuildScriptContext {
 
     /// The platform that is running the build.
     pub is_bash: bool,
+
+    /// Python extensions to build (library names without lib prefix and extension)
+    pub python_extensions: Vec<String>,
 }
 
 impl BuildScriptContext {
@@ -46,6 +49,7 @@ mod test {
             has_openssl: false,
             has_sccache: false,
             is_bash,
+            python_extensions: Vec::new(),
         };
         let script = context.render();
 
@@ -64,6 +68,7 @@ mod test {
             has_openssl: false,
             has_sccache: true,
             is_bash,
+            python_extensions: Vec::new(),
         };
         let script = context.render();
 
@@ -82,6 +87,7 @@ mod test {
             has_openssl: true,
             has_sccache: false,
             is_bash,
+            python_extensions: Vec::new(),
         };
         let script = context.render();
 

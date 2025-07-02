@@ -18,6 +18,10 @@ pub struct RustBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
+    /// Python extensions to build. Each entry is the library name (without lib prefix and extension)
+    /// that should be renamed and moved to the appropriate Python module location.
+    #[serde(default)]
+    pub python_extension: Vec<String>,
 }
 
 impl BackendConfig for RustBackendConfig {

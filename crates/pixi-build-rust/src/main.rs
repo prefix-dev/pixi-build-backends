@@ -91,6 +91,7 @@ impl GenerateRecipe for RustGenerator {
             has_openssl,
             has_sccache,
             is_bash: !Platform::current().is_windows(),
+            python_extensions: config.python_extension.clone(),
         }
         .render();
 

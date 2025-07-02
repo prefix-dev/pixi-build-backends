@@ -59,8 +59,9 @@ impl GenerateRecipe for RustGenerator {
 
         let mut has_sccache = false;
 
-        let env_vars = config
-            .env
+        let mut config_env = config.env.clone();
+
+        let env_vars = config_env
             .clone()
             .into_iter()
             .chain(std::env::vars())
@@ -69,7 +70,11 @@ impl GenerateRecipe for RustGenerator {
         let mut sccache_secrets = Vec::default();
 
         if let Some(sccache_envs) = sccache_envs(env_vars) {
+            // If sccache_envs are used
+            // we will remove them from the env vars and set them as secrets
+            config_env.retain(|key, _| !sccache_envs.contains(key));
             sccache_secrets = sccache_envs;
+
             let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
                 .iter()
                 .map(|tool| tool.parse().into_diagnostic())
@@ -99,7 +104,7 @@ impl GenerateRecipe for RustGenerator {
 
         generated_recipe.recipe.build.script = Script {
             content: build_script,
-            env: config.env.clone(),
+            env: config_env,
             secrets: sccache_secrets,
         };
 
@@ -316,7 +321,7 @@ mod tests {
         // when some env variables are set
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
         ".source[0].path" => "[ ... path ... ]",
-        ".build.script" => "[ ... script ... ]",
+        ".build.script.content" => "[ ... script ... ]",
         });
     }
 }

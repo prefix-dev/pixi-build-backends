@@ -11,7 +11,11 @@ source:
     sha256: ~
 build:
   number: ~
-  script: "[ ... script ... ]"
+  script:
+    content: "[ ... script ... ]"
+    env: {}
+    secrets:
+      - SCCACHE_BUCKET
 requirements:
   build:
     - "${{ compiler('rust') }}"

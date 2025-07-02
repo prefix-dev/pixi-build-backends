@@ -292,7 +292,7 @@ impl<T: Debug> Debug for Conditional<T> {
     }
 }
 
-// Type alias for lists that can contain conditionals
+/// Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure

@@ -47,7 +47,7 @@ impl GenerateRecipe for RustGenerator {
 
         if !resolved_requirements
             .build
-            .contains_key(&PackageName::new_unchecked(&Language::Rust.to_string()))
+            .contains_key(&PackageName::new_unchecked(Language::Rust.to_string()))
         {
             requirements.build.push(compiler_function.clone());
         }

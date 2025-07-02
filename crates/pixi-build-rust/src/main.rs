@@ -1,10 +1,7 @@
 mod build_script;
 mod config;
 
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::path::{Path, PathBuf};
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;

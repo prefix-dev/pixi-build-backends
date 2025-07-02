@@ -1,13 +1,8 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::path::{Path, PathBuf};
 
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::{Platform, Version};
-use recipe_stage0::recipe::{
-    Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
-};
+use rattler_conda_types::Platform;
+use recipe_stage0::recipe::{ConditionalList, IntermediateRecipe, Item, Package, Source, Value};
 use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;

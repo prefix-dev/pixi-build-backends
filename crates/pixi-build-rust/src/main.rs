@@ -90,13 +90,13 @@ impl GenerateRecipe for RustGenerator {
             extra_args: config.extra_args.clone(),
             has_openssl,
             has_sccache,
-            is_bash: !Platform::current().is_windows(),
         }
         .render();
 
         generated_recipe.recipe.build.script = Script {
             content: build_script,
             env: config.env.clone(),
+            interpreter: Some("python".to_string()),
         };
 
         Ok(generated_recipe)

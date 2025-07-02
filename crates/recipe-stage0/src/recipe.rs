@@ -417,6 +417,8 @@ pub struct PathSource {
 pub struct Script {
     pub content: Vec<String>,
     pub env: IndexMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interpreter: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -432,6 +434,7 @@ impl Build {
             script: Script {
                 content,
                 env: IndexMap::new(),
+                interpreter: None,
             },
         }
     }

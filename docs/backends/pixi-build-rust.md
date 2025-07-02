@@ -26,11 +26,11 @@ This backend automatically generates conda packages from Rust projects by:
 To use the Rust backend in your `pixi.toml`, add it to your package's build configuration:
 
 ```toml
-[package] 
+[package]
 name = "rust_package"
 version = "0.1.0"
 
-[package.build] 
+[package.build]
 backend = { name = "pixi-build-rust", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",

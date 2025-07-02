@@ -27,11 +27,11 @@ The rattler-build backend:
 To use the rattler-build backend in your `pixi.toml`, specify it in your build system configuration:
 
 ```toml
-[package] 
+[package]
 name = "rattler_build_package"
 version = "0.1.0"
 
-[package.build] 
+[package.build]
 backend = { name = "pixi-build-rattler-build", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",

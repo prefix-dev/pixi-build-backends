@@ -12,19 +12,19 @@ use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
-/// The trait responsible of converting a certain `ProjectModelV1` ( or others in future )
-/// into an `IntermediateRecipe`.
+/// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
+/// into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
-/// It also use a `BackendConfig` to provide additional configuration options.
+/// It also uses a [`BackendConfig`] to provide additional configuration options.
 ///
 ///
-/// An instance of this trait is used by the `IntermediateBackend`
-/// further to generate the recipe.
+/// An instance of this trait is used by the [`IntermediateBackend`]
+/// in order to generate the recipe.
 pub trait GenerateRecipe {
     type Config: BackendConfig;
 
-    /// Generates an IntermediateRecipe from a ProjectModelV1.
+    /// Generates an [`IntermediateRecipe`] from a [`ProjectModelV1`].
     fn generate_recipe(
         &self,
         model: &ProjectModelV1,
@@ -64,8 +64,8 @@ pub struct GeneratedRecipe {
 }
 
 impl GeneratedRecipe {
-    /// Creates a new GeneratedRecipe from a ProjectModelV1.
-    /// A default implementation that don't take into account the
+    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
+    /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
     pub fn from_model(model: ProjectModelV1, manifest_root: PathBuf) -> Self {
         let package = Package {

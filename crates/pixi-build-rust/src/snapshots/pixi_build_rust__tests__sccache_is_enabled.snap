@@ -13,9 +13,10 @@ build:
   number: ~
   script:
     content: "[ ... script ... ]"
-    env: {}
+    env:
+      SCCACHE_BUCKET: my-bucket
     secrets:
-      - SCCACHE_BUCKET
+      - SCCACHE_SYSTEM
 requirements:
   build:
     - "${{ compiler('rust') }}"

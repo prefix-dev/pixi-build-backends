@@ -2,6 +2,7 @@ mod build_script;
 mod config;
 
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -59,21 +60,36 @@ impl GenerateRecipe for RustGenerator {
 
         let mut has_sccache = false;
 
-        let mut config_env = config.env.clone();
+        let config_env = config.env.clone();
 
-        let env_vars = config_env
+        let system_env_vars = std::env::vars().collect::<HashMap<String, String>>();
+
+        let all_env_vars = config_env
             .clone()
             .into_iter()
-            .chain(std::env::vars())
+            .chain(system_env_vars.clone())
             .collect();
 
         let mut sccache_secrets = Vec::default();
 
-        if let Some(sccache_envs) = sccache_envs(env_vars) {
-            // If sccache_envs are used
-            // we will remove them from the env vars and set them as secrets
-            config_env.retain(|key, _| !sccache_envs.contains(key));
-            sccache_secrets = sccache_envs;
+        // Verify if user has set any sccache environment variables
+        if sccache_envs(&all_env_vars).is_some() {
+            // check if we set some sccache in system env vars
+            if let Some(system_sccache_keys) = sccache_envs(&system_env_vars) {
+                // If sccache_envs are used in the system environment variables,
+                // we need to set them as secrets
+                let system_sccache_keys = system_env_vars
+                    .keys()
+                    // we set only those keys that are present in the system environment variables and not in the config env
+                    .filter(|key| {
+                        system_sccache_keys.contains(&key.as_str())
+                            && !config_env.contains_key(*key)
+                    })
+                    .cloned()
+                    .collect();
+
+                sccache_secrets = system_sccache_keys;
+            };
 
             let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
                 .iter()
@@ -305,17 +321,25 @@ mod tests {
 
         let env = IndexMap::from([("SCCACHE_BUCKET".to_string(), "my-bucket".to_string())]);
 
-        let generated_recipe = RustGenerator::default()
-            .generate_recipe(
-                &project_model,
-                &RustBackendConfig {
-                    env,
-                    ..Default::default()
-                },
-                PathBuf::from("."),
-                Platform::Linux64,
-            )
-            .expect("Failed to generate recipe");
+        let system_env_vars = [
+            ("SCCACHE_SYSTEM", Some("SOME_VALUE")),
+            // We want to test that config env variable wins over system env variable
+            ("SCCACHE_BUCKET", Some("system-bucket")),
+        ];
+
+        let generated_recipe = temp_env::with_vars(system_env_vars, || {
+            RustGenerator::default()
+                .generate_recipe(
+                    &project_model,
+                    &RustBackendConfig {
+                        env,
+                        ..Default::default()
+                    },
+                    PathBuf::from("."),
+                    Platform::Linux64,
+                )
+                .expect("Failed to generate recipe")
+        });
 
         // Verify that sccache is added to the build requirements
         // when some env variables are set

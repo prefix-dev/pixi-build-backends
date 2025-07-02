@@ -10,7 +10,7 @@ use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    cache::{enable_sccache, sccache_tools},
+    cache::{sccache_envs, sccache_tools},
     compilers::{Language, compiler_requirement},
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
@@ -66,7 +66,10 @@ impl GenerateRecipe for RustGenerator {
             .chain(std::env::vars())
             .collect();
 
-        if enable_sccache(env_vars) {
+        let mut sccache_secrets = Vec::default();
+
+        if let Some(sccache_envs) = sccache_envs(env_vars) {
+            sccache_secrets = sccache_envs;
             let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
                 .iter()
                 .map(|tool| tool.parse().into_diagnostic())
@@ -97,6 +100,7 @@ impl GenerateRecipe for RustGenerator {
         generated_recipe.recipe.build.script = Script {
             content: build_script,
             env: config.env.clone(),
+            secrets: sccache_secrets,
         };
 
         Ok(generated_recipe)

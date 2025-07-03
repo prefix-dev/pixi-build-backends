@@ -44,6 +44,8 @@ mod imp {
             _config: &Self::Config,
             manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
+            _editable: Option<bool>,
+            _pyproject_manifest: Option<PathBuf>,
         ) -> miette::Result<GeneratedRecipe> {
             let generated_recipe = GeneratedRecipe::from_model(model.clone(), manifest_path);
             Ok(generated_recipe)

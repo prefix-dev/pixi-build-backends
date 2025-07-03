@@ -74,6 +74,7 @@ pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) generate_recipe: T,
     pub(crate) config: T::Config,
     pub(crate) cache_dir: Option<PathBuf>,
+    pub(crate) pyproject_manifest_path: Option<PathBuf>,
 }
 impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
     pub fn new(
@@ -90,6 +91,15 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
             .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
             .to_path_buf();
 
+        let pyproject_manifest_path = {
+            let pyproject_path = manifest_path.with_file_name("pyproject.toml");
+            if pyproject_path.exists() {
+                Some(pyproject_path)
+            } else {
+                None
+            }
+        };
+
         let config = serde_json::from_value::<T::Config>(config)
             .into_diagnostic()
             .context("failed to parse configuration")?;
@@ -101,6 +111,7 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
             config,
             logging_output_handler,
             cache_dir,
+            pyproject_manifest_path,
         })
     }
 }
@@ -226,6 +237,8 @@ where
             &self.config,
             self.manifest_root.clone(),
             host_platform,
+            None,
+            self.pyproject_manifest_path.clone(),
         )?;
 
         // Determine the variant keys that are used in the recipe.
@@ -450,6 +463,8 @@ where
             &self.config,
             self.manifest_root.clone(),
             host_platform,
+            Some(params.editable),
+            self.pyproject_manifest_path.clone(),
         )?;
 
         // Determine the variant keys that are used in the recipe.
@@ -559,7 +574,8 @@ where
                     )
                     .await?;
 
-                let input_globs = T::build_input_globs(&self.config, &params.work_directory);
+                let input_globs =
+                    T::build_input_globs(&self.config, &params.work_directory, params.editable);
 
                 let built_package = CondaBuiltPackage {
                     output_file: package,

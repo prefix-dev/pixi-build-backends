@@ -36,13 +36,24 @@ pub trait GenerateRecipe {
         // Instead, we should rely on recipe selectors and offload all the
         // evaluation logic to the rattler-build.
         host_platform: Platform,
+        // Returns whetever the build is editable or not.
+        // Note: It is used only by python backend right now and will be removed when
+        // profiles will be implemented.
+        // Default implementation return false.
+        editable: Option<bool>,
+        // Optional path to the pyproject.toml manifest.
+        pyproject_manifest: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files
     /// for the build process.
     /// For example, this could be a list of source files or configuration files
     /// used by Cmake.
-    fn build_input_globs(_config: &Self::Config, _workdir: impl AsRef<Path>) -> Vec<String> {
+    fn build_input_globs(
+        _config: &Self::Config,
+        _workdir: impl AsRef<Path>,
+        _editable: bool,
+    ) -> Vec<String> {
         vec![]
     }
 

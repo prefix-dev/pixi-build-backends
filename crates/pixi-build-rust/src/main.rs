@@ -34,6 +34,8 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         manifest_root: PathBuf,
         host_platform: Platform,
+        _editable: Option<bool>,
+        _pyproject_manifest: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
@@ -103,7 +105,7 @@ impl GenerateRecipe for RustGenerator {
     }
 
     /// Returns the build input globs used by the backend.
-    fn build_input_globs(config: &Self::Config, _workdir: impl AsRef<Path>) -> Vec<String> {
+    fn build_input_globs(config: &Self::Config, _workdir: impl AsRef<Path>, _editable: bool) -> Vec<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -142,7 +144,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = RustGenerator::build_input_globs(&config, PathBuf::new());
+        let result = RustGenerator::build_input_globs(&config, PathBuf::new(), false);
 
         // Verify that all extra globs are included in the result
         for extra_glob in &config.extra_input_globs {
@@ -193,6 +195,8 @@ mod tests {
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -233,6 +237,8 @@ mod tests {
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -271,6 +277,8 @@ mod tests {
                 },
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -305,6 +313,8 @@ mod tests {
                 },
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
+                None,
             )
             .expect("Failed to generate recipe");
 

@@ -1,38 +1,26 @@
+---
+source: crates/pixi-build-rust/src/build_script.rs
+expression: "script.join(\"\\n\")"
+---
 import os
 import subprocess
 import sys
-
 # Set environment variables
 env = os.environ.copy()
-
-{%- if has_openssl %}
-env["OPENSSL_DIR"] = os.environ["PREFIX"]
-{%- endif %}
-{%- if has_sccache %}
 env["RUSTC_WRAPPER"] = "sccache"
-{%- endif %}
-
 # Build cargo install command
 cmd = [
-    "cargo", "install",
-    "--locked",
+    "cargo", "install", 
+    "--locked", 
     "--root", os.environ["PREFIX"],
-    "--path", "{{ source_dir }}",
+    "--path", "my-prefix-dir",
     "--no-track",
     "--force"
 ]
-
 # Add extra arguments
-{%- if extra_args %}
-cmd.extend({{ extra_args | tojson }})
-{%- endif %}
-
 # Run cargo install
 result = subprocess.run(cmd, env=env)
 if result.returncode != 0:
     sys.exit(result.returncode)
-
-{%- if has_sccache %}
 # Show sccache stats
 subprocess.run(["sccache", "--show-stats"])
-{%- endif %}

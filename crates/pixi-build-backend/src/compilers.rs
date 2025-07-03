@@ -10,6 +10,7 @@ pub enum Language<'a> {
     Cxx,
     Fortran,
     Rust,
+    Python,
     Other(&'a str),
 }
 
@@ -20,6 +21,7 @@ impl Display for Language<'_> {
             Language::Cxx => write!(f, "cxx"),
             Language::Fortran => write!(f, "fortran"),
             Language::Rust => write!(f, "rust"),
+            Language::Python => write!(f, "python"),
             Language::Other(name) => write!(f, "{}", name),
         }
     }

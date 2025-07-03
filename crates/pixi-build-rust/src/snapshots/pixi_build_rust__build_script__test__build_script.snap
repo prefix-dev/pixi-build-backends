@@ -1,0 +1,23 @@
+---
+source: crates/pixi-build-rust/src/build_script.rs
+expression: "script.join(\"\\n\")"
+---
+import os
+import subprocess
+import sys
+# Set environment variables
+env = os.environ.copy()
+# Build cargo install command
+cmd = [
+    "cargo", "install", 
+    "--locked", 
+    "--root", os.environ["PREFIX"],
+    "--path", "my-prefix-dir",
+    "--no-track",
+    "--force"
+]
+# Add extra arguments
+# Run cargo install
+result = subprocess.run(cmd, env=env)
+if result.returncode != 0:
+    sys.exit(result.returncode)

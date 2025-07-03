@@ -4,7 +4,6 @@ mod config;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    str::FromStr,
 };
 
 use build_script::BuildScriptContext;

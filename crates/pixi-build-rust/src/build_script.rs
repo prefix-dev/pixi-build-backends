@@ -16,7 +16,7 @@ pub struct BuildScriptContext {
     pub has_sccache: bool,
 
     /// The platform that is running the build.
-    pub is_bash: bool,
+    pub platform: String,
 
     /// Python extensions to build (library names without lib prefix and extension)
     pub python_extensions: Vec<String>,
@@ -42,57 +42,92 @@ mod test {
     use rstest::*;
 
     #[rstest]
-    fn test_build_script(#[values(true, false)] is_bash: bool) {
+    fn test_build_script(#[values("linux", "windows")] platform: &str) {
         let context = super::BuildScriptContext {
             source_dir: String::from("my-prefix-dir"),
             extra_args: vec![],
             has_openssl: false,
             has_sccache: false,
-            is_bash,
+            platform: platform.to_string(),
             python_extensions: Vec::new(),
         };
         let script = context.render();
 
         let mut settings = insta::Settings::clone_current();
-        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.set_snapshot_suffix(if platform == "windows" {
+            "cmdexe"
+        } else {
+            "bash"
+        });
         settings.bind(|| {
             insta::assert_snapshot!(script.join("\n"));
         });
     }
 
     #[rstest]
-    fn test_sccache(#[values(true, false)] is_bash: bool) {
+    fn test_sccache(#[values("linux", "windows")] platform: &str) {
         let context = super::BuildScriptContext {
             source_dir: String::from("my-prefix-dir"),
             extra_args: vec![],
             has_openssl: false,
             has_sccache: true,
-            is_bash,
+            platform: platform.to_string(),
             python_extensions: Vec::new(),
         };
         let script = context.render();
 
         let mut settings = insta::Settings::clone_current();
-        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.set_snapshot_suffix(if platform == "windows" {
+            "cmdexe"
+        } else {
+            "bash"
+        });
         settings.bind(|| {
             insta::assert_snapshot!(script.join("\n"));
         });
     }
 
     #[rstest]
-    fn test_openssl(#[values(true, false)] is_bash: bool) {
+    fn test_openssl(#[values("linux", "windows")] platform: &str) {
         let context = super::BuildScriptContext {
             source_dir: String::from("my-prefix-dir"),
             extra_args: vec![],
             has_openssl: true,
             has_sccache: false,
-            is_bash,
+            platform: platform.to_string(),
             python_extensions: Vec::new(),
         };
         let script = context.render();
 
         let mut settings = insta::Settings::clone_current();
-        settings.set_snapshot_suffix(if is_bash { "bash" } else { "cmdexe" });
+        settings.set_snapshot_suffix(if platform == "windows" {
+            "cmdexe"
+        } else {
+            "bash"
+        });
+        settings.bind(|| {
+            insta::assert_snapshot!(script.join("\n"));
+        });
+    }
+
+    #[rstest]
+    fn test_python_extensions(#[values("linux", "macos", "windows")] platform: &str) {
+        let context = super::BuildScriptContext {
+            source_dir: String::from("my-prefix-dir"),
+            extra_args: vec![],
+            has_openssl: false,
+            has_sccache: false,
+            platform: platform.to_string(),
+            python_extensions: vec!["mymodule".to_string(), "anothermodule".to_string()],
+        };
+        let script = context.render();
+
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_suffix(if platform == "windows" {
+            "cmdexe"
+        } else {
+            "bash"
+        });
         settings.bind(|| {
             insta::assert_snapshot!(script.join("\n"));
         });

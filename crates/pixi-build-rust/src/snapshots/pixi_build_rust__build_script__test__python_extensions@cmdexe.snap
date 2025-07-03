@@ -1,0 +1,25 @@
+---
+source: crates/pixi-build-rust/src/build_script.rs
+expression: "script.join(\"\\n\")"
+---
+cargo build --release --manifest-path my-prefix-dir/Cargo.toml 
+if errorlevel 1 exit 1
+if exist "my-prefix-dir\target\release\*.exe" (
+    for %%f in ("my-prefix-dir\target\release\*.exe") do (
+        copy "%%f" "%PREFIX%\bin\"
+    )
+)
+if exist "my-prefix-dir\target\release\mymodule.dll" (
+    mkdir "%PREFIX%\Lib\site-packages" 2>nul
+    copy "my-prefix-dir\target\release\mymodule.dll" "%PREFIX%\Lib\site-packages\mymodule.pyd"
+) else if exist "my-prefix-dir\target\release\libmymodule.dll" (
+    mkdir "%PREFIX%\Lib\site-packages" 2>nul
+    copy "my-prefix-dir\target\release\libmymodule.dll" "%PREFIX%\Lib\site-packages\mymodule.pyd"
+)
+if exist "my-prefix-dir\target\release\anothermodule.dll" (
+    mkdir "%PREFIX%\Lib\site-packages" 2>nul
+    copy "my-prefix-dir\target\release\anothermodule.dll" "%PREFIX%\Lib\site-packages\anothermodule.pyd"
+) else if exist "my-prefix-dir\target\release\libanothermodule.dll" (
+    mkdir "%PREFIX%\Lib\site-packages" 2>nul
+    copy "my-prefix-dir\target\release\libanothermodule.dll" "%PREFIX%\Lib\site-packages\anothermodule.pyd"
+)

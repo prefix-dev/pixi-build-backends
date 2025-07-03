@@ -1,0 +1,29 @@
+---
+source: crates/pixi-build-rust/src/build_script.rs
+expression: "script.join(\"\\n\")"
+---
+cargo build --release --manifest-path my-prefix-dir/Cargo.toml 
+mkdir -p "$PREFIX/bin"
+for binary in "my-prefix-dir"/target/release/*; do
+    if [ -f "$binary" ] && [ -x "$binary" ] && [[ "$(basename "$binary")" != *.* ]]; then
+        cp "$binary" "$PREFIX/bin/"
+    fi
+done
+if [ -f "my-prefix-dir/target/release/libmymodule.so" ]; then
+    
+    mkdir -p "$PREFIX/lib/python"*/site-packages
+    cp "my-prefix-dir/target/release/libmymodule.so" "$PREFIX/lib/python"*/site-packages/mymodule.so
+elif [ -f "my-prefix-dir/target/release/libmymodule.dylib" ]; then
+    
+    mkdir -p "$PREFIX/lib/python"*/site-packages
+    cp "my-prefix-dir/target/release/libmymodule.dylib" "$PREFIX/lib/python"*/site-packages/mymodule.so
+fi
+if [ -f "my-prefix-dir/target/release/libanothermodule.so" ]; then
+    
+    mkdir -p "$PREFIX/lib/python"*/site-packages
+    cp "my-prefix-dir/target/release/libanothermodule.so" "$PREFIX/lib/python"*/site-packages/anothermodule.so
+elif [ -f "my-prefix-dir/target/release/libanothermodule.dylib" ]; then
+    
+    mkdir -p "$PREFIX/lib/python"*/site-packages
+    cp "my-prefix-dir/target/release/libanothermodule.dylib" "$PREFIX/lib/python"*/site-packages/anothermodule.so
+fi

@@ -3,6 +3,11 @@ source: crates/pixi-build-rust/src/build_script.rs
 expression: "script.join(\"\\n\")"
 ---
 SET RUSTC_WRAPPER=sccache
-cargo install --locked --root "%PREFIX%" --path my-prefix-dir --no-track  --force
+cargo build --release --manifest-path my-prefix-dir/Cargo.toml 
 if errorlevel 1 exit 1
+if exist "my-prefix-dir\target\release\*.exe" (
+    for %%f in ("my-prefix-dir\target\release\*.exe") do (
+        copy "%%f" "%PREFIX%\bin\"
+    )
+)
 sccache --show-stats

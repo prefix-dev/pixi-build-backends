@@ -82,12 +82,18 @@ impl GenerateRecipe for RustGenerator {
             has_sccache = true;
         }
 
+        let platform = match Platform::current() {
+            Platform::Win64 => "windows",
+            Platform::OsxArm64 | Platform::Osx64 => "macos",
+            _ => "linux",
+        };
+
         let build_script = BuildScriptContext {
             source_dir: manifest_root.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_openssl,
             has_sccache,
-            is_bash: !Platform::current().is_windows(),
+            platform: platform.to_string(),
             python_extensions: config.python_extension.clone(),
         }
         .render();

@@ -13,6 +13,7 @@ use pixi_build_backend::{
     tools::{LoadedVariantConfig, RattlerBuild},
     utils::TemporaryRenderedRecipe,
 };
+use pixi_build_types::procedures::conda_outputs::CondaOutput;
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1,
     procedures::{
@@ -254,6 +255,7 @@ impl Protocol for RattlerBuildBackend {
             variant: Default::default(),
             experimental: true,
             allow_undefined: false,
+            recipe_path: Some(self.recipe_source.path.clone()),
         };
         let variant_config = LoadedVariantConfig::from_recipe_path(
             &self.source_dir,
@@ -298,6 +300,7 @@ impl Protocol for RattlerBuildBackend {
                 build_platform,
                 experimental: false,
                 allow_undefined: false,
+                recipe_path: Some(self.recipe_source.path.clone()),
             };
 
             let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
@@ -327,8 +330,8 @@ impl Protocol for RattlerBuildBackend {
                 },
             );
 
-            outputs.push(CondaOutputMetadata {
-                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
                     build: build_string.to_string(),
@@ -338,6 +341,7 @@ impl Protocol for RattlerBuildBackend {
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
+                    python_site_packages_path: None,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -415,17 +419,15 @@ impl Protocol for RattlerBuildBackend {
                     )?,
                 },
 
-                // TODO: Properly implement cache!
-                cache: None,
-
                 // The input globs are the same for all outputs
                 input_globs: None,
+                // TODO: Implement caching
             });
         }
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: Some(variant_config.input_globs),
+            input_globs: variant_config.input_globs,
         })
     }
 
@@ -451,6 +453,7 @@ impl Protocol for RattlerBuildBackend {
             variant: Default::default(),
             experimental: true,
             allow_undefined: false,
+            recipe_path: Some(self.recipe_source.path.clone()),
         };
 
         let host_vpkgs = params

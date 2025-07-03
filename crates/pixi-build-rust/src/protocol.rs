@@ -1,3 +1,10 @@
+use std::{
+    collections::{BTreeSet, HashMap},
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
+
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec, ProjectModel,
@@ -16,18 +23,12 @@ use pixi_build_types::{
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
-            CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams, CondaOutputsResult,
+            CondaOutput, CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams,
+            CondaOutputsResult,
         },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-};
-use std::collections::HashMap;
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
 };
 // use pixi_build_types as pbt;
 use rattler_build::{
@@ -74,16 +75,6 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
 
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
-
         // Build the tool configuration
         let tool_config = Arc::new(
             Configuration::builder()
@@ -128,6 +119,18 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
         for variant in combinations {
             // TODO: Determine how and if we can determine this from the manifest.
             let (recipe, source_requirements) = self.recipe(host_platform, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
+
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -250,6 +253,7 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
                 hash: Some(hash.clone()),
                 experimental: false,
                 allow_undefined: false,
+                recipe_path: None,
             };
 
             // Determine the build string
@@ -266,8 +270,8 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
                 },
             );
 
-            outputs.push(CondaOutputMetadata {
-                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
                     build: build_string.to_string(),
@@ -277,6 +281,7 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
+                    python_site_packages_path: None,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -318,14 +323,12 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
 
                 // The input globs are the same for all outputs
                 input_globs: None,
-
-                cache: None,
             });
         }
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: None,
+            input_globs: BTreeSet::new(),
         })
     }
 
@@ -344,16 +347,6 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
         let package_name = PackageName::from_str(self.project_model.name())
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
-
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
 
         // Recompute all the variant combinations
         let input_variant_configuration = params.variant_configuration.map(|v| {
@@ -376,6 +369,18 @@ impl Protocol for RustBuildBackend<ProjectModelV1> {
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
             let (recipe, _source_requirements) = self.recipe(host_platform, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
+
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 Some(PlatformAndVirtualPackages {

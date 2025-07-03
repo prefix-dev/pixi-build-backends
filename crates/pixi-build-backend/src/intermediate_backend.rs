@@ -1,9 +1,3 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-use std::collections::BTreeSet;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
@@ -32,6 +26,12 @@ use rattler_build::{
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
+use std::collections::BTreeSet;
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tempfile::tempdir;
 
 use crate::{
@@ -257,6 +257,7 @@ impl Protocol for IntermediateBackend {
                 experimental: false,
                 // allow undefined while finding the variants
                 allow_undefined: true,
+                recipe_path: None,
             };
 
             let host_virtual_packages = params
@@ -463,6 +464,7 @@ impl Protocol for IntermediateBackend {
                 experimental: false,
                 // allow undefined while finding the variants
                 allow_undefined: true,
+                recipe_path: None,
             };
 
             let host_virtual_packages = params

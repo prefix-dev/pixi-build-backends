@@ -1,12 +1,20 @@
+use std::{
+    collections::{BTreeSet, HashMap},
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
+
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec, ProjectModel,
     common::{build_configuration, compute_variants},
-    dependencies::convert_input_variant_configuration,
+    dependencies::{
+        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+    },
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
-use pixi_build_types::procedures::conda_outputs::{CondaOutputDependencies, CondaOutputMetadata};
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PlatformAndVirtualPackages, ProjectModelV1,
     procedures::{
@@ -14,37 +22,32 @@ use pixi_build_types::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
-        conda_outputs::{CondaOutputsParams, CondaOutputsResult},
+        conda_outputs::{
+            CondaOutput, CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams,
+            CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
-use rattler_build::selectors::SelectorConfig;
-use std::collections::HashMap;
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
+use rattler_build::{
+    build::run_build,
+    console_utils::LoggingOutputHandler,
+    hash::HashInfo,
+    metadata::{Directories, Output, PackageIdentifier},
+    recipe::{Jinja, parser::BuildString, variable::Variable},
+    render::resolved_dependencies::DependencyInfo,
+    selectors::SelectorConfig,
+    tool_configuration::Configuration,
+    variant_config::VariantConfig,
 };
+use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
+
 // use pixi_build_types as pbt;
 use crate::{
     config::PythonBackendConfig,
     python::{PythonBuildBackend, construct_configuration},
 };
-use pixi_build_backend::dependencies::{convert_binary_dependencies, convert_dependencies};
-use rattler_build::metadata::PackageIdentifier;
-use rattler_build::{
-    build::run_build,
-    console_utils::LoggingOutputHandler,
-    hash::HashInfo,
-    metadata::{Directories, Output},
-    recipe::{Jinja, parser::BuildString, variable::Variable},
-    render::resolved_dependencies::DependencyInfo,
-    tool_configuration::Configuration,
-    variant_config::VariantConfig,
-};
-use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
 
 #[async_trait::async_trait]
 impl Protocol for PythonBuildBackend<ProjectModelV1> {
@@ -71,16 +74,6 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
         let package_name = PackageName::from_str(self.project_model.name())
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
-
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
 
         // Build the tool configuration
         let tool_config = Arc::new(
@@ -126,6 +119,18 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
         for variant in combinations {
             // TODO: Determine how and if we can determine this from the manifest.
             let (recipe, source_requirements) = self.recipe(host_platform, false, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
+
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 params.build_platform.clone(),
@@ -250,6 +255,7 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
                 hash: Some(hash.clone()),
                 experimental: false,
                 allow_undefined: false,
+                recipe_path: None,
             };
 
             // Determine the build string
@@ -266,8 +272,8 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
                 },
             );
 
-            outputs.push(CondaOutputMetadata {
-                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
                     build: build_string.to_string(),
@@ -277,6 +283,7 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
+                    python_site_packages_path: None,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -318,14 +325,12 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
 
                 // The input globs are the same for all outputs
                 input_globs: None,
-
-                cache: None,
             });
         }
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: None,
+            input_globs: BTreeSet::new(),
         })
     }
 
@@ -344,16 +349,6 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
         let package_name = PackageName::from_str(self.project_model.name())
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
-
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
 
         // Recompute all the variant combinations
         let input_variant_configuration = params.variant_configuration.map(|v| {
@@ -377,6 +372,18 @@ impl Protocol for PythonBuildBackend<ProjectModelV1> {
         for variant in variant_combinations {
             let (recipe, _source_requirements) =
                 self.recipe(host_platform, params.editable, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
+
             let build_configuration_params = build_configuration(
                 channels.clone(),
                 Some(PlatformAndVirtualPackages {

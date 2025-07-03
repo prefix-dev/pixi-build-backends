@@ -19,8 +19,8 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{BuildConfiguration, PackagingSettings},
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 
 pub struct RustBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -199,6 +199,7 @@ pub(crate) fn construct_configuration(
         force_colors: true,
         sandbox_config: None,
         debug: Debug::new(false),
+        exclude_newer: None,
     }
 }
 

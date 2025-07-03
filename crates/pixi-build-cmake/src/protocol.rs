@@ -23,18 +23,18 @@ use pixi_build_types::{
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
-            CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams, CondaOutputsResult,
+            CondaOutput, CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams,
+            CondaOutputsResult,
         },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
-use rattler_build::metadata::PackageIdentifier;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{Directories, Output},
+    metadata::{Directories, Output, PackageIdentifier},
     recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
@@ -115,6 +115,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
             &params.work_directory,
             true,
             &chrono::Utc::now(),
+            false,
         )
         .into_diagnostic()
         .context("failed to setup build directories")?;
@@ -253,6 +254,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 hash: Some(hash.clone()),
                 experimental: false,
                 allow_undefined: false,
+                recipe_path: None,
             };
 
             // Determine the build string
@@ -269,8 +271,8 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                 },
             );
 
-            outputs.push(CondaOutputMetadata {
-                identifier: pixi_build_types::procedures::conda_outputs::CondaOutputIdentifier {
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
                     build: build_string.to_string(),
@@ -280,6 +282,7 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
+                    python_site_packages_path: None,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -321,14 +324,12 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
 
                 // The input globs are the same for all outputs
                 input_globs: None,
-
-                cache: None,
             });
         }
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: None,
+            input_globs: BTreeSet::default(),
         })
     }
 
@@ -348,16 +349,6 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
 
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
-
         // Recompute all the variant combinations
         let input_variant_configuration =
             convert_input_variant_configuration(params.variant_configuration);
@@ -371,6 +362,17 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
             let (recipe, _source_requirements) = self.recipe(host_platform, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
 
             let build_configuration_params = build_configuration(
                 channels.clone(),

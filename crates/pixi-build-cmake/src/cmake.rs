@@ -29,8 +29,8 @@ use rattler_build::{
         variable::Variable,
     },
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{MatchSpec, NoArchType, PackageName, Platform, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 
 pub struct CMakeBuildBackend<P: ProjectModel> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
@@ -264,6 +264,7 @@ pub(crate) fn construct_configuration(
         force_colors: true,
         sandbox_config: None,
         debug: Debug::new(false),
+        exclude_newer: None,
     }
 }
 
@@ -453,15 +454,11 @@ mod tests {
             },
         );
 
-        let command = match recipe
-            .build
-            .script
-            .content {
-                rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
-                 _ => unreachable!("Expected script content to be commands"),
-            };
+        let command = match recipe.build.script.content {
+            rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
+            _ => unreachable!("Expected script content to be commands"),
+        };
 
         assert!(command.iter().any(|s| s.contains("-DPython_EXECUTABLE")));
-
     }
 }

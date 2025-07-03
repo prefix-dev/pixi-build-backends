@@ -29,9 +29,8 @@ pub fn default_compiler(platform: &Platform, language: &str) -> String {
     match language {
         // Platform agnostic compilers
         "fortran" => "gfortran",
-        lang if !["c", "cxx"].contains(&lang) => lang,
         // Platform specific compilers
-        _ => {
+        "c" | "cxx" => {
             if platform.is_windows() {
                 match language {
                     "c" => "vs2019",
@@ -58,6 +57,7 @@ pub fn default_compiler(platform: &Platform, language: &str) -> String {
                 }
             }
         }
+        _ => language,
     }
     .to_string()
 }

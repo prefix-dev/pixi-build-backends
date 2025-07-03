@@ -11,9 +11,10 @@ run = "cargo run"
 run-release = "cargo run --release"
 build = "cargo build"
 build-release = "cargo build --release"
-nextest = "cargo nextest run --workspace --all-targets"
+nextest = "cargo nextest run"
+test-rust = "cargo nextest run --workspace --all-targets"
 doctest = "cargo test --doc"
-test = [{ task = "nextest" }, { task = "doctest" }]
+test = [{ task = "test-rust" }, { task = "doctest" }]
 generate-matrix = "python scripts/generate-matrix.py"
 
 

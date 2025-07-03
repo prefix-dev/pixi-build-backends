@@ -1,10 +1,7 @@
 mod build_script;
 mod config;
 
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::path::{Path, PathBuf};
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
@@ -48,10 +45,10 @@ impl GenerateRecipe for RustGenerator {
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.
 
-        if !resolved_requirements.build.contains_key(
-            &PackageName::from_str(&Language::Rust.to_string())
-                .expect("we expect Language::Rust to be a valid package name"),
-        ) {
+        if !resolved_requirements
+            .build
+            .contains_key(&PackageName::new_unchecked(Language::Rust.to_string()))
+        {
             requirements.build.push(compiler_function.clone());
         }
 

@@ -1,13 +1,8 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::path::{Path, PathBuf};
 
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::{Platform, Version};
-use recipe_stage0::recipe::{
-    Build, ConditionalList, IntermediateRecipe, Item, Package, Source, Value,
-};
+use rattler_conda_types::Platform;
+use recipe_stage0::recipe::{ConditionalList, IntermediateRecipe, Item, Package, Source, Value};
 use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
@@ -71,16 +66,13 @@ impl GeneratedRecipe {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(
-                model
-                    .version
-                    .unwrap_or_else(|| {
-                        Version::from_str("0.1.0").expect("Default version should be valid")
-                    })
-                    .to_string(),
+                model.version
+                  .expect("`version` is required at the moment. In the future we will read this from `Cargo.toml`.")
+                  .to_string(),
             ),
         };
 
-        let source = ConditionalList::from(vec![Item::Value(Value::Concrete(Source::path(
+        let source = ConditionalList::from([Item::Value(Value::Concrete(Source::path(
             manifest_root.display().to_string(),
         )))]);
 
@@ -88,14 +80,10 @@ impl GeneratedRecipe {
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());
 
         let ir = IntermediateRecipe {
-            context: Default::default(),
             package,
             source,
-            build: Build::default(),
             requirements,
-            tests: Default::default(),
-            about: None,
-            extra: None,
+            ..Default::default()
         };
 
         GeneratedRecipe { recipe: ir }

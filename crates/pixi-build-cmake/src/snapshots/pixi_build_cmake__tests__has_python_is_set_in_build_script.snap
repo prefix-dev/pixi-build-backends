@@ -6,3 +6,4 @@ number: ~
 script:
   content: "[content]"
   env: {}
+  secrets: []

@@ -25,8 +25,12 @@ This backend automatically generates conda packages from Python projects by:
 To use the Python backend in your `pixi.toml`, add it to your package's build configuration:
 
 ```toml
-[package.build-system]
-build-backend = { name = "pixi-build-python", version = "*" }
+[package]
+name = "python_package"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-python", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",

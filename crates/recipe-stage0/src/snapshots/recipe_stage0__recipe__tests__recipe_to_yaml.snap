@@ -16,6 +16,7 @@ build:
   script:
     content: []
     env: {}
+    secrets: []
 requirements:
   build:
     - "${{ compiler('cxx') }}"

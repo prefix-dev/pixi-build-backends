@@ -2,15 +2,15 @@ mod build_script;
 mod config;
 
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
-    str::FromStr,
 };
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    cache::{enable_sccache, sccache_tools},
+    cache::{sccache_envs, sccache_tools},
     compilers::{Language, compiler_requirement},
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
@@ -48,10 +48,10 @@ impl GenerateRecipe for RustGenerator {
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.
 
-        if !resolved_requirements.build.contains_key(
-            &PackageName::from_str(&Language::Rust.to_string())
-                .expect("we expect Language::Rust to be a valid package name"),
-        ) {
+        if !resolved_requirements
+            .build
+            .contains_key(&PackageName::new_unchecked(Language::Rust.to_string()))
+        {
             requirements.build.push(compiler_function.clone());
         }
 
@@ -59,14 +59,37 @@ impl GenerateRecipe for RustGenerator {
 
         let mut has_sccache = false;
 
-        let env_vars = config
-            .env
+        let config_env = config.env.clone();
+
+        let system_env_vars = std::env::vars().collect::<HashMap<String, String>>();
+
+        let all_env_vars = config_env
             .clone()
             .into_iter()
-            .chain(std::env::vars())
+            .chain(system_env_vars.clone())
             .collect();
 
-        if enable_sccache(env_vars) {
+        let mut sccache_secrets = Vec::default();
+
+        // Verify if user has set any sccache environment variables
+        if sccache_envs(&all_env_vars).is_some() {
+            // check if we set some sccache in system env vars
+            if let Some(system_sccache_keys) = sccache_envs(&system_env_vars) {
+                // If sccache_envs are used in the system environment variables,
+                // we need to set them as secrets
+                let system_sccache_keys = system_env_vars
+                    .keys()
+                    // we set only those keys that are present in the system environment variables and not in the config env
+                    .filter(|key| {
+                        system_sccache_keys.contains(&key.as_str())
+                            && !config_env.contains_key(*key)
+                    })
+                    .cloned()
+                    .collect();
+
+                sccache_secrets = system_sccache_keys;
+            };
+
             let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
                 .iter()
                 .map(|tool| tool.parse().into_diagnostic())
@@ -96,7 +119,8 @@ impl GenerateRecipe for RustGenerator {
 
         generated_recipe.recipe.build.script = Script {
             content: build_script,
-            env: config.env.clone(),
+            env: config_env,
+            secrets: sccache_secrets,
         };
 
         Ok(generated_recipe)
@@ -296,23 +320,31 @@ mod tests {
 
         let env = IndexMap::from([("SCCACHE_BUCKET".to_string(), "my-bucket".to_string())]);
 
-        let generated_recipe = RustGenerator::default()
-            .generate_recipe(
-                &project_model,
-                &RustBackendConfig {
-                    env,
-                    ..Default::default()
-                },
-                PathBuf::from("."),
-                Platform::Linux64,
-            )
-            .expect("Failed to generate recipe");
+        let system_env_vars = [
+            ("SCCACHE_SYSTEM", Some("SOME_VALUE")),
+            // We want to test that config env variable wins over system env variable
+            ("SCCACHE_BUCKET", Some("system-bucket")),
+        ];
+
+        let generated_recipe = temp_env::with_vars(system_env_vars, || {
+            RustGenerator::default()
+                .generate_recipe(
+                    &project_model,
+                    &RustBackendConfig {
+                        env,
+                        ..Default::default()
+                    },
+                    PathBuf::from("."),
+                    Platform::Linux64,
+                )
+                .expect("Failed to generate recipe")
+        });
 
         // Verify that sccache is added to the build requirements
         // when some env variables are set
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
         ".source[0].path" => "[ ... path ... ]",
-        ".build.script" => "[ ... script ... ]",
+        ".build.script.content" => "[ ... script ... ]",
         });
     }
 }

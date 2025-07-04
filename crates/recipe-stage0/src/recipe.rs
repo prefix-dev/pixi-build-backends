@@ -292,7 +292,7 @@ impl<T: Debug> Debug for Conditional<T> {
     }
 }
 
-// Type alias for lists that can contain conditionals
+/// Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
@@ -417,6 +417,7 @@ pub struct PathSource {
 pub struct Script {
     pub content: Vec<String>,
     pub env: IndexMap<String, String>,
+    pub secrets: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -431,7 +432,7 @@ impl Build {
             number: None,
             script: Script {
                 content,
-                env: IndexMap::new(),
+                ..Default::default()
             },
         }
     }

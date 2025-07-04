@@ -26,8 +26,12 @@ This backend automatically generates conda packages from CMake-based projects by
 To use the CMake backend in your `pixi.toml`, add it to your package's build configuration:
 
 ```toml
-[package.build-system]
-build-backend = { name = "pixi-build-cmake", version = "*" }
+[package]
+name = "cmake_package"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-cmake", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",

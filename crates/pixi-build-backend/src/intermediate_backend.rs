@@ -132,14 +132,9 @@ where
             .ok_or_else(|| miette::miette!("project model v1 is required"))?;
 
         let config = if let Some(config) = params.configuration {
-            // serde_json::from_value(config)
-            //     .into_diagnostic()
-            //     .context("failed to parse configuration")?
             config
         } else {
-            // IntermediateBackendConfig::default()
             serde_json::Value::Object(Default::default())
-            // C::default()
         };
 
         let instance = IntermediateBackend::<T>::new(

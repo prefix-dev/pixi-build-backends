@@ -35,7 +35,7 @@ use serde::Deserialize;
 use tempfile::tempdir;
 
 use crate::{
-    generated_recipe::{BackendConfig, GenerateRecipe},
+    generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
     rattler_build_integration,
     specs_conversion::from_source_matchspec_into_package_spec,
@@ -74,6 +74,7 @@ pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) generate_recipe: T,
     pub(crate) config: T::Config,
     pub(crate) cache_dir: Option<PathBuf>,
+    pub(crate) pyproject_manifest_path: Option<PathBuf>,
 }
 impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
     pub fn new(
@@ -90,6 +91,15 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
             .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
             .to_path_buf();
 
+        let pyproject_manifest_path = {
+            let pyproject_path = manifest_path.with_file_name("pyproject.toml");
+            if pyproject_path.exists() {
+                Some(pyproject_path)
+            } else {
+                None
+            }
+        };
+
         let config = serde_json::from_value::<T::Config>(config)
             .into_diagnostic()
             .context("failed to parse configuration")?;
@@ -101,6 +111,7 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
             config,
             logging_output_handler,
             cache_dir,
+            pyproject_manifest_path,
         })
     }
 }
@@ -216,11 +227,15 @@ where
             zip_keys: None,
         };
 
-        let generated_recipe = self.generate_recipe.generate_recipe(
+        let (generated_recipe, _) = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.manifest_root.clone(),
             host_platform,
+            Some(PythonParams {
+                editable: None,
+                pyproject_manifest: self.pyproject_manifest_path.clone(),
+            }),
         )?;
 
         // Determine the variant keys that are used in the recipe.
@@ -440,11 +455,15 @@ where
             zip_keys: None,
         };
 
-        let recipe = self.generate_recipe.generate_recipe(
+        let (recipe, read_files) = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.manifest_root.clone(),
             host_platform,
+            Some(PythonParams {
+                editable: Some(params.editable),
+                pyproject_manifest: self.pyproject_manifest_path.clone(),
+            }),
         )?;
 
         // Determine the variant keys that are used in the recipe.
@@ -554,7 +573,14 @@ where
                     )
                     .await?;
 
-                let input_globs = T::build_input_globs(&self.config, &params.work_directory);
+                let input_globs =
+                    T::build_input_globs(&self.config, &params.work_directory, params.editable);
+
+                // join it with the files that were read during the recipe generation
+                let input_globs = input_globs
+                    .into_iter()
+                    .chain(read_files.iter().map(|f| f.to_string_lossy().to_string()))
+                    .collect::<Vec<_>>();
 
                 let built_package = CondaBuiltPackage {
                     output_file: package,

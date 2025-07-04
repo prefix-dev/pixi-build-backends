@@ -1,0 +1,30 @@
+---
+source: crates/pixi-build-python/src/main.rs
+expression: result
+---
+[
+    "**/*.c",
+    "**/*.cpp",
+    "**/*.rs",
+    "**/*.sh",
+    "**/*.json",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.txt",
+    "setup.py",
+    "setup.cfg",
+    "pyproject.toml",
+    "requirements*.txt",
+    "Pipfile",
+    "Pipfile.lock",
+    "poetry.lock",
+    "tox.ini",
+    "Makefile",
+    "MANIFEST.in",
+    "tests/**/*.py",
+    "docs/**/*.rst",
+    "docs/**/*.md",
+    "VERSION",
+    "version.py",
+    "custom/*.py",
+]

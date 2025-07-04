@@ -1,6 +1,10 @@
 use indexmap::IndexMap;
+use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::Deserialize;
-use std::{convert::identity, path::PathBuf};
+use std::{
+    convert::identity,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -23,6 +27,12 @@ impl PythonBackendConfig {
     /// Whether to build a noarch package or a platform-specific package.
     pub fn noarch(&self) -> bool {
         self.noarch.is_none_or(identity)
+    }
+}
+
+impl BackendConfig for PythonBackendConfig {
+    fn debug_dir(&self) -> Option<&Path> {
+        self.debug_dir.as_deref()
     }
 }
 

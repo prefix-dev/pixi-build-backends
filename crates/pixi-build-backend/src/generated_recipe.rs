@@ -7,6 +7,18 @@ use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
+#[derive(Debug, Clone, Default)]
+pub struct PythonParams {
+    // Returns whetever the build is editable or not.
+    // Default to false
+    pub editable: Option<bool>,
+    // Optional path to the pyproject.toml manifest.
+    pub pyproject_manifest: Option<PathBuf>,
+}
+
+/// Files that were read during the recipe generation process.
+pub type ReadFiles = Vec<PathBuf>;
+
 /// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
 /// into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
@@ -31,13 +43,20 @@ pub trait GenerateRecipe {
         // Instead, we should rely on recipe selectors and offload all the
         // evaluation logic to the rattler-build.
         host_platform: Platform,
-    ) -> miette::Result<GeneratedRecipe>;
+        // Note: It is used only by python backend right now and may
+        // be removed when profiles will be implemented.
+        python_params: Option<PythonParams>,
+    ) -> miette::Result<(GeneratedRecipe, ReadFiles)>;
 
     /// Returns a list of globs that should be used to find the input files
     /// for the build process.
     /// For example, this could be a list of source files or configuration files
     /// used by Cmake.
-    fn build_input_globs(_config: &Self::Config, _workdir: impl AsRef<Path>) -> Vec<String> {
+    fn build_input_globs(
+        _config: &Self::Config,
+        _workdir: impl AsRef<Path>,
+        _editable: bool,
+    ) -> Vec<String> {
         vec![]
     }
 

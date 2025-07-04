@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use minijinja::Environment;
-use pixi_build_backend::{ProjectModel, Targets, traits::Dependencies};
+use rattler_conda_types::PackageName;
+use recipe_stage0::{matchspec::PackageDependency, requirements::PackageSpecDependencies};
 use serde::Serialize;
 
 const UV: &str = "uv";
@@ -29,15 +30,12 @@ impl Installer {
         }
     }
 
-    pub fn determine_installer<P: ProjectModel>(
-        dependencies: &Dependencies<<<P as ProjectModel>::Targets as Targets>::Spec>,
+    pub fn determine_installer(
+        dependencies: &PackageSpecDependencies<PackageDependency>,
     ) -> Installer {
         // Determine the installer to use
-        let uv = UV.to_string();
-        if dependencies.host.contains_key(&uv)
-            || dependencies.run.contains_key(&uv)
-            || dependencies.build.contains_key(&uv)
-        {
+        let uv = PackageName::new_unchecked(UV.to_string());
+        if dependencies.contains(&uv) {
             Installer::Uv
         } else {
             Installer::Pip

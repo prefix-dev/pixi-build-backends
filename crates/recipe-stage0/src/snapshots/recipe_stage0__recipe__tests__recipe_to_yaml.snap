@@ -13,7 +13,10 @@ source:
     sha256: f87259b51aabafdd1183947747edfff4cff75d55375334f2e81cee6dc68ef655
 build:
   number: ~
-  script: []
+  script:
+    content: []
+    env: {}
+    secrets: []
 requirements:
   build:
     - "${{ compiler('cxx') }}"

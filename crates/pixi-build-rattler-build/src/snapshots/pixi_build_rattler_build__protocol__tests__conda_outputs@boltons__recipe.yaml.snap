@@ -6,7 +6,7 @@ input_file: tests/recipe/boltons/recipe.yaml
 {
   "outputs": [
     {
-      "identifier": {
+      "metadata": {
         "name": "boltons-with-extra",
         "version": "23.0.0",
         "build": "pyh4616a5c_0",

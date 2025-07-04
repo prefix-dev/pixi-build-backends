@@ -40,6 +40,13 @@ impl PackageSpecDependencies<PackageDependency> {
 
         used_variants
     }
+
+    pub fn contains(&self, name: &PackageName) -> bool {
+        self.build.contains_key(name)
+            || self.host.contains_key(name)
+            || self.run.contains_key(name)
+            || self.run_constraints.contains_key(name)
+    }
 }
 
 /// Represents a platform, selector.

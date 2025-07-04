@@ -15,7 +15,6 @@ use pixi_build_backend::{
 };
 use pixi_build_types::procedures::conda_outputs::CondaOutput;
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -28,6 +27,8 @@ use pixi_build_types::{
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
+    BackendCapabilities, CondaPackageMetadata,
+    PathSpecV1, SourcePackageSpecV1, TargetV1,
 };
 use rattler_build::{
     build::run_build,
@@ -35,8 +36,8 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{PackageIdentifier, PlatformWithVirtualPackages},
     recipe::{
+        parser::{find_outputs_from_src, BuildString},
         Jinja, ParsingError, Recipe,
-        parser::{BuildString, find_outputs_from_src},
     },
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
@@ -690,6 +691,40 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             RattlerBuildBackendConfig::default()
         };
 
+        if let Some(target) = params
+            .project_model
+            .and_then(|m| m.into_v1())
+            .and_then(|m| m.targets)
+        {
+            fn enforce_empty_deps(target: TargetV1) -> miette::Result<()> {
+                for dep in [
+                    target.build_dependencies,
+                    target.host_dependencies,
+                    target.run_dependencies,
+                ] {
+                    let Some(dep) = dep else {
+                        continue;
+                    };
+
+                    if !dep.is_empty() {
+                        return Err(miette::miette!(
+                            "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
+                        ));
+                    }
+                }
+                Ok(())
+            }
+            if let Some(default_target) = target.default_target {
+                enforce_empty_deps(default_target)?;
+            }
+
+            if let Some(targets) = target.targets {
+                for (_, target) in targets {
+                    enforce_empty_deps(target)?;
+                }
+            }
+        }
+
         let instance = RattlerBuildBackend::new(
             params.source_dir,
             params.manifest_path.as_path(),
@@ -729,11 +764,11 @@ mod tests {
     };
 
     use pixi_build_types::{
-        ChannelConfiguration,
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
+        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use serde_json::Value;

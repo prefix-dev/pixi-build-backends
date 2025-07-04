@@ -6,7 +6,7 @@ input_file: tests/recipe/variants/recipe.yaml
 {
   "outputs": [
     {
-      "identifier": {
+      "metadata": {
         "name": "foobar",
         "version": "1.0.0",
         "build": "py38h0891c58_0",
@@ -33,7 +33,7 @@ input_file: tests/recipe/variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "foobar",
         "version": "1.0.0",
         "build": "py39h2e92cda_0",
@@ -60,7 +60,7 @@ input_file: tests/recipe/variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "foobar",
         "version": "1.0.0",
         "build": "py310h8e7c8fa_0",

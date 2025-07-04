@@ -774,9 +774,9 @@ dependencies = [
 
 [[package]]
 name = "backon"
-version = "1.5.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "302eaff5357a264a2c42f127ecb8bac761cf99749fc3dc95677e2743991f99e7"
+checksum = "fd0b50b1b78dbadd44ab18b3c794e496f3a139abb9fbc27d9c94c4eebbb96496"
 dependencies = [
  "fastrand",
  "gloo-timers",
@@ -1761,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "console",
 ]
@@ -2547,7 +2547,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.61.0",
 ]
 
 [[package]]
@@ -3563,9 +3563,9 @@ dependencies = [
 
 [[package]]
 name = "ordermap"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d31b8b7a99f71bdff4235faf9ce9eada0ad3562c8fbeb7d607d9f41a6ec569d"
+checksum = "6d6bff06e4a5dc6416bead102d3e63c480dd852ffbb278bf8cfeb4966b329609"
 dependencies = [
  "indexmap 2.10.0",
  "serde",
@@ -3981,6 +3981,7 @@ version = "0.1.15"
 dependencies = [
  "async-trait",
  "fs-err",
+ "indexmap 2.10.0",
  "insta",
  "itertools 0.14.0",
  "miette",
@@ -4020,6 +4021,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "temp-env",
  "tempfile",
  "tokio",
 ]
@@ -4027,7 +4029,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "itertools 0.14.0",
  "ordermap",
@@ -4041,7 +4043,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -4055,7 +4057,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "clap",
  "console",
@@ -4081,7 +4083,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4092,7 +4094,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4112,7 +4114,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "chrono",
  "console",
@@ -4152,7 +4154,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4172,7 +4174,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "dirs",
  "file_url",
@@ -4195,7 +4197,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "indexmap 2.10.0",
  "itertools 0.14.0",
@@ -4207,7 +4209,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "digest",
  "hex",
@@ -4222,7 +4224,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#4d2405bc9846c7910942d15f8682373a4d1251c6"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol#b94157969c1b209ee34d777fce9288d1018947ca"
 dependencies = [
  "async-fd-lock",
  "fs-err",
@@ -5225,9 +5227,9 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 
 [[package]]
 name = "reqsign"
-version = "0.16.5"
+version = "0.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43451dbf3590a7590684c25fb8d12ecdcc90ed3ac123433e500447c7d77ed701"
+checksum = "9323c0afb30e54f793f4705b10c890395bccc87c6e6ea62c4e7e82d09a380dc6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5249,7 +5251,6 @@ dependencies = [
  "serde_json",
  "sha1",
  "sha2",
- "tokio",
 ]
 
 [[package]]
@@ -5451,12 +5452,13 @@ dependencies = [
 
 [[package]]
 name = "rust-ini"
-version = "0.21.2"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7295b7ce3bf4806b419dc3420745998b447178b7005e2011947b38fc5aa6791"
+checksum = "4e310ef0e1b6eeb79169a1171daf9abcb87a2e17c03bee2c4bb100b55c75409f"
 dependencies = [
  "cfg-if 1.0.0",
  "ordered-multimap",
+ "trim-in-place",
 ]
 
 [[package]]
@@ -6284,6 +6286,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "temp-env"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96374855068f47402c3121c6eed88d29cb1de8f3ab27090e273e420bdabcf050"
+dependencies = [
+ "parking_lot 0.12.4",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6713,6 +6724,12 @@ dependencies = [
  "tracing-log",
  "tracing-serde",
 ]
+
+[[package]]
+name = "trim-in-place"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "343e926fc669bc8cde4fa3129ab681c63671bae288b1f1081ceee6d9d37904fc"
 
 [[package]]
 name = "try-lock"

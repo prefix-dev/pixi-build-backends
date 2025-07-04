@@ -6,7 +6,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
 {
   "outputs": [
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package",
         "version": "0.1.0",
         "build": "py38hb368f13_0",
@@ -26,7 +26,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package-pinned",
         "version": "0.1.0",
         "build": "h1670b25_0",
@@ -48,7 +48,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package",
         "version": "0.1.0",
         "build": "py39h6a44458_0",
@@ -68,7 +68,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package-pinned",
         "version": "0.1.0",
         "build": "h11d4084_0",
@@ -90,7 +90,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package",
         "version": "0.1.0",
         "build": "py310hbede2c2_0",
@@ -110,7 +110,7 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package-pinned",
         "version": "0.1.0",
         "build": "hba4f637_0",

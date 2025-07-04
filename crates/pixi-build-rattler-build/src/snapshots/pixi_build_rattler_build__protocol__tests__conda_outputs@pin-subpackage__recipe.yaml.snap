@@ -6,7 +6,7 @@ input_file: tests/recipe/pin-subpackage/recipe.yaml
 {
   "outputs": [
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package",
         "version": "0.1.0",
         "build": "h4616a5c_0",
@@ -16,7 +16,7 @@ input_file: tests/recipe/pin-subpackage/recipe.yaml
       }
     },
     {
-      "identifier": {
+      "metadata": {
         "name": "my-package-a",
         "version": "0.1.0",
         "build": "hc811278_0",

@@ -1,0 +1,16 @@
+---
+source: crates/pixi-build-rust/src/rust.rs
+expression: "recipe(r#\"\n        [workspace]\n        platforms = []\n        channels = []\n        preview = [\"pixi-build\"]\n\n        [package]\n        name = \"foobar\"\n        version = \"0.1.0\"\n\n        [package.build]\n        backend = { name = \"pixi-build-rust\", version = \"*\" }\n        \"#,\nRustBackendConfig::default())"
+---
+schema_version: 1
+context: {}
+package:
+  name: foobar
+  version: 0.1.0
+build:
+  number: 0
+  string: hbf21a9e_0
+  script: "[ ... script ... ]"
+requirements:
+  build:
+    - ~

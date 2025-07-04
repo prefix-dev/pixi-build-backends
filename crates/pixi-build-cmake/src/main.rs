@@ -80,6 +80,7 @@ impl GenerateRecipe for CMakeGenerator {
         generated_recipe.recipe.build.script = Script {
             content: build_script,
             env: config.env.clone(),
+            ..Default::default()
         };
 
         Ok(generated_recipe)

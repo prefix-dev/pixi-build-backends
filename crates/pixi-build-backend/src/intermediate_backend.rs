@@ -35,7 +35,7 @@ use serde::Deserialize;
 use tempfile::tempdir;
 
 use crate::{
-    generated_recipe::{BackendConfig, GenerateRecipe},
+    generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
     rattler_build_integration,
     specs_conversion::from_source_matchspec_into_package_spec,
@@ -237,8 +237,10 @@ where
             &self.config,
             self.manifest_root.clone(),
             host_platform,
-            None,
-            self.pyproject_manifest_path.clone(),
+            Some(PythonParams {
+                editable: None,
+                pyproject_manifest: self.pyproject_manifest_path.clone(),
+            }),
         )?;
 
         // Determine the variant keys that are used in the recipe.
@@ -463,8 +465,10 @@ where
             &self.config,
             self.manifest_root.clone(),
             host_platform,
-            Some(params.editable),
-            self.pyproject_manifest_path.clone(),
+            Some(PythonParams {
+                editable: Some(params.editable),
+                pyproject_manifest: self.pyproject_manifest_path.clone(),
+            }),
         )?;
 
         // Determine the variant keys that are used in the recipe.

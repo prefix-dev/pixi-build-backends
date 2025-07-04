@@ -10,7 +10,7 @@ use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    generated_recipe::{GenerateRecipe, GeneratedRecipe},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -50,9 +50,10 @@ impl GenerateRecipe for PythonGenerator {
         config: &Self::Config,
         manifest_root: PathBuf,
         host_platform: Platform,
-        editable: Option<bool>,
-        pyproject_manifest_path: Option<PathBuf>,
+        python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
+        let params = python_params.unwrap_or_default();
+
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
 
@@ -79,7 +80,7 @@ impl GenerateRecipe for PythonGenerator {
         // TODO: remove this env var override as soon as we have profiles
         let editable = std::env::var("BUILD_EDITABLE_PYTHON")
             .map(|val| val == "true")
-            .unwrap_or(editable.unwrap_or(false));
+            .unwrap_or(params.editable.unwrap_or(false));
 
         let build_script = BuildScriptContext {
             installer,
@@ -102,7 +103,7 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest = if let Some(pyproject_manifest_path) = pyproject_manifest_path {
+        let pyproject_manifest = if let Some(pyproject_manifest_path) = params.pyproject_manifest {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
         } else {
@@ -255,7 +256,6 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
-                None,
             )
             .expect("Failed to generate recipe");
 
@@ -297,7 +297,6 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
-                None,
             )
             .expect("Failed to generate recipe");
 
@@ -336,7 +335,6 @@ mod tests {
                 },
                 PathBuf::from("."),
                 Platform::Linux64,
-                None,
                 None,
             )
             .expect("Failed to generate recipe");

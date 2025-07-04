@@ -12,7 +12,7 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{enable_sccache, sccache_tools},
     compilers::{Language, compiler_requirement},
-    generated_recipe::{GenerateRecipe, GeneratedRecipe},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -34,8 +34,7 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         manifest_root: PathBuf,
         host_platform: Platform,
-        _editable: Option<bool>,
-        _pyproject_manifest: Option<PathBuf>,
+        _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
@@ -105,7 +104,11 @@ impl GenerateRecipe for RustGenerator {
     }
 
     /// Returns the build input globs used by the backend.
-    fn build_input_globs(config: &Self::Config, _workdir: impl AsRef<Path>, _editable: bool) -> Vec<String> {
+    fn build_input_globs(
+        config: &Self::Config,
+        _workdir: impl AsRef<Path>,
+        _editable: bool,
+    ) -> Vec<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -196,7 +199,6 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
-                None,
             )
             .expect("Failed to generate recipe");
 
@@ -238,7 +240,6 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
-                None,
             )
             .expect("Failed to generate recipe");
 
@@ -278,7 +279,6 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
-                None,
             )
             .expect("Failed to generate recipe");
 
@@ -313,7 +313,6 @@ mod tests {
                 },
                 PathBuf::from("."),
                 Platform::Linux64,
-                None,
                 None,
             )
             .expect("Failed to generate recipe");

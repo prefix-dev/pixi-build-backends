@@ -121,6 +121,7 @@ impl GenerateRecipe for PythonGenerator {
         generated_recipe.recipe.build.script = Script {
             content: build_script,
             env: config.env.clone(),
+            ..Script::default()
         };
 
         Ok(generated_recipe)

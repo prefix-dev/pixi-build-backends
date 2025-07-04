@@ -3,4 +3,10 @@ source: crates/pixi-build-rust/src/build_script.rs
 expression: "script.join(\"\\n\")"
 ---
 export OPENSSL_DIR="$PREFIX"
-cargo install --locked --root "$PREFIX" --path my-prefix-dir --no-track  --force
+cargo build --release --manifest-path my-prefix-dir/Cargo.toml 
+mkdir -p "$PREFIX/bin"
+for binary in "my-prefix-dir"/target/release/*; do
+    if [ -f "$binary" ] && [ -x "$binary" ] && [[ "$(basename "$binary")" != *.* ]]; then
+        cp "$binary" "$PREFIX/bin/"
+    fi
+done

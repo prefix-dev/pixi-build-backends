@@ -1,11 +1,11 @@
 {% macro env(key) -%}
-{%- if is_bash %}{{ "$" ~key }}{% else %}{{ "%" ~ key ~ "%" }}{% endif -%}
+{%- if platform == "windows" %}{{ "%" ~ key ~ "%" }}{% else %}{{ "$" ~key }}{% endif -%}
 {% endmacro -%}
 {%- macro export(key, value) -%}
-{%- if is_bash -%}
-export {{ key }}={{ value }}
-{%- else -%}
+{%- if platform == "windows" -%}
 SET {{ key }}={{ value }}
+{%- else -%}
+export {{ key }}={{ value }}
 {%- endif -%}
 {%- endmacro -%}
 
@@ -16,9 +16,54 @@ SET {{ key }}={{ value }}
 {{ export("RUSTC_WRAPPER", "sccache") }}
 {%- endif %}
 
-cargo install --locked --root "{{ env("PREFIX") }}" --path {{ source_dir }} --no-track {{ extra_args | join(" ") }} --force
-{%- if not is_bash %}
+{# Build everything with cargo build --release #}
+cargo build --release --manifest-path {{ source_dir }}/Cargo.toml {{ extra_args | join(" ") }}
+{%- if platform == "windows" %}
 if errorlevel 1 exit 1
 {%- endif %}
+
+{# Copy binaries to PREFIX/bin #}
+{%- if platform == "windows" %}
+{# Windows binary copying #}
+if exist "{{ source_dir }}\target\release\*.exe" (
+    for %%f in ("{{ source_dir }}\target\release\*.exe") do (
+        copy "%%f" "{{ env("PREFIX") }}\bin\"
+    )
+)
+{%- else %}
+{# Unix binary copying - copy all executable files without a . in their name #}
+mkdir -p "{{ env("PREFIX") }}/bin"
+for binary in "{{ source_dir }}"/target/release/*; do
+    if [ -f "$binary" ] && [ -x "$binary" ] && [[ "$(basename "$binary")" != *.* ]]; then
+        cp "$binary" "{{ env("PREFIX") }}/bin/"
+        chmod +x "{{ env("PREFIX") }}/bin/$(basename "$binary")"
+    fi
+done
+{%- endif %}
+
+{# Copy Python extension libraries #}
+{%- for extension in python_extensions %}
+{%- if platform == "windows" %}
+{# Windows handling - rename .dll to .pyd #}
+if exist "{{ source_dir }}\target\release\{{ extension }}.dll" (
+    mkdir "{{ env("PREFIX") }}\Lib\site-packages" 2>nul
+    copy "{{ source_dir }}\target\release\{{ extension }}.dll" "{{ env("PREFIX") }}\Lib\site-packages\{{ extension }}.pyd"
+) else if exist "{{ source_dir }}\target\release\lib{{ extension }}.dll" (
+    mkdir "{{ env("PREFIX") }}\Lib\site-packages" 2>nul
+    copy "{{ source_dir }}\target\release\lib{{ extension }}.dll" "{{ env("PREFIX") }}\Lib\site-packages\{{ extension }}.pyd"
+)
+{%- else %}
+{# Unix/Linux/macOS handling #}
+if [ -f "{{ source_dir }}/target/release/lib{{ extension }}.so" ]; then
+    {# Linux - rename .so to .so (no change needed) #}
+    mkdir -p "{{ env("PREFIX") }}/lib/python"*/site-packages
+    cp "{{ source_dir }}/target/release/lib{{ extension }}.so" "{{ env("PREFIX") }}/lib/python"*/site-packages/{{ extension }}.so
+elif [ -f "{{ source_dir }}/target/release/lib{{ extension }}.dylib" ]; then
+    {# macOS - rename .dylib to .so #}
+    mkdir -p "{{ env("PREFIX") }}/lib/python"*/site-packages
+    cp "{{ source_dir }}/target/release/lib{{ extension }}.dylib" "{{ env("PREFIX") }}/lib/python"*/site-packages/{{ extension }}.so
+fi
+{%- endif %}
+{%- endfor %}
 
 {% if has_sccache %}sccache --show-stats{% endif %}

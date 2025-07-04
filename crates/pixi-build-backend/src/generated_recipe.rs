@@ -1,5 +1,7 @@
-use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::Platform;
@@ -8,11 +10,12 @@ use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
-/// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
-/// into an [`IntermediateRecipe`].
+/// The trait is responsible of converting a certain [`ProjectModelV1`] (or
+/// others in the future) into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
-/// It also uses a [`BackendConfig`] to provide additional configuration options.
+/// It also uses a [`BackendConfig`] to provide additional configuration
+/// options.
 ///
 ///
 /// An instance of this trait is used by the [`IntermediateBackend`]
@@ -73,9 +76,12 @@ impl GeneratedRecipe {
             ),
         };
 
-        let source = ConditionalList::from([Item::Value(Value::Concrete(Source::path(
-            manifest_root.display().to_string(),
-        )))]);
+        let manifest_path = match manifest_root.display().to_string() {
+            path if path.is_empty() => String::from("."),
+            path => path,
+        };
+        let source =
+            ConditionalList::from([Item::Value(Value::Concrete(Source::path(manifest_path)))]);
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());

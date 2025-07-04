@@ -2,10 +2,10 @@ mod build_script;
 mod config;
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},
 };
-use std::collections::BTreeSet;
+
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
@@ -43,7 +43,7 @@ impl GenerateRecipe for RustGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.
@@ -79,7 +79,8 @@ impl GenerateRecipe for RustGenerator {
                 // we need to set them as secrets
                 let system_sccache_keys = system_env_vars
                     .keys()
-                    // we set only those keys that are present in the system environment variables and not in the config env
+                    // we set only those keys that are present in the system environment variables
+                    // and not in the config env
                     .filter(|key| {
                         system_sccache_keys.contains(&key.as_str())
                             && !config_env.contains_key(*key)
@@ -156,6 +157,8 @@ pub async fn main() {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
+    use insta::assert_snapshot;
+    use pixi_build_backend::utils::test::intermediate_conda_outputs_snapshot;
 
     use super::*;
 
@@ -310,9 +313,13 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "default_target": {
-                    "run_dependencies": {
-                        "boltons": "*"
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
                     }
                 },
             }
@@ -346,5 +353,39 @@ mod tests {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script.content" => "[ ... script ... ]",
         });
+    }
+
+    #[test]
+    fn test_conda_outputs_with_variants() {
+        // Construct a simple minimal project
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        // Construct some artificial variants that should cause us to have multiple
+        // outputs.
+        let variants = HashMap::from([(
+            "rust_compiler_version".to_string(),
+            vec!["1.86".to_string(), "1.87".to_string()],
+        )]);
+
+        assert_snapshot!(intermediate_conda_outputs_snapshot::<RustGenerator>(
+            Some(project_model),
+            None,
+            Platform::Linux64,
+            Some(variants)
+        ));
     }
 }

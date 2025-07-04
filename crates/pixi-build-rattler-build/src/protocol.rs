@@ -13,22 +13,20 @@ use pixi_build_backend::{
     tools::{LoadedVariantConfig, RattlerBuild},
     utils::TemporaryRenderedRecipe,
 };
-use pixi_build_types::procedures::conda_outputs::CondaOutput;
 use pixi_build_types::{
+    BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1, TargetV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
-            CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
+            CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
             CondaOutputRunExports, CondaOutputsParams, CondaOutputsResult,
         },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
-    BackendCapabilities, CondaPackageMetadata,
-    PathSpecV1, SourcePackageSpecV1, TargetV1,
 };
 use rattler_build::{
     build::run_build,
@@ -36,8 +34,8 @@ use rattler_build::{
     hash::HashInfo,
     metadata::{PackageIdentifier, PlatformWithVirtualPackages},
     recipe::{
-        parser::{find_outputs_from_src, BuildString},
         Jinja, ParsingError, Recipe,
+        parser::{BuildString, find_outputs_from_src},
     },
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
@@ -243,12 +241,12 @@ impl Protocol for RattlerBuildBackend {
         &self,
         params: CondaOutputsParams,
     ) -> miette::Result<CondaOutputsResult> {
-        let build_platform = Platform::current();
+        let build_platform = params.host_platform;
 
         // Determine the variant configuration to use. This loads the variant
         // configuration from disk as well as including the variants from the input
         // parameters.
-        let selector_config = SelectorConfig {
+        let selector_config_for_variants = SelectorConfig {
             target_platform: params.host_platform,
             host_platform: params.host_platform,
             build_platform,
@@ -261,7 +259,7 @@ impl Protocol for RattlerBuildBackend {
         let variant_config = LoadedVariantConfig::from_recipe_path(
             &self.source_dir,
             &self.recipe_source.path,
-            &selector_config,
+            &selector_config_for_variants,
         )
         .into_diagnostic()?
         .extend_with_input_variants(params.variant_configuration.unwrap_or_default());
@@ -270,14 +268,18 @@ impl Protocol for RattlerBuildBackend {
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
         let discovered_outputs = variant_config
             .variant_config
-            .find_variants(&output_nodes, self.recipe_source.clone(), &selector_config)
+            .find_variants(
+                &output_nodes,
+                self.recipe_source.clone(),
+                &selector_config_for_variants,
+            )
             .into_diagnostic()?;
 
         // Construct a mapping that for packages that we want from source.
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let sources = discovered_outputs
+        let local_source_packages = discovered_outputs
             .iter()
             .map(|output| {
                 (
@@ -293,17 +295,16 @@ impl Protocol for RattlerBuildBackend {
             let variant = discovered_output.used_vars;
             let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
 
+            // Construct the selector config for this particular output. We base this on the
+            // selector config that was used to determine the variants.
             let selector_config = SelectorConfig {
                 variant: variant.clone(),
                 hash: Some(hash.clone()),
                 target_platform: discovered_output.target_platform,
-                host_platform: params.host_platform,
-                build_platform,
-                experimental: false,
-                allow_undefined: false,
-                recipe_path: Some(self.recipe_source.path.clone()),
+                ..selector_config_for_variants.clone()
             };
 
+            // Convert this discovered output into a recipe.
             let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
                 .map_err(|err| {
                     let errs: ParseErrors<_> = err
@@ -314,6 +315,7 @@ impl Protocol for RattlerBuildBackend {
                     errs
                 })?;
 
+            // Skip this output if the recipe is marked as skipped
             if recipe.build().skip() {
                 continue;
             }
@@ -349,7 +351,7 @@ impl Protocol for RattlerBuildBackend {
                         recipe.requirements.build,
                         &variant,
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     constraints: Vec::new(),
                 }),
@@ -358,7 +360,7 @@ impl Protocol for RattlerBuildBackend {
                         recipe.requirements.host,
                         &variant,
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     constraints: Vec::new(),
                 }),
@@ -367,7 +369,7 @@ impl Protocol for RattlerBuildBackend {
                         recipe.requirements.run,
                         &BTreeMap::default(), // Variants are not applied to run dependencies
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     constraints: convert_binary_dependencies(
                         recipe.requirements.run_constraints,
@@ -394,19 +396,19 @@ impl Protocol for RattlerBuildBackend {
                         recipe.requirements.run_exports.weak,
                         &variant,
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     strong: convert_dependencies(
                         recipe.requirements.run_exports.strong,
                         &variant,
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     noarch: convert_dependencies(
                         recipe.requirements.run_exports.noarch,
                         &variant,
                         &subpackages,
-                        &sources,
+                        &local_source_packages,
                     )?,
                     weak_constrains: convert_binary_dependencies(
                         recipe.requirements.run_exports.weak_constraints,
@@ -763,15 +765,15 @@ mod tests {
         str::FromStr,
     };
 
+    use pixi_build_backend::utils::test::conda_outputs_snapshot;
     use pixi_build_types::{
+        ChannelConfiguration,
         procedures::{
             conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
-        ChannelConfiguration,
     };
     use rattler_build::console_utils::LoggingOutputHandler;
-    use serde_json::Value;
     use tempfile::tempdir;
     use url::Url;
 
@@ -844,39 +846,9 @@ mod tests {
                     .await
                     .unwrap();
 
-                let mut value = serde_json::to_value(result).unwrap();
-                remove_empty_values(&mut value);
-                insta::assert_snapshot!(serde_json::to_string_pretty(&value).unwrap());
+                insta::assert_snapshot!(conda_outputs_snapshot(result));
             });
         });
-    }
-
-    /// A utility function to remove empty values from a JSON object.
-    fn remove_empty_values(value: &mut Value) {
-        fn keep_value(value: &Value) -> bool {
-            match value {
-                Value::Object(map) => !map.is_empty(),
-                Value::Array(arr) => !arr.is_empty(),
-                Value::Null => false,
-                _ => true,
-            }
-        }
-
-        match value {
-            Value::Object(map) => {
-                map.retain(|_, v| {
-                    remove_empty_values(v);
-                    keep_value(v)
-                });
-            }
-            Value::Array(arr) => {
-                arr.retain_mut(|v| {
-                    remove_empty_values(v);
-                    keep_value(v)
-                });
-            }
-            _ => {}
-        }
     }
 
     #[tokio::test]

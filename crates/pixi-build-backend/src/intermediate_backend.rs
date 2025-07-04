@@ -1,14 +1,23 @@
-use itertools::Itertools;
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use indexmap::IndexMap;
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, ProjectModelV1,
+    BackendCapabilities, CondaPackageMetadata, PathSpecV1, ProjectModelV1, SourcePackageSpecV1,
     procedures::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        conda_outputs::{
+            CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
+            CondaOutputRunExports, CondaOutputsParams, CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
@@ -18,23 +27,27 @@ use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    recipe::{Jinja, parser::BuildString, variable::Variable},
+    metadata::PackageIdentifier,
+    recipe::{
+        Jinja, ParsingError, Recipe,
+        parser::{BuildString, find_outputs_from_src},
+        variable::Variable,
+    },
     render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
+    source_code::Source,
     tool_configuration::Configuration,
-    variant_config::VariantConfig,
+    variant_config::{ParseErrors, VariantConfig},
 };
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::{Path, PathBuf},
-    sync::Arc,
-};
 use tempfile::tempdir;
 
 use crate::{
+    dependencies::{
+        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+    },
     generated_recipe::{BackendConfig, GenerateRecipe},
     protocol::{Protocol, ProtocolInstantiator},
     rattler_build_integration,
@@ -69,7 +82,9 @@ impl<T: GenerateRecipe + Default + Clone> IntermediateBackendInstantiator<T> {
 
 pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
-    pub(crate) manifest_root: PathBuf,
+    pub(crate) source_dir: PathBuf,
+    /// The path to the manifest file relative to the source directory.
+    pub(crate) manifest_rel_path: PathBuf,
     pub(crate) project_model: ProjectModelV1,
     pub(crate) generate_recipe: T,
     pub(crate) config: T::Config,
@@ -78,6 +93,7 @@ pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
 impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
+        source_dir: Option<PathBuf>,
         project_model: ProjectModelV1,
         generate_recipe: T,
         config: serde_json::Value,
@@ -85,17 +101,37 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
         // Determine the root directory of the manifest
-        let manifest_root = manifest_path
-            .parent()
-            .ok_or_else(|| miette::miette!("the project manifest must reside in a directory"))?
-            .to_path_buf();
+        let (source_dir, manifest_rel_path) = match source_dir {
+            None => {
+                let source_dir = manifest_path
+                    .parent()
+                    .ok_or_else(|| {
+                        miette::miette!("the project manifest must reside in a directory")
+                    })?
+                    .to_path_buf();
+                let manifest_rel_path = manifest_path
+                    .file_name()
+                    .map(Path::new)
+                    .expect("we already validated that the manifest path is a file")
+                    .to_path_buf();
+                (source_dir, manifest_rel_path)
+            }
+            Some(source_dir) => {
+                let manifest_rel_path = pathdiff::diff_paths(manifest_path, &source_dir)
+                    .ok_or_else(|| {
+                        miette::miette!("the manifest is not relative to the source directory")
+                    })?;
+                (source_dir, manifest_rel_path)
+            }
+        };
 
         let config = serde_json::from_value::<T::Config>(config)
             .into_diagnostic()
             .context("failed to parse configuration")?;
 
         Ok(Self {
-            manifest_root,
+            source_dir,
+            manifest_rel_path,
             project_model,
             generate_recipe,
             config,
@@ -109,7 +145,7 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
 impl<T> ProtocolInstantiator for IntermediateBackendInstantiator<T>
 where
     T: GenerateRecipe + Clone + Send + Sync + 'static,
-    T::Config: BackendConfig + Send + Sync + 'static,
+    T::Config: Send + Sync + 'static,
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
         let config = configuration
@@ -139,6 +175,7 @@ where
 
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
+            params.source_dir,
             project_model,
             self.generator.clone(),
             config,
@@ -176,7 +213,7 @@ where
     ) -> miette::Result<CondaMetadataResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest_root.to_path_buf(),
+            root_dir: self.source_dir.to_path_buf(),
         };
 
         // Build the tool configuration
@@ -219,7 +256,7 @@ where
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
-            self.manifest_root.clone(),
+            self.source_dir.clone(),
             host_platform,
         )?;
 
@@ -227,7 +264,7 @@ where
         let resolved_dependencies = generated_recipe
             .recipe
             .requirements
-            .resolve(Some(&host_platform));
+            .resolve(Some(host_platform));
 
         let used_variants = resolved_dependencies.used_variants();
 
@@ -392,7 +429,7 @@ where
     async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
-            root_dir: self.manifest_root.to_path_buf(),
+            root_dir: self.source_dir.to_path_buf(),
         };
 
         // Build the tool configuration
@@ -444,12 +481,12 @@ where
         let recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
-            self.manifest_root.clone(),
+            self.source_dir.clone(),
             host_platform,
         )?;
 
         // Determine the variant keys that are used in the recipe.
-        let resolved_dependencies = recipe.recipe.requirements.resolve(Some(&host_platform));
+        let resolved_dependencies = recipe.recipe.requirements.resolve(Some(host_platform));
 
         let used_variants = resolved_dependencies.used_variants();
 
@@ -573,6 +610,227 @@ where
 
         Ok(CondaBuildResult { packages })
     }
+
+    async fn conda_outputs(
+        &self,
+        params: CondaOutputsParams,
+    ) -> miette::Result<CondaOutputsResult> {
+        let build_platform = params.host_platform;
+
+        // Construct the intermediate recipe
+        let recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &self.config,
+            self.source_dir.clone(),
+            params.host_platform,
+        )?;
+
+        // Convert the recipe to source code.
+        // TODO(baszalmstra): In the future it would be great if we could just
+        // immediately use the intermediate recipe for some of this rattler-build
+        // functions.
+        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let named_source = Source {
+            name: self.manifest_rel_path.display().to_string(),
+            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
+            path: recipe_path.clone(),
+        };
+
+        // Construct a `VariantConfig` based on the input parameters.
+        //
+        // rattler-build recipes would also load variant.yaml (or
+        // conda-build-config.yaml) files here, but we only respect the variant
+        // configuration passed in.
+        let variant_config = VariantConfig {
+            variants: convert_input_variant_configuration(params.variant_configuration)
+                .unwrap_or_default(),
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
+
+        // Determine the different outputs that are supported by the recipe by expanding
+        // all the different variant combinations.
+        //
+        // TODO(baszalmstra): The selector config we pass in here doesnt have all values
+        // filled in. This is on prupose because at this point we dont yet know all
+        // values like the variant. We should introduce a new type of selector config
+        // for this particular case.
+        let selector_config_for_variants = SelectorConfig {
+            // TODO: Properly add noarch support here.
+            target_platform: params.host_platform,
+            host_platform: params.host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+        };
+        let outputs = find_outputs_from_src(named_source.clone()).into_diagnostic()?;
+        let discovered_outputs = variant_config.find_variants(
+            &outputs,
+            named_source.clone(),
+            &selector_config_for_variants,
+        )?;
+
+        // Construct a mapping that for packages that we want from source.
+        //
+        // By default, this includes all the outputs in the recipe. These should all be
+        // build from source, in particular from the current source.
+        let local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
+            .iter()
+            .map(|output| {
+                (
+                    output.name.clone(),
+                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
+                )
+            })
+            .collect();
+
+        let mut subpackages = HashMap::new();
+        let mut outputs = Vec::new();
+        for discovered_output in discovered_outputs {
+            let variant = discovered_output.used_vars;
+            let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
+
+            // Construct the selector config for this particular output. We base this on the
+            // selector config that was used to determine the variants.
+            let selector_config = SelectorConfig {
+                variant: variant.clone(),
+                hash: Some(hash.clone()),
+                target_platform: discovered_output.target_platform,
+                ..selector_config_for_variants.clone()
+            };
+
+            // Convert this discovered output into a recipe.
+            let recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
+                .map_err(|err| {
+                    let errs: ParseErrors<_> = err
+                        .into_iter()
+                        .map(|err| ParsingError::from_partial(named_source.clone(), err))
+                        .collect::<Vec<_>>()
+                        .into();
+                    errs
+                })?;
+
+            // Skip this output if the recipe is marked as skipped
+            if recipe.build().skip() {
+                continue;
+            }
+
+            let jinja = Jinja::new(selector_config);
+            let build_number = recipe.build().number;
+            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
+
+            subpackages.insert(
+                recipe.package().name().clone(),
+                PackageIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package().version().version().clone().into(),
+                    build_string: build_string.to_string(),
+                },
+            );
+
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package.version().clone(),
+                    build: build_string.to_string(),
+                    build_number,
+                    subdir: discovered_output.target_platform,
+                    license: recipe.about.license.map(|l| l.to_string()),
+                    license_family: recipe.about.license_family,
+                    noarch: recipe.build.noarch,
+                    purls: None,
+                    python_site_packages_path: None,
+                },
+                build_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.build,
+                        &variant,
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                host_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.host,
+                        &variant,
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                run_dependencies: CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.run,
+                        &BTreeMap::default(), // Variants are not applied to run dependencies
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    constraints: convert_binary_dependencies(
+                        recipe.requirements.run_constraints,
+                        &BTreeMap::default(), // Variants are not applied to run constraints
+                        &subpackages,
+                    )?,
+                },
+                ignore_run_exports: CondaOutputIgnoreRunExports {
+                    by_name: recipe
+                        .requirements
+                        .ignore_run_exports
+                        .by_name
+                        .into_iter()
+                        .collect(),
+                    from_package: recipe
+                        .requirements
+                        .ignore_run_exports
+                        .from_package
+                        .into_iter()
+                        .collect(),
+                },
+                run_exports: CondaOutputRunExports {
+                    weak: convert_dependencies(
+                        recipe.requirements.run_exports.weak,
+                        &variant,
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    strong: convert_dependencies(
+                        recipe.requirements.run_exports.strong,
+                        &variant,
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    noarch: convert_dependencies(
+                        recipe.requirements.run_exports.noarch,
+                        &variant,
+                        &subpackages,
+                        &local_source_packages,
+                    )?,
+                    weak_constrains: convert_binary_dependencies(
+                        recipe.requirements.run_exports.weak_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                    strong_constrains: convert_binary_dependencies(
+                        recipe.requirements.run_exports.strong_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                },
+
+                // The input globs are the same for all outputs
+                input_globs: None,
+                // TODO: Implement caching
+            });
+        }
+
+        Ok(CondaOutputsResult {
+            outputs,
+            input_globs: T::metadata_input_globs(&self.config),
+        })
+    }
 }
 
 /// Returns the capabilities for this backend
@@ -580,7 +838,7 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
-        provides_conda_outputs: Some(false),
+        provides_conda_outputs: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

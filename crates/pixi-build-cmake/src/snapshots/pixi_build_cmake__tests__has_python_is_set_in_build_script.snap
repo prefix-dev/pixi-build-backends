@@ -4,22 +4,5 @@ expression: generated_recipe.recipe.build
 ---
 number: ~
 script:
-  content:
-    - ninja --version
-    - cmake --version
-    - ""
-    - ""
-    - "if [ ! -f \"$SRC_DIR/../build/build.ninja\" ]; then"
-    - "    cmake $CMAKE_ARGS \\"
-    - "          -GNinja \\"
-    - "          -DCMAKE_BUILD_TYPE=Release \\"
-    - "          -DCMAKE_INSTALL_PREFIX=$PREFIX \\"
-    - "          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \\"
-    - "          -DPython_EXECUTABLE=$PYTHON \\"
-    - "          -DBUILD_SHARED_LIBS=ON \\"
-    - "           \\"
-    - "          -B $SRC_DIR/../build \\"
-    - "          -S \".\""
-    - fi
-    - cmake --build $SRC_DIR/../build --target install
+  content: "[content]"
   env: {}

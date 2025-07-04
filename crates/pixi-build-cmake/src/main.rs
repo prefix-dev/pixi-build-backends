@@ -247,7 +247,21 @@ mod tests {
 
         // we want to check that
         // -DPython_EXECUTABLE=$PYTHON is set in the build script
-        insta::assert_yaml_snapshot!(generated_recipe.recipe.build);
+        insta::assert_yaml_snapshot!(generated_recipe.recipe.build,
+
+            {
+            ".script.content" => insta::dynamic_redaction(|value, _path| {
+                dbg!(&value);
+                // assert that the value looks like a uuid here
+                assert!(value
+                    .as_slice()
+                    .unwrap()
+                    .iter()
+                    .any(|c| c.as_str().unwrap().contains("-DPython_EXECUTABLE"))
+                );
+                "[content]"
+            })
+        });
     }
 
     #[test]

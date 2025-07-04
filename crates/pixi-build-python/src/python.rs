@@ -24,11 +24,11 @@ use rattler_build::{
         variable::Variable,
     },
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{
     NoArchType, PackageName, Platform,
     package::{ArchiveType, EntryPoint},
 };
-use rattler_package_streaming::write::CompressionLevel;
 
 #[derive(Debug)]
 pub struct PythonBuildBackend<P: ProjectModel> {
@@ -264,6 +264,7 @@ pub(crate) fn construct_configuration(
         sandbox_config: None,
         // TODO: Expose to the user
         debug: Debug::new(false),
+        exclude_newer: None,
     }
 }
 

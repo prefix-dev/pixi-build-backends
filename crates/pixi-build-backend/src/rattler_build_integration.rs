@@ -14,8 +14,8 @@ use rattler_build::{
     tool_configuration,
     variant_config::VariantConfig,
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{GenericVirtualPackage, NamedChannelOrUrl, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 use url::Url;
 
 use crate::{generated_recipe::GeneratedRecipe, utils::TemporaryRenderedRecipe};
@@ -140,6 +140,7 @@ pub async fn get_build_output(
                     &output_dir,
                     true,
                     &timestamp,
+                    recipe.build().merge_build_and_host_envs,
                 )
                 .into_diagnostic()?,
                 channels,
@@ -155,6 +156,7 @@ pub async fn get_build_output(
                 sandbox_config: None,
                 debug: Debug::default(),
                 solve_strategy: Default::default(),
+                exclude_newer: None,
             },
             finalized_dependencies: None,
             finalized_sources: None,

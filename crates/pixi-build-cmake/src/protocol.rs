@@ -1,4 +1,5 @@
 use std::{
+    collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -8,6 +9,9 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     PackageSourceSpec,
     common::{build_configuration, compute_variants},
+    dependencies::{
+        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+    },
     protocol::{Protocol, ProtocolInstantiator},
     utils::TemporaryRenderedRecipe,
 };
@@ -18,6 +22,10 @@ use pixi_build_types::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
+        conda_outputs::{
+            CondaOutput, CondaOutputDependencies, CondaOutputMetadata, CondaOutputsParams,
+            CondaOutputsResult,
+        },
         initialize::{InitializeParams, InitializeResult},
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
@@ -26,19 +34,20 @@ use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{Directories, Output},
-    recipe::{Jinja, parser::BuildString, variable::Variable},
+    metadata::{Directories, Output, PackageIdentifier},
+    recipe::{Jinja, parser::BuildString},
     render::resolved_dependencies::DependencyInfo,
+    selectors::SelectorConfig,
     tool_configuration::Configuration,
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
+use rattler_conda_types::{ChannelConfig, MatchSpec, NoArchType, PackageName, Platform};
 
 use crate::{
     cmake::{CMakeBuildBackend, construct_configuration},
     config::CMakeBackendConfig,
 };
 
-fn input_globs(extra_globs: Vec<String>) -> Vec<String> {
+fn input_globs(extra_globs: Vec<String>) -> BTreeSet<String> {
     [
         // Source files
         "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
@@ -106,21 +115,14 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
             &params.work_directory,
             true,
             &chrono::Utc::now(),
+            false,
         )
         .into_diagnostic()
         .context("failed to setup build directories")?;
 
         // Create a variant config from the variant configuration in the parameters.
-        let input_variant_configuration = params.variant_configuration.map(|v| {
-            v.into_iter()
-                .map(|(k, v)| {
-                    (
-                        k.into(),
-                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                    )
-                })
-                .collect()
-        });
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
         let variant_combinations = compute_variants(
             &self.project_model,
             input_variant_configuration,
@@ -215,6 +217,122 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         })
     }
 
+    async fn conda_outputs(
+        &self,
+        params: CondaOutputsParams,
+    ) -> miette::Result<CondaOutputsResult> {
+        // Create a variant config from the variant configuration in the parameters.
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
+        let variant_combinations = compute_variants(
+            &self.project_model,
+            input_variant_configuration,
+            params.host_platform,
+        )?;
+
+        // Construct the different outputs
+        let mut subpackages = HashMap::new();
+        let mut outputs = Vec::new();
+        for variant in variant_combinations {
+            // TODO: Determine how and if we can determine this from the manifest.
+            let (recipe, sources) = self.recipe(params.host_platform, &variant)?;
+            let hash = HashInfo::from_variant(&variant, recipe.build().noarch());
+
+            // Determine the target platform based on the recipe's noarch type.
+            let target_platform = if recipe.build.noarch == NoArchType::none() {
+                params.host_platform
+            } else {
+                Platform::NoArch
+            };
+
+            // Construct selectors based on the target platform and variant
+            let selector_config = SelectorConfig {
+                target_platform,
+                host_platform: params.host_platform,
+                build_platform: Platform::current(),
+                variant: variant.clone(),
+                hash: Some(hash.clone()),
+                experimental: false,
+                allow_undefined: false,
+                recipe_path: None,
+            };
+
+            // Determine the build string
+            let jinja = Jinja::new(selector_config.clone()).with_context(&recipe.context);
+            let build_number = recipe.build().number;
+            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
+
+            subpackages.insert(
+                recipe.package().name().clone(),
+                PackageIdentifier {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package().version().version().clone().into(),
+                    build_string: build_string.to_string(),
+                },
+            );
+
+            outputs.push(CondaOutput {
+                metadata: CondaOutputMetadata {
+                    name: recipe.package().name().clone(),
+                    version: recipe.package.version().clone(),
+                    build: build_string.to_string(),
+                    build_number,
+                    subdir: target_platform,
+                    license: recipe.about.license.map(|l| l.to_string()),
+                    license_family: recipe.about.license_family,
+                    noarch: recipe.build.noarch,
+                    purls: None,
+                    python_site_packages_path: None,
+                },
+                build_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.build,
+                        &variant,
+                        &subpackages,
+                        &sources.build,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                host_dependencies: Some(CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.host,
+                        &variant,
+                        &subpackages,
+                        &sources.host,
+                    )?,
+                    constraints: Vec::new(),
+                }),
+                run_dependencies: CondaOutputDependencies {
+                    depends: convert_dependencies(
+                        recipe.requirements.run,
+                        &variant,
+                        &subpackages,
+                        &sources.run,
+                    )?,
+                    constraints: convert_binary_dependencies(
+                        recipe.requirements.run_constraints,
+                        &variant,
+                        &subpackages,
+                    )?,
+                },
+
+                // TODO: Read from configuration
+                ignore_run_exports: Default::default(),
+
+                // TODO: Setup sane defaults
+                run_exports: Default::default(),
+
+                // The input globs are the same for all outputs
+                input_globs: None,
+            });
+        }
+
+        Ok(CondaOutputsResult {
+            outputs,
+            input_globs: BTreeSet::default(),
+        })
+    }
+
     async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
@@ -231,27 +349,9 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
             .into_diagnostic()
             .context("`{name}` is not a valid package name")?;
 
-        let directories = Directories::setup(
-            package_name.as_normalized(),
-            &self.manifest_path,
-            &params.work_directory,
-            true,
-            &chrono::Utc::now(),
-        )
-        .into_diagnostic()
-        .context("failed to setup build directories")?;
-
         // Recompute all the variant combinations
-        let input_variant_configuration = params.variant_configuration.map(|v| {
-            v.into_iter()
-                .map(|(k, v)| {
-                    (
-                        k.into(),
-                        v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                    )
-                })
-                .collect()
-        });
+        let input_variant_configuration =
+            convert_input_variant_configuration(params.variant_configuration);
         let variant_combinations = compute_variants(
             &self.project_model,
             input_variant_configuration,
@@ -262,6 +362,17 @@ impl Protocol for CMakeBuildBackend<ProjectModelV1> {
         let mut outputs = Vec::with_capacity(variant_combinations.len());
         for variant in variant_combinations {
             let (recipe, _source_requirements) = self.recipe(host_platform, &variant)?;
+
+            let directories = Directories::setup(
+                package_name.as_normalized(),
+                &self.manifest_path,
+                &params.work_directory,
+                true,
+                &chrono::Utc::now(),
+                recipe.build().merge_build_and_host_envs(),
+            )
+            .into_diagnostic()
+            .context("failed to setup build directories")?;
 
             let build_configuration_params = build_configuration(
                 channels.clone(),
@@ -432,6 +543,7 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
+        provides_conda_outputs: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
@@ -457,8 +569,8 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.{c,cc,cxx,cpp,h,hpp,hxx}".to_string()));
-        assert!(result.contains(&"**/*.{cmake,cmake.in}".to_string()));
-        assert!(result.contains(&"**/CMakeFiles.txt".to_string()));
+        assert!(result.contains("**/*.{c,cc,cxx,cpp,h,hpp,hxx}"));
+        assert!(result.contains("**/*.{cmake,cmake.in}"));
+        assert!(result.contains("**/CMakeFiles.txt"));
     }
 }

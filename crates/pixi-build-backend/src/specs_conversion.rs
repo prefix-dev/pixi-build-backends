@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use indexmap::IndexMap;
 use miette::IntoDiagnostic;
+use ordermap::OrderMap;
 use pixi_build_types::{
     GitSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1, UrlSpecV1,
 };
@@ -144,7 +144,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
 }
 
 pub(crate) fn package_specs_to_package_dependency(
-    specs: IndexMap<String, PackageSpecV1>,
+    specs: OrderMap<String, PackageSpecV1>,
 ) -> miette::Result<Vec<PackageDependency>> {
     specs
         .into_iter()

@@ -8,8 +8,7 @@
 //! * [`BinarySpecExt`] - Extension for converting binary specs to nameless
 //!   match specs
 
-use std::fmt::Debug;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use miette::IntoDiagnostic;
 use pixi_build_types::{self as pbt};
@@ -63,6 +62,8 @@ impl PackageSpec for pbt::PackageSpecV1 {
                     subdir,
                     md5,
                     sha256,
+                    url,
+                    license,
                 } = &**boxed_spec;
 
                 version == &Some(rattler_conda_types::VersionSpec::Any)
@@ -73,6 +74,8 @@ impl PackageSpec for pbt::PackageSpecV1 {
                     && subdir.is_none()
                     && md5.is_none()
                     && sha256.is_none()
+                    && url.is_none()
+                    && license.is_none()
             }
             _ => false,
         }
@@ -124,12 +127,12 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
                 .as_ref()
                 .map(|url| Arc::new(Channel::from_url(url.clone()))),
             subdir: self.subdir.clone(),
-            md5: self.md5.as_ref().map(|m| m.0),
-            sha256: self.sha256.as_ref().map(|s| s.0),
-            namespace: None,
-            url: None,
+            md5: self.md5,
+            sha256: self.sha256,
+            url: self.url.clone(),
+            license: self.license.clone(),
             extras: None,
-            license: None,
+            namespace: None,
         }
     }
 }

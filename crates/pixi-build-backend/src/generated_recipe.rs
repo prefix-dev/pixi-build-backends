@@ -16,6 +16,9 @@ pub struct PythonParams {
     pub pyproject_manifest: Option<PathBuf>,
 }
 
+/// Files that were read during the recipe generation process.
+pub type ReadFiles = Vec<PathBuf>;
+
 /// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
 /// into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
@@ -43,7 +46,7 @@ pub trait GenerateRecipe {
         // Note: It is used only by python backend right now and may
         // be removed when profiles will be implemented.
         python_params: Option<PythonParams>,
-    ) -> miette::Result<GeneratedRecipe>;
+    ) -> miette::Result<(GeneratedRecipe, ReadFiles)>;
 
     /// Returns a list of globs that should be used to find the input files
     /// for the build process.

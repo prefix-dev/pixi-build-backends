@@ -10,7 +10,7 @@ use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams, ReadFiles},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -51,7 +51,7 @@ impl GenerateRecipe for PythonGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
-    ) -> miette::Result<GeneratedRecipe> {
+    ) -> miette::Result<(GeneratedRecipe, ReadFiles)> {
         let params = python_params.unwrap_or_default();
 
         let mut generated_recipe =
@@ -103,11 +103,16 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest = if let Some(pyproject_manifest_path) = params.pyproject_manifest {
+        let (pyproject_manifest, read_file) = if let Some(pyproject_manifest_path) =
+            params.pyproject_manifest
+        {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
-            Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
+            (
+                Some(toml_edit::de::from_str(&contents).into_diagnostic()?),
+                vec![pyproject_manifest_path],
+            )
         } else {
-            None
+            (None, vec![])
         };
 
         // Construct python specific settings
@@ -124,7 +129,7 @@ impl GenerateRecipe for PythonGenerator {
             ..Script::default()
         };
 
-        Ok(generated_recipe)
+        Ok((generated_recipe, read_file))
     }
 
     /// Determines the build input globs for given python package
@@ -250,7 +255,7 @@ mod tests {
             }
         });
 
-        let generated_recipe = PythonGenerator::default()
+        let (generated_recipe, _) = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig::default(),
@@ -291,7 +296,7 @@ mod tests {
             }
         });
 
-        let generated_recipe = PythonGenerator::default()
+        let (generated_recipe, _) = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig::default(),
@@ -327,7 +332,7 @@ mod tests {
 
         let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
 
-        let generated_recipe = PythonGenerator::default()
+        let (generated_recipe, _) = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig {

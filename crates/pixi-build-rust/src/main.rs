@@ -12,7 +12,7 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
     compilers::{Language, compiler_requirement},
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams, ReadFiles},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -35,7 +35,7 @@ impl GenerateRecipe for RustGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
-    ) -> miette::Result<GeneratedRecipe> {
+    ) -> miette::Result<(GeneratedRecipe, ReadFiles)> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
 
@@ -124,7 +124,7 @@ impl GenerateRecipe for RustGenerator {
             secrets: sccache_secrets,
         };
 
-        Ok(generated_recipe)
+        Ok((generated_recipe, vec![]))
     }
 
     /// Returns the build input globs used by the backend.
@@ -216,7 +216,7 @@ mod tests {
             }
         });
 
-        let generated_recipe = RustGenerator::default()
+        let (generated_recipe, _) = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig::default(),
@@ -257,7 +257,7 @@ mod tests {
             }
         });
 
-        let generated_recipe = RustGenerator::default()
+        let (generated_recipe, _) = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig::default(),
@@ -293,7 +293,7 @@ mod tests {
 
         let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
 
-        let generated_recipe = RustGenerator::default()
+        let (generated_recipe, _) = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig {
@@ -333,7 +333,7 @@ mod tests {
             ("SCCACHE_BUCKET", Some("system-bucket")),
         ];
 
-        let generated_recipe = temp_env::with_vars(system_env_vars, || {
+        let (generated_recipe, _) = temp_env::with_vars(system_env_vars, || {
             RustGenerator::default()
                 .generate_recipe(
                     &project_model,

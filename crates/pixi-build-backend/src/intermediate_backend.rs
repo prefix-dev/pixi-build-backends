@@ -227,7 +227,7 @@ where
             zip_keys: None,
         };
 
-        let generated_recipe = self.generate_recipe.generate_recipe(
+        let (generated_recipe, _) = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.manifest_root.clone(),
@@ -455,7 +455,7 @@ where
             zip_keys: None,
         };
 
-        let recipe = self.generate_recipe.generate_recipe(
+        let (recipe, read_files) = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.manifest_root.clone(),
@@ -575,6 +575,12 @@ where
 
                 let input_globs =
                     T::build_input_globs(&self.config, &params.work_directory, params.editable);
+
+                // join it with the files that were read during the recipe generation
+                let input_globs = input_globs
+                    .into_iter()
+                    .chain(read_files.iter().map(|f| f.to_string_lossy().to_string()))
+                    .collect::<Vec<_>>();
 
                 let built_package = CondaBuiltPackage {
                     output_file: package,

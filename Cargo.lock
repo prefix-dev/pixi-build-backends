@@ -3861,6 +3861,7 @@ dependencies = [
  "rattler-build",
  "rattler_conda_types",
  "rattler_package_streaming",
+ "recipe-stage0",
  "serde",
  "serde_json",
  "tempfile",

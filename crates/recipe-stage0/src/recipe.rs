@@ -464,7 +464,7 @@ pub struct ConditionalRequirements {
 
 impl ConditionalRequirements {
     /// Resolves the conditional requirements for a given platform.
-    pub fn  resolve(
+    pub fn resolve(
         &self,
         platform: Option<Platform>,
     ) -> PackageSpecDependencies<PackageDependency> {

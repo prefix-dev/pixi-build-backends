@@ -50,11 +50,20 @@ impl GenerateRecipe for CMakeGenerator {
         {
             if build_platform.is_windows() {
                 // on windows, we use newer vs2019 compiler
-                let vss = MatchSpec::from_str("vs2019", ParseStrictness::Strict)
-                    .expect("Failed to parse vs2019 match spec");
-                requirements
+
+                if !resolved_requirements
                     .build
-                    .push(PackageDependency::Binary(vss).into());
+                    .contains_key(&PackageName::new_unchecked("vs2017"))
+                    && !resolved_requirements
+                        .build
+                        .contains_key(&PackageName::new_unchecked("vs2019"))
+                {
+                    let vss = MatchSpec::from_str("vs2019", ParseStrictness::Strict)
+                        .expect("Failed to parse vs2019 match spec");
+                    requirements
+                        .build
+                        .push(PackageDependency::Binary(vss).into());
+                }
             } else {
                 // otherwise we default to cmpi
                 requirements

@@ -10,7 +10,7 @@ use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams, ReadFiles},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -51,7 +51,7 @@ impl GenerateRecipe for PythonGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
-    ) -> miette::Result<(GeneratedRecipe, ReadFiles)> {
+    ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
         let mut generated_recipe =
@@ -103,16 +103,13 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let (pyproject_manifest, read_file) = if let Some(pyproject_manifest_path) =
-            params.pyproject_manifest
-        {
+        let pyproject_manifest = if let Some(pyproject_manifest_path) = params.pyproject_manifest {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
-            (
-                Some(toml_edit::de::from_str(&contents).into_diagnostic()?),
-                vec![pyproject_manifest_path],
-            )
+            generated_recipe.build_input_globs =
+                vec![pyproject_manifest_path.to_string_lossy().to_string()];
+            Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
         } else {
-            (None, vec![])
+            None
         };
 
         // Construct python specific settings
@@ -129,7 +126,7 @@ impl GenerateRecipe for PythonGenerator {
             ..Script::default()
         };
 
-        Ok((generated_recipe, read_file))
+        Ok(generated_recipe)
     }
 
     /// Determines the build input globs for given python package
@@ -137,7 +134,7 @@ impl GenerateRecipe for PythonGenerator {
     /// has a different way of determining the input globs than hatch etc.
     ///
     /// However, lets take everything in the directory as input for now
-    fn build_input_globs(
+    fn extract_input_globs_from_build(
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         editable: bool,
@@ -211,7 +208,8 @@ mod tests {
             ..Default::default()
         };
 
-        let result = PythonGenerator::build_input_globs(&config, PathBuf::new(), false);
+        let result =
+            PythonGenerator::extract_input_globs_from_build(&config, PathBuf::new(), false);
 
         insta::assert_debug_snapshot!(result);
     }
@@ -223,7 +221,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = PythonGenerator::build_input_globs(&config, PathBuf::new(), true);
+        let result = PythonGenerator::extract_input_globs_from_build(&config, PathBuf::new(), true);
 
         insta::assert_debug_snapshot!(result);
     }
@@ -255,7 +253,7 @@ mod tests {
             }
         });
 
-        let (generated_recipe, _) = PythonGenerator::default()
+        let generated_recipe = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig::default(),
@@ -296,7 +294,7 @@ mod tests {
             }
         });
 
-        let (generated_recipe, _) = PythonGenerator::default()
+        let generated_recipe = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig::default(),
@@ -332,7 +330,7 @@ mod tests {
 
         let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
 
-        let (generated_recipe, _) = PythonGenerator::default()
+        let generated_recipe = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
                 &PythonBackendConfig {

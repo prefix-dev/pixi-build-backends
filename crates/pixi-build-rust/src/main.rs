@@ -12,7 +12,7 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
     compilers::{Language, compiler_requirement},
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams, ReadFiles},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -35,7 +35,7 @@ impl GenerateRecipe for RustGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
-    ) -> miette::Result<(GeneratedRecipe, ReadFiles)> {
+    ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
 
@@ -124,11 +124,11 @@ impl GenerateRecipe for RustGenerator {
             secrets: sccache_secrets,
         };
 
-        Ok((generated_recipe, vec![]))
+        Ok(generated_recipe)
     }
 
     /// Returns the build input globs used by the backend.
-    fn build_input_globs(
+    fn extract_input_globs_from_build(
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
@@ -171,7 +171,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = RustGenerator::build_input_globs(&config, PathBuf::new(), false);
+        let result = RustGenerator::extract_input_globs_from_build(&config, PathBuf::new(), false);
 
         // Verify that all extra globs are included in the result
         for extra_glob in &config.extra_input_globs {
@@ -216,7 +216,7 @@ mod tests {
             }
         });
 
-        let (generated_recipe, _) = RustGenerator::default()
+        let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig::default(),
@@ -257,7 +257,7 @@ mod tests {
             }
         });
 
-        let (generated_recipe, _) = RustGenerator::default()
+        let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig::default(),
@@ -293,7 +293,7 @@ mod tests {
 
         let env = IndexMap::from([("foo".to_string(), "bar".to_string())]);
 
-        let (generated_recipe, _) = RustGenerator::default()
+        let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
                 &RustBackendConfig {
@@ -327,13 +327,14 @@ mod tests {
         });
 
         let env = IndexMap::from([("SCCACHE_BUCKET".to_string(), "my-bucket".to_string())]);
+
         let system_env_vars = [
             ("SCCACHE_SYSTEM", Some("SOME_VALUE")),
             // We want to test that config env variable wins over system env variable
             ("SCCACHE_BUCKET", Some("system-bucket")),
         ];
 
-        let (generated_recipe, _) = temp_env::with_vars(system_env_vars, || {
+        let generated_recipe = temp_env::with_vars(system_env_vars, || {
             RustGenerator::default()
                 .generate_recipe(
                     &project_model,

@@ -11,8 +11,8 @@ use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
 };
-use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::Script;
+use rattler_conda_types::{MatchSpec, PackageName, ParseStrictness, Platform};
+use recipe_stage0::{matchspec::PackageDependency, recipe::Script};
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -42,13 +42,25 @@ impl GenerateRecipe for CMakeGenerator {
         // instead of assuming C++.
         let language_compiler = default_compiler(&host_platform, &Language::Cxx.to_string());
 
+        let build_platform = Platform::current();
+
         if !resolved_requirements
             .build
             .contains_key(&PackageName::new_unchecked(language_compiler))
         {
-            requirements
-                .build
-                .push(compiler_requirement(&Language::Cxx));
+            if build_platform.is_windows() {
+                // on windows, we use newer vs2019 compiler
+                let vss = MatchSpec::from_str("vs2019", ParseStrictness::Strict)
+                    .expect("Failed to parse vs2019 match spec");
+                requirements
+                    .build
+                    .push(PackageDependency::Binary(vss).into());
+            } else {
+                // otherwise we default to cmpi
+                requirements
+                    .build
+                    .push(compiler_requirement(&Language::Cxx));
+            }
         }
 
         // add necessary build tools
@@ -62,8 +74,6 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python executable
         let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
-
-        let build_platform = Platform::current();
 
         let build_script = BuildScriptContext {
             build_platform: if build_platform.is_windows() {

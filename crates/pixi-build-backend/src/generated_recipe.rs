@@ -12,8 +12,6 @@ pub struct PythonParams {
     // Returns whetever the build is editable or not.
     // Default to false
     pub editable: Option<bool>,
-    // Optional path to the pyproject.toml manifest.
-    pub pyproject_manifest: Option<PathBuf>,
 }
 
 /// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)

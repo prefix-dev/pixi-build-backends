@@ -103,7 +103,8 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest = if let Some(pyproject_manifest_path) = params.pyproject_manifest {
+        let pyproject_manifest_path = manifest_root.join("pyproject.toml");
+        let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
                 vec![pyproject_manifest_path.to_string_lossy().to_string()];

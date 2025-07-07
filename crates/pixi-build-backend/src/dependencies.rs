@@ -127,7 +127,7 @@ impl<T: PackageSpec> ExtractedDependencies<T> {
 /// Converts the input variant configuration passed from pixi to something that
 /// rattler build can deal with.
 pub fn convert_input_variant_configuration(
-    variants: Option<HashMap<String, Vec<String>>>,
+    variants: Option<BTreeMap<String, Vec<String>>>,
 ) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
     variants.map(|v| {
         v.into_iter()

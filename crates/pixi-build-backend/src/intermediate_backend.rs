@@ -930,6 +930,10 @@ where
                     noarch: recipe.build.noarch,
                     purls: None,
                     python_site_packages_path: None,
+                    variant: variant
+                        .iter()
+                        .map(|(key, value)| (key.0.clone(), value.to_string()))
+                        .collect(),
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -1026,6 +1030,7 @@ fn default_capabilities() -> BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
+        provides_conda_build_v2: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

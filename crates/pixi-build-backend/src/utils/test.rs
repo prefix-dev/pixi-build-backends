@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf};
 
 use pixi_build_types::procedures::{
     conda_outputs::{CondaOutputsParams, CondaOutputsResult},
@@ -50,7 +50,7 @@ pub fn intermediate_conda_outputs_snapshot<T>(
     project_model: Option<pixi_build_types::ProjectModelV1>,
     source_dir: Option<PathBuf>,
     host_platform: Platform,
-    variant_configuration: Option<HashMap<String, Vec<String>>>,
+    variant_configuration: Option<BTreeMap<String, Vec<String>>>,
 ) -> String
 where
     T: GenerateRecipe + Default + Clone + Send + Sync + 'static,

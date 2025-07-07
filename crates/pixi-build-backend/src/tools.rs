@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -96,7 +96,7 @@ impl LoadedVariantConfig {
 
     pub fn extend_with_input_variants(
         mut self,
-        input_variant_configuration: HashMap<String, Vec<String>>,
+        input_variant_configuration: BTreeMap<String, Vec<String>>,
     ) -> Self {
         for (k, v) in input_variant_configuration.iter() {
             let variables = v.iter().map(|v| Variable::from_string(v)).collect();
@@ -152,7 +152,7 @@ impl RattlerBuild {
     /// Discover the outputs from the recipe.
     pub fn discover_outputs(
         &self,
-        variant_config_input: &Option<HashMap<String, Vec<String>>>,
+        variant_config_input: &Option<BTreeMap<String, Vec<String>>>,
     ) -> miette::Result<IndexSet<DiscoveredOutput>> {
         // First find all outputs from the recipe
         let outputs = find_outputs_from_src(self.recipe_source.clone())?;

@@ -67,11 +67,11 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 
 
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol" }
-pixi_consts = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol" }
-pixi_manifest = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol" }
-pixi_spec = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol" }
-pixi_build_type_conversions = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol" }
+pixi_build_types = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol-install" }
+pixi_consts = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol-install" }
+pixi_manifest = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol-install" }
+pixi_spec = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol-install" }
+pixi_build_type_conversions = { git = "https://github.com/baszalmstra/pixi", branch = "feat/split-protocol-install" }
 
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
 #pixi_consts = { path = "../pixi/crates/pixi_consts" }

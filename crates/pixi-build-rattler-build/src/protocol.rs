@@ -345,6 +345,10 @@ impl Protocol for RattlerBuildBackend {
                     noarch: recipe.build.noarch,
                     purls: None,
                     python_site_packages_path: None,
+                    variant: variant
+                        .iter()
+                        .map(|(k, v)| (k.0.clone(), v.to_string()))
+                        .collect(),
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -752,6 +756,7 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
+        provides_conda_build_v2: Some(false),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

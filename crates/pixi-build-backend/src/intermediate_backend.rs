@@ -399,7 +399,7 @@ where
 
         Ok(CondaMetadataResult {
             packages,
-            input_globs: None,
+            input_globs: Some(generated_recipe.metadata_input_globs),
         })
     }
 
@@ -582,7 +582,7 @@ where
                 // join it with the files that were read during the recipe generation
                 let input_globs = input_globs
                     .into_iter()
-                    .chain(recipe.metadata_input_globs.iter().map(|f| f.to_string()))
+                    .chain(recipe.build_input_globs.iter().map(|f| f.to_string()))
                     .collect::<Vec<_>>();
 
                 let built_package = CondaBuiltPackage {

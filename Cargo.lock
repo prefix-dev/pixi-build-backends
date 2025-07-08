@@ -4580,6 +4580,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.44.0"
+source = "git+https://github.com/baszalmstra/rattler-build?branch=feat%2Ffinalized_prefixes#63958d10cb45081213abfeab9cfaefbc1a334b9b"
 dependencies = [
  "anyhow",
  "async-once-cell",

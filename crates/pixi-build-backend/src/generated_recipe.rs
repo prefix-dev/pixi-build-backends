@@ -11,11 +11,12 @@ use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
-/// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
-/// into an [`IntermediateRecipe`].
+/// The trait is responsible of converting a certain [`ProjectModelV1`] (or
+/// others in the future) into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
-/// It also uses a [`BackendConfig`] to provide additional configuration options.
+/// It also uses a [`BackendConfig`] to provide additional configuration
+/// options.
 ///
 ///
 /// An instance of this trait is used by the [`IntermediateBackend`]
@@ -52,7 +53,14 @@ pub trait GenerateRecipe {
         vec![]
     }
 
-    fn default_variants(&self) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+    /// Returns "default" variants for the given host platform. This allows
+    /// backends to set some default variant configuration that can be
+    /// completely overwritten by the user.
+    ///
+    /// This can be useful to change the default behavior of rattler-build with
+    /// regard to compilers. But it also allows setting up default build
+    /// matrices.
+    fn default_variants(&self, _host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
         BTreeMap::new()
     }
 }

@@ -1,11 +1,11 @@
-use itertools::Itertools;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use indexmap::IndexMap;
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, ProjectModelV1,
@@ -189,31 +189,29 @@ where
                 .finish(),
         );
 
-        // Recompute all the variant combinations
-        let recipe_variants = self.generate_recipe.default_variants();
-        // merge the recipe variants with the variants from the parameters
-        // priority is given to the variants from the parameters
-        let variants = recipe_variants
-            .into_iter()
-            .chain(
-                params
-                    .variant_configuration
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k.into(),
-                            v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                        )
-                    }),
-            )
-            .collect::<BTreeMap<_, _>>();
-
         let host_platform = params
             .host_platform
             .as_ref()
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
+
+        // Determine the variant configuration to use. This is a combination of defaults
+        // from the generator and the user supplied parameters. The parameters
+        // from the user take precedence over the default variants.
+        let recipe_variants = self.generate_recipe.default_variants(host_platform);
+        let mut param_variant_configuration = params
+            .variant_configuration
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(k, v)| {
+                (
+                    k.into(),
+                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                )
+            })
+            .collect();
+        let mut variants = recipe_variants;
+        variants.append(&mut param_variant_configuration);
 
         let variant_config = VariantConfig {
             variants,
@@ -418,25 +416,23 @@ where
             .map(|hp| hp.platform)
             .unwrap_or_else(Platform::current);
 
-        // Recompute all the variant combinations
-        let recipe_variants = self.generate_recipe.default_variants();
-        // merge the recipe variants with the variants from the parameters
-        // priority is given to the variants from the parameters
-        let variants = recipe_variants
+        // Determine the variant configuration to use. This is a combination of defaults
+        // from the generator and the user supplied parameters. The parameters
+        // from the user take precedence over the default variants.
+        let recipe_variants = self.generate_recipe.default_variants(target_platform);
+        let mut param_variant_configuration = params
+            .variant_configuration
+            .unwrap_or_default()
             .into_iter()
-            .chain(
-                params
-                    .variant_configuration
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k.into(),
-                            v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                        )
-                    }),
-            )
-            .collect::<BTreeMap<_, _>>();
+            .map(|(k, v)| {
+                (
+                    k.into(),
+                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
+                )
+            })
+            .collect();
+        let mut variants = recipe_variants;
+        variants.append(&mut param_variant_configuration);
 
         let host_platform = params
             .host_platform

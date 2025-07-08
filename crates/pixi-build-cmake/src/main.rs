@@ -39,8 +39,8 @@ impl GenerateRecipe for CMakeGenerator {
 
         // Ensure the compiler function is added to the build requirements
         // only if a specific compiler is not already present.
-        // TODO: Correctly, we should ask cmake to give us the language used in the project
-        // instead of assuming C++.
+        // TODO: Correctly, we should ask cmake to give us the language used in the
+        // project instead of assuming C++.
         let language_compiler = default_compiler(&host_platform, &Language::Cxx.to_string());
 
         let build_platform = Platform::current();
@@ -63,7 +63,8 @@ impl GenerateRecipe for CMakeGenerator {
         }
 
         // Check if the host platform has a host python dependency
-        // This is used to determine if we need to the cmake argument for the python executable
+        // This is used to determine if we need to the cmake argument for the python
+        // executable
         let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
 
         let build_script = BuildScriptContext {
@@ -101,9 +102,18 @@ impl GenerateRecipe for CMakeGenerator {
         .collect()
     }
 
-    fn default_variants(&self) -> BTreeMap<NormalizedKey, Vec<Variable>> {
-        // we want to select newer vs version if available
-        BTreeMap::from([(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()])])
+    fn default_variants(&self, host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+        let mut variants = BTreeMap::new();
+
+        if host_platform.is_windows() {
+            // Default to the Visual Studio 2019 compiler on Windows
+            //
+            // rattler-build will default to vs2017 which for most github runners is too
+            // old.
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()]);
+        }
+
+        variants
     }
 }
 
@@ -121,10 +131,10 @@ pub async fn main() {
 mod tests {
     use std::path::PathBuf;
 
-    use super::*;
-
     use indexmap::IndexMap;
     use pixi_build_types::ProjectModelV1;
+
+    use super::*;
 
     #[test]
     fn test_input_globs_includes_extra_globs() {

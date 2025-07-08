@@ -453,15 +453,11 @@ mod tests {
             },
         );
 
-        let command = match recipe
-            .build
-            .script
-            .content {
-                rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
-                 _ => unreachable!("Expected script content to be commands"),
-            };
+        let command = match recipe.build.script.content {
+            rattler_build::recipe::parser::ScriptContent::Commands(items) => items,
+            _ => unreachable!("Expected script content to be commands"),
+        };
 
         assert!(command.iter().any(|s| s.contains("-DPython_EXECUTABLE")));
-
     }
 }

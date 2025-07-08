@@ -27,8 +27,12 @@ The rattler-build backend:
 To use the rattler-build backend in your `pixi.toml`, specify it in your build system configuration:
 
 ```toml
-[package.build-system]
-build-backend = { name = "pixi-build-rattler-build", version = "*" }
+[package]
+name = "rattler_build_package"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-rattler-build", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",
@@ -91,3 +95,4 @@ The rattler-build backend follows this build process:
 
 - Requires an existing rattler-build recipe file - cannot infer build instructions automatically
 - Build configuration is primarily controlled through the recipe file rather than `pixi.toml`
+- Cannot specify dependencies in the manifest — all dependencies are handled by the recipe

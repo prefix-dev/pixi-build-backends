@@ -64,6 +64,27 @@ pub enum Item<T> {
     Conditional(Conditional<T>),
 }
 
+impl<T: PartialEq> PartialEq for Item<T> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Item::Value(Value::Concrete(a)), Item::Value(Value::Concrete(b))) => a == b,
+            (Item::Conditional(a), Item::Conditional(b)) => {
+                a.condition == b.condition && a.then == b.then && a.else_value == b.else_value
+            }
+            _ => false,
+        }
+    }
+}
+
+impl<T: Debug> Debug for Item<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Item::Value(value) => write!(f, "Value({:?})", value),
+            Item::Conditional(cond) => write!(f, "Conditional({:?})", cond),
+        }
+    }
+}
+
 impl<T> From<Conditional<T>> for Item<T> {
     fn from(value: Conditional<T>) -> Self {
         Self::Conditional(value)
@@ -110,6 +131,24 @@ pub struct ListOrItem<T>(pub Vec<T>);
 impl<T> Default for ListOrItem<T> {
     fn default() -> Self {
         ListOrItem(Vec::new())
+    }
+}
+
+impl<T: PartialEq> PartialEq for ListOrItem<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T: Debug> Debug for ListOrItem<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_empty() {
+            write!(f, "ListOrItem([])")
+        } else if self.0.len() == 1 {
+            write!(f, "ListOrItem({:?})", self.0[0])
+        } else {
+            write!(f, "ListOrItem({:?})", self.0)
+        }
     }
 }
 
@@ -243,7 +282,17 @@ pub struct Conditional<T> {
     pub else_value: ListOrItem<T>,
 }
 
-// Type alias for lists that can contain conditionals
+impl<T: Debug> Debug for Conditional<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Conditional {{ condition: {}, then: {:?}, else: {:?} }}",
+            self.condition, self.then, self.else_value
+        )
+    }
+}
+
+/// Type alias for lists that can contain conditionals
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
@@ -365,16 +414,26 @@ pub struct PathSource {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Script {
+    pub content: Vec<String>,
+    pub env: IndexMap<String, String>,
+    pub secrets: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Build {
     pub number: Option<Value<u64>>,
-    pub script: Vec<String>,
+    pub script: Script,
 }
 
 impl Build {
-    pub fn new(script: Vec<String>) -> Self {
+    pub fn new(content: Vec<String>) -> Self {
         Build {
             number: None,
-            script,
+            script: Script {
+                content,
+                ..Default::default()
+            },
         }
     }
 }
@@ -395,7 +454,7 @@ pub enum Target {
 }
 
 /// A type that is very specific to rattler-build /recipe.yaml side
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ConditionalRequirements {
     pub build: ConditionalList<PackageDependency>,
     pub host: ConditionalList<PackageDependency>,

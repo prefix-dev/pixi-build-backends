@@ -31,3 +31,4 @@ marked-yaml = "0.8.0"
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
 rstest = { workspace = true }
 serde_yaml = "0.9.34"
+temp-env = "0.3.6"

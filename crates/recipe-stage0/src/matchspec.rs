@@ -67,13 +67,13 @@ impl FromStr for SerializableMatchSpec {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SourceMatchSpec {
     pub spec: MatchSpec,
     pub location: Url,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum PackageDependency {
     Binary(MatchSpec),
     Source(SourceMatchSpec),

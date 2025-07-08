@@ -3,7 +3,11 @@
 {% set EDITABLE_OPTION = " --editable" if editable else "" -%}
 {% set COMMON_OPTIONS = "-vv --no-deps --no-build-isolation" + EDITABLE_OPTION -%}
 
+{% if installer == "uv" -%}
+uv pip install --python {{ PYTHON }} {{ COMMON_OPTIONS }} {{ SRC_DIR }}
+{% else %}
 {{ PYTHON }} -m pip install --ignore-installed {{ COMMON_OPTIONS }} {{ SRC_DIR }}
+{% endif -%}
 
 {% if build_platform == "windows" -%}
 if errorlevel 1 exit 1

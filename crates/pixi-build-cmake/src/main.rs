@@ -103,7 +103,7 @@ impl GenerateRecipe for CMakeGenerator {
 
     fn default_variants(&self) -> BTreeMap<NormalizedKey, Vec<Variable>> {
         // we want to select newer vs version if available
-        BTreeMap::from([(NormalizedKey::from("cxx_compiler"), vec!["vs".into()])])
+        BTreeMap::from([(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()])])
     }
 }
 

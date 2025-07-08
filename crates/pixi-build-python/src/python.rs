@@ -226,9 +226,13 @@ impl<P: ProjectModel> PythonBuildBackend<P> {
 
         let empty_spec = new_spec::<P>();
 
-        let (tool_names, installer) = build_tools::<P>(&dependencies);
+        let installer = installer_tool::<P>(&dependencies);
 
-        let dependencies = add_build_tools::<P>(dependencies, &tool_names, &empty_spec);
+        let installer_name = installer.package_name().to_string();
+        let python_name = "python".to_string();
+
+        let dependencies =
+            add_build_tools::<P>(dependencies, &installer_name, &python_name, &empty_spec);
 
         Ok((installer, requirements::<P>(dependencies, variant)?))
     }
@@ -268,31 +272,31 @@ pub(crate) fn construct_configuration(
 }
 
 /// Return the installer to be used and the build tools for the given project model.
-pub(crate) fn build_tools<P: ProjectModel>(
+pub(crate) fn installer_tool<P: ProjectModel>(
     dependencies: &Dependencies<<P::Targets as Targets>::Spec>,
-) -> (Vec<String>, Installer) {
-    let installer = Installer::determine_installer::<P>(dependencies);
-
-    (
-        [installer.package_name().to_string(), "python".to_string()].to_vec(),
-        installer,
-    )
+) -> Installer {
+    Installer::determine_installer::<P>(dependencies)
 }
 
 /// Add the build tools to the dependencies if they are not already present.
 pub(crate) fn add_build_tools<'a, P: ProjectModel>(
     mut dependencies: Dependencies<'a, <P::Targets as Targets>::Spec>,
-    build_tools: &'a [String],
+    installer_name: &'a String,
+    python_name: &'a String,
     empty_spec: &'a <<P as ProjectModel>::Targets as Targets>::Spec,
 ) -> Dependencies<'a, <<P as ProjectModel>::Targets as Targets>::Spec> {
-    for pkg_name in build_tools.iter() {
-        if dependencies.host.contains_key(pkg_name) {
-            // If the host dependencies already contain the package, we don't need to add it
-            // again.
-            continue;
-        }
+    // we always add installer as a host dependency
+    if !dependencies.host.contains_key(installer_name) {
+        dependencies.host.insert(installer_name, empty_spec);
+    }
 
-        dependencies.host.insert(pkg_name, empty_spec);
+    // and `python` as both host and run dependency
+    if !dependencies.host.contains_key(python_name) {
+        dependencies.host.insert(python_name, empty_spec);
+    }
+
+    if !dependencies.run.contains_key(python_name) {
+        dependencies.run.insert(python_name, empty_spec);
     }
 
     dependencies

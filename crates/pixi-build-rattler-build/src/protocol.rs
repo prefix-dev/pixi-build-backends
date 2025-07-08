@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
 
 use fs_err::tokio as tokio_fs;
@@ -9,6 +10,7 @@ use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::{convert_binary_dependencies, convert_dependencies},
+    intermediate_backend::{conda_build_v2_directories, find_matching_output},
     protocol::{Protocol, ProtocolInstantiator},
     tools::{LoadedVariantConfig, RattlerBuild},
     utils::TemporaryRenderedRecipe,
@@ -19,6 +21,7 @@ use pixi_build_types::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
+        conda_build_v2::{CondaBuildV2Params, CondaBuildV2Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -32,17 +35,26 @@ use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{PackageIdentifier, PlatformWithVirtualPackages},
+    metadata::{
+        BuildConfiguration, Debug, Output, PackageIdentifier, PackagingSettings,
+        PlatformWithVirtualPackages,
+    },
     recipe::{
         Jinja, ParsingError, Recipe,
         parser::{BuildString, find_outputs_from_src},
+        variable::Variable,
     },
-    render::resolved_dependencies::DependencyInfo,
+    render::resolved_dependencies::{
+        DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
+    },
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
-    variant_config::ParseErrors,
+    variant_config::{ParseErrors, VariantConfig},
 };
-use rattler_conda_types::{ChannelConfig, MatchSpec, PackageName, Platform};
+use rattler_conda_types::{
+    ChannelConfig, MatchSpec, PackageName, Platform, compression_level::CompressionLevel,
+    package::ArchiveType, prefix::Prefix,
+};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
@@ -252,7 +264,7 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
             hash: None,
             variant: Default::default(),
-            experimental: true,
+            experimental: false,
             allow_undefined: false,
             recipe_path: Some(self.recipe_source.path.clone()),
         };
@@ -569,25 +581,12 @@ impl Protocol for RattlerBuildBackend {
                 })
                 .await?;
 
-            let package_sources = output.finalized_sources.as_ref().map(|package_sources| {
-                package_sources
-                    .iter()
-                    .filter_map(|source| {
-                        if let rattler_build::recipe::parser::Source::Path(path_source) = source {
-                            Some(path_source.path.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect()
-            });
-
             built.push(CondaBuiltPackage {
                 output_file: build_path,
                 input_globs: build_input_globs(
                     &self.manifest_root,
                     &self.recipe_source.path,
-                    package_sources,
+                    extract_mutable_package_sources(&output),
                     self.config.extra_input_globs.clone(),
                 )?,
                 name: output.name().as_normalized().to_string(),
@@ -598,6 +597,172 @@ impl Protocol for RattlerBuildBackend {
         }
         Ok(CondaBuildResult { packages: built })
     }
+
+    async fn conda_build_v2(
+        &self,
+        params: CondaBuildV2Params,
+    ) -> miette::Result<CondaBuildV2Result> {
+        let host_platform = params
+            .host_prefix
+            .as_ref()
+            .map_or_else(Platform::current, |prefix| prefix.platform);
+        let build_platform = params
+            .build_prefix
+            .as_ref()
+            .map_or_else(Platform::current, |prefix| prefix.platform);
+
+        // Construct a `VariantConfig` based on the input parameters. We only
+        // have a single variant here so we can just use the variant from the
+        // parameters.
+        let variant_config = VariantConfig {
+            variants: params
+                .output
+                .variant
+                .iter()
+                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+                .collect(),
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
+
+        // Determine the variant configuration to use. This loads the variant
+        // configuration from disk as well as including the variants from the input
+        // parameters.
+        let selector_config_for_variants = SelectorConfig {
+            target_platform: host_platform,
+            host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.recipe_source.path.clone()),
+        };
+        let outputs = find_outputs_from_src(self.recipe_source.clone())?;
+        let discovered_outputs = variant_config.find_variants(
+            &outputs,
+            self.recipe_source.clone(),
+            &selector_config_for_variants,
+        )?;
+        let discovered_output = find_matching_output(&params.output, discovered_outputs)?;
+
+        // Set up the proper directories for the build.
+        let directories = conda_build_v2_directories(
+            params.host_prefix.as_ref().map(|p| p.prefix.as_path()),
+            params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
+            params.work_directory,
+            self.cache_dir.as_deref(),
+            self.source_dir.clone(),
+            params.output_directory.as_deref(),
+            self.recipe_source.path.clone(),
+        );
+
+        let tool_config = Configuration::builder()
+            .with_opt_cache_dir(self.cache_dir.clone())
+            .with_logging_output_handler(self.logging_output_handler.clone())
+            .with_testing(false)
+            .finish();
+
+        let output = Output {
+            recipe: discovered_output.recipe,
+            build_configuration: BuildConfiguration {
+                target_platform: discovered_output.target_platform,
+                host_platform: PlatformWithVirtualPackages {
+                    platform: host_platform,
+                    virtual_packages: vec![],
+                },
+                build_platform: PlatformWithVirtualPackages {
+                    platform: build_platform,
+                    virtual_packages: vec![],
+                },
+                hash: discovered_output.hash,
+                variant: discovered_output.used_vars.clone(),
+                directories,
+                channels: vec![],
+                channel_priority: Default::default(),
+                solve_strategy: Default::default(),
+                timestamp: chrono::Utc::now(),
+                subpackages: BTreeMap::new(),
+                packaging_settings: PackagingSettings::from_args(
+                    ArchiveType::Conda,
+                    CompressionLevel::default(),
+                ),
+                store_recipe: false,
+                force_colors: true,
+                sandbox_config: None,
+                debug: Debug::new(false),
+                exclude_newer: None,
+            },
+            // TODO: We should pass these values to the build backend from pixi
+            finalized_dependencies: Some(FinalizedDependencies {
+                build: Some(ResolvedDependencies {
+                    specs: vec![],
+                    resolved: vec![],
+                }),
+                host: Some(ResolvedDependencies {
+                    specs: vec![],
+                    resolved: vec![],
+                }),
+                run: FinalizedRunDependencies {
+                    depends: vec![],
+                    constraints: vec![],
+                    run_exports: Default::default(),
+                },
+            }),
+            finalized_sources: None,
+            finalized_cache_dependencies: None,
+            finalized_cache_sources: None,
+            finalized_host_prefix: params
+                .host_prefix
+                .as_ref()
+                .map(|path| Prefix::create(&path.prefix))
+                .transpose()
+                .into_diagnostic()?,
+            finalized_build_prefix: params
+                .build_prefix
+                .as_ref()
+                .map(|path| Prefix::create(&path.prefix))
+                .transpose()
+                .into_diagnostic()?,
+            build_summary: Arc::default(),
+            system_tools: Default::default(),
+            extra_meta: None,
+        };
+
+        let (output, output_path) = run_build(output, &tool_config).await?;
+
+        Ok(CondaBuildV2Result {
+            output_file: output_path,
+            input_globs: build_input_globs(
+                &self.manifest_root,
+                &self.recipe_source.path,
+                extract_mutable_package_sources(&output),
+                self.config.extra_input_globs.clone(),
+            )?,
+            name: output.name().as_normalized().to_string(),
+            version: output.version().clone(),
+            build: output.build_string().into_owned(),
+            subdir: *output.target_platform(),
+        })
+    }
+}
+
+/// Extracts the package sources from an `Output` object that are mutable and
+/// should be watched for changes.
+fn extract_mutable_package_sources(output: &Output) -> Option<Vec<PathBuf>> {
+    let package_sources = output.finalized_sources.as_ref().map(|package_sources| {
+        package_sources
+            .iter()
+            .filter_map(|source| {
+                if let rattler_build::recipe::parser::Source::Path(path_source) = source {
+                    Some(path_source.path.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    });
+    package_sources
 }
 
 /// Returns the relative path from `base` to `input`, joined by "/".
@@ -756,7 +921,7 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
-        provides_conda_build_v2: Some(false),
+        provides_conda_build_v2: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

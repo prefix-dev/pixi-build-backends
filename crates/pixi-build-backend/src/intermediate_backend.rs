@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
@@ -13,7 +13,7 @@ use pixi_build_types::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
-        conda_build_v2::{CondaBuildV2Params, CondaBuildV2Result},
+        conda_build_v2::{CondaBuildV2Output, CondaBuildV2Params, CondaBuildV2Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -43,7 +43,7 @@ use rattler_build::{
     source_code::Source,
     system_tools::SystemTools,
     tool_configuration::Configuration,
-    variant_config::{ParseErrors, VariantConfig},
+    variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
@@ -1070,8 +1070,8 @@ where
             variants: params
                 .output
                 .variant
-                .into_iter()
-                .map(|(k, v)| (k.into(), vec![Variable::from_string(&v)]))
+                .iter()
+                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
                 .collect(),
             pin_run_as_build: None,
             zip_keys: None,
@@ -1094,63 +1094,18 @@ where
             named_source.clone(),
             &selector_config_for_variants,
         )?;
-
-        // Find the only output that matches the request.
-        let discovered_output = discovered_outputs
-            .into_iter()
-            .find(|output| {
-                params.output.name.as_normalized() == output.name
-                    && params
-                        .output
-                        .build
-                        .as_ref()
-                        .is_none_or(|build_string| build_string == &output.build_string)
-                    && params
-                        .output
-                        .version
-                        .as_ref()
-                        .is_none_or(|version| version == &output.recipe.package.version)
-                    && params.output.subdir == output.target_platform
-                    && !output.recipe.build.skip()
-            })
-            .ok_or_else(|| {
-                miette::miette!(
-                    "the requested output {}/{}={}@{} was not found in the recipe",
-                    params.output.name.as_source(),
-                    params
-                        .output
-                        .version
-                        .as_ref()
-                        .map_or_else(|| String::from("??"), |v| v.as_str().into_owned()),
-                    params.output.build.as_deref().unwrap_or("??"),
-                    params.output.subdir
-                )
-            })?;
+        let discovered_output = find_matching_output(&params.output, discovered_outputs)?;
 
         // Set up the proper directories for the build.
-        let directories = Directories {
-            recipe_dir: self.source_dir.clone(),
+        let directories = conda_build_v2_directories(
+            params.host_prefix.as_ref().map(|p| p.prefix.as_path()),
+            params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
+            params.work_directory,
+            self.cache_dir.as_deref(),
+            self.source_dir.clone(),
+            params.output_directory.as_deref(),
             recipe_path,
-            cache_dir: self
-                .cache_dir
-                .clone()
-                .unwrap_or_else(|| params.work_directory.join("cache")),
-            host_prefix: params
-                .host_prefix
-                .as_ref()
-                .map(|p| p.prefix.clone())
-                .unwrap_or_else(|| params.work_directory.join("host")),
-            build_prefix: params
-                .build_prefix
-                .as_ref()
-                .map(|p| p.prefix.clone())
-                .unwrap_or_else(|| params.work_directory.join("build")),
-            work_dir: params.work_directory.join("wrk"),
-            output_dir: params
-                .output_directory
-                .unwrap_or_else(|| params.work_directory.join("output")),
-            build_dir: params.work_directory,
-        };
+        );
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())
@@ -1234,6 +1189,70 @@ where
             build: output.build_string().into_owned(),
             subdir: *output.target_platform(),
         })
+    }
+}
+
+pub fn find_matching_output(
+    expected_output: &CondaBuildV2Output,
+    discovered_outputs: IndexSet<DiscoveredOutput>,
+) -> miette::Result<DiscoveredOutput> {
+    // Find the only output that matches the request.
+    let discovered_output = discovered_outputs
+        .into_iter()
+        .find(|output| {
+            expected_output.name.as_normalized() == output.name
+                && expected_output
+                    .build
+                    .as_ref()
+                    .is_none_or(|build_string| build_string == &output.build_string)
+                && expected_output
+                    .version
+                    .as_ref()
+                    .is_none_or(|version| version == &output.recipe.package.version)
+                && expected_output.subdir == output.target_platform
+                && !output.recipe.build.skip()
+        })
+        .ok_or_else(|| {
+            miette::miette!(
+                "the requested output {}/{}={}@{} was not found in the recipe",
+                expected_output.name.as_source(),
+                expected_output
+                    .version
+                    .as_ref()
+                    .map_or_else(|| String::from("??"), |v| v.as_str().into_owned()),
+                expected_output.build.as_deref().unwrap_or("??"),
+                expected_output.subdir
+            )
+        })?;
+    Ok(discovered_output)
+}
+
+pub fn conda_build_v2_directories(
+    host_prefix: Option<&Path>,
+    build_prefix: Option<&Path>,
+    work_directory: PathBuf,
+    cache_dir: Option<&Path>,
+    source_dir: PathBuf,
+    output_dir: Option<&Path>,
+    recipe_path: PathBuf,
+) -> Directories {
+    Directories {
+        recipe_dir: source_dir,
+        recipe_path,
+        cache_dir: cache_dir
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| work_directory.join("cache")),
+        host_prefix: host_prefix
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| work_directory.join("host")),
+        build_prefix: build_prefix
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| work_directory.join("build")),
+        work_dir: work_directory.join("wrk"),
+        output_dir: output_dir
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| work_directory.join("output")),
+        build_dir: work_directory,
     }
 }
 

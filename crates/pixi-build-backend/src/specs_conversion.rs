@@ -151,7 +151,7 @@ impl From<SafeRelativePathUrl> for Url {
 impl From<Url> for SafeRelativePathUrl {
     fn from(url: Url) -> Self {
         // Ensure the URL is a file URL
-        assert_eq!(url.scheme(), "file", "URL must be a file URL");
+        assert_eq!(url.scheme(), "source", "URL must be a file URL");
         Self(url)
     }
 }

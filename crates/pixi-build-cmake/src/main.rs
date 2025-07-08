@@ -58,7 +58,7 @@ impl GenerateRecipe for CMakeGenerator {
                         .build
                         .contains_key(&PackageName::new_unchecked("vs2019"))
                 {
-                    let vss = MatchSpec::from_str("vs2019", ParseStrictness::Strict)
+                    let vss = MatchSpec::from_str("vs2019_win-64", ParseStrictness::Strict)
                         .expect("Failed to parse vs2019 match spec");
                     requirements
                         .build

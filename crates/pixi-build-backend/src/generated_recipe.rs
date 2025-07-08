@@ -1,6 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use pixi_build_types::ProjectModelV1;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::Platform;
 use recipe_stage0::recipe::{ConditionalList, IntermediateRecipe, Item, Package, Source, Value};
 use serde::de::DeserializeOwned;
@@ -46,6 +50,10 @@ pub trait GenerateRecipe {
     /// For example, this could be a `Cargo.toml` file for Rust projects.
     fn metadata_input_globs(_config: &Self::Config) -> Vec<String> {
         vec![]
+    }
+
+    fn default_variants(&self) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+        BTreeMap::new()
     }
 }
 

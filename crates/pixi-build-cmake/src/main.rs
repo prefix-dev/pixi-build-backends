@@ -1,7 +1,7 @@
 mod build_script;
 mod config;
 
-use std::path::Path;
+use std::{collections::BTreeMap, path::Path};
 
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
@@ -11,8 +11,9 @@ use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe},
     intermediate_backend::IntermediateBackendInstantiator,
 };
-use rattler_conda_types::{MatchSpec, PackageName, ParseStrictness, Platform};
-use recipe_stage0::{matchspec::PackageDependency, recipe::Script};
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
+use rattler_conda_types::{PackageName, Platform};
+use recipe_stage0::recipe::Script;
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -48,28 +49,9 @@ impl GenerateRecipe for CMakeGenerator {
             .build
             .contains_key(&PackageName::new_unchecked(language_compiler))
         {
-            if build_platform.is_windows() {
-                // on windows, we use newer vs2019 compiler
-
-                if !resolved_requirements
-                    .build
-                    .contains_key(&PackageName::new_unchecked("vs2017"))
-                    && !resolved_requirements
-                        .build
-                        .contains_key(&PackageName::new_unchecked("vs2019"))
-                {
-                    let vss = MatchSpec::from_str("vs2019_win-64", ParseStrictness::Strict)
-                        .expect("Failed to parse vs2019 match spec");
-                    requirements
-                        .build
-                        .push(PackageDependency::Binary(vss).into());
-                }
-            } else {
-                // otherwise we default to cmpi
-                requirements
-                    .build
-                    .push(compiler_requirement(&Language::Cxx));
-            }
+            requirements
+                .build
+                .push(compiler_requirement(&Language::Cxx));
         }
 
         // add necessary build tools
@@ -117,6 +99,11 @@ impl GenerateRecipe for CMakeGenerator {
         .map(|s| s.to_string())
         .chain(config.extra_input_globs.clone())
         .collect()
+    }
+
+    fn default_variants(&self) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+        // we want to select newer vs version if available
+        BTreeMap::from([(NormalizedKey::from("cxx_compiler"), vec!["vs".into()])])
     }
 }
 

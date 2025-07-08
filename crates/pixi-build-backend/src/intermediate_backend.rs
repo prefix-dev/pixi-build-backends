@@ -19,7 +19,6 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
-    NormalizedKey,
     build::run_build,
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
@@ -189,20 +188,26 @@ where
                 .with_keep_build(true)
                 .finish(),
         );
-        // Create a variant config from the variant configuration in the parameters.
-        let variants: BTreeMap<NormalizedKey, Vec<Variable>> = params
-            .variant_configuration
-            .map(|v| {
-                v.into_iter()
+
+        // Recompute all the variant combinations
+        let recipe_variants = self.generate_recipe.default_variants();
+        // merge the recipe variants with the variants from the parameters
+        // priority is given to the variants from the parameters
+        let variants = recipe_variants
+            .into_iter()
+            .chain(
+                params
+                    .variant_configuration
+                    .unwrap_or_default()
+                    .into_iter()
                     .map(|(k, v)| {
                         (
                             k.into(),
                             v.into_iter().map(|v| Variable::from_string(&v)).collect(),
                         )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+                    }),
+            )
+            .collect::<BTreeMap<_, _>>();
 
         let host_platform = params
             .host_platform
@@ -414,19 +419,24 @@ where
             .unwrap_or_else(Platform::current);
 
         // Recompute all the variant combinations
-        let variants = params
-            .variant_configuration
-            .map(|v| {
-                v.into_iter()
+        let recipe_variants = self.generate_recipe.default_variants();
+        // merge the recipe variants with the variants from the parameters
+        // priority is given to the variants from the parameters
+        let variants = recipe_variants
+            .into_iter()
+            .chain(
+                params
+                    .variant_configuration
+                    .unwrap_or_default()
+                    .into_iter()
                     .map(|(k, v)| {
                         (
                             k.into(),
                             v.into_iter().map(|v| Variable::from_string(&v)).collect(),
                         )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+                    }),
+            )
+            .collect::<BTreeMap<_, _>>();
 
         let host_platform = params
             .host_platform

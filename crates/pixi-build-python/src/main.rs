@@ -66,13 +66,30 @@ impl GenerateRecipe for PythonGenerator {
         // added to the `host` requirements, while for cmake/rust they are added to the `build` requirements.
         let installer = Installer::determine_installer(&resolved_requirements);
 
-        let build_tools = [installer.package_name().to_string(), "python".to_string()];
-        for tool in build_tools {
-            let tool_dep = PackageName::new_unchecked(&tool);
+        let installer_name = installer.package_name().to_string();
 
-            if !resolved_requirements.host.contains_key(&tool_dep) {
-                requirements.host.push(tool.parse().into_diagnostic()?);
-            }
+        // add installer in the host requirements
+        if !resolved_requirements
+            .host
+            .contains_key(&PackageName::new_unchecked(&installer_name))
+        {
+            requirements
+                .host
+                .push(installer_name.parse().into_diagnostic()?);
+        }
+
+        // add python in both host and run requirements
+        if !resolved_requirements
+            .host
+            .contains_key(&PackageName::new_unchecked("python"))
+        {
+            requirements.host.push("python".parse().into_diagnostic()?);
+        }
+        if !resolved_requirements
+            .run
+            .contains_key(&PackageName::new_unchecked("python"))
+        {
+            requirements.run.push("python".parse().into_diagnostic()?);
         }
 
         let build_platform = Platform::current();

@@ -25,3 +25,5 @@ requirements:
   host:
     - pip
     - python
+  run:
+    - python

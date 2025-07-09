@@ -3869,6 +3869,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi-build-mojo"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "indexmap 2.9.0",
+ "insta",
+ "miette",
+ "minijinja",
+ "pixi-build-backend",
+ "pixi_build_type_conversions",
+ "pixi_build_types",
+ "pixi_manifest",
+ "rattler-build",
+ "rattler_conda_types",
+ "rattler_package_streaming",
+ "rstest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "pixi-build-python"
 version = "0.2.0"
 dependencies = [

@@ -287,7 +287,7 @@ impl RattlerBuild {
 ///
 /// This tries to reduce the number of characters in the path to avoid being too
 /// long on Windows.
-fn output_directory(
+pub fn output_directory(
     output: OneOrMultipleOutputs,
     work_dir: PathBuf,
     recipe_path: &Path,

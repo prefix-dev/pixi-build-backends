@@ -97,7 +97,7 @@ impl GenerateRecipe for PythonGenerator {
         // TODO: remove this env var override as soon as we have profiles
         let editable = std::env::var("BUILD_EDITABLE_PYTHON")
             .map(|val| val == "true")
-            .unwrap_or(params.editable.unwrap_or(false));
+            .unwrap_or(params.editable);
 
         let build_script = BuildScriptContext {
             installer,

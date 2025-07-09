@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
-use pixi_build_backend::generated_recipe::BackendConfig;
+use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct RustBackendConfig {
     /// Extra args to pass for cargo
@@ -26,14 +26,114 @@ impl BackendConfig for RustBackendConfig {
     }
 }
 
+impl TargetAwareBackendConfig for RustBackendConfig {
+    fn merge_with_target_config(&self, target_config: &Self) -> Self {
+        self.merge_with_target_config(target_config)
+    }
+}
+
+impl RustBackendConfig {
+    /// Merge this configuration with a target-specific configuration.
+    /// Target-specific values override base values using the following rules:
+    /// - extra_args: Platform-specific completely replaces base
+    /// - env: Platform env vars override base, others merge
+    /// - debug_dir: Platform-specific takes precedence
+    /// - extra_input_globs: Platform-specific completely replaces base
+    pub fn merge_with_target_config(&self, target_config: &Self) -> Self {
+        Self {
+            extra_args: if target_config.extra_args.is_empty() {
+                self.extra_args.clone()
+            } else {
+                target_config.extra_args.clone()
+            },
+            env: {
+                let mut merged_env = self.env.clone();
+                merged_env.extend(target_config.env.clone());
+                merged_env
+            },
+            debug_dir: target_config.debug_dir.clone().or(self.debug_dir.clone()),
+            extra_input_globs: if target_config.extra_input_globs.is_empty() {
+                self.extra_input_globs.clone()
+            } else {
+                target_config.extra_input_globs.clone()
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::RustBackendConfig;
     use serde_json::json;
+    use std::path::PathBuf;
 
     #[test]
     fn test_ensure_deseralize_from_empty() {
         let json_data = json!({});
         serde_json::from_value::<RustBackendConfig>(json_data).unwrap();
+    }
+
+    #[test]
+    fn test_merge_with_target_config() {
+        let mut base_env = indexmap::IndexMap::new();
+        base_env.insert("BASE_VAR".to_string(), "base_value".to_string());
+        base_env.insert("SHARED_VAR".to_string(), "base_shared".to_string());
+
+        let base_config = RustBackendConfig {
+            extra_args: vec!["--base-arg".to_string()],
+            env: base_env,
+            debug_dir: Some(PathBuf::from("/base/debug")),
+            extra_input_globs: vec!["*.base".to_string()],
+        };
+
+        let mut target_env = indexmap::IndexMap::new();
+        target_env.insert("TARGET_VAR".to_string(), "target_value".to_string());
+        target_env.insert("SHARED_VAR".to_string(), "target_shared".to_string());
+
+        let target_config = RustBackendConfig {
+            extra_args: vec!["--target-arg".to_string()],
+            env: target_env,
+            debug_dir: Some(PathBuf::from("/target/debug")),
+            extra_input_globs: vec!["*.target".to_string()],
+        };
+
+        let merged = base_config.merge_with_target_config(&target_config);
+
+        // extra_args should be completely overridden
+        assert_eq!(merged.extra_args, vec!["--target-arg".to_string()]);
+
+        // env should merge with target taking precedence
+        assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
+        assert_eq!(merged.env.get("TARGET_VAR"), Some(&"target_value".to_string()));
+        assert_eq!(merged.env.get("SHARED_VAR"), Some(&"target_shared".to_string()));
+
+        // debug_dir should use target value
+        assert_eq!(merged.debug_dir, Some(PathBuf::from("/target/debug")));
+
+        // extra_input_globs should be completely overridden
+        assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
+    }
+
+    #[test]
+    fn test_merge_with_empty_target_config() {
+        let mut base_env = indexmap::IndexMap::new();
+        base_env.insert("BASE_VAR".to_string(), "base_value".to_string());
+
+        let base_config = RustBackendConfig {
+            extra_args: vec!["--base-arg".to_string()],
+            env: base_env,
+            debug_dir: Some(PathBuf::from("/base/debug")),
+            extra_input_globs: vec!["*.base".to_string()],
+        };
+
+        let empty_target_config = RustBackendConfig::default();
+
+        let merged = base_config.merge_with_target_config(&empty_target_config);
+
+        // Should keep base values when target is empty
+        assert_eq!(merged.extra_args, vec!["--base-arg".to_string()]);
+        assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
+        assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
+        assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
     }
 }

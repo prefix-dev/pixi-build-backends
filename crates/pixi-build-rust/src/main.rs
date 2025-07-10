@@ -183,10 +183,10 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.rs".to_string()));
-        assert!(result.contains(&"Cargo.toml".to_string()));
-        assert!(result.contains(&"Cargo.lock".to_string()));
-        assert!(result.contains(&"build.rs".to_string()));
+        assert!(result.contains("**/*.rs"));
+        assert!(result.contains("Cargo.toml"));
+        assert!(result.contains("Cargo.lock"));
+        assert!(result.contains("build.rs"));
     }
 
     #[macro_export]

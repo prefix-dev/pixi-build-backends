@@ -1,6 +1,6 @@
 ---
 source: crates/pixi-build-rattler-build/src/protocol.rs
-expression: "serde_json::to_string_pretty(&value).unwrap()"
+expression: conda_outputs_snapshot(result)
 input_file: tests/recipe/boltons/recipe.yaml
 ---
 {
@@ -13,7 +13,10 @@ input_file: tests/recipe/boltons/recipe.yaml
         "buildNumber": 0,
         "subdir": "noarch",
         "license": "BSD-3-Clause",
-        "noarch": "python"
+        "noarch": "python",
+        "variant": {
+          "target_platform": "noarch"
+        }
       },
       "hostDependencies": {
         "depends": [

@@ -1,6 +1,6 @@
 ---
 source: crates/pixi-build-rattler-build/src/protocol.rs
-expression: "serde_json::to_string_pretty(&value).unwrap()"
+expression: conda_outputs_snapshot(result)
 input_file: tests/recipe/variants/recipe.yaml
 ---
 {
@@ -12,7 +12,11 @@ input_file: tests/recipe/variants/recipe.yaml
         "build": "py38h0891c58_0",
         "buildNumber": 0,
         "subdir": "linux-64",
-        "noarch": false
+        "noarch": false,
+        "variant": {
+          "python": "3.8",
+          "target_platform": "linux-64"
+        }
       },
       "hostDependencies": {
         "depends": [
@@ -39,7 +43,11 @@ input_file: tests/recipe/variants/recipe.yaml
         "build": "py39h2e92cda_0",
         "buildNumber": 0,
         "subdir": "linux-64",
-        "noarch": false
+        "noarch": false,
+        "variant": {
+          "python": "3.9",
+          "target_platform": "linux-64"
+        }
       },
       "hostDependencies": {
         "depends": [
@@ -66,7 +74,11 @@ input_file: tests/recipe/variants/recipe.yaml
         "build": "py310h8e7c8fa_0",
         "buildNumber": 0,
         "subdir": "linux-64",
-        "noarch": false
+        "noarch": false,
+        "variant": {
+          "python": "3.10",
+          "target_platform": "linux-64"
+        }
       },
       "hostDependencies": {
         "depends": [

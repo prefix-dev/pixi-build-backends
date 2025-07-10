@@ -1,6 +1,6 @@
 ---
 source: crates/pixi-build-rattler-build/src/protocol.rs
-expression: "serde_json::to_string_pretty(&value).unwrap()"
+expression: conda_outputs_snapshot(result)
 input_file: tests/recipe/pin-subpackage/recipe.yaml
 ---
 {
@@ -12,7 +12,10 @@ input_file: tests/recipe/pin-subpackage/recipe.yaml
         "build": "h4616a5c_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "target_platform": "noarch"
+        }
       }
     },
     {
@@ -22,7 +25,11 @@ input_file: tests/recipe/pin-subpackage/recipe.yaml
         "build": "hc811278_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "my-package": "0.1.0 h4616a5c_0",
+          "target_platform": "noarch"
+        }
       },
       "runDependencies": {
         "depends": [

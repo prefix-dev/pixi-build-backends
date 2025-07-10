@@ -1,6 +1,6 @@
 ---
 source: crates/pixi-build-rattler-build/src/protocol.rs
-expression: "serde_json::to_string_pretty(&value).unwrap()"
+expression: conda_outputs_snapshot(result)
 input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
 ---
 {
@@ -12,7 +12,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "py38hb368f13_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "python": "3.8",
+          "target_platform": "noarch"
+        }
       },
       "hostDependencies": {
         "depends": [
@@ -32,7 +36,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "h1670b25_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "my-package": "0.1.0 py38hb368f13_0",
+          "target_platform": "noarch"
+        }
       },
       "runDependencies": {
         "depends": [
@@ -54,7 +62,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "py39h6a44458_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "python": "3.9",
+          "target_platform": "noarch"
+        }
       },
       "hostDependencies": {
         "depends": [
@@ -74,7 +86,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "h11d4084_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "my-package": "0.1.0 py39h6a44458_0",
+          "target_platform": "noarch"
+        }
       },
       "runDependencies": {
         "depends": [
@@ -96,7 +112,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "py310hbede2c2_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "python": "3.10",
+          "target_platform": "noarch"
+        }
       },
       "hostDependencies": {
         "depends": [
@@ -116,7 +136,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
         "build": "hba4f637_0",
         "buildNumber": 0,
         "subdir": "noarch",
-        "noarch": "generic"
+        "noarch": "generic",
+        "variant": {
+          "my-package": "0.1.0 py310hbede2c2_0",
+          "target_platform": "noarch"
+        }
       },
       "runDependencies": {
         "depends": [

@@ -541,7 +541,7 @@ where
         let build_platform = Platform::current();
 
         // Construct the intermediate recipe
-        let generated_recipe = self.generate_recipe.generate_recipe(
+        let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.source_dir.clone(),
@@ -774,22 +774,13 @@ where
                 .within_context_async(move || async move { run_build(output, &tool_config).await })
                 .await?;
 
-            let input_globs = T::extract_input_globs_from_build(
+            // Extract the input globs from the build and recipe
+            let mut input_globs = T::extract_input_globs_from_build(
                 &self.config,
                 &params.work_directory,
                 params.editable,
             );
-
-            // join it with the files that were read during the recipe generation
-            let input_globs = input_globs
-                .into_iter()
-                .chain(
-                    generated_recipe
-                        .build_input_globs
-                        .iter()
-                        .map(|f| f.to_string()),
-                )
-                .collect();
+            input_globs.append(&mut generated_recipe.build_input_globs);
 
             let built_package = CondaBuiltPackage {
                 output_file: package,
@@ -1042,7 +1033,7 @@ where
             .map_or_else(Platform::current, |prefix| prefix.platform);
 
         // Construct the intermediate recipe
-        let recipe = self.generate_recipe.generate_recipe(
+        let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &self.config,
             self.source_dir.clone(),
@@ -1100,7 +1091,7 @@ where
         let directories = conda_build_v2_directories(
             params.host_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
-            params.work_directory,
+            params.work_directory.clone(),
             self.cache_dir.as_deref(),
             self.source_dir.clone(),
             params.output_directory.as_deref(),
@@ -1111,6 +1102,7 @@ where
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_testing(false)
+            .with_keep_build(true) // Pixi is incremental so keep the build
             .finish();
 
         let output = Output {
@@ -1181,9 +1173,17 @@ where
 
         let (output, output_path) = run_build(output, &tool_config).await?;
 
+        // Extract the input globs from the build and recipe
+        let mut input_globs = T::extract_input_globs_from_build(
+            &self.config,
+            &params.work_directory,
+            params.editable.unwrap_or_default(),
+        );
+        input_globs.append(&mut recipe.build_input_globs);
+
         Ok(CondaBuildV2Result {
             output_file: output_path,
-            input_globs: Default::default(),
+            input_globs,
             name: output.name().as_normalized().to_string(),
             version: output.version().clone(),
             build: output.build_string().into_owned(),

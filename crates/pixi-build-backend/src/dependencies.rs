@@ -23,7 +23,7 @@ use rattler_conda_types::{
 };
 use thiserror::Error;
 
-use crate::traits::PackageSpec;
+use crate::{specs_conversion::from_source_url_to_source_package, traits::PackageSpec};
 
 /// A helper struct to extract match specs from a manifest.
 #[derive(Default)]
@@ -235,6 +235,19 @@ fn convert_dependency(
 ) -> Result<pbt::NamedSpecV1<pbt::PackageSpecV1>, ConvertDependencyError> {
     let match_spec = match dependency {
         Dependency::Spec(spec) => {
+            // Convert back to source spec if it is a source spec.
+            if let Some(source_package) =
+                spec.url.clone().and_then(from_source_url_to_source_package)
+            {
+                let Some(name) = spec.name else {
+                    return Err(ConvertDependencyError::MissingName);
+                };
+                return Ok(pbt::NamedSpecV1 {
+                    name: name.as_source().into(),
+                    spec: pbt::PackageSpecV1::Source(source_package),
+                });
+            }
+
             // Apply a variant if it is applicable.
             if let Some(NamedSpecV1 { name, spec }) = apply_variant_and_convert(&spec, variant)? {
                 return Ok(pbt::NamedSpecV1 {

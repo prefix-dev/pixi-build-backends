@@ -321,6 +321,8 @@ impl RattlerBuild {
                 finalized_cache_dependencies: None,
                 finalized_cache_sources: None,
                 finalized_sources: None,
+                finalized_build_prefix: None,
+                finalized_host_prefix: None,
                 system_tools: SystemTools::new(),
                 build_summary: Default::default(),
                 extra_meta: None,

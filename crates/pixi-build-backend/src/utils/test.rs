@@ -80,6 +80,7 @@ where
         let result = protocol
             .conda_outputs(CondaOutputsParams {
                 host_platform,
+                build_platform: host_platform,
                 variant_configuration,
                 work_directory: current_dir,
             })

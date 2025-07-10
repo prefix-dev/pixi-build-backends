@@ -45,9 +45,10 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false, features = [
-  "rustls-tls",
-] }
+#rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false, features = [
+#  "rustls-tls",
+#] }
+rattler-build = { path = "../rattler-build" }
 
 
 rattler_conda_types = { version = "0.35.3", default-features = false }
@@ -85,5 +86,3 @@ pixi_build_type_conversions = { git = "https://github.com/baszalmstra/pixi", bra
 #rattler_virtual_packages = { path = "../rattler/crates/rattler_virtual_packages" }
 #rattler_repodata_gateway = { path = "../rattler/crates/rattler_repodata_gateway" }
 #simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
-
-#rattler-build = { path = "../rattler-build" }

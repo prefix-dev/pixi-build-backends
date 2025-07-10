@@ -13,6 +13,7 @@ use pixi_build_types::{
         conda_build::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
+        conda_build_v2::{CondaBuildV2Params, CondaBuildV2Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -27,15 +28,17 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{
-        BuildConfiguration, Debug, Output, PackageIdentifier, PackagingSettings,
+        BuildConfiguration, Debug, Directories, Output, PackageIdentifier, PackagingSettings,
         PlatformWithVirtualPackages,
     },
     recipe::{
-        Jinja, ParsingError, Recipe,
+        ParsingError, Recipe,
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::DependencyInfo,
+    render::resolved_dependencies::{
+        DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
+    },
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
@@ -44,6 +47,7 @@ use rattler_build::{
 };
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
+    prefix::Prefix,
 };
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
@@ -420,6 +424,8 @@ where
                 finalized_sources: None,
                 finalized_cache_dependencies: None,
                 finalized_cache_sources: None,
+                finalized_host_prefix: None,
+                finalized_build_prefix: None,
                 system_tools: SystemTools::default(),
                 build_summary: Arc::default(),
                 extra_meta: None,
@@ -753,6 +759,8 @@ where
                 finalized_sources: None,
                 finalized_cache_dependencies: None,
                 finalized_cache_sources: None,
+                finalized_host_prefix: None,
+                finalized_build_prefix: None,
                 system_tools: SystemTools::default(),
                 build_summary: Arc::default(),
                 extra_meta: None,
@@ -843,7 +851,6 @@ where
         // values like the variant. We should introduce a new type of selector config
         // for this particular case.
         let selector_config_for_variants = SelectorConfig {
-            // TODO: Properly add noarch support here.
             target_platform: params.host_platform,
             host_platform: params.host_platform,
             build_platform,
@@ -853,7 +860,7 @@ where
             allow_undefined: false,
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
-        let outputs = find_outputs_from_src(named_source.clone()).into_diagnostic()?;
+        let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -905,16 +912,14 @@ where
                 continue;
             }
 
-            let jinja = Jinja::new(selector_config);
             let build_number = recipe.build().number;
-            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
 
             subpackages.insert(
                 recipe.package().name().clone(),
                 PackageIdentifier {
                     name: recipe.package().name().clone(),
-                    version: recipe.package().version().version().clone().into(),
-                    build_string: build_string.to_string(),
+                    version: recipe.package().version().clone(),
+                    build_string: discovered_output.build_string.clone(),
                 },
             );
 
@@ -922,7 +927,7 @@ where
                 metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
-                    build: build_string.to_string(),
+                    build: discovered_output.build_string.clone(),
                     build_number,
                     subdir: discovered_output.target_platform,
                     license: recipe.about.license.map(|l| l.to_string()),
@@ -1020,6 +1025,214 @@ where
         Ok(CondaOutputsResult {
             outputs,
             input_globs: recipe.metadata_input_globs,
+        })
+    }
+
+    async fn conda_build_v2(
+        &self,
+        params: CondaBuildV2Params,
+    ) -> miette::Result<CondaBuildV2Result> {
+        let host_platform = params
+            .host_prefix
+            .as_ref()
+            .map_or_else(Platform::current, |prefix| prefix.platform);
+        let build_platform = params
+            .build_prefix
+            .as_ref()
+            .map_or_else(Platform::current, |prefix| prefix.platform);
+
+        // Construct the intermediate recipe
+        let recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &self.config,
+            self.source_dir.clone(),
+            host_platform,
+            Some(PythonParams {
+                editable: params.editable.unwrap_or_default(),
+            }),
+        )?;
+
+        // Convert the recipe to source code.
+        // TODO(baszalmstra): In the future it would be great if we could just
+        // immediately use the intermediate recipe for some of this rattler-build
+        // functions.
+        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let named_source = Source {
+            name: self.manifest_rel_path.display().to_string(),
+            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
+            path: recipe_path.clone(),
+        };
+
+        // Construct a `VariantConfig` based on the input parameters. We only
+        // have a single variant here so we can just use the variant from the
+        // parameters.
+        let variant_config = VariantConfig {
+            variants: params
+                .output
+                .variant
+                .into_iter()
+                .map(|(k, v)| (k.into(), vec![Variable::from_string(&v)]))
+                .collect(),
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
+
+        // Determine the different outputs that are supported by the recipe.
+        let selector_config_for_variants = SelectorConfig {
+            target_platform: host_platform,
+            host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+        };
+        let outputs = find_outputs_from_src(named_source.clone())?;
+        let discovered_outputs = variant_config.find_variants(
+            &outputs,
+            named_source.clone(),
+            &selector_config_for_variants,
+        )?;
+
+        // Find the only output that matches the request.
+        let discovered_output = discovered_outputs
+            .into_iter()
+            .find(|output| {
+                params.output.name.as_normalized() == output.name
+                    && params
+                        .output
+                        .build
+                        .as_ref()
+                        .is_none_or(|build_string| build_string == &output.build_string)
+                    && params
+                        .output
+                        .version
+                        .as_ref()
+                        .is_none_or(|version| version == &output.recipe.package.version)
+                    && params.output.subdir == output.target_platform
+                    && !output.recipe.build.skip()
+            })
+            .ok_or_else(|| {
+                miette::miette!(
+                    "the requested output {}/{}={}@{} was not found in the recipe",
+                    params.output.name.as_source(),
+                    params
+                        .output
+                        .version
+                        .as_ref()
+                        .map_or_else(|| String::from("??"), |v| v.as_str().into_owned()),
+                    params.output.build.as_deref().unwrap_or("??"),
+                    params.output.subdir
+                )
+            })?;
+
+        // Set up the proper directories for the build.
+        let directories = Directories {
+            recipe_dir: self.source_dir.clone(),
+            recipe_path,
+            cache_dir: self
+                .cache_dir
+                .clone()
+                .unwrap_or_else(|| params.work_directory.join("cache")),
+            host_prefix: params
+                .host_prefix
+                .as_ref()
+                .map(|p| p.prefix.clone())
+                .unwrap_or_else(|| params.work_directory.join("host")),
+            build_prefix: params
+                .build_prefix
+                .as_ref()
+                .map(|p| p.prefix.clone())
+                .unwrap_or_else(|| params.work_directory.join("build")),
+            work_dir: params.work_directory.join("wrk"),
+            output_dir: params
+                .output_directory
+                .unwrap_or_else(|| params.work_directory.join("output")),
+            build_dir: params.work_directory,
+        };
+
+        let tool_config = Configuration::builder()
+            .with_opt_cache_dir(self.cache_dir.clone())
+            .with_logging_output_handler(self.logging_output_handler.clone())
+            .with_testing(false)
+            .finish();
+
+        let output = Output {
+            recipe: discovered_output.recipe,
+            build_configuration: BuildConfiguration {
+                target_platform: discovered_output.target_platform,
+                host_platform: PlatformWithVirtualPackages {
+                    platform: host_platform,
+                    virtual_packages: vec![],
+                },
+                build_platform: PlatformWithVirtualPackages {
+                    platform: build_platform,
+                    virtual_packages: vec![],
+                },
+                hash: discovered_output.hash,
+                variant: discovered_output.used_vars.clone(),
+                directories,
+                channels: vec![],
+                channel_priority: Default::default(),
+                solve_strategy: Default::default(),
+                timestamp: chrono::Utc::now(),
+                subpackages: BTreeMap::new(),
+                packaging_settings: PackagingSettings::from_args(
+                    ArchiveType::Conda,
+                    CompressionLevel::default(),
+                ),
+                store_recipe: false,
+                force_colors: true,
+                sandbox_config: None,
+                debug: Debug::new(false),
+                exclude_newer: None,
+            },
+            // TODO: We should pass these values to the build backend from pixi
+            finalized_dependencies: Some(FinalizedDependencies {
+                build: Some(ResolvedDependencies {
+                    specs: vec![],
+                    resolved: vec![],
+                }),
+                host: Some(ResolvedDependencies {
+                    specs: vec![],
+                    resolved: vec![],
+                }),
+                run: FinalizedRunDependencies {
+                    depends: vec![],
+                    constraints: vec![],
+                    run_exports: Default::default(),
+                },
+            }),
+            finalized_sources: None,
+            finalized_cache_dependencies: None,
+            finalized_cache_sources: None,
+            finalized_host_prefix: params
+                .host_prefix
+                .as_ref()
+                .map(|path| Prefix::create(&path.prefix))
+                .transpose()
+                .into_diagnostic()?,
+            finalized_build_prefix: params
+                .build_prefix
+                .as_ref()
+                .map(|path| Prefix::create(&path.prefix))
+                .transpose()
+                .into_diagnostic()?,
+            build_summary: Arc::default(),
+            system_tools: Default::default(),
+            extra_meta: None,
+        };
+
+        let (output, output_path) = run_build(output, &tool_config).await?;
+
+        Ok(CondaBuildV2Result {
+            output_file: output_path,
+            input_globs: Default::default(),
+            name: output.name().as_normalized().to_string(),
+            version: output.version().clone(),
+            build: output.build_string().into_owned(),
+            subdir: *output.target_platform(),
         })
     }
 }

@@ -162,6 +162,8 @@ pub async fn get_build_output(
             finalized_sources: None,
             finalized_cache_dependencies: None,
             finalized_cache_sources: None,
+            finalized_host_prefix: None,
+            finalized_build_prefix: None,
             system_tools: SystemTools::default(),
             build_summary: Arc::default(),
             extra_meta: None,

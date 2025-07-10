@@ -845,6 +845,7 @@ mod tests {
                     .0
                     .conda_outputs(CondaOutputsParams {
                         host_platform: Platform::Linux64,
+                        build_platform: Platform::Linux64,
                         variant_configuration: None,
                         work_directory: current_dir,
                     })

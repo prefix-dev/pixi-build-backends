@@ -1248,7 +1248,7 @@ pub fn conda_build_v2_directories(
         build_prefix: build_prefix
             .map(Path::to_path_buf)
             .unwrap_or_else(|| work_directory.join("build")),
-        work_dir: work_directory.join("wrk"),
+        work_dir: work_directory.join("work"),
         output_dir: output_dir
             .map(Path::to_path_buf)
             .unwrap_or_else(|| work_directory.join("output")),

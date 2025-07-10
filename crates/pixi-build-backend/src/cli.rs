@@ -156,6 +156,7 @@ async fn initialize<T: ProtocolInstantiator>(
     // Initialize the backend
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
+            source_dir: None,
             manifest_path: manifest_path.to_path_buf(),
             project_model,
             cache_directory: None,

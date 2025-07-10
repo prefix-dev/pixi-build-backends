@@ -1,8 +1,6 @@
 mod build_script;
 mod config;
 
-use std::{collections::BTreeMap, path::Path};
-
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
@@ -14,6 +12,8 @@ use pixi_build_backend::{
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::recipe::Script;
+use std::collections::BTreeSet;
+use std::{collections::BTreeMap, path::Path};
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -36,7 +36,7 @@ impl GenerateRecipe for CMakeGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the compiler function is added to the build requirements
         // only if a specific compiler is not already present.
@@ -93,7 +93,7 @@ impl GenerateRecipe for CMakeGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         [
             // Source files
             "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",

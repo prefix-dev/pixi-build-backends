@@ -98,6 +98,7 @@ async fn test_conda_get_metadata() {
 
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
         pixi_manifest.clone(),
+        Some(tmp_dir_path.clone()),
         project_model_v1,
         TestGenerateRecipe::default(),
         some_config,
@@ -157,6 +158,7 @@ async fn test_conda_build() {
 
     let intermediate_backend = IntermediateBackend::new(
         pixi_manifest.clone(),
+        Some(tmp_dir_path.clone()),
         project_model_v1,
         TestGenerateRecipe::default(),
         some_config,

@@ -28,3 +28,4 @@ requirements:
   run:
     - foobar >=3.2.1
     - source
+    - python

@@ -1,18 +1,13 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::{BTreeSet, HashMap},
-    path::{Path, PathBuf},
-};
-
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
     compilers::{Language, compiler_requirement},
-    generated_recipe::{GenerateRecipe, GeneratedRecipe},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -20,6 +15,11 @@ use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Script},
+};
+use std::collections::BTreeSet;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
 };
 
 #[derive(Default, Clone)]
@@ -34,6 +34,7 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         manifest_root: PathBuf,
         host_platform: Platform,
+        _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
@@ -79,8 +80,7 @@ impl GenerateRecipe for RustGenerator {
                 // we need to set them as secrets
                 let system_sccache_keys = system_env_vars
                     .keys()
-                    // we set only those keys that are present in the system environment variables
-                    // and not in the config env
+                    // we set only those keys that are present in the system environment variables and not in the config env
                     .filter(|key| {
                         system_sccache_keys.contains(&key.as_str())
                             && !config_env.contains_key(*key)
@@ -128,7 +128,11 @@ impl GenerateRecipe for RustGenerator {
     }
 
     /// Returns the build input globs used by the backend.
-    fn build_input_globs(config: &Self::Config, _workdir: impl AsRef<Path>) -> BTreeSet<String> {
+    fn extract_input_globs_from_build(
+        config: &Self::Config,
+        _workdir: impl AsRef<Path>,
+        _editable: bool,
+    ) -> BTreeSet<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -157,8 +161,6 @@ pub async fn main() {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
-    use insta::assert_snapshot;
-    use pixi_build_backend::utils::test::intermediate_conda_outputs_snapshot;
 
     use super::*;
 
@@ -169,7 +171,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = RustGenerator::build_input_globs(&config, PathBuf::new());
+        let result = RustGenerator::extract_input_globs_from_build(&config, PathBuf::new(), false);
 
         // Verify that all extra globs are included in the result
         for extra_glob in &config.extra_input_globs {
@@ -220,6 +222,7 @@ mod tests {
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -260,6 +263,7 @@ mod tests {
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -298,6 +302,7 @@ mod tests {
                 },
                 PathBuf::from("."),
                 Platform::Linux64,
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -313,13 +318,9 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
+                "default_target": {
+                    "run_dependencies": {
+                        "boltons": "*"
                     }
                 },
             }
@@ -343,6 +344,7 @@ mod tests {
                     },
                     PathBuf::from("."),
                     Platform::Linux64,
+                    None,
                 )
                 .expect("Failed to generate recipe")
         });
@@ -353,39 +355,5 @@ mod tests {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script.content" => "[ ... script ... ]",
         });
-    }
-
-    #[test]
-    fn test_conda_outputs_with_variants() {
-        // Construct a simple minimal project
-        let project_model = project_fixture!({
-            "name": "foobar",
-            "version": "0.1.0",
-            "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    }
-                },
-            }
-        });
-
-        // Construct some artificial variants that should cause us to have multiple
-        // outputs.
-        let variants = HashMap::from([(
-            "rust_compiler_version".to_string(),
-            vec!["1.86".to_string(), "1.87".to_string()],
-        )]);
-
-        assert_snapshot!(intermediate_conda_outputs_snapshot::<RustGenerator>(
-            Some(project_model),
-            None,
-            Platform::Linux64,
-            Some(variants)
-        ));
     }
 }

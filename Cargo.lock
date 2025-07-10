@@ -3910,7 +3910,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-cmake"
-version = "0.1.11"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3925,6 +3925,7 @@ dependencies = [
  "rattler-build",
  "rattler_conda_types",
  "rattler_package_streaming",
+ "recipe-stage0",
  "serde",
  "serde_json",
  "tempfile",
@@ -3933,7 +3934,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-python"
-version = "0.1.11"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3963,6 +3964,7 @@ dependencies = [
  "rattler_conda_types",
  "rattler_package_streaming",
  "rattler_virtual_packages",
+ "recipe-stage0",
  "reqwest",
  "reqwest-middleware",
  "serde",
@@ -4000,7 +4002,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rust"
-version = "0.1.14"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",

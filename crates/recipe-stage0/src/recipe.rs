@@ -1,4 +1,5 @@
 use indexmap::IndexMap;
+use rattler_conda_types::package::EntryPoint;
 use rattler_conda_types::{PackageName, Platform};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
@@ -420,10 +421,37 @@ pub struct Script {
     pub secrets: Vec<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NoArchKind {
+    Python,
+    Generic,
+}
+
+/// Python specific build configuration
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Python {
+    /// For a Python noarch package to have executables it is necessary to specify the python entry points.
+    /// These contain the name of the executable and the module + function that should be executed.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub entry_points: Vec<EntryPoint>,
+}
+
+impl Python {
+    /// Returns true if this is the default python configuration.
+    pub fn is_default(&self) -> bool {
+        self.entry_points.is_empty()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Build {
     pub number: Option<Value<u64>>,
     pub script: Script,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub noarch: Option<NoArchKind>,
+    #[serde(default, skip_serializing_if = "Python::is_default")]
+    pub python: Python,
 }
 
 impl Build {
@@ -434,6 +462,7 @@ impl Build {
                 content,
                 ..Default::default()
             },
+            ..Default::default()
         }
     }
 }

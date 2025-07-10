@@ -1,14 +1,22 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
 use pixi_build_types::ProjectModelV1;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::Platform;
 use recipe_stage0::recipe::{ConditionalList, IntermediateRecipe, Item, Package, Source, Value};
 use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
+
+#[derive(Debug, Clone, Default)]
+pub struct PythonParams {
+    // Returns whetever the build is editable or not.
+    // Default to false
+    pub editable: bool,
+}
 
 /// The trait is responsible of converting a certain [`ProjectModelV1`] (or
 /// others in the future) into an [`IntermediateRecipe`].
@@ -35,21 +43,32 @@ pub trait GenerateRecipe {
         // Instead, we should rely on recipe selectors and offload all the
         // evaluation logic to the rattler-build.
         host_platform: Platform,
+        // Note: It is used only by python backend right now and may
+        // be removed when profiles will be implemented.
+        python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files
     /// for the build process.
     /// For example, this could be a list of source files or configuration files
     /// used by Cmake.
-    fn build_input_globs(_config: &Self::Config, _workdir: impl AsRef<Path>) -> BTreeSet<String> {
-        BTreeSet::default()
+    fn extract_input_globs_from_build(
+        _config: &Self::Config,
+        _workdir: impl AsRef<Path>,
+        _editable: bool,
+    ) -> BTreeSet<String> {
+        BTreeSet::new()
     }
 
-    /// Returns a list of globs that should be used to find the metadata files
-    /// for the build process.
-    /// For example, this could be a `Cargo.toml` file for Rust projects.
-    fn metadata_input_globs(_config: &Self::Config) -> BTreeSet<String> {
-        BTreeSet::default()
+    /// Returns "default" variants for the given host platform. This allows
+    /// backends to set some default variant configuration that can be
+    /// completely overwritten by the user.
+    ///
+    /// This can be useful to change the default behavior of rattler-build with
+    /// regard to compilers. But it also allows setting up default build
+    /// matrices.
+    fn default_variants(&self, _host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+        BTreeMap::new()
     }
 }
 
@@ -58,8 +77,11 @@ pub trait BackendConfig: DeserializeOwned + Default {
     fn debug_dir(&self) -> Option<&Path>;
 }
 
+#[derive(Default)]
 pub struct GeneratedRecipe {
     pub recipe: IntermediateRecipe,
+    pub metadata_input_globs: BTreeSet<String>,
+    pub build_input_globs: BTreeSet<String>,
 }
 
 impl GeneratedRecipe {
@@ -93,6 +115,9 @@ impl GeneratedRecipe {
             ..Default::default()
         };
 
-        GeneratedRecipe { recipe: ir }
+        GeneratedRecipe {
+            recipe: ir,
+            ..Default::default()
+        }
     }
 }

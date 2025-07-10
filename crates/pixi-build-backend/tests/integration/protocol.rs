@@ -15,7 +15,9 @@ use url::Url;
 mod imp {
     use std::path::{Path, PathBuf};
 
-    use pixi_build_backend::generated_recipe::{BackendConfig, GenerateRecipe, GeneratedRecipe};
+    use pixi_build_backend::generated_recipe::{
+        BackendConfig, GenerateRecipe, GeneratedRecipe, PythonParams,
+    };
     use serde::Deserialize;
 
     #[derive(Debug, Default, Deserialize, Clone)]
@@ -44,6 +46,7 @@ mod imp {
             _config: &Self::Config,
             manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
+            _python_params: Option<PythonParams>,
         ) -> miette::Result<GeneratedRecipe> {
             let generated_recipe = GeneratedRecipe::from_model(model.clone(), manifest_path);
             Ok(generated_recipe)

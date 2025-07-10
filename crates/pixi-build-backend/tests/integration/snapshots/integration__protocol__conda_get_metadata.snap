@@ -15,4 +15,4 @@ packages:
     licenseFamily: ~
     noarch: false
     sources: {}
-inputGlobs: ~
+inputGlobs: []

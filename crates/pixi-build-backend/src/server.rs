@@ -290,7 +290,7 @@ async fn log_conda_outputs(
         .into_diagnostic()
         .context("failed to create data directory")?;
 
-    let path = debug_dir.join("conda_outputs.json");
+    let path = debug_dir.join("conda_outputs_params.json");
     tokio_fs::write(&path, json)
         .await
         .into_diagnostic()

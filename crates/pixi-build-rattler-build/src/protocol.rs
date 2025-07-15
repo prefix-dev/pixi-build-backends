@@ -1058,7 +1058,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.packages[0].name.as_normalized(), "boltons-with-extra");
+        assert_eq!(
+            result.packages[0].name.as_normalized(),
+            "boltons-with-extra"
+        );
     }
 
     const FAKE_RECIPE: &str = r#"

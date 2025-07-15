@@ -3,7 +3,7 @@ use imp::TestGenerateRecipe;
 use pixi_build_backend::{intermediate_backend::IntermediateBackend, protocol::Protocol};
 use pixi_build_types::{
     ChannelConfiguration, PlatformAndVirtualPackages,
-    procedures::{conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams},
+    procedures::{conda_build_v0::CondaBuildParams, conda_metadata::CondaMetadataParams},
 };
 use rattler_build::console_utils::LoggingOutputHandler;
 use rattler_conda_types::Platform;
@@ -168,7 +168,7 @@ async fn test_conda_build() {
     .unwrap();
 
     let conda_build_result = intermediate_backend
-        .conda_build(build_params)
+        .conda_build_v0(build_params)
         .await
         .unwrap();
 

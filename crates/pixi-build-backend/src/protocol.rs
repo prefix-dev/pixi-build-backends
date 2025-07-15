@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use pixi_build_types::procedures::conda_build_v2::{CondaBuildV2Params, CondaBuildV2Result};
+use pixi_build_types::procedures::conda_build_v1::{CondaBuildV2Params, CondaBuildV2Result};
 use pixi_build_types::procedures::conda_outputs::{CondaOutputsParams, CondaOutputsResult};
 use pixi_build_types::procedures::{
-    conda_build::{CondaBuildParams, CondaBuildResult},
+    conda_build_v0::{CondaBuildParams, CondaBuildResult},
     conda_metadata::{CondaMetadataParams, CondaMetadataResult},
     initialize::{InitializeParams, InitializeResult},
     negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
@@ -49,7 +49,7 @@ pub trait Protocol {
     }
 
     /// Called when the client requests to build a Conda package.
-    async fn conda_build(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+    async fn conda_build_v0(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         unimplemented!("conda_build not implemented");
     }
 
@@ -62,10 +62,10 @@ pub trait Protocol {
     }
 
     /// Called when the client calls `conda/build_v2`.
-    async fn conda_build_v2(
+    async fn conda_build_v1(
         &self,
         _params: CondaBuildV2Params,
     ) -> miette::Result<CondaBuildV2Result> {
-        unimplemented!("conda_build_v2 not implemented");
+        unimplemented!("conda_build_v1 not implemented");
     }
 }

@@ -10,7 +10,7 @@ use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::{
     dependencies::{convert_binary_dependencies, convert_dependencies},
-    intermediate_backend::{conda_build_v2_directories, find_matching_output},
+    intermediate_backend::{conda_build_v1_directories, find_matching_output},
     protocol::{Protocol, ProtocolInstantiator},
     tools::{LoadedVariantConfig, RattlerBuild},
     utils::TemporaryRenderedRecipe,
@@ -18,10 +18,10 @@ use pixi_build_backend::{
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1, TargetV1,
     procedures::{
-        conda_build::{
+        conda_build_v0::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
-        conda_build_v2::{CondaBuildV2Params, CondaBuildV2Result},
+        conda_build_v1::{CondaBuildV2Params, CondaBuildV2Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -450,7 +450,7 @@ impl Protocol for RattlerBuildBackend {
         })
     }
 
-    async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+    async fn conda_build_v0(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         // Create the work directory if it does not exist
         tokio_fs::create_dir_all(&params.work_directory)
             .await
@@ -589,7 +589,7 @@ impl Protocol for RattlerBuildBackend {
                     extract_mutable_package_sources(&output),
                     self.config.extra_input_globs.clone(),
                 )?,
-                name: output.name().as_normalized().to_string(),
+                name: output.name().clone(),
                 version: output.version().to_string(),
                 build: build_string.to_string(),
                 subdir: output.target_platform().to_string(),
@@ -598,7 +598,7 @@ impl Protocol for RattlerBuildBackend {
         Ok(CondaBuildResult { packages: built })
     }
 
-    async fn conda_build_v2(
+    async fn conda_build_v1(
         &self,
         params: CondaBuildV2Params,
     ) -> miette::Result<CondaBuildV2Result> {
@@ -647,7 +647,7 @@ impl Protocol for RattlerBuildBackend {
         let discovered_output = find_matching_output(&params.output, discovered_outputs)?;
 
         // Set up the proper directories for the build.
-        let directories = conda_build_v2_directories(
+        let directories = conda_build_v1_directories(
             params.host_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.work_directory,
@@ -921,7 +921,7 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
-        provides_conda_build_v2: Some(true),
+        provides_conda_build_v1: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),
@@ -939,7 +939,7 @@ mod tests {
     use pixi_build_types::{
         ChannelConfiguration,
         procedures::{
-            conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams,
+            conda_build_v0::CondaBuildParams, conda_metadata::CondaMetadataParams,
             initialize::InitializeParams,
         },
     };
@@ -1043,7 +1043,7 @@ mod tests {
 
         let result = factory
             .0
-            .conda_build(CondaBuildParams {
+            .conda_build_v0(CondaBuildParams {
                 build_platform_virtual_packages: None,
                 host_platform: None,
                 channel_base_urls: None,
@@ -1058,7 +1058,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.packages[0].name, "boltons-with-extra");
+        assert_eq!(result.packages[0].name.as_normalized(), "boltons-with-extra");
     }
 
     const FAKE_RECIPE: &str = r#"

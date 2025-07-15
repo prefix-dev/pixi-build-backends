@@ -1761,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "console",
 ]
@@ -4032,7 +4032,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "itertools 0.14.0",
  "ordermap",
@@ -4046,7 +4046,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -4060,7 +4060,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "clap",
  "console",
@@ -4086,7 +4086,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "console",
  "rattler_cache",
@@ -4097,7 +4097,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4117,7 +4117,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "chrono",
  "console",
@@ -4157,7 +4157,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4177,7 +4177,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "dirs",
  "file_url",
@@ -4200,7 +4200,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "indexmap 2.10.0",
  "itertools 0.14.0",
@@ -4212,7 +4212,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "digest",
  "hex",
@@ -4227,7 +4227,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#fce4edacd4828075d536d419974f79773738e051"
+source = "git+https://github.com/baszalmstra/pixi?branch=feat%2Fsplit-protocol-install#0b332b0499322c870ecece07df6692d15d008bf3"
 dependencies = [
  "async-fd-lock",
  "fs-err",

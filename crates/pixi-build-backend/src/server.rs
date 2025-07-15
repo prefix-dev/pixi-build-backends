@@ -6,7 +6,7 @@ use miette::{Context, IntoDiagnostic, JSONReportHandler};
 use pixi_build_types::{
     VersionedProjectModel,
     procedures::{
-        self, conda_build::CondaBuildParams, conda_build_v2::CondaBuildV2Params,
+        self, conda_build_v0::CondaBuildParams, conda_build_v1::CondaBuildV2Params,
         conda_metadata::CondaMetadataParams, conda_outputs::CondaOutputsParams,
         initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
     },
@@ -157,7 +157,7 @@ impl<T: ProtocolInstantiator> Server<T> {
 
         let conda_build = state.clone();
         io.add_method(
-            procedures::conda_build::METHOD_NAME,
+            procedures::conda_build_v0::METHOD_NAME,
             move |params: Params| {
                 let state = conda_build.clone();
 
@@ -172,7 +172,7 @@ impl<T: ProtocolInstantiator> Server<T> {
                         .map_err(convert_error)?;
 
                     endpoint
-                        .conda_build(params)
+                        .conda_build_v0(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))
                         .map_err(convert_error)
@@ -180,11 +180,11 @@ impl<T: ProtocolInstantiator> Server<T> {
             },
         );
 
-        let conda_build_v2 = state.clone();
+        let conda_build_v1 = state.clone();
         io.add_method(
-            procedures::conda_build_v2::METHOD_NAME,
+            procedures::conda_build_v1::METHOD_NAME,
             move |params: Params| {
-                let state = conda_build_v2.clone();
+                let state = conda_build_v1.clone();
 
                 async move {
                     let params: CondaBuildV2Params = params.parse()?;
@@ -192,12 +192,12 @@ impl<T: ProtocolInstantiator> Server<T> {
                     let endpoint = state.as_endpoint()?;
 
                     let debug_dir = endpoint.debug_dir();
-                    log_conda_build_v2(debug_dir, &params)
+                    log_conda_build_v1(debug_dir, &params)
                         .await
                         .map_err(convert_error)?;
 
                     endpoint
-                        .conda_build_v2(params)
+                        .conda_build_v1(params)
                         .await
                         .map(|value| to_value(value).expect("failed to convert to json"))
                         .map_err(convert_error)
@@ -323,7 +323,7 @@ async fn log_conda_build(
     Ok(())
 }
 
-async fn log_conda_build_v2(
+async fn log_conda_build_v1(
     debug_dir: Option<&Path>,
     params: &CondaBuildV2Params,
 ) -> miette::Result<()> {
@@ -340,7 +340,7 @@ async fn log_conda_build_v2(
         .into_diagnostic()
         .context("failed to create data directory")?;
 
-    let path = debug_dir.join("conda_build_v2_params.json");
+    let path = debug_dir.join("conda_build_v1_params.json");
     tokio_fs::write(&path, json)
         .await
         .into_diagnostic()

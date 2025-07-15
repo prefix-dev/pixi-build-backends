@@ -10,10 +10,10 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PathSpecV1, ProjectModelV1, SourcePackageSpecV1,
     procedures::{
-        conda_build::{
+        conda_build_v0::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
-        conda_build_v2::{CondaBuildV2Output, CondaBuildV2Params, CondaBuildV2Result},
+        conda_build_v1::{CondaBuildV2Output, CondaBuildV2Params, CondaBuildV2Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -526,7 +526,7 @@ where
         })
     }
 
-    async fn conda_build(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
+    async fn conda_build_v0(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
         let channel_config = ChannelConfig {
             channel_alias: params.channel_configuration.base_url,
             root_dir: self.source_dir.to_path_buf(),
@@ -785,7 +785,7 @@ where
             let built_package = CondaBuiltPackage {
                 output_file: package,
                 input_globs,
-                name: output.name().as_normalized().to_string(),
+                name: output.name().clone(),
                 version: output.version().to_string(),
                 build: output.build_string().into_owned(),
                 subdir: output.target_platform().to_string(),
@@ -1019,7 +1019,7 @@ where
         })
     }
 
-    async fn conda_build_v2(
+    async fn conda_build_v1(
         &self,
         params: CondaBuildV2Params,
     ) -> miette::Result<CondaBuildV2Result> {
@@ -1088,7 +1088,7 @@ where
         let discovered_output = find_matching_output(&params.output, discovered_outputs)?;
 
         // Set up the proper directories for the build.
-        let directories = conda_build_v2_directories(
+        let directories = conda_build_v1_directories(
             params.host_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.work_directory.clone(),
@@ -1227,7 +1227,7 @@ pub fn find_matching_output(
     Ok(discovered_output)
 }
 
-pub fn conda_build_v2_directories(
+pub fn conda_build_v1_directories(
     host_prefix: Option<&Path>,
     build_prefix: Option<&Path>,
     work_directory: PathBuf,
@@ -1262,7 +1262,7 @@ fn default_capabilities() -> BackendCapabilities {
         provides_conda_metadata: Some(true),
         provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
-        provides_conda_build_v2: Some(true),
+        provides_conda_build_v1: Some(true),
         highest_supported_project_model: Some(
             pixi_build_types::VersionedProjectModel::highest_version(),
         ),

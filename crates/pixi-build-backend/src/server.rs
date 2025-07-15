@@ -6,7 +6,7 @@ use miette::{Context, IntoDiagnostic, JSONReportHandler};
 use pixi_build_types::{
     VersionedProjectModel,
     procedures::{
-        self, conda_build_v0::CondaBuildParams, conda_build_v1::CondaBuildV2Params,
+        self, conda_build_v0::CondaBuildParams, conda_build_v1::CondaBuildV1Params,
         conda_metadata::CondaMetadataParams, conda_outputs::CondaOutputsParams,
         initialize::InitializeParams, negotiate_capabilities::NegotiateCapabilitiesParams,
     },
@@ -187,7 +187,7 @@ impl<T: ProtocolInstantiator> Server<T> {
                 let state = conda_build_v1.clone();
 
                 async move {
-                    let params: CondaBuildV2Params = params.parse()?;
+                    let params: CondaBuildV1Params = params.parse()?;
                     let state = state.read().await;
                     let endpoint = state.as_endpoint()?;
 
@@ -325,7 +325,7 @@ async fn log_conda_build(
 
 async fn log_conda_build_v1(
     debug_dir: Option<&Path>,
-    params: &CondaBuildV2Params,
+    params: &CondaBuildV1Params,
 ) -> miette::Result<()> {
     let Some(debug_dir) = debug_dir else {
         return Ok(());

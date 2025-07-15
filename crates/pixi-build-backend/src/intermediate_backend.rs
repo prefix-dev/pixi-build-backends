@@ -13,7 +13,7 @@ use pixi_build_types::{
         conda_build_v0::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
-        conda_build_v1::{CondaBuildV2Output, CondaBuildV2Params, CondaBuildV2Result},
+        conda_build_v1::{CondaBuildV1Output, CondaBuildV1Params, CondaBuildV1Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -1021,8 +1021,8 @@ where
 
     async fn conda_build_v1(
         &self,
-        params: CondaBuildV2Params,
-    ) -> miette::Result<CondaBuildV2Result> {
+        params: CondaBuildV1Params,
+    ) -> miette::Result<CondaBuildV1Result> {
         let host_platform = params
             .host_prefix
             .as_ref()
@@ -1181,7 +1181,7 @@ where
         );
         input_globs.append(&mut recipe.build_input_globs);
 
-        Ok(CondaBuildV2Result {
+        Ok(CondaBuildV1Result {
             output_file: output_path,
             input_globs,
             name: output.name().as_normalized().to_string(),
@@ -1193,7 +1193,7 @@ where
 }
 
 pub fn find_matching_output(
-    expected_output: &CondaBuildV2Output,
+    expected_output: &CondaBuildV1Output,
     discovered_outputs: IndexSet<DiscoveredOutput>,
 ) -> miette::Result<DiscoveredOutput> {
     // Find the only output that matches the request.

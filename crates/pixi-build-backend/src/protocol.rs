@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use pixi_build_types::procedures::conda_build_v1::{CondaBuildV2Params, CondaBuildV2Result};
+use pixi_build_types::procedures::conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result};
 use pixi_build_types::procedures::conda_outputs::{CondaOutputsParams, CondaOutputsResult};
 use pixi_build_types::procedures::{
     conda_build_v0::{CondaBuildParams, CondaBuildResult},
@@ -64,8 +64,8 @@ pub trait Protocol {
     /// Called when the client calls `conda/build_v2`.
     async fn conda_build_v1(
         &self,
-        _params: CondaBuildV2Params,
-    ) -> miette::Result<CondaBuildV2Result> {
+        _params: CondaBuildV1Params,
+    ) -> miette::Result<CondaBuildV1Result> {
         unimplemented!("conda_build_v1 not implemented");
     }
 }

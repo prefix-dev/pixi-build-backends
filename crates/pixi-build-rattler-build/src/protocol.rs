@@ -21,7 +21,7 @@ use pixi_build_types::{
         conda_build_v0::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
         },
-        conda_build_v1::{CondaBuildV2Params, CondaBuildV2Result},
+        conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result},
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
@@ -600,8 +600,8 @@ impl Protocol for RattlerBuildBackend {
 
     async fn conda_build_v1(
         &self,
-        params: CondaBuildV2Params,
-    ) -> miette::Result<CondaBuildV2Result> {
+        params: CondaBuildV1Params,
+    ) -> miette::Result<CondaBuildV1Result> {
         let host_platform = params
             .host_prefix
             .as_ref()
@@ -731,7 +731,7 @@ impl Protocol for RattlerBuildBackend {
 
         let (output, output_path) = run_build(output, &tool_config).await?;
 
-        Ok(CondaBuildV2Result {
+        Ok(CondaBuildV1Result {
             output_file: output_path,
             input_globs: build_input_globs(
                 &self.manifest_root,

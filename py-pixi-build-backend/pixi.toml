@@ -1,0 +1,36 @@
+[project]
+name = "py-rattler"
+description = "Add a short description here"
+authors = [
+  "Bas Zalmstra <bas@prefix.dev>",
+  "Tarun Pratap Singh <pratapsinghtarun9@gmail.com>",
+]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+license = "BSD-3-Clause"
+
+[tasks]
+
+[feature.build.dependencies]
+python = "*"
+maturin = "~=1.2.2"
+pip = "~=23.2.1"
+rust = "~=1.86.0"
+
+[feature.build.tasks]
+build = "PIP_REQUIRE_VIRTUALENV=false maturin develop"
+build-release = "PIP_REQUIRE_VIRTUALENV=false maturin develop --release"
+
+[feature.build.target.linux-64.dependencies]
+patchelf = "~=0.17.2"
+
+
+[environments]
+# test = { features = ["build", "test"], solve-group = "default" }
+# docs = ["docs"]
+# repl = ["repl"]
+build = ["build"]
+
+[dependencies]
+# requests = ">=2.32.3,<2.33"
+# types-requests = ">=2.32.4.20250611,<2.32.5"

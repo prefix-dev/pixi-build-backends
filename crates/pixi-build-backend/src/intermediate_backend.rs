@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -38,8 +38,8 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::{ParseErrors, VariantConfig},
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 
@@ -274,6 +274,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
+            recipe_path: None,
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
@@ -385,6 +386,7 @@ where
                     sandbox_config: None,
                     debug: Debug::default(),
                     solve_strategy: Default::default(),
+                    exclude_newer: None,
                 },
                 finalized_dependencies: None,
                 finalized_sources: None,
@@ -576,6 +578,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
+            recipe_path: None,
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let mut discovered_outputs = variant_config.find_variants(
@@ -716,6 +719,7 @@ where
                     sandbox_config: None,
                     debug: Debug::default(),
                     solve_strategy: Default::default(),
+                    exclude_newer: None,
                 },
                 finalized_dependencies: None,
                 finalized_sources: None,
@@ -749,7 +753,7 @@ where
                         .iter()
                         .map(|f| f.to_string()),
                 )
-                .collect::<Vec<_>>();
+                .collect::<BTreeSet<_>>();
 
             let built_package = CondaBuiltPackage {
                 output_file: package,

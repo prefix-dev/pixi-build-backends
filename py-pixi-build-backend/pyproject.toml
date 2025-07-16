@@ -1,0 +1,34 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "py-pixi-build-backend"
+description = "Python bindings for pixi-build-backends"
+requires-python = ">=3.8"
+license = { text = "MIT OR Apache-2.0" }
+authors = [{ name = "pixi contributors" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Rust",
+  "Topic :: Software Development :: Build Tools",
+]
+keywords = ["build", "conda", "package", "python", "rust"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/prefix-dev/pixi-build-backends"
+Repository = "https://github.com/prefix-dev/pixi-build-backends"
+"Bug Tracker" = "https://github.com/prefix-dev/pixi-build-backends/issues"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

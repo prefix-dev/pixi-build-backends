@@ -2,6 +2,7 @@ mod build_script;
 mod config;
 
 use std::{
+    collections::BTreeSet,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -124,7 +125,7 @@ impl GenerateRecipe for PythonGenerator {
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
-                vec![pyproject_manifest_path.to_string_lossy().to_string()];
+                BTreeSet::from([pyproject_manifest_path.to_string_lossy().to_string()]);
             Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
         } else {
             None

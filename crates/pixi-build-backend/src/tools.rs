@@ -22,8 +22,8 @@ use rattler_build::{
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
@@ -84,6 +84,7 @@ impl RattlerBuild {
             variant: Default::default(),
             experimental: true,
             allow_undefined: false,
+            recipe_path: None,
         }
     }
 
@@ -157,6 +158,7 @@ impl RattlerBuild {
                 build_platform: self.selector_config.build_platform,
                 experimental: true,
                 allow_undefined: false,
+                recipe_path: Some(self.recipe_source.path.clone()),
             };
 
             let mut recipe = Recipe::from_node(&discovered_output.node, selector_config.clone())
@@ -252,6 +254,7 @@ impl RattlerBuild {
                     force_colors: true,
                     sandbox_config: None,
                     debug: Debug::new(false),
+                    exclude_newer: None,
                 },
                 finalized_dependencies: None,
                 finalized_cache_dependencies: None,

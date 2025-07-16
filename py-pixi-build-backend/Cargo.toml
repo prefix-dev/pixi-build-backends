@@ -1,66 +1,63 @@
-[workspace]
-members = ["crates/*"]
-resolver = "2"
-
-[workspace.package]
+[package]
+name = "py-pixi-build-backend"
+version = "0.1.0"
 edition = "2024"
 
-[workspace.dependencies]
-async-trait = "0.1.86"
-chrono = "0.4.39"
-clap = "4.5.29"
-clap-verbosity-flag = "3.0.2"
-either = "1.15.0"
-fs-err = "3.1.0"
-indexmap = "2.7.1"
-itertools = "0.14.0"
-log = "0.4.25"
-miette = "7.5.0"
-minijinja = "2.7.0"
-parking_lot = "0.12.3"
-reqwest = { version = "0.12.12", default-features = false, features = [
-  "rustls-tls",
-  "rustls-tls-native-roots",
+[lib]
+name = "pixi_build_backend"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PyO3 for Python bindings
+pyo3 = { version = "0.24", features = [
+  "extension-module",
+  "abi3-py38",
+  "serde",
 ] }
-reqwest-middleware = "0.4.0"
-rstest = "0.25.0"
-serde = "1.0"
-serde_yaml = "0.9"
-serde_json = "1.0"
-tempfile = "3.16.0"
-toml_edit = "0.22.24"
-tokio = "1.43.0"
-tracing-subscriber = "0.3.19"
-url = "2.5.4"
+
+# Core pixi-build dependencies (local crates)
+pixi-build-backend = { path = "../crates/pixi-build-backend" }
+recipe-stage0 = { path = "../crates/recipe-stage0" }
+
+# Additional dependencies from pixi-build-python
 pyproject-toml = "0.13.4"
-dirs = "6.0.0"
-pathdiff = "0.2.3"
-file_url = "0.2.5"
-ordermap = "0.5.8"
 
-jsonrpc-stdio-server = "18.0.0"
-jsonrpc-http-server = "18.0.0"
-jsonrpc-core = "18.0.0"
+# Pixi types
+pixi_build_types = "*"
+pixi_manifest = "*"
+pixi_spec = "*"
+pixi_build_type_conversions = "*"
 
-rattler-build = { version = "*", default-features = false, features = [
-  "rustls-tls",
-] }
-
+# Core serialization and async support
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
+toml_edit = "0.22.24"
 
 rattler_conda_types = { version = "0.35.5", default-features = false }
 rattler_package_streaming = { version = "0.22.35", default-features = false }
 rattler_virtual_packages = { version = "2.0.9", default-features = false }
 
-pixi_build_types = { version = "*" }
-pixi_consts = { version = "*" }
-pixi_manifest = { version = "*" }
-pixi_spec = { version = "*" }
-pixi_build_type_conversions = { version = "*" }
 
-pixi-build-backend = { path = "crates/pixi-build-backend" }
+# Error handling
+miette = "7.5.0"
+# anyhow = "1.0"
+thiserror = "2.0.12"
 
+py-rattler = { git = "https://github.com/conda/rattler", branch = "main" }
 
-recipe-stage0 = { path = "crates/recipe-stage0" }
+# Utilities
+indexmap = "2.7.1"
+pythonize = "0.24"
+
+[dev-dependencies]
+tempfile = "3.16.0"
+
+[build-dependencies]
+pyo3-build-config = "0.25"
+
+# Prevent package from thinking it's in the workspace
+[workspace]
 
 
 [patch.crates-io]

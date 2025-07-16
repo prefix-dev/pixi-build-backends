@@ -124,8 +124,8 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
                 .as_ref()
                 .map(|url| Arc::new(Channel::from_url(url.clone()))),
             subdir: self.subdir.clone(),
-            md5: self.md5.as_ref().map(|m| m.0),
-            sha256: self.sha256.as_ref().map(|s| s.0),
+            md5: self.md5.as_ref().map(|m| m.clone()),
+            sha256: self.sha256.as_ref().map(|s| s.clone()),
             namespace: None,
             url: None,
             extras: None,

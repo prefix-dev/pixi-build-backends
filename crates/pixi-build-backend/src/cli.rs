@@ -6,7 +6,7 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     BackendCapabilities, ChannelConfiguration, FrontendCapabilities, PlatformAndVirtualPackages,
     procedures::{
-        conda_build::CondaBuildParams,
+        conda_build_v0::CondaBuildParams,
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::InitializeParams,
         negotiate_capabilities::NegotiateCapabilitiesParams,
@@ -156,6 +156,7 @@ async fn initialize<T: ProtocolInstantiator>(
     // Initialize the backend
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
+            source_dir: None,
             manifest_path: manifest_path.to_path_buf(),
             project_model,
             cache_directory: None,
@@ -232,7 +233,7 @@ async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> mie
         .context("failed to create a temporary directory in the current directory")?;
 
     let result = protocol
-        .conda_build(CondaBuildParams {
+        .conda_build_v0(CondaBuildParams {
             host_platform: None,
             build_platform_virtual_packages: None,
             channel_base_urls: None,

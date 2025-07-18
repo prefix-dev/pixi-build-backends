@@ -495,7 +495,7 @@ impl ConditionalRequirements {
     /// Resolves the conditional requirements for a given platform.
     pub fn resolve(
         &self,
-        platform: Option<&Platform>,
+        platform: Option<Platform>,
     ) -> PackageSpecDependencies<PackageDependency> {
         PackageSpecDependencies {
             build: self.resolve_list(&self.build, platform),
@@ -508,7 +508,7 @@ impl ConditionalRequirements {
     pub(crate) fn resolve_list(
         &self,
         list: &ConditionalList<PackageDependency>,
-        platform: Option<&Platform>,
+        platform: Option<Platform>,
     ) -> IndexMap<PackageName, PackageDependency> {
         list.iter()
             .flat_map(|item| Self::resolve_item(item, platform))
@@ -517,7 +517,7 @@ impl ConditionalRequirements {
 
     pub(crate) fn resolve_item(
         item: &Item<PackageDependency>,
-        platform: Option<&Platform>,
+        platform: Option<Platform>,
     ) -> IndexMap<PackageName, PackageDependency> {
         match item {
             Item::Value(v) => {

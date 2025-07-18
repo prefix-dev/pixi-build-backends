@@ -1,11 +1,6 @@
 mod build_script;
 mod config;
 
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
@@ -17,6 +12,11 @@ use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
 use recipe_stage0::recipe::{NoArchKind, Python, Script};
+use std::collections::BTreeSet;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -59,7 +59,7 @@ impl GenerateRecipe for PythonGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the python build tools are added to the `host` requirements.
         // Please note: this is a subtle difference for python, where the build tools are
@@ -124,7 +124,7 @@ impl GenerateRecipe for PythonGenerator {
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
-                vec![pyproject_manifest_path.to_string_lossy().to_string()];
+                BTreeSet::from([pyproject_manifest_path.to_string_lossy().to_string()]);
             Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
         } else {
             None
@@ -156,7 +156,7 @@ impl GenerateRecipe for PythonGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         let base_globs = Vec::from([
             // Source files
             "**/*.c",

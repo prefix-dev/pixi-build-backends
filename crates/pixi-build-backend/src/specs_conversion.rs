@@ -1,7 +1,7 @@
 use std::{path::Path, str::FromStr};
 
-use indexmap::IndexMap;
 use miette::IntoDiagnostic;
+use ordermap::OrderMap;
 use pixi_build_types::{
     GitSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1, UrlSpecV1,
 };
@@ -13,17 +13,14 @@ use recipe_stage0::{
 };
 use url::Url;
 
-pub fn from_source_matchspec_into_package_spec(
-    source_matchspec: SourceMatchSpec,
-) -> miette::Result<SourcePackageSpecV1> {
-    let source_url = source_matchspec.location;
+pub fn from_source_url_to_source_package(source_url: Url) -> Option<SourcePackageSpecV1> {
     match source_url.scheme() {
-        "source" => Ok(SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+        "source" => Some(SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
             path: SafeRelativePathUrl::from(source_url).to_path(),
         })),
         "http" | "https" => {
             // For now, we only support URL sources with no checksums.
-            Ok(SourcePackageSpecV1::Url(UrlSpecV1 {
+            Some(SourcePackageSpecV1::Url(UrlSpecV1 {
                 url: source_url,
                 md5: None,
                 sha256: None,
@@ -32,14 +29,21 @@ pub fn from_source_matchspec_into_package_spec(
         "git" => {
             // For git URLs, we can only support the URL without any additional metadata.
             // This is a limitation of the current implementation.
-            Ok(SourcePackageSpecV1::Git(GitSpecV1 {
+            Some(SourcePackageSpecV1::Git(GitSpecV1 {
                 git: source_url,
                 rev: None,
                 subdirectory: None,
             }))
         }
-        _ => unimplemented!("Only file, http/https and git are supported for now"),
+        _ => None,
     }
+}
+
+pub fn from_source_matchspec_into_package_spec(
+    source_matchspec: SourceMatchSpec,
+) -> miette::Result<SourcePackageSpecV1> {
+    from_source_url_to_source_package(source_matchspec.location)
+        .ok_or_else(|| miette::miette!("Only file, http/https and git are supported for now"))
 }
 
 pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
@@ -198,7 +202,7 @@ pub(crate) fn source_package_spec_to_package_dependency(
 }
 
 pub(crate) fn package_specs_to_package_dependency(
-    specs: IndexMap<String, PackageSpecV1>,
+    specs: OrderMap<String, PackageSpecV1>,
 ) -> miette::Result<Vec<PackageDependency>> {
     specs
         .into_iter()

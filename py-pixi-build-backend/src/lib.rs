@@ -7,9 +7,6 @@ mod types;
 
 #[pymodule]
 fn pixi_build_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // // Add exception types
-    // m.add("PyPixiBuildError", _py.get_type::<PyPixiBuildError>())?;
-
     // Add core types
     m.add_class::<types::PyPlatform>()?;
     m.add_class::<types::PyProjectModelV1>()?;
@@ -46,9 +43,7 @@ fn pixi_build_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<recipe_stage0::conditional::PyConditionalString>()?;
     m.add_class::<recipe_stage0::conditional::PyListOrItemString>()?;
 
-    // m.add_class::<recipe_stage0::conditional::PyConditionalListString>()?;
     m.add_class::<recipe_stage0::conditional::PyItemPackageDependency>()?;
-    // m.add_class::<recipe_stage0::conditional::PyConditionalListPackageDependency>()?;
 
     // Add utility functions
     m.add_function(wrap_pyfunction!(

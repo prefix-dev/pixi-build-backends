@@ -56,14 +56,6 @@ class PythonGenerator(GenerateRecipeProtocol):
 
         manifest_root = Path(manifest_path).parent
 
-        # host_platform = Platform._from_py_platform(host_platform)
-
-        # python_params = PythonParams._from_inner(python_params) if python_params else None
-
-        print(f"model is : {type(model)}")
-
-        # model = ProjectModelV1.from_model(model)
-
         # Create base recipe from model
         generated_recipe = GeneratedRecipe.from_model(model, manifest_root)
         

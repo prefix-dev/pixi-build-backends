@@ -64,33 +64,42 @@ pub struct IntermediateBackendConfig {
 pub struct IntermediateBackendInstantiator<T: GenerateRecipe> {
     logging_output_handler: LoggingOutputHandler,
 
-    generator: T,
+    generator: Arc<T>,
 }
 
-impl<T: GenerateRecipe + Default + Clone> IntermediateBackendInstantiator<T> {
-    pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
+impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
+    pub fn new(logging_output_handler: LoggingOutputHandler, instance: Arc<T>) -> Self {
         Self {
             logging_output_handler,
-            generator: T::default(),
+            generator: instance,
         }
     }
 }
 
-pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
+// impl<T: GenerateRecipe + Default> IntermediateBackendInstantiator<T> {
+//     pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
+//         Self {
+//             logging_output_handler,
+//             generator: Arc::new(T::default()),
+//         }
+//     }
+// }
+
+pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) source_dir: PathBuf,
     /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
     pub(crate) project_model: ProjectModelV1,
-    pub(crate) generate_recipe: T,
+    pub(crate) generate_recipe: Arc<T>,
     pub(crate) config: T::Config,
     pub(crate) cache_dir: Option<PathBuf>,
 }
-impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
+impl<T: GenerateRecipe> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
         project_model: ProjectModelV1,
-        generate_recipe: T,
+        generate_recipe: Arc<T>,
         config: serde_json::Value,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -126,7 +135,7 @@ where
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
         let config = configuration
-            .and_then(|config| serde_json::from_value::<T::Config>(config.clone()).ok())
+            .and_then(|config| serde_json::from_value::<T::Config>(config).ok())
             .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
 
         config

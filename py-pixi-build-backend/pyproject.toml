@@ -24,6 +24,11 @@ classifiers = [
 ]
 keywords = ["build", "conda", "package", "python", "rust"]
 dynamic = ["version"]
+dependencies = ["py-rattler", "asyncio", "toml"]
+
+# [project.scripts]
+# pixi-build-python = "pixi_build_backend.main:main"
+
 
 [project.urls]
 Homepage = "https://github.com/prefix-dev/pixi-build-backends"

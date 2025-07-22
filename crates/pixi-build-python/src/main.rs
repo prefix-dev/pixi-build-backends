@@ -5,6 +5,7 @@ use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
 
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
@@ -206,8 +207,16 @@ impl GenerateRecipe for PythonGenerator {
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) =
-        pixi_build_backend::cli::main(IntermediateBackendInstantiator::<PythonGenerator>::new).await
+    if let Err(err) = pixi_build_backend::cli::main(
+        |log| {
+            IntermediateBackendInstantiator::<PythonGenerator>::new(
+                log,
+                Arc::new(PythonGenerator::default()),
+            )
+        },
+        None,
+    )
+    .await
     {
         eprintln!("{err:?}");
         std::process::exit(1);

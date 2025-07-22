@@ -64,6 +64,12 @@ impl PyPlatform {
     pub fn name(&self) -> String {
         self.inner.to_string()
     }
+
+    #[staticmethod]
+    pub fn current() -> PyResult<Self> {
+        let platform = Platform::current();
+        Ok(PyPlatform { inner: platform })
+    }
 }
 
 impl From<Platform> for PyPlatform {

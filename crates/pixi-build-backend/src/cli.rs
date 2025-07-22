@@ -42,7 +42,7 @@ pub struct App {
     verbose: Verbosity<InfoLevel>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Get conda metadata for a recipe.
     GetCondaMetadata {
@@ -75,9 +75,17 @@ async fn run_server<T: ProtocolInstantiator>(port: Option<u16>, protocol: T) -> 
 /// Run the main CLI.
 pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
     factory: F,
+    // we can pass the args as a string vector
+    // from bindings
+    str_args: Option<Vec<String>>,
 ) -> miette::Result<()> {
-    let args = App::parse();
-
+    let args = match str_args.clone() {
+        Some(mut custom_args) => {
+            custom_args.insert(0, "pixi-build-backend".to_string());
+            App::parse_from(custom_args)
+        }
+        None => App::parse(),
+    };
     // Setup logging
     let log_handler = LoggingOutputHandler::default();
 
@@ -154,12 +162,20 @@ async fn initialize<T: ProtocolInstantiator>(
     }
 
     // Initialize the backend
+
+    // some test configuration
+    // let config = serde_json::json!({
+    //     "debug_dir": "my_debug_dir",
+
+    // });
+
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
             source_dir: None,
             project_model,
             cache_directory: None,
+            // configuration: Some(config),
             configuration: None,
         })
         .await?;

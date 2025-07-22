@@ -1,6 +1,5 @@
 use std::{path::Path, str::FromStr};
 
-use indexmap::IndexMap;
 use miette::IntoDiagnostic;
 use ordermap::OrderMap;
 use pixi_build_types::{

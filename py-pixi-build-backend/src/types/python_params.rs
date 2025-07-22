@@ -7,6 +7,12 @@ pub struct PyPythonParams {
     pub(crate) inner: PythonParams,
 }
 
+impl AsRef<PythonParams> for PyPythonParams {
+    fn as_ref(&self) -> &PythonParams {
+        &self.inner
+    }
+}
+
 #[pymethods]
 impl PyPythonParams {
     #[new]

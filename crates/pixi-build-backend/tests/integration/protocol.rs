@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::common::model::{convert_test_model_to_project_model_v1, load_project_model_from_json};
 use imp::TestGenerateRecipe;
 use pixi_build_backend::{intermediate_backend::IntermediateBackend, protocol::Protocol};
@@ -99,7 +101,7 @@ async fn test_conda_get_metadata() {
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
         pixi_manifest.clone(),
         project_model_v1,
-        TestGenerateRecipe::default(),
+        Arc::new(TestGenerateRecipe::default()),
         some_config,
         LoggingOutputHandler::default(),
         None,
@@ -158,7 +160,7 @@ async fn test_conda_build() {
     let intermediate_backend = IntermediateBackend::new(
         pixi_manifest.clone(),
         project_model_v1,
-        TestGenerateRecipe::default(),
+        Arc::new(TestGenerateRecipe::default()),
         some_config,
         LoggingOutputHandler::default(),
         None,

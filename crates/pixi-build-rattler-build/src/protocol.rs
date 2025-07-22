@@ -922,6 +922,6 @@ mod tests {
         }
 
         // Verify that the basic manifest glob is still present
-        assert!(globs.contains(&"*/**".to_string()));
+        assert!(globs.contains("*/**"));
     }
 }

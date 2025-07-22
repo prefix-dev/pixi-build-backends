@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use pixi_build_types::ProjectModelV1;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use rattler_conda_types::Version;
 
 #[pyclass]
@@ -36,32 +35,6 @@ impl PyProjectModelV1 {
         }
     }
 
-    // #[staticmethod]
-    // pub fn from_dict(data: &PyDict) -> PyResult<Self> {
-    //     let name = data
-    //         .get_item("name")?
-    //         .and_then(|item| item.extract::<String>().ok())
-    //         .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("Missing 'name' field"))?;
-
-    //     let version = data
-    //         .get_item("version")?
-    //         .and_then(|item| item.extract::<String>().ok())
-    //         .map(|v| v.parse().unwrap_or_else(|_| {
-    //             Version::from_str(&v).expect("Invalid version")
-    //         }));
-
-    //     // TODO: Parse targets from dict
-    //     let targets = None;
-
-    //     Ok(PyProjectModel {
-    //         inner: ProjectModelV1 {
-    //             name,
-    //             version,
-    //             targets,
-    //         },
-    //     })
-    // }
-
     #[getter]
     pub fn name(&self) -> &str {
         &self.inner.name
@@ -72,15 +45,51 @@ impl PyProjectModelV1 {
         self.inner.version.as_ref().map(|v| v.to_string())
     }
 
-    // pub fn to_dict(&self, py: Python) -> PyResult<PyObject> {
-    //     let dict = PyDict::new(py);
-    //     dict.set_item("name", &self.inner.name)?;
-    //     if let Some(version) = &self.inner.version {
-    //         dict.set_item("version", version.to_string())?;
-    //     }
-    //     // TODO: Add targets to dict
-    //     Ok(dict.into())
-    // }
+    #[getter]
+    pub fn description(&self) -> Option<String> {
+        self.inner.description.clone()
+    }
+
+    #[getter]
+    pub fn authors(&self) -> Option<Vec<String>> {
+        self.inner.authors.clone()
+    }
+
+    #[getter]
+    pub fn license(&self) -> Option<String> {
+        self.inner.license.clone()
+    }
+
+    #[getter]
+    pub fn license_file(&self) -> Option<String> {
+        self.inner
+            .license_file
+            .as_ref()
+            .map(|p| p.to_string_lossy().to_string())
+    }
+
+    #[getter]
+    pub fn readme(&self) -> Option<String> {
+        self.inner
+            .readme
+            .as_ref()
+            .map(|p| p.to_string_lossy().to_string())
+    }
+
+    #[getter]
+    pub fn homepage(&self) -> Option<String> {
+        self.inner.homepage.as_ref().map(|u| u.to_string())
+    }
+
+    #[getter]
+    pub fn repository(&self) -> Option<String> {
+        self.inner.repository.as_ref().map(|u| u.to_string())
+    }
+
+    #[getter]
+    pub fn documentation(&self) -> Option<String> {
+        self.inner.documentation.as_ref().map(|u| u.to_string())
+    }
 
     pub fn __repr__(&self) -> String {
         match &self.inner.version {

@@ -24,13 +24,12 @@ impl<'de> Deserialize<'de> for PyBackendConfig {
         let mut data = TempData::deserialize(deserializer)?.0;
 
         Python::with_gil(|py| {
-            let model = pythonize(py, &data).unwrap();
+            let model = pythonize(py, &data).map_err(serde::de::Error::custom)?;
 
             let debug_dir: Option<PathBuf> = data
                 .as_object_mut()
                 .and_then(|obj| obj.get("debug_dir"))
                 .and_then(|v| v.as_str().map(PathBuf::from));
-            // panic!("Debug dir: {:?}, Model: {:?}", debug_dir, model);
 
             Ok(PyBackendConfig {
                 model: model.unbind(),

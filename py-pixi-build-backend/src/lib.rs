@@ -1,8 +1,7 @@
 use pyo3::prelude::*;
 
-// mod error;
-// mod backends;
 mod cli;
+pub mod error;
 mod recipe_stage0;
 mod types;
 
@@ -43,7 +42,7 @@ fn pixi_build_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<recipe_stage0::requirements::PySelector>()?;
 
     // Add conditional types
-    // m.add_class::<recipe_stage0::conditional::PyItemString>()?;
+    m.add_class::<recipe_stage0::conditional::PyItemString>()?;
     m.add_class::<recipe_stage0::conditional::PyConditionalString>()?;
     m.add_class::<recipe_stage0::conditional::PyListOrItemString>()?;
 

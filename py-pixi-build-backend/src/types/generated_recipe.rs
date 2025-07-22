@@ -1,13 +1,17 @@
 use std::path::PathBuf;
 
+use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
 use pyo3::{
-    PyObject, Python, pyclass, pymethods,
+    PyObject, PyResult, Python, pyclass, pymethods,
     types::{PyAnyMethods, PyString},
 };
 
-use crate::types::{
-    PyBackendConfig, PyPlatform, PyProjectModelV1, PyPythonParams, recipe::PyIntermediateRecipe,
+use crate::{
+    error::PyPixiBuildBackendError,
+    types::{
+        PyBackendConfig, PyPlatform, PyProjectModelV1, PyPythonParams, recipe::PyIntermediateRecipe,
+    },
 };
 
 #[pyclass]
@@ -70,7 +74,7 @@ impl PyGenerateRecipe {
         manifest_path: std::path::PathBuf,
         host_platform: PyPlatform,
         python_params: Option<PyPythonParams>,
-    ) -> PyGeneratedRecipe {
+    ) -> PyResult<PyGeneratedRecipe> {
         let result = GenerateRecipe::generate_recipe(
             self,
             &model.inner,
@@ -79,9 +83,9 @@ impl PyGenerateRecipe {
             host_platform.inner,
             python_params.map(|p| p.inner),
         )
-        .unwrap();
+        .map_err(|e| PyPixiBuildBackendError::GeneratedRecipe(e.into()))?;
 
-        PyGeneratedRecipe::from(result)
+        Ok(PyGeneratedRecipe::from(result))
     }
 }
 
@@ -106,33 +110,35 @@ impl GenerateRecipe for PyGenerateRecipe {
             // So user can use the Python API
             let project_model_class = py
                 .import("pixi_build_backend.types.project_model")
-                .unwrap()
+                .into_diagnostic()?
                 .getattr("ProjectModelV1")
-                .unwrap();
+                .into_diagnostic()?;
+
             let project_model = project_model_class
                 .call_method1("_from_py", (PyProjectModelV1::from(model),))
-                .unwrap();
+                .into_diagnostic()?;
 
             let platform_model_class = py
                 .import("pixi_build_backend.types.platform")
-                .unwrap()
+                .into_diagnostic()?
                 .getattr("Platform")
-                .unwrap();
+                .into_diagnostic()?;
+
             let platform_model = platform_model_class
                 .call_method1("_from_py", (PyPlatform::from(host_platform),))
-                .unwrap();
+                .into_diagnostic()?;
 
             let python_params_class = py
                 .import("pixi_build_backend.types.python_params")
-                .unwrap()
+                .into_diagnostic()?
                 .getattr("PythonParams")
-                .unwrap();
+                .into_diagnostic()?;
             let python_params_model = python_params_class
                 .call_method1(
                     "_from_py",
                     (PyPythonParams::from(python_params.unwrap_or_default()),),
                 )
-                .unwrap();
+                .into_diagnostic()?;
 
             let generated_recipe_py = self
                 .model
@@ -148,18 +154,18 @@ impl GenerateRecipe for PyGenerateRecipe {
                     ),
                     None,
                 )
-                .unwrap();
+                .into_diagnostic()?;
 
             // To expose a nice API for the user, we extract the PyGeneratedRecipe
             // calling private _into_py method
             let generated_recipe: PyGeneratedRecipe = generated_recipe_py
                 .call_method0("_into_py")
-                .unwrap()
+                .into_diagnostic()?
                 .extract::<PyGeneratedRecipe>()
-                .unwrap();
+                .into_diagnostic()?;
 
-            generated_recipe.into()
-        });
+            Ok::<_, miette::Report>(generated_recipe.into())
+        })?;
 
         Ok(recipe)
     }

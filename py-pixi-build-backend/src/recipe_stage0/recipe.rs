@@ -6,7 +6,9 @@ use crate::{
     types::PyPlatform,
 };
 use pyo3::{
-    Bound, Py, PyAny, PyResult, Python as BindingPython, pyclass, pymethods,
+    Bound, Py, PyAny, PyResult, Python as BindingPython,
+    exceptions::PyValueError,
+    pyclass, pymethods,
     types::{PyList, PyListMethods},
 };
 use rattler_conda_types::package::EntryPoint;
@@ -149,13 +151,15 @@ pub struct PyUrlSource {
 #[pymethods]
 impl PyUrlSource {
     #[new]
-    pub fn new(url: String, sha256: Option<String>) -> Self {
-        PyUrlSource {
+    pub fn new(url: String, sha256: Option<String>) -> PyResult<Self> {
+        Ok(PyUrlSource {
             inner: UrlSource {
-                url: url.parse().unwrap(),
+                url: url
+                    .parse()
+                    .map_err(|e| PyValueError::new_err(format!("Invalid URL: {e}")))?,
                 sha256: sha256.map(Value::Concrete),
             },
-        }
+        })
     }
 
     #[getter]
@@ -470,99 +474,83 @@ impl PyConditionalRequirements {
     #[getter]
     // We erase the type here to return a list of PyItemPackageDependency
     // which can be used in Python as list[PyItemPackageDependency]
-    pub fn build(&self) -> Py<PyList> {
+    pub fn build(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.build {
-                list.append(PyItemPackageDependency { inner: dep.clone() })
-                    .unwrap();
+                list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
-            list.unbind()
+            Ok(list.unbind())
         })
     }
 
     #[getter]
-    pub fn host(&self) -> Py<PyList> {
+    pub fn host(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.host {
-                list.append(PyItemPackageDependency { inner: dep.clone() })
-                    .unwrap();
+                list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
-            list.unbind()
+            Ok(list.unbind())
         })
     }
 
     #[getter]
-    pub fn run(&self) -> Py<PyList> {
+    pub fn run(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.run {
-                list.append(PyItemPackageDependency { inner: dep.clone() })
-                    .unwrap();
+                list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
-            list.unbind()
+            Ok(list.unbind())
         })
     }
 
     #[getter]
-    pub fn run_constraints(&self) -> Py<PyList> {
+    pub fn run_constraints(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.run_constraints {
-                list.append(PyItemPackageDependency { inner: dep.clone() })
-                    .unwrap();
+                list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
-            list.unbind()
+            Ok(list.unbind())
         })
     }
 
     #[setter]
-    pub fn set_build(&mut self, build: Vec<Bound<'_, PyAny>>) {
+    pub fn set_build(&mut self, build: Vec<Bound<'_, PyAny>>) -> PyResult<()> {
         self.inner.build = build
             .into_iter()
-            .map(|item| {
-                PyItemPackageDependency::try_from(item)
-                    .expect("Failed to convert PyItemPackageDependency")
-                    .inner
-            })
-            .collect();
+            .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(())
     }
 
     #[setter]
-    pub fn set_host(&mut self, host: Vec<Bound<'_, PyAny>>) {
+    pub fn set_host(&mut self, host: Vec<Bound<'_, PyAny>>) -> PyResult<()> {
         self.inner.host = host
             .into_iter()
-            .map(|item| {
-                PyItemPackageDependency::try_from(item)
-                    .expect("Failed to convert PyItemPackageDependency")
-                    .inner
-            })
-            .collect();
+            .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(())
     }
 
     #[setter]
-    pub fn set_run(&mut self, run: Vec<Bound<'_, PyAny>>) {
+    pub fn set_run(&mut self, run: Vec<Bound<'_, PyAny>>) -> PyResult<()> {
         self.inner.run = run
             .into_iter()
-            .map(|item| {
-                PyItemPackageDependency::try_from(item)
-                    .expect("Failed to convert PyItemPackageDependency")
-                    .inner
-            })
-            .collect();
+            .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(())
     }
 
     #[setter]
-    pub fn set_run_constraints(&mut self, run_constraints: Vec<Bound<'_, PyAny>>) {
+    pub fn set_run_constraints(&mut self, run_constraints: Vec<Bound<'_, PyAny>>) -> PyResult<()> {
         self.inner.run_constraints = run_constraints
             .into_iter()
-            .map(|item| {
-                PyItemPackageDependency::try_from(item)
-                    .expect("Failed to convert PyItemPackageDependency")
-                    .inner
-            })
-            .collect();
+            .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(())
     }
 
     pub fn resolve(&self, host_platform: Option<&PyPlatform>) -> PyPackageSpecDependencies {
@@ -646,13 +634,13 @@ impl PyExtra {
     }
 
     #[getter]
-    pub fn recipe_maintainers(&self) -> Py<PyList> {
+    pub fn recipe_maintainers(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.recipe_maintainers {
-                list.append(PyItemString { inner: dep.clone() }).unwrap();
+                list.append(PyItemString { inner: dep.clone() })?;
             }
-            list.unbind()
+            Ok(list.unbind())
         })
     }
 }

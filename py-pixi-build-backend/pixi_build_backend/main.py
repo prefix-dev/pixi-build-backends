@@ -13,11 +13,12 @@ async def main_entry_point(instance: GenerateRecipeProtocol):
     """Main entry point for the build backend"""
     py_generator = PyGenerateRecipe(instance)
 
-    # Remove script name from argv
+    # Remove python name from argv
     args = sys.argv[1:] if len(sys.argv) > 1 else []
-    
+    print("sys argv", sys.argv)
+
     try:
-        await py_main(py_generator, args)
+        await py_main(py_generator, sys.argv)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

@@ -4,6 +4,7 @@ use pixi_build_backend::{cli_main, intermediate_backend::IntermediateBackendInst
 use pyo3::{Bound, PyAny, PyResult, Python, pyfunction};
 use pyo3_async_runtimes::tokio::future_into_py;
 
+use crate::error::PyPixiBuildBackendError;
 use crate::types::PyGenerateRecipe;
 
 #[pyfunction]
@@ -16,10 +17,10 @@ pub fn py_main(
         let generator = Arc::new(generator);
         cli_main(
             |log| IntermediateBackendInstantiator::<PyGenerateRecipe>::new(log, generator),
-            Some(args),
+            args,
         )
         .await
-        .unwrap();
+        .map_err(|e| PyPixiBuildBackendError::Cli(e.into()))?;
         Ok(())
     })
 }

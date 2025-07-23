@@ -3,15 +3,13 @@ use std::path::PathBuf;
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
 use pyo3::{
-    PyObject, PyResult, Python, pyclass, pymethods,
+    PyObject, Python, pyclass, pymethods,
     types::{PyAnyMethods, PyString},
 };
 
 use crate::{
-    error::PyPixiBuildBackendError,
-    types::{
-        PyBackendConfig, PyPlatform, PyProjectModelV1, PyPythonParams, recipe::PyIntermediateRecipe,
-    },
+    recipe_stage0::recipe::PyIntermediateRecipe,
+    types::{PyBackendConfig, PyPlatform, PyProjectModelV1, PyPythonParams},
 };
 
 #[pyclass]
@@ -38,6 +36,16 @@ impl PyGeneratedRecipe {
     #[getter]
     pub fn recipe(&self) -> PyIntermediateRecipe {
         self.inner.recipe.clone().into()
+    }
+
+    #[getter]
+    pub fn metadata_input_globs(&self) -> Vec<String> {
+        self.inner.metadata_input_globs.iter().cloned().collect()
+    }
+
+    #[getter]
+    pub fn build_input_globs(&self) -> Vec<String> {
+        self.inner.build_input_globs.iter().cloned().collect()
     }
 }
 
@@ -67,26 +75,26 @@ impl PyGenerateRecipe {
         PyGenerateRecipe { model }
     }
 
-    fn generate_recipe(
-        &self,
-        model: &PyProjectModelV1,
-        config: &PyBackendConfig,
-        manifest_path: std::path::PathBuf,
-        host_platform: PyPlatform,
-        python_params: Option<PyPythonParams>,
-    ) -> PyResult<PyGeneratedRecipe> {
-        let result = GenerateRecipe::generate_recipe(
-            self,
-            &model.inner,
-            config,
-            manifest_path,
-            host_platform.inner,
-            python_params.map(|p| p.inner),
-        )
-        .map_err(|e| PyPixiBuildBackendError::GeneratedRecipe(e.into()))?;
+    // fn generate_recipe(
+    //     &self,
+    //     model: &PyProjectModelV1,
+    //     config: &PyBackendConfig,
+    //     manifest_path: std::path::PathBuf,
+    //     host_platform: PyPlatform,
+    //     python_params: Option<PyPythonParams>,
+    // ) -> PyResult<PyGeneratedRecipe> {
+    //     let result = GenerateRecipe::generate_recipe(
+    //         self,
+    //         &model.inner,
+    //         config,
+    //         manifest_path,
+    //         host_platform.inner,
+    //         python_params.map(|p| p.inner),
+    //     )
+    //     .map_err(|e| PyPixiBuildBackendError::GeneratedRecipe(e.into()))?;
 
-        Ok(PyGeneratedRecipe::from(result))
-    }
+    //     Ok(PyGeneratedRecipe::from(result))
+    // }
 }
 
 impl GenerateRecipe for PyGenerateRecipe {

@@ -24,9 +24,36 @@ build-release = "PIP_REQUIRE_VIRTUALENV=false maturin develop --release"
 [feature.build.target.linux-64.dependencies]
 patchelf = "~=0.17.2"
 
+[feature.test.dependencies]
+# Python 3.8 is the minimum supported version, so we use that for testing
+python = "3.9.*"
+
+ruff = ">=0.12.3,<0.13"
+mypy = "~=1.16.1"
+
+pytest = ">=8.4.1,<9"
+pytest-asyncio = ">=1.0.0,<2"
+pytest-xprocess = ">=1.0.2,<2"
+syrupy = "*"
+
+
+# used in examples
+typer = "*"
+# for rust-analyzer
+rust-src = "~=1.86.0"
+
+[feature.test.pypi-dependencies]
+types-networkx = "*"
+# boto3 on conda-forge requires python >=3.10
+boto3 = "*"
+
+[feature.test.tasks]
+test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
+
+
 
 [environments]
-# test = { features = ["build", "test"], solve-group = "default" }
+test = { features = ["build", "test"], solve-group = "default" }
 # docs = ["docs"]
 # repl = ["repl"]
 build = ["build"]

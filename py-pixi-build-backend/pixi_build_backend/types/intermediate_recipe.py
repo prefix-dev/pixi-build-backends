@@ -1,11 +1,11 @@
 from typing import Optional, List, Dict
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
-    PyIntermediateRecipe, 
-    PyPackage, 
-    PyBuild, 
-    PyConditionalRequirements, 
-    PyAbout, 
+    PyIntermediateRecipe,
+    PyPackage,
+    PyBuild,
+    PyConditionalRequirements,
+    PyAbout,
     PyExtra,
     PyScript,
     PyPython,
@@ -22,12 +22,13 @@ from pixi_build_backend.pixi_build_backend import (
 from pixi_build_backend.types.platform import Platform
 
 
-type ConditionalListPackageDependency = list[ItemPackageDependency]
-type ConditionalListString = list[ItemString]
+ConditionalListPackageDependency = list["ItemPackageDependency"]
+ConditionalListString = list["ItemString"]
 
 
 class IntermediateRecipe:
     """An intermediate recipe wrapper."""
+
     _inner: PyIntermediateRecipe
 
     def __init__(self):
@@ -70,13 +71,64 @@ class IntermediateRecipe:
         instance._inner = inner
         return instance
 
+    @staticmethod
+    def from_yaml(yaml: str) -> "IntermediateRecipe":
+        """
+        Create an IntermediateRecipe from a YAML string.
+
+        Parameters
+        ----------
+        yaml : str
+            The YAML string representing the recipe.
+
+        Returns
+        -------
+        IntermediateRecipe
+            The constructed IntermediateRecipe object.
+            
+        Examples
+        --------
+        ```python
+        >>> yaml_str = "package:\\n  name: test\\n  version: 1.0.0"
+        >>> recipe = IntermediateRecipe.from_yaml(yaml_str)
+        >>> recipe.package.name.get_concrete()
+        'test'
+        >>>
+        ```
+        """
+        return IntermediateRecipe._from_inner(PyIntermediateRecipe.from_yaml(yaml))
+
+    def to_yaml(self) -> str:
+        """
+        Convert the IntermediateRecipe to a YAML string.
+
+        Returns
+        -------
+        str
+            The YAML representation of the IntermediateRecipe.
+            
+        Examples
+        --------
+        ```python
+        >>> recipe = IntermediateRecipe()
+        >>> yaml_output = recipe.to_yaml()
+        >>> isinstance(yaml_output, str)
+        True
+        >>>
+        ```
+        """
+        return self._inner.to_yaml()
+
 
 class Package:
     """A package wrapper."""
+
     _inner: PyPackage
 
     def __init__(self, name: str, version: str):
-        self._inner = PyPackage(ValueString.concrete(name)._inner, ValueString.concrete(version)._inner)
+        self._inner = PyPackage(
+            ValueString.concrete(name)._inner, ValueString.concrete(version)._inner
+        )
 
     @property
     def name(self) -> "ValueString":
@@ -98,6 +150,7 @@ class Package:
 
 class Build:
     """A build configuration wrapper."""
+
     _inner: PyBuild
 
     def __init__(self):
@@ -155,6 +208,7 @@ class Build:
 
 class Script:
     """A script wrapper."""
+
     _inner: PyScript
 
     def __init__(self, content: List[str], env: Optional[Dict[str, str]] = None):
@@ -200,6 +254,7 @@ class Script:
 
 class Python:
     """A Python configuration wrapper."""
+
     _inner: PyPython
 
     def __init__(self, entry_points: List[str]):
@@ -225,28 +280,79 @@ class Python:
 
 class NoArchKind:
     """A NoArch kind wrapper."""
+
     _inner: PyNoArchKind
 
     @classmethod
     def python(cls) -> "NoArchKind":
-        """Create a Python NoArch kind."""
+        """
+        Create a Python NoArch kind.
+        
+        Examples
+        --------
+        ```python
+        >>> kind = NoArchKind.python()
+        >>> kind.is_python()
+        True
+        >>> kind.is_generic()
+        False
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyNoArchKind.python()
         return instance
 
     @classmethod
     def generic(cls) -> "NoArchKind":
-        """Create a Generic NoArch kind."""
+        """
+        Create a Generic NoArch kind.
+        
+        Examples
+        --------
+        ```python
+        >>> kind = NoArchKind.generic()
+        >>> kind.is_generic()
+        True
+        >>> kind.is_python()
+        False
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyNoArchKind.generic()
         return instance
 
     def is_python(self) -> bool:
-        """Check if this is a Python NoArch kind."""
+        """
+        Check if this is a Python NoArch kind.
+        
+        Examples
+        --------
+        ```python
+        >>> NoArchKind.python().is_python()
+        True
+        >>> NoArchKind.generic().is_python()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_python()
 
     def is_generic(self) -> bool:
-        """Check if this is a Generic NoArch kind."""
+        """
+        Check if this is a Generic NoArch kind.
+        
+        Examples
+        --------
+        ```python
+        >>> NoArchKind.generic().is_generic()
+        True
+        >>> NoArchKind.python().is_generic()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_generic()
 
     @classmethod
@@ -259,28 +365,79 @@ class NoArchKind:
 
 class ValueString:
     """A string value wrapper."""
+
     _inner: PyValueString
 
     @classmethod
     def concrete(cls, value: str) -> "ValueString":
-        """Create a concrete string value."""
+        """
+        Create a concrete string value.
+        
+        Examples
+        --------
+        ```python
+        >>> val = ValueString.concrete("hello")
+        >>> val.is_concrete()
+        True
+        >>> val.get_concrete()
+        'hello'
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyValueString.concrete(value)
         return instance
 
     @classmethod
     def template(cls, template: str) -> "ValueString":
-        """Create a template string value."""
+        """
+        Create a template string value.
+        
+        Examples
+        --------
+        ```python
+        >>> val = ValueString.template("{{ version }}")
+        >>> val.is_template()
+        True
+        >>> val.get_template()
+        '{{ version }}'
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyValueString.template(template)
         return instance
 
     def is_concrete(self) -> bool:
-        """Check if this is a concrete value."""
+        """
+        Check if this is a concrete value.
+        
+        Examples
+        --------
+        ```python
+        >>> ValueString.concrete("test").is_concrete()
+        True
+        >>> ValueString.template("{{ var }}").is_concrete()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_concrete()
 
     def is_template(self) -> bool:
-        """Check if this is a template value."""
+        """
+        Check if this is a template value.
+        
+        Examples
+        --------
+        ```python
+        >>> ValueString.template("{{ var }}").is_template()
+        True
+        >>> ValueString.concrete("test").is_template()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_template()
 
     def get_concrete(self) -> Optional[str]:
@@ -301,28 +458,79 @@ class ValueString:
 
 class ValueU64:
     """A U64 value wrapper."""
+
     _inner: PyValueU64
 
     @classmethod
     def concrete(cls, value: int) -> "ValueU64":
-        """Create a concrete U64 value."""
+        """
+        Create a concrete U64 value.
+        
+        Examples
+        --------
+        ```python
+        >>> val = ValueU64.concrete(42)
+        >>> val.is_concrete()
+        True
+        >>> val.get_concrete()
+        42
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyValueU64.concrete(value)
         return instance
 
     @classmethod
     def template(cls, template: str) -> "ValueU64":
-        """Create a template U64 value."""
+        """
+        Create a template U64 value.
+        
+        Examples
+        --------
+        ```python
+        >>> val = ValueU64.template("{{ build_number }}")
+        >>> val.is_template()
+        True
+        >>> val.get_template()
+        '{{ build_number }}'
+        >>>
+        ```
+        """
         instance = cls.__new__(cls)
         instance._inner = PyValueU64.template(template)
         return instance
 
     def is_concrete(self) -> bool:
-        """Check if this is a concrete value."""
+        """
+        Check if this is a concrete value.
+        
+        Examples
+        --------
+        ```python
+        >>> ValueU64.concrete(123).is_concrete()
+        True
+        >>> ValueU64.template("{{ num }}").is_concrete()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_concrete()
 
     def is_template(self) -> bool:
-        """Check if this is a template value."""
+        """
+        Check if this is a template value.
+        
+        Examples
+        --------
+        ```python
+        >>> ValueU64.template("{{ num }}").is_template()
+        True
+        >>> ValueU64.concrete(123).is_template()
+        False
+        >>>
+        ```
+        """
         return self._inner.is_template()
 
     def get_concrete(self) -> Optional[int]:
@@ -343,6 +551,7 @@ class ValueU64:
 
 class ConditionalRequirements:
     """A conditional requirements wrapper."""
+
     _inner: PyConditionalRequirements
 
     def __init__(self):
@@ -363,7 +572,6 @@ class ConditionalRequirements:
         """Get the host requirements."""
         # return ConditionalListPackageDependency._from_inner(self._inner.host)
         return self._inner.host
-
 
     @host.setter
     def host(self, value: "ConditionalListPackageDependency"):
@@ -390,7 +598,9 @@ class ConditionalRequirements:
         """Set the run constraints."""
         self._inner.run_constraints = value._inner
 
-    def resolve(self, host_platform: Optional[Platform] = None) -> "PackageSpecDependencies":
+    def resolve(
+        self, host_platform: Optional[Platform] = None
+    ) -> "PackageSpecDependencies":
         """Resolve the requirements."""
         py_platform = host_platform._inner if host_platform else None
         return PackageSpecDependencies._from_inner(self._inner.resolve(py_platform))
@@ -405,6 +615,7 @@ class ConditionalRequirements:
 
 class About:
     """An about information wrapper."""
+
     _inner: PyAbout
 
     def __init__(self):
@@ -440,6 +651,7 @@ class About:
 
 class Extra:
     """An extra information wrapper."""
+
     _inner: PyExtra
 
     def __init__(self):
@@ -451,16 +663,16 @@ class Extra:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
     @property
     def recipe_maintainers(self) -> "ConditionalListString":
         """Get the recipe maintainers."""
         return self._inner.recipe_maintainers
 
 
-
 class PackageSpecDependencies:
     """A package spec dependencies wrapper."""
+
     _inner: PyPackageSpecDependencies
 
     @classmethod
@@ -469,13 +681,12 @@ class PackageSpecDependencies:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
 
     @property
     def host(self) -> dict:
         """Get the host dependencies."""
         return self._inner.host
-    
+
     @property
     def run(self) -> dict:
         """Get the run dependencies."""
@@ -494,8 +705,8 @@ class PackageSpecDependencies:
 
 class ItemPackageDependency:
     """A package dependency item wrapper."""
-    _inner: PyItemPackageDependency
 
+    _inner: PyItemPackageDependency
 
     @classmethod
     def _from_inner(cls, inner: PyItemPackageDependency) -> "ItemPackageDependency":
@@ -503,12 +714,12 @@ class ItemPackageDependency:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
 
 class ItemString:
     """A package dependency item wrapper."""
-    _inner: PyItemString
 
+    _inner: PyItemString
 
     @classmethod
     def _from_inner(cls, inner: PyItemString) -> "ItemString":
@@ -520,6 +731,7 @@ class ItemString:
 
 class Source:
     """A source wrapper."""
+
     _inner: PySource
 
     @classmethod
@@ -542,11 +754,11 @@ class Source:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
 
 
 class UrlSource:
     """A URL source wrapper."""
+
     _inner: PyUrlSource
 
     def __init__(self, url: str, sha: Optional[str] = None):
@@ -558,7 +770,7 @@ class UrlSource:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
     @property
     def url(self) -> str:
         """Get the URL."""
@@ -569,8 +781,10 @@ class UrlSource:
         """Get the SHA."""
         return self._inner.sha
 
+
 class PathSource:
     """A path source wrapper."""
+
     _inner: PyPathSource
 
     def __init__(self, path: Path, sha: Optional[str] = None):
@@ -582,7 +796,7 @@ class PathSource:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
     @property
     def path(self) -> str:
         """Get the path."""

@@ -91,14 +91,8 @@ impl PyProjectModelV1 {
         self.inner.documentation.as_ref().map(|u| u.to_string())
     }
 
-    pub fn __repr__(&self) -> String {
-        match &self.inner.version {
-            Some(version) => format!(
-                "PyProjectModel(name='{}', version='{}')",
-                self.inner.name, version
-            ),
-            None => format!("PyProjectModel(name='{}')", self.inner.name),
-        }
+    pub fn _debug_str(&self) -> String {
+        format!("{:?}", self.inner)
     }
 }
 

@@ -4,7 +4,7 @@ Python implementation of pixi-build-python backend using Python bindings.
 
 # __all__ = [
 #     "PythonGenerator",
-#     "PythonBackendConfig", 
+#     "PythonBackendConfig",
 #     "BuildScriptContext",
 #     "Installer",
 #     "BuildPlatform",

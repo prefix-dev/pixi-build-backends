@@ -299,13 +299,21 @@ pub type ConditionalList<T> = Vec<Item<T>>;
 // Main recipe structure
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct IntermediateRecipe {
+    #[serde(default)]
     pub context: IndexMap<String, Value<String>>,
+    #[serde(default)]
     pub package: Package,
+    #[serde(default)]
     pub source: ConditionalList<Source>,
+    #[serde(default)]
     pub build: Build,
+    #[serde(default)]
     pub requirements: ConditionalRequirements,
+    #[serde(default)]
     pub tests: Vec<Test>,
+    #[serde(default)]
     pub about: Option<About>,
+    #[serde(default)]
     pub extra: Option<Extra>,
 }
 
@@ -417,7 +425,9 @@ pub struct PathSource {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Script {
     pub content: Vec<String>,
+    #[serde(default)]
     pub env: IndexMap<String, String>,
+    #[serde(default)]
     pub secrets: Vec<String>,
 }
 
@@ -485,9 +495,13 @@ pub enum Target {
 /// A type that is very specific to rattler-build /recipe.yaml side
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct ConditionalRequirements {
+    #[serde(default)]
     pub build: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub host: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub run: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub run_constraints: ConditionalList<PackageDependency>,
 }
 

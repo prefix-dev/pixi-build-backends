@@ -21,7 +21,7 @@ def get_build_input_globs(config, workdir: Path, editable: bool) -> List[str]:
     base_globs = [
         # Source files
         "**/*.c",
-        "**/*.cpp", 
+        "**/*.cpp",
         "**/*.rs",
         "**/*.sh",
         # Common data files
@@ -48,13 +48,13 @@ def get_build_input_globs(config, workdir: Path, editable: bool) -> List[str]:
         "VERSION",
         "version.py",
     ]
-    
+
     python_globs = [] if editable else ["**/*.py", "**/*.pyx"]
-    
+
     all_globs = base_globs + python_globs
-    if hasattr(config, 'extra_input_globs'):
+    if hasattr(config, "extra_input_globs"):
         all_globs.extend(config.extra_input_globs)
-    
+
     return all_globs
 
 
@@ -63,8 +63,8 @@ def get_editable_setting(python_params) -> bool:
     env_editable = os.environ.get("BUILD_EDITABLE_PYTHON", "").lower() == "true"
     if env_editable:
         return True
-    
-    if python_params and hasattr(python_params, 'editable'):
+
+    if python_params and hasattr(python_params, "editable"):
         return python_params.editable
-    
+
     return False

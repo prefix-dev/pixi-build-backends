@@ -1,7 +1,9 @@
+use std::fmt::Display;
+
 use pyo3::prelude::*;
 use rattler_conda_types::Platform;
 
-#[pyclass]
+#[pyclass(str)]
 #[derive(Clone)]
 pub struct PyPlatform {
     pub(crate) inner: Platform,
@@ -18,46 +20,8 @@ impl PyPlatform {
     }
 
     #[staticmethod]
-    pub fn linux64() -> Self {
-        PyPlatform {
-            inner: Platform::Linux64,
-        }
-    }
-
-    #[staticmethod]
-    pub fn linux_aarch64() -> Self {
-        PyPlatform {
-            inner: Platform::LinuxAarch64,
-        }
-    }
-
-    #[staticmethod]
-    pub fn osx64() -> Self {
-        PyPlatform {
-            inner: Platform::Osx64,
-        }
-    }
-
-    #[staticmethod]
-    pub fn osx_arm64() -> Self {
-        PyPlatform {
-            inner: Platform::OsxArm64,
-        }
-    }
-
-    #[staticmethod]
-    pub fn win64() -> Self {
-        PyPlatform {
-            inner: Platform::Win64,
-        }
-    }
-
-    pub fn __str__(&self) -> String {
-        self.inner.to_string()
-    }
-
-    pub fn __repr__(&self) -> String {
-        format!("PyPlatform('{}')", self.inner)
+    pub fn current() -> Self {
+        Platform::current().into()
     }
 
     #[getter]
@@ -65,10 +29,35 @@ impl PyPlatform {
         self.inner.to_string()
     }
 
-    #[staticmethod]
-    pub fn current() -> PyResult<Self> {
-        let platform = Platform::current();
-        Ok(PyPlatform { inner: platform })
+    #[getter]
+    pub fn is_windows(&self) -> bool {
+        self.inner.is_windows()
+    }
+
+    #[getter]
+    pub fn is_linux(&self) -> bool {
+        self.inner.is_linux()
+    }
+
+    #[getter]
+    pub fn is_osx(&self) -> bool {
+        self.inner.is_osx()
+    }
+
+    #[getter]
+    pub fn is_unix(&self) -> bool {
+        self.inner.is_unix()
+    }
+
+    #[getter]
+    pub fn only_platform(&self) -> Option<&str> {
+        self.inner.only_platform()
+    }
+}
+
+impl Display for PyPlatform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
     }
 }
 

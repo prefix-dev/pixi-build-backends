@@ -1,4 +1,5 @@
 use crate::{
+    error::PyPixiBuildBackendError,
     recipe_stage0::{
         conditional::{PyItemPackageDependency, PyItemString},
         requirements::PyPackageSpecDependencies,
@@ -63,6 +64,25 @@ impl PyIntermediateRecipe {
     #[getter]
     pub fn extra(&self) -> Option<PyExtra> {
         self.inner.extra.clone().map(|e| PyExtra { inner: e })
+    }
+
+    /// Converts the recipe to YAML string
+    pub fn to_yaml(&self) -> PyResult<String> {
+        Ok(self
+            .inner
+            .to_yaml()
+            .map_err(PyPixiBuildBackendError::YamlSerialization)?)
+    }
+
+    /// Creates a recipe from YAML string
+    #[staticmethod]
+    pub fn from_yaml(yaml: String) -> PyResult<Self> {
+        let intermediate_recipe: IntermediateRecipe =
+            serde_yaml::from_str(&yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
+
+        Ok(Self {
+            inner: intermediate_recipe,
+        })
     }
 }
 

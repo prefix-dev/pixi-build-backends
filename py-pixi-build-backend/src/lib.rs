@@ -1,12 +1,14 @@
 use pyo3::prelude::*;
 
+use crate::error::{CliException, GeneratedRecipeException};
+
 mod cli;
 pub mod error;
 mod recipe_stage0;
 mod types;
 
 #[pymodule]
-fn pixi_build_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add core types
     m.add_class::<types::PyPlatform>()?;
     m.add_class::<types::PyProjectModelV1>()?;
@@ -46,28 +48,22 @@ fn pixi_build_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<recipe_stage0::conditional::PyItemPackageDependency>()?;
 
     // Add utility functions
-    m.add_function(wrap_pyfunction!(
-        recipe_stage0::utils::parse_entry_points_from_pyproject,
-        m
-    )?)?;
+
+    // Parsing EntryPoints
     m.add_function(wrap_pyfunction!(
         recipe_stage0::utils::parse_entry_points_from_scripts,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(
-        recipe_stage0::utils::validate_entry_point,
-        m
-    )?)?;
-    m.add_function(wrap_pyfunction!(
-        recipe_stage0::utils::parse_entry_point,
-        m
-    )?)?;
-    m.add_function(wrap_pyfunction!(
-        recipe_stage0::utils::create_entry_point,
-        m
-    )?)?;
 
     m.add_function(wrap_pyfunction!(cli::py_main, m)?)?;
+
+    // Exceptions
+    m.add("CliError", py.get_type::<CliException>())?;
+
+    m.add(
+        "GeneratedRecipeError",
+        py.get_type::<GeneratedRecipeException>(),
+    )?;
 
     Ok(())
 }

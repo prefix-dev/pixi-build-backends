@@ -3,7 +3,6 @@ mod generated_recipe;
 mod platform;
 mod project_model;
 mod python_params;
-mod recipe;
 
 pub use generated_recipe::{PyGenerateRecipe, PyGeneratedRecipe};
 pub use platform::PyPlatform;

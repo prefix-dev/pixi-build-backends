@@ -9,13 +9,16 @@ from pixi_build_backend.types.python_params import PythonParams
 
 class GeneratedRecipe:
     """A generated recipe wrapper."""
+
     _inner: PyGeneratedRecipe
 
     def __init__(self):
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(cls, model: ProjectModelV1, manifest_root: Path) -> "GeneratedRecipe":
+    def from_model(
+        cls, model: ProjectModelV1, manifest_root: Path
+    ) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
         instance._inner = PyGeneratedRecipe().from_model(model._inner, manifest_root)
@@ -26,9 +29,19 @@ class GeneratedRecipe:
         """Get the recipe."""
         return IntermediateRecipe._from_inner(self._inner.recipe)
 
+    @property
+    def metadata_input_globs(self) -> list[str]:
+        """Get the metadata input globs."""
+        return self._inner.metadata_input_globs
+
+    @property
+    def build_input_globs(self) -> list[str]:
+        """Get the build input globs."""
+        return self._inner.build_input_globs
+
     def __repr__(self) -> str:
         return self._inner.__repr__()
-    
+
     def _into_py(self) -> PyGeneratedRecipe:
         """
         Converts this object into a type that can be used by the Rust code.
@@ -54,8 +67,6 @@ class GenerateRecipeProtocol(Protocol):
         ...
 
 
-
-
 class GenerateRecipe:
     """Protocol for generating recipes."""
 
@@ -64,7 +75,6 @@ class GenerateRecipe:
     def __init__(self, instance: GenerateRecipeProtocol):
         self._inner = PyGenerateRecipe(instance)
 
-    
     def _into_py(self) -> PyGenerateRecipe:
         """
         Converts this object into a type that can be used by the Rust code.

@@ -1847,7 +1847,7 @@ dependencies = [
 [[package]]
 name = "file_url"
 version = "0.2.5"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "itertools 0.14.0",
  "percent-encoding",
@@ -3675,7 +3675,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "path_resolver"
 version = "0.1.1"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "fs-err",
  "indexmap 2.10.0",
@@ -4287,6 +4287,7 @@ dependencies = [
  "recipe-stage0",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
@@ -4297,7 +4298,7 @@ dependencies = [
 [[package]]
 name = "py-rattler"
 version = "0.15.0"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4311,7 +4312,7 @@ dependencies = [
  "rattler 0.34.7",
  "rattler_conda_types 0.35.6",
  "rattler_config 0.2.3",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_index 0.24.4",
  "rattler_lock",
  "rattler_networking 0.25.6",
@@ -4667,7 +4668,7 @@ dependencies = [
 [[package]]
 name = "rattler"
 version = "0.34.7"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "console",
@@ -4686,7 +4687,7 @@ dependencies = [
  "path_resolver",
  "rattler_cache 0.3.26",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_menuinst 0.2.17",
  "rattler_networking 0.25.6",
  "rattler_package_streaming 0.22.45",
@@ -4697,7 +4698,7 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "serde_json",
- "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?branch=main)",
+ "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "smallvec",
  "tempfile",
  "thiserror 2.0.12",
@@ -4835,7 +4836,7 @@ dependencies = [
 [[package]]
 name = "rattler_cache"
 version = "0.3.26"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4848,14 +4849,14 @@ dependencies = [
  "itertools 0.14.0",
  "parking_lot 0.12.4",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_networking 0.25.6",
  "rattler_package_streaming 0.22.45",
  "rayon",
  "reqwest",
  "reqwest-middleware",
  "serde_json",
- "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?branch=main)",
+ "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
@@ -4907,12 +4908,12 @@ dependencies = [
 [[package]]
 name = "rattler_conda_types"
 version = "0.35.6"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "chrono",
  "core-foundation 0.10.1",
  "dirs",
- "file_url 0.2.5 (git+https://github.com/conda/rattler?branch=main)",
+ "file_url 0.2.5 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "fs-err",
  "fxhash",
  "glob",
@@ -4923,9 +4924,9 @@ dependencies = [
  "nom",
  "nom-language",
  "purl",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
- "rattler_macros 1.0.11 (git+https://github.com/conda/rattler?branch=main)",
- "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
+ "rattler_macros 1.0.11 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
+ "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "regex",
  "serde",
  "serde-untagged",
@@ -4964,7 +4965,7 @@ dependencies = [
 [[package]]
 name = "rattler_config"
 version = "0.2.3"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "console",
  "fs-err",
@@ -4999,7 +5000,7 @@ dependencies = [
 [[package]]
 name = "rattler_digest"
 version = "1.1.4"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "blake2",
  "digest",
@@ -5050,7 +5051,7 @@ dependencies = [
 [[package]]
 name = "rattler_index"
 version = "0.24.4"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "bytes",
@@ -5065,7 +5066,7 @@ dependencies = [
  "opendal",
  "rattler_conda_types 0.35.6",
  "rattler_config 0.2.3",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_networking 0.25.6",
  "rattler_package_streaming 0.22.45",
  "reqwest",
@@ -5084,17 +5085,17 @@ dependencies = [
 [[package]]
 name = "rattler_lock"
 version = "0.23.11"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "chrono",
- "file_url 0.2.5 (git+https://github.com/conda/rattler?branch=main)",
+ "file_url 0.2.5 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "fxhash",
  "indexmap 2.10.0",
  "itertools 0.14.0",
  "pep440_rs",
  "pep508_rs",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_solve 2.1.6",
  "serde",
  "serde-value",
@@ -5119,7 +5120,7 @@ dependencies = [
 [[package]]
 name = "rattler_macros"
 version = "1.0.11"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "quote",
  "syn 2.0.104",
@@ -5158,7 +5159,7 @@ dependencies = [
 [[package]]
 name = "rattler_menuinst"
 version = "0.2.17"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "chrono",
  "configparser",
@@ -5218,7 +5219,7 @@ dependencies = [
 [[package]]
 name = "rattler_networking"
 version = "0.25.6"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5277,7 +5278,7 @@ dependencies = [
 [[package]]
 name = "rattler_package_streaming"
 version = "0.22.45"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "bzip2",
  "chrono",
@@ -5285,13 +5286,13 @@ dependencies = [
  "futures-util",
  "num_cpus",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_networking 0.25.6",
- "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "reqwest",
  "reqwest-middleware",
  "serde_json",
- "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?branch=main)",
+ "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "tar",
  "tempfile",
  "thiserror 2.0.12",
@@ -5317,7 +5318,7 @@ dependencies = [
 [[package]]
 name = "rattler_pty"
 version = "0.2.4"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "libc",
  "nix 0.30.1",
@@ -5338,7 +5339,7 @@ dependencies = [
 [[package]]
 name = "rattler_redaction"
 version = "0.1.12"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "reqwest",
  "reqwest-middleware",
@@ -5406,7 +5407,7 @@ dependencies = [
 [[package]]
 name = "rattler_repodata_gateway"
 version = "0.23.7"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -5419,7 +5420,7 @@ dependencies = [
  "chrono",
  "dashmap",
  "dirs",
- "file_url 0.2.5 (git+https://github.com/conda/rattler?branch=main)",
+ "file_url 0.2.5 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "fs-err",
  "futures",
  "hex",
@@ -5435,9 +5436,9 @@ dependencies = [
  "pin-project-lite",
  "rattler_cache 0.3.26",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "rattler_networking 0.25.6",
- "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_redaction 0.1.12 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "reqwest",
  "reqwest-middleware",
  "retry-policies 0.4.0",
@@ -5446,7 +5447,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?branch=main)",
+ "simple_spawn_blocking 1.1.0 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "strum",
  "superslice",
  "tempfile",
@@ -5496,7 +5497,7 @@ dependencies = [
 [[package]]
 name = "rattler_shell"
 version = "0.24.4"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "anyhow",
  "enum_dispatch",
@@ -5504,7 +5505,7 @@ dependencies = [
  "indexmap 2.10.0",
  "itertools 0.14.0",
  "rattler_conda_types 0.35.6",
- "rattler_pty 0.2.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_pty 0.2.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "serde_json",
  "shlex",
  "tempfile",
@@ -5533,13 +5534,13 @@ dependencies = [
 [[package]]
 name = "rattler_solve"
 version = "2.1.6"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "chrono",
  "futures",
  "itertools 0.14.0",
  "rattler_conda_types 0.35.6",
- "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?branch=main)",
+ "rattler_digest 1.1.4 (git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a)",
  "resolvo",
  "serde",
  "tempfile",
@@ -5569,7 +5570,7 @@ dependencies = [
 [[package]]
 name = "rattler_virtual_packages"
 version = "2.0.19"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "archspec",
  "libloading",
@@ -6544,7 +6545,7 @@ dependencies = [
 [[package]]
 name = "simple_spawn_blocking"
 version = "1.1.0"
-source = "git+https://github.com/conda/rattler?branch=main#ac1a946121f5b9d949e4b5f6229626795b00f39a"
+source = "git+https://github.com/conda/rattler?rev=ac1a946121f5b9d949e4b5f6229626795b00f39a#ac1a946121f5b9d949e4b5f6229626795b00f39a"
 dependencies = [
  "tokio",
 ]

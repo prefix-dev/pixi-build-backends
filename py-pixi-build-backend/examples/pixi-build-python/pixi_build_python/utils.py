@@ -5,10 +5,10 @@ Utility functions for Python backend.
 import os
 import toml
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
-def read_pyproject_toml(manifest_root: Path) -> Optional[Dict]:
+def read_pyproject_toml(manifest_root: Path) -> Optional[Dict[str, Any]]:
     """Read pyproject.toml if it exists."""
     pyproject_path = manifest_root / "pyproject.toml"
     if pyproject_path.exists():
@@ -16,7 +16,7 @@ def read_pyproject_toml(manifest_root: Path) -> Optional[Dict]:
     return None
 
 
-def get_build_input_globs(config, workdir: Path, editable: bool) -> List[str]:
+def get_build_input_globs(config: Any, workdir: Path, editable: bool) -> List[str]:
     """Get build input globs for Python package."""
     base_globs = [
         # Source files
@@ -58,13 +58,13 @@ def get_build_input_globs(config, workdir: Path, editable: bool) -> List[str]:
     return all_globs
 
 
-def get_editable_setting(python_params) -> bool:
+def get_editable_setting(python_params: Any) -> bool:
     """Get editable setting from environment or params."""
     env_editable = os.environ.get("BUILD_EDITABLE_PYTHON", "").lower() == "true"
     if env_editable:
         return True
 
     if python_params and hasattr(python_params, "editable"):
-        return python_params.editable
+        return bool(python_params.editable)
 
     return False

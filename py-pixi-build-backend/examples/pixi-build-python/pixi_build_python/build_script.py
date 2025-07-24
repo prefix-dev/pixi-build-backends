@@ -4,7 +4,7 @@ Build script generation for Python backend.
 
 from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 import platform
 
 
@@ -19,7 +19,7 @@ class Installer(Enum):
         return self.value
 
     @classmethod
-    def determine_installer(cls, dependencies: dict) -> "Installer":
+    def determine_installer(cls, dependencies: Dict[str, Any]) -> "Installer":
         """Determine which installer to use based on dependencies."""
         if "uv" in dependencies:
             return cls.UV

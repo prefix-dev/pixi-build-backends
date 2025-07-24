@@ -1,4 +1,4 @@
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Optional, Dict, List
 from pixi_build_backend.pixi_build_backend import parse_entry_points_from_scripts
 
 

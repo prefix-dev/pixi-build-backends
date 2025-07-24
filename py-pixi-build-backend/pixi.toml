@@ -35,6 +35,9 @@ syrupy = "*"
 # for rust-analyzer
 rust-src = "~=1.86.0"
 
+[feature.test.pypi-dependencies]
+types-toml = "*"
+
 
 [feature.test.tasks]
 test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }

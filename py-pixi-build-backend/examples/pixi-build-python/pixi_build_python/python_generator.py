@@ -4,7 +4,7 @@ Python generator implementation using Python bindings.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, List, Protocol
+from typing import Dict, Optional, List, Any
 from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
@@ -47,13 +47,13 @@ class PythonGenerator(GenerateRecipeProtocol):
     def generate_recipe(
         self,
         model: ProjectModelV1,
-        config: dict,
+        config: Dict[str, Any],
         manifest_path: str,
         host_platform: Platform,
         python_params: Optional[PythonParams] = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
-        config: PythonBackendConfig = PythonBackendConfig(**config)
+        backend_config: PythonBackendConfig = PythonBackendConfig(**config)
 
         manifest_root = Path(manifest_path).parent
 
@@ -73,13 +73,25 @@ class PythonGenerator(GenerateRecipeProtocol):
 
         # Add installer to host requirements if not present
         if installer_name not in resolved_requirements.host:
-            requirements.host.append(installer_name)
+            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
+            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
+
+            inner_dep = PyItemPackageDependency(installer_name)
+            requirements.host.append(ItemPackageDependency._from_inner(inner_dep))
 
         # Add python to both host and run requirements if not present
         if "python" not in resolved_requirements.host:
-            requirements.host.append("python")
+            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
+            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
+
+            inner_dep = PyItemPackageDependency("python")
+            requirements.host.append(ItemPackageDependency._from_inner(inner_dep))
         if "python" not in resolved_requirements.run:
-            requirements.run.append("python")
+            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
+            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
+
+            inner_dep = PyItemPackageDependency("python")
+            requirements.run.append(ItemPackageDependency._from_inner(inner_dep))
 
         # Determine build platform
         build_platform = BuildPlatform.current()
@@ -97,7 +109,7 @@ class PythonGenerator(GenerateRecipeProtocol):
         build_script_lines = build_script_context.render()
 
         # Determine noarch setting
-        noarch_kind = NoArchKind.python() if config.is_noarch() else None
+        noarch_kind = NoArchKind.python() if backend_config.is_noarch() else None
 
         # Read pyproject.toml
         pyproject_manifest = read_pyproject_toml(manifest_root)
@@ -110,7 +122,7 @@ class PythonGenerator(GenerateRecipeProtocol):
         recipe.build.noarch = noarch_kind
         recipe.build.script = Script(
             content=build_script_lines,
-            env=config.env,
+            env=backend_config.env,
         )
 
         return generated_recipe

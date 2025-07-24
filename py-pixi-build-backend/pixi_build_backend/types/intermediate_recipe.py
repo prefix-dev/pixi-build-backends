@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, TYPE_CHECKING
+from typing import Optional, List, Dict
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
     PyIntermediateRecipe,

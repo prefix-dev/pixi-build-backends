@@ -1,11 +1,9 @@
 """Unit tests for platform.py module."""
 
-import pytest
-from unittest.mock import Mock, patch
 from pixi_build_backend.types.platform import Platform
 
 
-def test_current_class_method():
+def test_current_class_method() -> None:
     """Test creation of Platform from string and its underlying magic methods."""
     result = Platform("linux-64")
 

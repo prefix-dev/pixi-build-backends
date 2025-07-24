@@ -5,11 +5,11 @@ context:
 
 package:
   name: ${{ name }}
-  version: ${{ version }}}
+  version: ${{ version }}
 
 source:
   path: ..
-  
+
 requirements:
   build:
     - ${{ compiler("rust") }}

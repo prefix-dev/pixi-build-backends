@@ -143,16 +143,16 @@ pub fn convert_input_variant_configuration(
 
 #[derive(Debug, Error, Diagnostic)]
 pub enum ConvertDependencyError {
-    #[error("only matchspecs with define package names are supported")]
+    #[error("only matchspecs with defined package names are supported")]
     MissingName,
 
-    #[error("Could not parse version spec for variant key {0}: {1}")]
+    #[error("could not parse version spec for variant key {0}: {1}")]
     VariantSpecParseError(String, rattler_conda_types::ParseMatchSpecError),
 
-    #[error("Could not apply pin. The following subpackage is not available: {0:?}")]
+    #[error("could not apply pin. The following subpackage is not available: {0:?}")]
     SubpackageNotFound(PackageName),
 
-    #[error("Could not apply pin: {0}")]
+    #[error("could not apply pin: {0}")]
     PinApplyError(PinError),
 }
 

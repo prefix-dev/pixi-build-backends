@@ -60,6 +60,8 @@ pub struct LoadedVariantConfig {
 }
 
 impl LoadedVariantConfig {
+    /// Load variant configuration from a recipe path. This checks if there is a
+    /// `variants.yaml` and loads it alongside the recipe.
     pub fn from_recipe_path(
         source_dir: &Path,
         recipe_path: &Path,
@@ -96,9 +98,9 @@ impl LoadedVariantConfig {
 
     pub fn extend_with_input_variants(
         mut self,
-        input_variant_configuration: BTreeMap<String, Vec<String>>,
+        input_variant_configuration: &BTreeMap<String, Vec<String>>,
     ) -> Self {
-        for (k, v) in input_variant_configuration.iter() {
+        for (k, v) in input_variant_configuration {
             let variables = v.iter().map(|v| Variable::from_string(v)).collect();
             self.variant_config
                 .variants

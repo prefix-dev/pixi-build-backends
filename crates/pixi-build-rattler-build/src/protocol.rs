@@ -274,7 +274,7 @@ impl Protocol for RattlerBuildBackend {
             &selector_config_for_variants,
         )
         .into_diagnostic()?
-        .extend_with_input_variants(params.variant_configuration.unwrap_or_default());
+        .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;

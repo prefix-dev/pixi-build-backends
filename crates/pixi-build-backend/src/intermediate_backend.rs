@@ -76,14 +76,6 @@ impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
     }
 }
 
-// impl<T: GenerateRecipe + Default> IntermediateBackendInstantiator<T> {
-//     pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
-//         Self {
-//             logging_output_handler,
-//             generator: Arc::new(T::default()),
-//         }
-//     }
-// }
 
 pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,

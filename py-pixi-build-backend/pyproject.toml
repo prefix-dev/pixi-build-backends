@@ -24,7 +24,6 @@ classifiers = [
 ]
 keywords = ["build", "conda", "package", "python", "rust"]
 dynamic = ["version"]
-dependencies = ["py-rattler", "asyncio", "toml"]
 
 
 [project.urls]

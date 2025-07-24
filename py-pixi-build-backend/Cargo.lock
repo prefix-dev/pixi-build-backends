@@ -4279,7 +4279,6 @@ dependencies = [
  "pyo3",
  "pyo3-async-runtimes",
  "pyo3-build-config 0.25.1",
- "pyproject-toml",
  "pythonize",
  "rattler_conda_types 0.35.5",
  "rattler_package_streaming 0.22.44",

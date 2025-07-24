@@ -56,6 +56,7 @@ fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
 
     m.add_function(wrap_pyfunction!(cli::py_main, m)?)?;
+    m.add_function(wrap_pyfunction!(cli::py_main_sync, m)?)?;
 
     // Exceptions
     m.add("CliError", py.get_type::<CliException>())?;

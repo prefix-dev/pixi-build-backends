@@ -152,10 +152,7 @@ impl GenerateRecipe for RustGenerator {
 #[tokio::main]
 pub async fn main() {
     if let Err(err) = pixi_build_backend::cli::main(|log| {
-        IntermediateBackendInstantiator::<RustGenerator>::new(
-            log,
-            Arc::new(RustGenerator::default()),
-        )
+        IntermediateBackendInstantiator::<RustGenerator>::new(log, Arc::default())
     })
     .await
     {

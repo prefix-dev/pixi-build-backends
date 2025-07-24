@@ -25,12 +25,12 @@ patchelf = "~=0.17.2"
 
 [feature.test.dependencies]
 # Python 3.8 is the minimum supported version, so we use that for testing
-python = "3.9.*"
+python = "3.8.*"
 
 ruff = ">=0.12.3,<0.13"
-mypy = "~=1.16.1"
+mypy = "*"
 
-pytest = ">=8.4.1,<9"
+pytest = "*"
 syrupy = "*"
 
 

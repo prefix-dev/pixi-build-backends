@@ -125,10 +125,7 @@ impl GenerateRecipe for CMakeGenerator {
 #[tokio::main]
 pub async fn main() {
     if let Err(err) = pixi_build_backend::cli::main(|log| {
-        IntermediateBackendInstantiator::<CMakeGenerator>::new(
-            log,
-            Arc::new(CMakeGenerator::default()),
-        )
+        IntermediateBackendInstantiator::<CMakeGenerator>::new(log, Arc::default())
     })
     .await
     {

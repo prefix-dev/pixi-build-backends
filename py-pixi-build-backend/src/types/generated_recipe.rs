@@ -74,7 +74,6 @@ impl PyGenerateRecipe {
     pub fn new(model: PyObject) -> Self {
         PyGenerateRecipe { model }
     }
-
 }
 
 impl GenerateRecipe for PyGenerateRecipe {

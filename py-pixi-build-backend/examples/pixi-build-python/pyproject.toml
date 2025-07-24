@@ -25,11 +25,11 @@ classifiers = [
 keywords = ["build", "conda", "package", "python", "rust"]
 version = "0.0.1"
 dependencies = [
-  "py-rattler", 
-  "asyncio", 
+  "py-rattler",
+  "asyncio",
   "toml",
   # "py-pixi-build-backend @ file:../../"
-  ]
+]
 
 [project.scripts]
 pixi-build-python = "pixi_build_python.main:main"

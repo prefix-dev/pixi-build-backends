@@ -9,12 +9,12 @@ class PythonParams:
     def __init__(self, editable: bool = False):
         """
         Initialize PythonParams.
-        
+
         Parameters
         ----------
         editable : bool, optional
             Whether to enable editable mode, by default False
-            
+
         Examples
         --------
         ```python
@@ -33,7 +33,7 @@ class PythonParams:
     def editable(self) -> bool:
         """
         Get the editable flag.
-        
+
         Examples
         --------
         ```python
@@ -49,7 +49,7 @@ class PythonParams:
     def editable(self, value: bool):
         """
         Set the editable flag.
-        
+
         Examples
         --------
         ```python

@@ -85,7 +85,7 @@ class IntermediateRecipe:
         -------
         IntermediateRecipe
             The constructed IntermediateRecipe object.
-            
+
         Examples
         --------
         ```python
@@ -106,7 +106,7 @@ class IntermediateRecipe:
         -------
         str
             The YAML representation of the IntermediateRecipe.
-            
+
         Examples
         --------
         ```python
@@ -287,7 +287,7 @@ class NoArchKind:
     def python(cls) -> "NoArchKind":
         """
         Create a Python NoArch kind.
-        
+
         Examples
         --------
         ```python
@@ -307,7 +307,7 @@ class NoArchKind:
     def generic(cls) -> "NoArchKind":
         """
         Create a Generic NoArch kind.
-        
+
         Examples
         --------
         ```python
@@ -326,7 +326,7 @@ class NoArchKind:
     def is_python(self) -> bool:
         """
         Check if this is a Python NoArch kind.
-        
+
         Examples
         --------
         ```python
@@ -342,7 +342,7 @@ class NoArchKind:
     def is_generic(self) -> bool:
         """
         Check if this is a Generic NoArch kind.
-        
+
         Examples
         --------
         ```python
@@ -372,7 +372,7 @@ class ValueString:
     def concrete(cls, value: str) -> "ValueString":
         """
         Create a concrete string value.
-        
+
         Examples
         --------
         ```python
@@ -392,7 +392,7 @@ class ValueString:
     def template(cls, template: str) -> "ValueString":
         """
         Create a template string value.
-        
+
         Examples
         --------
         ```python
@@ -411,7 +411,7 @@ class ValueString:
     def is_concrete(self) -> bool:
         """
         Check if this is a concrete value.
-        
+
         Examples
         --------
         ```python
@@ -427,7 +427,7 @@ class ValueString:
     def is_template(self) -> bool:
         """
         Check if this is a template value.
-        
+
         Examples
         --------
         ```python
@@ -465,7 +465,7 @@ class ValueU64:
     def concrete(cls, value: int) -> "ValueU64":
         """
         Create a concrete U64 value.
-        
+
         Examples
         --------
         ```python
@@ -485,7 +485,7 @@ class ValueU64:
     def template(cls, template: str) -> "ValueU64":
         """
         Create a template U64 value.
-        
+
         Examples
         --------
         ```python
@@ -504,7 +504,7 @@ class ValueU64:
     def is_concrete(self) -> bool:
         """
         Check if this is a concrete value.
-        
+
         Examples
         --------
         ```python
@@ -520,7 +520,7 @@ class ValueU64:
     def is_template(self) -> bool:
         """
         Check if this is a template value.
-        
+
         Examples
         --------
         ```python

@@ -5,17 +5,17 @@ from pixi_build_backend.pixi_build_backend import parse_entry_points_from_script
 def extract_entry_points(pyproject_manifest: Optional[dict]) -> list:
     """
     Extract entry points from pyproject.toml.
-    
+
     Parameters
     ----------
     pyproject_manifest : Optional[dict]
         The pyproject.toml manifest dictionary.
-        
+
     Returns
     -------
     list
         A list of entry points, or empty list if no scripts found.
-        
+
     Examples
     --------
     ```python

@@ -51,7 +51,6 @@ boto3 = "*"
 test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
 
 
-
 [environments]
 test = { features = ["build", "test"], solve-group = "default" }
 # docs = ["docs"]

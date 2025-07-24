@@ -16,7 +16,7 @@ class ProjectModelV1:
     def name(self) -> str:
         """
         Get the project name.
-        
+
         Examples
         --------
         ```python
@@ -39,7 +39,7 @@ class ProjectModelV1:
     def version(self) -> Optional[str]:
         """
         Get the project version.
-        
+
         Examples
         --------
         ```python
@@ -57,7 +57,7 @@ class ProjectModelV1:
     def description(self) -> Optional[str]:
         """
         Get the project description.
-        
+
         Examples
         --------
         ```python
@@ -93,7 +93,7 @@ class ProjectModelV1:
     def homepage(self) -> Optional[str]:
         """
         Get the project homepage URL.
-        
+
         Examples
         --------
         ```python

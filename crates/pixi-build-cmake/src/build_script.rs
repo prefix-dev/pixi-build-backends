@@ -12,8 +12,10 @@ pub struct BuildScriptContext {
     pub has_host_python: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Copy, Clone, Serialize)]
 #[serde(rename_all = "kebab-case")]
+#[cfg_attr(test, derive(strum::Display))]
+#[cfg_attr(test, strum(serialize_all = "snake_case"))]
 pub enum BuildPlatform {
     Windows,
     Unix,
@@ -27,5 +29,40 @@ impl BuildScriptContext {
             .unwrap();
         let rendered = template.render(self).unwrap().to_string();
         rendered.lines().map(|s| s.to_string()).collect()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use rstest::*;
+
+    use super::*;
+
+    #[rstest]
+    fn test_build_script(
+        #[values(BuildPlatform::Windows, BuildPlatform::Unix)] build_platform: BuildPlatform,
+        #[values(true, false)] has_host_python: bool,
+    ) {
+        let context = BuildScriptContext {
+            build_platform,
+            source_dir: String::from("my-prefix-dir"),
+            extra_args: vec![],
+            has_host_python,
+        };
+        let script = context.render();
+
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_suffix(format!(
+            "{}-{}",
+            build_platform,
+            if has_host_python {
+                "python"
+            } else {
+                "nopython"
+            }
+        ));
+        settings.bind(|| {
+            insta::assert_snapshot!(script.join("\n"));
+        });
     }
 }

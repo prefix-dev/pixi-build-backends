@@ -3133,6 +3133,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lzma-rust2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecaa2bc9f1bd284be221d0770bbc9b92a438fdf422ba45211f6c6bf157ebb932"
+
+[[package]]
 name = "lzma-sys"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3912,23 +3918,19 @@ dependencies = [
 name = "pixi-build-cmake"
 version = "0.2.0"
 dependencies = [
- "async-trait",
- "chrono",
  "indexmap 2.10.0",
  "insta",
  "miette",
  "minijinja",
  "pixi-build-backend",
- "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_manifest",
  "rattler-build",
  "rattler_conda_types",
- "rattler_package_streaming",
  "recipe-stage0",
+ "rstest",
  "serde",
  "serde_json",
- "tempfile",
+ "strum",
  "tokio",
 ]
 
@@ -4316,6 +4318,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
+name = "ppmd-rust"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c834641d8ad1b348c9ee86dec3b9840d805acd5f24daa5f90c788951a52ff59b"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4581,7 +4589,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.44.0"
-source = "git+https://github.com/baszalmstra/rattler-build?branch=feat%2Ffinalized_prefixes#63958d10cb45081213abfeab9cfaefbc1a334b9b"
+source = "git+https://github.com/wolfv/rattler-build?branch=environments-externally-managed#31da7da6b9275126fa287bc21ca88d6e21a23dc7"
 dependencies = [
  "anyhow",
  "async-once-cell",
@@ -4648,6 +4656,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "serde_yaml",
+ "sevenz-rust2",
  "sha1",
  "sha2",
  "spdx",
@@ -5937,6 +5946,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "sevenz-rust2"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c12bd2c6a1f413f516836e80c1f541116f9b17ccbab2540f655ceeb58f5592c"
+dependencies = [
+ "aes",
+ "byteorder",
+ "bzip2 0.6.0",
+ "cbc",
+ "crc32fast",
+ "getrandom 0.3.3",
+ "js-sys",
+ "lzma-rust2",
+ "ppmd-rust",
+ "sha2",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6138,9 +6166,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 dependencies = [
  "strum_macros",
 ]

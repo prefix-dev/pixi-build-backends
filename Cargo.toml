@@ -40,12 +40,13 @@ pyproject-toml = "0.13.4"
 dirs = "6.0.0"
 pathdiff = "0.2.3"
 thiserror = "2.0.12"
+strum = "0.27.2"
 
 jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/baszalmstra/rattler-build", branch = "feat/finalized_prefixes", default-features = false, features = [
+rattler-build = { git = "https://github.com/wolfv/rattler-build", branch = "environments-externally-managed", default-features = false, features = [
   "rustls-tls",
 ] }
 

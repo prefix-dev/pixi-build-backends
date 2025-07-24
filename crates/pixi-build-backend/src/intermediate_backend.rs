@@ -47,7 +47,6 @@ use rattler_build::{
 };
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
-    prefix::Prefix,
 };
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
@@ -424,8 +423,6 @@ where
                 finalized_sources: None,
                 finalized_cache_dependencies: None,
                 finalized_cache_sources: None,
-                finalized_host_prefix: None,
-                finalized_build_prefix: None,
                 system_tools: SystemTools::default(),
                 build_summary: Arc::default(),
                 extra_meta: None,
@@ -759,8 +756,6 @@ where
                 finalized_sources: None,
                 finalized_cache_dependencies: None,
                 finalized_cache_sources: None,
-                finalized_host_prefix: None,
-                finalized_build_prefix: None,
                 system_tools: SystemTools::default(),
                 build_summary: Arc::default(),
                 extra_meta: None,
@@ -1102,7 +1097,11 @@ where
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_testing(false)
-            .with_keep_build(true) // Pixi is incremental so keep the build
+            // Pixi is incremental so keep the build
+            .with_keep_build(true)
+            // This indicates that the environments are externally managed, e.g. they are already
+            // prepared.
+            .with_environments_externally_managed(true)
             .finish();
 
         let output = Output {
@@ -1154,18 +1153,6 @@ where
             finalized_sources: None,
             finalized_cache_dependencies: None,
             finalized_cache_sources: None,
-            finalized_host_prefix: params
-                .host_prefix
-                .as_ref()
-                .map(|path| Prefix::create(&path.prefix))
-                .transpose()
-                .into_diagnostic()?,
-            finalized_build_prefix: params
-                .build_prefix
-                .as_ref()
-                .map(|path| Prefix::create(&path.prefix))
-                .transpose()
-                .into_diagnostic()?,
             build_summary: Arc::default(),
             system_tools: Default::default(),
             extra_meta: None,

@@ -53,7 +53,7 @@ use rattler_build::{
 };
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, PackageName, Platform, compression_level::CompressionLevel,
-    package::ArchiveType, prefix::Prefix,
+    package::ArchiveType,
 };
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
@@ -661,6 +661,11 @@ impl Protocol for RattlerBuildBackend {
             .with_opt_cache_dir(self.cache_dir.clone())
             .with_logging_output_handler(self.logging_output_handler.clone())
             .with_testing(false)
+            // Pixi is incremental so keep the build
+            .with_keep_build(true)
+            // This indicates that the environments are externally managed, e.g. they are already
+            // prepared.
+            .with_environments_externally_managed(true)
             .finish();
 
         let output = Output {
@@ -712,18 +717,6 @@ impl Protocol for RattlerBuildBackend {
             finalized_sources: None,
             finalized_cache_dependencies: None,
             finalized_cache_sources: None,
-            finalized_host_prefix: params
-                .host_prefix
-                .as_ref()
-                .map(|path| Prefix::create(&path.prefix))
-                .transpose()
-                .into_diagnostic()?,
-            finalized_build_prefix: params
-                .build_prefix
-                .as_ref()
-                .map(|path| Prefix::create(&path.prefix))
-                .transpose()
-                .into_diagnostic()?,
             build_summary: Arc::default(),
             system_tools: Default::default(),
             extra_meta: None,

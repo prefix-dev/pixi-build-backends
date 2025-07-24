@@ -170,20 +170,12 @@ async fn initialize<T: ProtocolInstantiator>(
     }
 
     // Initialize the backend
-
-    // some test configuration
-    // let config = serde_json::json!({
-    //     "debug_dir": "my_debug_dir",
-
-    // });
-
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             manifest_path: manifest_path.to_path_buf(),
             source_dir: None,
             project_model,
             cache_directory: None,
-            // configuration: Some(config),
             configuration: None,
         })
         .await?;

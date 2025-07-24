@@ -49,11 +49,7 @@ fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add utility functions
 
-    // Parsing EntryPoints
-    m.add_function(wrap_pyfunction!(
-        recipe_stage0::utils::parse_entry_points_from_scripts,
-        m
-    )?)?;
+    // Parsing EntryPoints - removed, now handled in Python
 
     m.add_function(wrap_pyfunction!(cli::py_main, m)?)?;
     m.add_function(wrap_pyfunction!(cli::py_main_sync, m)?)?;

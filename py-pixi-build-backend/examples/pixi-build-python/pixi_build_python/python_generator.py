@@ -15,12 +15,8 @@ from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
 
 from .build_script import BuildScriptContext, Installer, BuildPlatform
-from pixi_build_backend.types.entry_points import extract_entry_points
-from .utils import (
-    read_pyproject_toml,
-    get_build_input_globs,
-    get_editable_setting,
-)
+from .utils import extract_entry_points
+from .utils import read_pyproject_toml, get_build_input_globs, get_editable_setting
 
 
 @dataclass

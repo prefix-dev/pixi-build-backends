@@ -4589,7 +4589,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.44.0"
-source = "git+https://github.com/wolfv/rattler-build?branch=environments-externally-managed#31da7da6b9275126fa287bc21ca88d6e21a23dc7"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#6c3234456e800ed09c64441382a7722904702793"
 dependencies = [
  "anyhow",
  "async-once-cell",

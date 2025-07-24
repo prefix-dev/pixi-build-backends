@@ -46,7 +46,7 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/wolfv/rattler-build", branch = "environments-externally-managed", default-features = false, features = [
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false, features = [
   "rustls-tls",
 ] }
 

@@ -1,9 +1,8 @@
 [project]
-name = "py-rattler"
+name = "py-pixi-build-backend"
 description = "Add a short description here"
 authors = [
-  "Bas Zalmstra <bas@prefix.dev>",
-  "Tarun Pratap Singh <pratapsinghtarun9@gmail.com>",
+  "Nichita Morcotilo <nichita@prefix.dev>",
 ]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
@@ -57,10 +56,4 @@ fmt-check = { depends-on = ["fmt-python-check", "fmt-rust-check"] }
 
 [environments]
 test = { features = ["build", "test"], solve-group = "default" }
-# docs = ["docs"]
-# repl = ["repl"]
 build = ["build"]
-
-[dependencies]
-# requests = ">=2.32.3,<2.33"
-# types-requests = ">=2.32.4.20250611,<2.32.5"

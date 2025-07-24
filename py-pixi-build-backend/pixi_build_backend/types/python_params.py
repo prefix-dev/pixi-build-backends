@@ -46,7 +46,7 @@ class PythonParams:
         return self._inner.editable
 
     @editable.setter
-    def editable(self, value: bool):
+    def editable(self, value: bool) -> None:
         """
         Set the editable flag.
 

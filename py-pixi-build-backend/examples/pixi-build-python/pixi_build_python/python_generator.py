@@ -115,8 +115,6 @@ class PythonGenerator(GenerateRecipeProtocol):
 
         return generated_recipe
 
-    def extract_input_globs_from_build(
-        self, config: PythonBackendConfig, workdir: Path, editable: bool
-    ) -> List[str]:
+    def extract_input_globs_from_build(self, config: PythonBackendConfig, workdir: Path, editable: bool) -> List[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, workdir, editable)

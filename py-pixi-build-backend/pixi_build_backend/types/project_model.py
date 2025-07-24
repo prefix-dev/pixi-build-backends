@@ -31,7 +31,7 @@ class ProjectModelV1:
     @classmethod
     def _from_py(cls, model: PyProjectModelV1) -> "ProjectModelV1":
         """Create a ProjectModelV1 from a FFI PyProjectModelV1."""
-        instance = cls()
+        instance = cls.__new__(cls)
         instance._inner = model
         return instance
 

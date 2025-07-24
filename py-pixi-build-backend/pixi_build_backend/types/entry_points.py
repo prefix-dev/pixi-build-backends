@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Any, Optional, Dict, List, Union
 from pixi_build_backend.pixi_build_backend import parse_entry_points_from_scripts
 
 
-def extract_entry_points(pyproject_manifest: Optional[dict]) -> list:
+def extract_entry_points(pyproject_manifest: Optional[Dict[str, Any]]) -> List[str]:
     """
     Extract entry points from pyproject.toml.
 
@@ -33,7 +33,7 @@ def extract_entry_points(pyproject_manifest: Optional[dict]) -> list:
         return []
 
     project = pyproject_manifest.get("project", {})
-    scripts = project.get("scripts", {})
+    scripts: Dict[str, str] = project.get("scripts", {})
 
     if not scripts:
         return []

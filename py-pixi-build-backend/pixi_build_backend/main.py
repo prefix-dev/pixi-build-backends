@@ -8,7 +8,7 @@ from pixi_build_backend.types.generated_recipe import GenerateRecipeProtocol
 from pixi_build_backend.pixi_build_backend import py_main, PyGenerateRecipe
 
 
-async def main_entry_point(instance: GenerateRecipeProtocol):
+async def main_entry_point(instance: GenerateRecipeProtocol) -> None:
     """Main entry point for the build backend"""
     py_generator = PyGenerateRecipe(instance)
 

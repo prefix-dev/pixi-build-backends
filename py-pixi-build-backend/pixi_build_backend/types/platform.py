@@ -12,7 +12,7 @@ class Platform:
 
     _inner = PyPlatform
 
-    def __init__(self, value):
+    def __init__(self, value: str) -> None:
         self._inner = PyPlatform(value)
 
     @classmethod
@@ -27,10 +27,10 @@ class Platform:
         """Construct Rattler version from FFI PyArch object."""
         return cls(py_platform.name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._inner)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Platform({})".format(str(self._inner))
 
     @property

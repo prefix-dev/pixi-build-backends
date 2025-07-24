@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, TYPE_CHECKING
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
     PyIntermediateRecipe,
@@ -22,8 +22,8 @@ from pixi_build_backend.pixi_build_backend import (
 from pixi_build_backend.types.platform import Platform
 
 
-ConditionalListPackageDependency = list["ItemPackageDependency"]
-ConditionalListString = list["ItemString"]
+ConditionalListPackageDependency = List["ItemPackageDependency"]
+ConditionalListString = List["ItemString"]
 
 
 class IntermediateRecipe:
@@ -31,7 +31,7 @@ class IntermediateRecipe:
 
     _inner: PyIntermediateRecipe
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyIntermediateRecipe()
 
     @property
@@ -126,9 +126,7 @@ class Package:
     _inner: PyPackage
 
     def __init__(self, name: str, version: str):
-        self._inner = PyPackage(
-            ValueString.concrete(name)._inner, ValueString.concrete(version)._inner
-        )
+        self._inner = PyPackage(ValueString.concrete(name)._inner, ValueString.concrete(version)._inner)
 
     @property
     def name(self) -> "ValueString":
@@ -153,7 +151,7 @@ class Build:
 
     _inner: PyBuild
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyBuild()
 
     @property
@@ -163,7 +161,7 @@ class Build:
         return ValueU64._from_inner(inner_number) if inner_number else None
 
     @number.setter
-    def number(self, value: Optional["ValueU64"]):
+    def number(self, value: Optional["ValueU64"]) -> None:
         """Set the build number."""
         self._inner.number = value._inner if value else None
 
@@ -173,7 +171,7 @@ class Build:
         return Script._from_inner(self._inner.script)
 
     @script.setter
-    def script(self, value: "Script"):
+    def script(self, value: "Script") -> None:
         """Set the build script."""
         self._inner.script = value._inner
 
@@ -184,7 +182,7 @@ class Build:
         return NoArchKind._from_inner(inner_noarch) if inner_noarch else None
 
     @noarch.setter
-    def noarch(self, value: Optional["NoArchKind"]):
+    def noarch(self, value: Optional["NoArchKind"]) -> None:
         """Set the noarch kind."""
         self._inner.noarch = value._inner if value else None
 
@@ -194,7 +192,7 @@ class Build:
         return Python._from_inner(self._inner.python)
 
     @python.setter
-    def python(self, value: "Python"):
+    def python(self, value: "Python") -> None:
         """Set the Python configuration."""
         self._inner.python = value._inner
 
@@ -220,7 +218,7 @@ class Script:
         return self._inner.content
 
     @content.setter
-    def content(self, value: List[str]):
+    def content(self, value: List[str]) -> None:
         """Set the script content."""
         self._inner.set_content(value)
 
@@ -230,7 +228,7 @@ class Script:
         return self._inner.env
 
     @env.setter
-    def env(self, value: Dict[str, str]):
+    def env(self, value: Dict[str, str]) -> None:
         """Set the environment variables."""
         self._inner.set_env(value)
 
@@ -240,7 +238,7 @@ class Script:
         return self._inner.secrets
 
     @secrets.setter
-    def secrets(self, value: List[str]):
+    def secrets(self, value: List[str]) -> None:
         """Set the secrets."""
         self._inner.set_secrets(value)
 
@@ -266,7 +264,7 @@ class Python:
         return self._inner.entry_points
 
     @entry_points.setter
-    def entry_points(self, value: List[str]):
+    def entry_points(self, value: List[str]) -> None:
         """Set the entry points."""
         self._inner.set_entry_points(value)
 
@@ -554,7 +552,7 @@ class ConditionalRequirements:
 
     _inner: PyConditionalRequirements
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyConditionalRequirements()
 
     @property
@@ -563,9 +561,9 @@ class ConditionalRequirements:
         return self._inner.build
 
     @build.setter
-    def build(self, value: "ConditionalListPackageDependency"):
+    def build(self, value: "ConditionalListPackageDependency") -> None:
         """Set the build requirements."""
-        self._inner.build = value._inner
+        self._inner.build = value
 
     @property
     def host(self) -> "ConditionalListPackageDependency":
@@ -574,9 +572,9 @@ class ConditionalRequirements:
         return self._inner.host
 
     @host.setter
-    def host(self, value: "ConditionalListPackageDependency"):
+    def host(self, value: "ConditionalListPackageDependency") -> None:
         """Set the host requirements."""
-        self._inner.host = value._inner
+        self._inner.host = value
 
     @property
     def run(self) -> "ConditionalListPackageDependency":
@@ -584,9 +582,9 @@ class ConditionalRequirements:
         return self._inner.run
 
     @run.setter
-    def run(self, value: "ConditionalListPackageDependency"):
+    def run(self, value: "ConditionalListPackageDependency") -> None:
         """Set the run requirements."""
-        self._inner.run = value._inner
+        self._inner.run = value
 
     @property
     def run_constraints(self) -> "ConditionalListPackageDependency":
@@ -594,13 +592,11 @@ class ConditionalRequirements:
         return self._inner.run_constraints
 
     @run_constraints.setter
-    def run_constraints(self, value: "ConditionalListPackageDependency"):
+    def run_constraints(self, value: "ConditionalListPackageDependency") -> None:
         """Set the run constraints."""
-        self._inner.run_constraints = value._inner
+        self._inner.run_constraints = value
 
-    def resolve(
-        self, host_platform: Optional[Platform] = None
-    ) -> "PackageSpecDependencies":
+    def resolve(self, host_platform: Optional[Platform] = None) -> "PackageSpecDependencies":
         """Resolve the requirements."""
         py_platform = host_platform._inner if host_platform else None
         return PackageSpecDependencies._from_inner(self._inner.resolve(py_platform))
@@ -618,7 +614,7 @@ class About:
 
     _inner: PyAbout
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyAbout()
 
     @property
@@ -654,7 +650,7 @@ class Extra:
 
     _inner: PyExtra
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyExtra()
 
     @classmethod
@@ -683,22 +679,22 @@ class PackageSpecDependencies:
         return instance
 
     @property
-    def host(self) -> dict:
+    def host(self) -> Dict[str, str]:
         """Get the host dependencies."""
         return self._inner.host
 
     @property
-    def run(self) -> dict:
+    def run(self) -> Dict[str, str]:
         """Get the run dependencies."""
         return self._inner.run
 
     @property
-    def run_constraints(self) -> dict:
+    def run_constraints(self) -> Dict[str, str]:
         """Get the run constraints."""
         return self._inner.run_constraints
 
     @property
-    def build(self) -> dict:
+    def build(self) -> Dict[str, str]:
         """Get the build dependencies."""
         return self._inner.build
 

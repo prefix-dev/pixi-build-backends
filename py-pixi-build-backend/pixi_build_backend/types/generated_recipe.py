@@ -1,4 +1,4 @@
-from typing import Optional, Protocol
+from typing import Any, Dict, Optional, Protocol, List
 from pathlib import Path
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateRecipe
@@ -12,13 +12,11 @@ class GeneratedRecipe:
 
     _inner: PyGeneratedRecipe
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(
-        cls, model: ProjectModelV1, manifest_root: Path
-    ) -> "GeneratedRecipe":
+    def from_model(cls, model: ProjectModelV1, manifest_root: Path) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
         instance._inner = PyGeneratedRecipe().from_model(model._inner, manifest_root)
@@ -30,12 +28,12 @@ class GeneratedRecipe:
         return IntermediateRecipe._from_inner(self._inner.recipe)
 
     @property
-    def metadata_input_globs(self) -> list[str]:
+    def metadata_input_globs(self) -> List[str]:
         """Get the metadata input globs."""
         return self._inner.metadata_input_globs
 
     @property
-    def build_input_globs(self) -> list[str]:
+    def build_input_globs(self) -> List[str]:
         """Get the build input globs."""
         return self._inner.build_input_globs
 
@@ -58,7 +56,7 @@ class GenerateRecipeProtocol(Protocol):
     def generate_recipe(
         self,
         model: ProjectModelV1,
-        config: dict,
+        config: Dict[str, Any],
         manifest_path: str,
         host_platform: Platform,
         python_params: Optional[PythonParams] = None,

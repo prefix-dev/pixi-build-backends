@@ -1,0 +1,51 @@
+name: Python bindings CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    paths:
+      # When we change pyproject.toml, we want to ensure that the maturin builds still work
+      - test-data/**
+      # Or the code that bindings depend on
+      - crates/pixi-build-backend/**
+      - Cargo.*
+
+      # When something in the bindings themselves changes
+      - py-pixi-build-backend/**/*
+
+      # Or when this workflow changes
+      - .github/workflows/python-bindings.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  format_lint_test:
+    name: Format, Lint and Test the Python bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+      - uses: prefix-dev/setup-pixi@14c8aabd75893f83f4ab30c03e7cf853c8208961 # v0.8.10
+        with:
+          manifest-path: py-pixi-build-backend/pixi.toml
+          environments: test
+      - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48 # v1.13.0
+        with:
+          components: clippy, rustfmt
+      - name: Format and Lint
+        run: |
+          cd py-pixi-build-backend
+          pixi run -e test lint
+          pixi run -e test fmt-check
+      - name: Run tests
+        run: |
+          cd py-pixi-build-backend
+          pixi run -e test test --color=yes

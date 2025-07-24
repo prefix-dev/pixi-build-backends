@@ -32,23 +32,27 @@ ruff = ">=0.12.3,<0.13"
 mypy = "~=1.16.1"
 
 pytest = ">=8.4.1,<9"
-pytest-asyncio = ">=1.0.0,<2"
-pytest-xprocess = ">=1.0.2,<2"
 syrupy = "*"
 
 
-# used in examples
-typer = "*"
 # for rust-analyzer
 rust-src = "~=1.86.0"
 
-[feature.test.pypi-dependencies]
-types-networkx = "*"
-# boto3 on conda-forge requires python >=3.10
-boto3 = "*"
 
 [feature.test.tasks]
 test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
+fmt-python = "ruff format pixi_build_backend examples tests"
+fmt-rust = "cargo fmt --all"
+lint-python = "ruff check ."
+lint-rust = "cargo clippy --all"
+fmt = { depends-on = ["fmt-python", "fmt-rust"] }
+lint = { depends-on = ["type-check", "lint-python", "lint-rust"] }
+type-check = { cmd = "mypy", depends-on = ["build"] }
+
+# checks for the CI
+fmt-rust-check = "cargo fmt --all --check"
+fmt-python-check = "ruff format pixi_build_backend examples tests --diff"
+fmt-check = { depends-on = ["fmt-python-check", "fmt-rust-check"] }
 
 
 [environments]

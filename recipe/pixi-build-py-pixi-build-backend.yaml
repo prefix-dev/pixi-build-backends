@@ -43,4 +43,3 @@ tests:
   - python:
       imports:
         - pixi_build_backend
-

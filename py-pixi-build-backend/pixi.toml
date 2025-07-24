@@ -1,9 +1,7 @@
 [project]
 name = "py-pixi-build-backend"
 description = "Add a short description here"
-authors = [
-  "Nichita Morcotilo <nichita@prefix.dev>",
-]
+authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 license = "BSD-3-Clause"

@@ -16,7 +16,7 @@ requirements:
     - if: unix
       then: openssl
   run:
-    - pixi-build-api-version==0
+    - pixi-build-api-version <=1
 
 build:
   script:

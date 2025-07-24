@@ -76,7 +76,6 @@ impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
     }
 }
 
-
 pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) source_dir: PathBuf,

@@ -75,26 +75,6 @@ impl PyGenerateRecipe {
         PyGenerateRecipe { model }
     }
 
-    // fn generate_recipe(
-    //     &self,
-    //     model: &PyProjectModelV1,
-    //     config: &PyBackendConfig,
-    //     manifest_path: std::path::PathBuf,
-    //     host_platform: PyPlatform,
-    //     python_params: Option<PyPythonParams>,
-    // ) -> PyResult<PyGeneratedRecipe> {
-    //     let result = GenerateRecipe::generate_recipe(
-    //         self,
-    //         &model.inner,
-    //         config,
-    //         manifest_path,
-    //         host_platform.inner,
-    //         python_params.map(|p| p.inner),
-    //     )
-    //     .map_err(|e| PyPixiBuildBackendError::GeneratedRecipe(e.into()))?;
-
-    //     Ok(PyGeneratedRecipe::from(result))
-    // }
 }
 
 impl GenerateRecipe for PyGenerateRecipe {

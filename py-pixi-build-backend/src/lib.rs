@@ -47,10 +47,7 @@ fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<recipe_stage0::conditional::PyItemPackageDependency>()?;
 
-    // Add utility functions
-
-    // Parsing EntryPoints - removed, now handled in Python
-
+    // Add entry points
     m.add_function(wrap_pyfunction!(cli::py_main, m)?)?;
     m.add_function(wrap_pyfunction!(cli::py_main_sync, m)?)?;
 

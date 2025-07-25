@@ -1,7 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-package:
+context:
   name: pixi-build-cmake
   version: "${{ env.get('PIXI_BUILD_CMAKE_VERSION', default='0.1.0dev') }}"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
   path: ..
@@ -9,6 +13,8 @@ source:
 requirements:
   build:
     - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - cargo-auditable
   host:
     - pkg-config
     - libzlib
@@ -16,25 +22,43 @@ requirements:
     - if: unix
       then: openssl
   run:
-    - pixi-build-api-version==0
+    - pixi-build-api-version >=0,<1
 
 build:
   script:
-    - if: osx and x86_64
-      then:
-        # use the default linker for osx-64 as we are hitting a bug with the conda-forge linker
-        # https://github.com/rust-lang/rust/issues/140686
-        - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - if: osx and x86_64
+        then:
+          # use the default linker for osx-64 as we are hitting a bug with the conda-forge linker
+          # https://github.com/rust-lang/rust/issues/140686
+          - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
 
-    - if: unix
-      then:
-        - export OPENSSL_DIR="$PREFIX"
-        - cargo install --locked --root $PREFIX --path crates/pixi-build-cmake --no-track
-      else:
-        - cargo install --locked --root %PREFIX% --path crates/pixi-build-cmake --no-track
+      - if: unix
+        then:
+          - export OPENSSL_DIR="$PREFIX"
+      - cargo auditable install --locked --no-track --bins --root ${{ PREFIX }} --path crates/${{name}}
+      - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
   files:
-    - bin/pixi-build-cmake
-    - bin/pixi-build-cmake.exe
+    - bin/${{ name }}
+    - bin/${{ name }}.exe
 
 tests:
-  - script: pixi-build-cmake --help
+  - script: ${{ name }} --help
+  - package_contents:
+      bin:
+        - ${{ name }}
+
+about:
+  homepage: https://github.com/prefix-dev/pixi-build-backends
+  summary: A pixi build backend to build CMake based packages.
+  description: |
+    This package provides a build backend for pixi that allows building packages using CMake.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  documentation: https://prefix-dev.github.io/pixi-build-backends
+  repository: https://github.com/prefix-dev/pixi-build-backends

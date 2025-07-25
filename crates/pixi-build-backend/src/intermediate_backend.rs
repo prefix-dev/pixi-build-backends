@@ -575,19 +575,9 @@ where
         // from the generator and the user supplied parameters. The parameters
         // from the user take precedence over the default variants.
         let recipe_variants = self.generate_recipe.default_variants(host_platform);
-        let mut param_variant_configuration = params
-            .variant_configuration
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(k, v)| {
-                (
-                    k.into(),
-                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                )
-            })
-            .collect();
-        let mut variants = recipe_variants;
-        variants.append(&mut param_variant_configuration);
+        let param_variants =
+            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
+        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
         let variant_config = VariantConfig {
             variants,
             pin_run_as_build: None,
@@ -822,9 +812,16 @@ where
         // rattler-build recipes would also load variant.yaml (or
         // conda-build-config.yaml) files here, but we only respect the variant
         // configuration passed in.
+        //
+        // Determine the variant configuration to use. This is a combination of defaults
+        // from the generator and the user supplied parameters. The parameters
+        // from the user take precedence over the default variants.
+        let recipe_variants = self.generate_recipe.default_variants(params.host_platform);
+        let param_variants =
+            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
+        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
         let variant_config = VariantConfig {
-            variants: convert_input_variant_configuration(params.variant_configuration)
-                .unwrap_or_default(),
+            variants,
             pin_run_as_build: None,
             zip_keys: None,
         };

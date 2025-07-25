@@ -93,15 +93,31 @@ pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>
         Some(Commands::Capabilities) => {
             let backend_capabilities = capabilities::<T>().await?;
             eprintln!(
-                "Supports conda metadata: {}",
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_metadata::METHOD_NAME,
                 backend_capabilities
                     .provides_conda_metadata
                     .unwrap_or_default()
             );
             eprintln!(
-                "Supports conda build: {}",
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_outputs::METHOD_NAME,
+                backend_capabilities
+                    .provides_conda_outputs
+                    .unwrap_or_default()
+            );
+            eprintln!(
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_build_v0::METHOD_NAME,
                 backend_capabilities
                     .provides_conda_build
+                    .unwrap_or_default()
+            );
+            eprintln!(
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_build_v1::METHOD_NAME,
+                backend_capabilities
+                    .provides_conda_build_v1
                     .unwrap_or_default()
             );
             eprintln!(

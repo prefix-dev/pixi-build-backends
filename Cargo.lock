@@ -3916,7 +3916,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-cmake"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "indexmap 2.10.0",
  "insta",
@@ -3936,57 +3936,29 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-python"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
- "async-trait",
- "chrono",
- "clap",
- "clap-verbosity-flag",
- "dirs",
- "fs-err",
  "indexmap 2.10.0",
  "insta",
- "itertools 0.14.0",
- "jsonrpc-core",
- "jsonrpc-http-server",
- "jsonrpc-stdio-server",
- "log",
  "miette",
  "minijinja",
- "parking_lot 0.12.4",
- "pathdiff",
  "pixi-build-backend",
- "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts",
- "pixi_manifest",
- "pixi_spec",
  "pyproject-toml",
- "rattler-build",
  "rattler_conda_types",
- "rattler_package_streaming",
- "rattler_virtual_packages",
  "recipe-stage0",
- "reqwest",
- "reqwest-middleware",
  "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
  "tokio",
  "toml_edit 0.22.27",
- "tracing-subscriber",
- "url",
 ]
 
 [[package]]
 name = "pixi-build-rattler-build"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "chrono",
  "fs-err",
- "indexmap 2.10.0",
  "insta",
  "itertools 0.14.0",
  "miette",
@@ -4005,29 +3977,19 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rust"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
- "async-trait",
- "chrono",
  "indexmap 2.10.0",
  "insta",
- "marked-yaml",
  "miette",
  "minijinja",
  "pixi-build-backend",
- "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_manifest",
- "rattler-build",
  "rattler_conda_types",
- "rattler_package_streaming",
  "recipe-stage0",
  "rstest",
  "serde",
- "serde_json",
- "serde_yaml",
  "temp-env",
- "tempfile",
  "tokio",
 ]
 

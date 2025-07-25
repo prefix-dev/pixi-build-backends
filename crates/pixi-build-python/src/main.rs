@@ -2,8 +2,10 @@ mod build_script;
 mod config;
 
 use std::{
+    collections::BTreeSet,
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
 
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
@@ -124,7 +126,7 @@ impl GenerateRecipe for PythonGenerator {
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
-                vec![pyproject_manifest_path.to_string_lossy().to_string()];
+                BTreeSet::from([pyproject_manifest_path.to_string_lossy().to_string()]);
             Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
         } else {
             None
@@ -205,8 +207,10 @@ impl GenerateRecipe for PythonGenerator {
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) =
-        pixi_build_backend::cli::main(IntermediateBackendInstantiator::<PythonGenerator>::new).await
+    if let Err(err) = pixi_build_backend::cli::main(|log| {
+        IntermediateBackendInstantiator::<PythonGenerator>::new(log, Arc::default())
+    })
+    .await
     {
         eprintln!("{err:?}");
         std::process::exit(1);

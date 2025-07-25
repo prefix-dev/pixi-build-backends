@@ -35,6 +35,8 @@ url = "2.5.4"
 pyproject-toml = "0.13.4"
 dirs = "6.0.0"
 pathdiff = "0.2.3"
+file_url = "0.2.5"
+ordermap = "0.5.8"
 
 jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
@@ -45,7 +47,7 @@ rattler-build = { version = "*", default-features = false, features = [
 ] }
 
 
-rattler_conda_types = { version = "0.32.0", default-features = false }
+rattler_conda_types = { version = "0.35.5", default-features = false }
 rattler_package_streaming = { version = "0.22.35", default-features = false }
 rattler_virtual_packages = { version = "2.0.9", default-features = false }
 

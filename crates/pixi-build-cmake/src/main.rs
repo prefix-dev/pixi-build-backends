@@ -1,7 +1,7 @@
 mod build_script;
 mod config;
 
-use std::{collections::BTreeMap, path::Path};
+use std::{collections::BTreeMap, path::Path, sync::Arc};
 
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
@@ -124,8 +124,10 @@ impl GenerateRecipe for CMakeGenerator {
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) =
-        pixi_build_backend::cli::main(IntermediateBackendInstantiator::<CMakeGenerator>::new).await
+    if let Err(err) = pixi_build_backend::cli::main(|log| {
+        IntermediateBackendInstantiator::<CMakeGenerator>::new(log, Arc::default())
+    })
+    .await
     {
         eprintln!("{err:?}");
         std::process::exit(1);

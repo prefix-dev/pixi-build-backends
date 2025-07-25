@@ -1,5 +1,6 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
+    fmt::Debug,
     path::{Path, PathBuf},
 };
 
@@ -73,15 +74,15 @@ pub trait GenerateRecipe {
 }
 
 /// At least debug dir should be provided by the backend config
-pub trait BackendConfig: DeserializeOwned + Default {
+pub trait BackendConfig: DeserializeOwned {
     fn debug_dir(&self) -> Option<&Path>;
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GeneratedRecipe {
     pub recipe: IntermediateRecipe,
-    pub metadata_input_globs: Vec<String>,
-    pub build_input_globs: Vec<String>,
+    pub metadata_input_globs: BTreeSet<String>,
+    pub build_input_globs: BTreeSet<String>,
 }
 
 impl GeneratedRecipe {

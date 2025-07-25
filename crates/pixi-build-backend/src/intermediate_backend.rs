@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -38,8 +38,8 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::{ParseErrors, VariantConfig},
 };
+use rattler_conda_types::compression_level::CompressionLevel;
 use rattler_conda_types::{ChannelConfig, MatchSpec, Platform, package::ArchiveType};
-use rattler_package_streaming::write::CompressionLevel;
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 
@@ -64,33 +64,33 @@ pub struct IntermediateBackendConfig {
 pub struct IntermediateBackendInstantiator<T: GenerateRecipe> {
     logging_output_handler: LoggingOutputHandler,
 
-    generator: T,
+    generator: Arc<T>,
 }
 
-impl<T: GenerateRecipe + Default + Clone> IntermediateBackendInstantiator<T> {
-    pub fn new(logging_output_handler: LoggingOutputHandler) -> Self {
+impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
+    pub fn new(logging_output_handler: LoggingOutputHandler, instance: Arc<T>) -> Self {
         Self {
             logging_output_handler,
-            generator: T::default(),
+            generator: instance,
         }
     }
 }
 
-pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
+pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
     pub(crate) source_dir: PathBuf,
     /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
     pub(crate) project_model: ProjectModelV1,
-    pub(crate) generate_recipe: T,
+    pub(crate) generate_recipe: Arc<T>,
     pub(crate) config: T::Config,
     pub(crate) cache_dir: Option<PathBuf>,
 }
-impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
+impl<T: GenerateRecipe> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
         project_model: ProjectModelV1,
-        generate_recipe: T,
+        generate_recipe: Arc<T>,
         config: serde_json::Value,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
@@ -126,7 +126,7 @@ where
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
         let config = configuration
-            .and_then(|config| serde_json::from_value::<T::Config>(config.clone()).ok())
+            .and_then(|config| serde_json::from_value::<T::Config>(config).ok())
             .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
 
         config
@@ -274,6 +274,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
+            recipe_path: None,
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
@@ -385,6 +386,7 @@ where
                     sandbox_config: None,
                     debug: Debug::default(),
                     solve_strategy: Default::default(),
+                    exclude_newer: None,
                 },
                 finalized_dependencies: None,
                 finalized_sources: None,
@@ -576,6 +578,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
+            recipe_path: None,
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let mut discovered_outputs = variant_config.find_variants(
@@ -716,6 +719,7 @@ where
                     sandbox_config: None,
                     debug: Debug::default(),
                     solve_strategy: Default::default(),
+                    exclude_newer: None,
                 },
                 finalized_dependencies: None,
                 finalized_sources: None,
@@ -749,7 +753,7 @@ where
                         .iter()
                         .map(|f| f.to_string()),
                 )
-                .collect::<Vec<_>>();
+                .collect::<BTreeSet<_>>();
 
             let built_package = CondaBuiltPackage {
                 output_file: package,

@@ -3948,6 +3948,7 @@ dependencies = [
  "rattler_conda_types",
  "recipe-stage0",
  "serde",
+ "serde_json",
  "tokio",
  "toml_edit 0.22.27",
 ]
@@ -3989,6 +3990,7 @@ dependencies = [
  "recipe-stage0",
  "rstest",
  "serde",
+ "serde_json",
  "temp-env",
  "tokio",
 ]

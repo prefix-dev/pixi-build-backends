@@ -18,6 +18,7 @@ recipe-stage0 = { workspace = true }
 
 
 [dev-dependencies]
-insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
+insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
 rstest = { workspace = true }
-temp-env = "0.3.6"
+temp-env = { workspace = true }
+serde_json = { workspace = true }

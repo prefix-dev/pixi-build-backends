@@ -20,5 +20,6 @@ pixi_build_types = { workspace = true }
 recipe-stage0 = { workspace = true }
 
 [dev-dependencies]
-insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
-toml_edit = { version = "0.22.24" }
+insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
+toml_edit = { workspace = true }
+serde_json = { workspace = true }

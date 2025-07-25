@@ -6,7 +6,7 @@ use miette::{Context, IntoDiagnostic};
 use pixi_build_types::{
     BackendCapabilities, ChannelConfiguration, FrontendCapabilities, PlatformAndVirtualPackages,
     procedures::{
-        conda_build::CondaBuildParams,
+        conda_build_v0::CondaBuildParams,
         conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         initialize::InitializeParams,
         negotiate_capabilities::NegotiateCapabilitiesParams,
@@ -93,15 +93,31 @@ pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>
         Some(Commands::Capabilities) => {
             let backend_capabilities = capabilities::<T>().await?;
             eprintln!(
-                "Supports conda metadata: {}",
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_metadata::METHOD_NAME,
                 backend_capabilities
                     .provides_conda_metadata
                     .unwrap_or_default()
             );
             eprintln!(
-                "Supports conda build: {}",
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_outputs::METHOD_NAME,
+                backend_capabilities
+                    .provides_conda_outputs
+                    .unwrap_or_default()
+            );
+            eprintln!(
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_build_v0::METHOD_NAME,
                 backend_capabilities
                     .provides_conda_build
+                    .unwrap_or_default()
+            );
+            eprintln!(
+                "Supports {}: {}",
+                pixi_build_types::procedures::conda_build_v1::METHOD_NAME,
+                backend_capabilities
+                    .provides_conda_build_v1
                     .unwrap_or_default()
             );
             eprintln!(
@@ -156,6 +172,7 @@ async fn initialize<T: ProtocolInstantiator>(
     // Initialize the backend
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
+            source_dir: None,
             manifest_path: manifest_path.to_path_buf(),
             project_model,
             cache_directory: None,
@@ -232,7 +249,7 @@ async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> mie
         .context("failed to create a temporary directory in the current directory")?;
 
     let result = protocol
-        .conda_build(CondaBuildParams {
+        .conda_build_v0(CondaBuildParams {
             host_platform: None,
             build_platform_virtual_packages: None,
             channel_base_urls: None,

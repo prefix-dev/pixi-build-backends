@@ -8,22 +8,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/prefix-dev/pixi-build-backends/archive/refs/tags/${{name}}-v${{version}}.tar.gz
-  sha256: 8d5b69a931bcbdff64528bfae9f28748f625a70fb5ec93630a5f56196ef9f50c
-
-requirements:
-  build:
-    - ${{ compiler("rust") }}
-    - cargo-bundle-licenses
-    - cargo-auditable
-  host:
-    - pkg-config
-    - libzlib
-    - liblzma
-    - if: unix
-      then: openssl
-  run:
-    - pixi-build-api-version >=0,<2
+  path: ..
 
 build:
   script:
@@ -45,6 +30,20 @@ build:
   files:
     - bin/${{ name }}
     - bin/${{ name }}.exe
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+  host:
+    - pkg-config
+    - libzlib
+    - liblzma
+    - if: unix
+      then: openssl
+  run:
+    - pixi-build-api-version >=0,<2
 
 tests:
   - script: ${{ name }} --help

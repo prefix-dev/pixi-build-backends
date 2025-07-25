@@ -10,20 +10,6 @@ package:
 source:
   path: ..
 
-requirements:
-  build:
-    - ${{ compiler("rust") }}
-    - cargo-bundle-licenses
-    - cargo-auditable
-  host:
-    - pkg-config
-    - libzlib
-    - liblzma
-    - if: unix
-      then: openssl
-  run:
-    - pixi-build-api-version >=0,<2
-
 build:
   script:
     env:
@@ -44,6 +30,20 @@ build:
   files:
     - bin/${{ name }}
     - bin/${{ name }}.exe
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+  host:
+    - pkg-config
+    - libzlib
+    - liblzma
+    - if: unix
+      then: openssl
+  run:
+    - pixi-build-api-version >=0,<2
 
 tests:
   - script: ${{ name }} --help

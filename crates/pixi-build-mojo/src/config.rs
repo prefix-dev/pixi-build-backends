@@ -47,9 +47,6 @@ pub struct MojoBinConfig {
     /// Extra args to pass to the compiler.
     #[serde(default, rename(serialize = "extra_args"))]
     pub extra_args: Option<Vec<String>>,
-    /// Env vars to set.
-    #[serde(default)]
-    pub env: IndexMap<String, String>,
 }
 
 /// Config object for a Mojo package.
@@ -63,9 +60,6 @@ pub struct MojoPkgConfig {
     /// Extra args to pass to the compiler.
     #[serde(default, rename(serialize = "extra_args"))]
     pub extra_args: Option<Vec<String>>,
-    /// Env vars to set.
-    #[serde(default)]
-    pub env: IndexMap<String, String>,
 }
 
 #[cfg(test)]

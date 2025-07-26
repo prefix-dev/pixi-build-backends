@@ -103,7 +103,6 @@ You can customize the Mojo backend behavior using the `[package.build.configurat
 
 - **Type**: `Map<String, String>`
 - **Default**: `{}`
-- **Note**: Not yet implemented
 
 Environment variables to set during the build process.
 
@@ -191,19 +190,6 @@ Additional command-line arguments to pass to the Mojo compiler when building thi
 extra-args = ["-I", "special-thing"]
 ```
 
-#### `bins[].env`
-
-- **Type**: `Map<String, String>`
-- **Default**: `{}`
-- **Note**: Not yet implemented
-
-Environment variables to set when building this binary.
-
-```toml
-[[package.build.configuration.bins]]
-env = { ASSERT = "all" }
-```
-
 ### `pkg`
 
 - **Type**: `PkgConfig`
@@ -246,23 +232,6 @@ Additional command-line arguments to pass to the Mojo compiler when building thi
 [package.build.configuration.pkg]
 extra-args = ["-I", "special-thing"]
 ```
-
-#### `pkg.env`
-
-- **Type**: `Map<String, String>`
-- **Default**: `{}`
-- **Note**: Not yet implemented
-
-Environment variables to set when building this package.
-
-```toml
-[package.build.configuration.pkg]
-env = { ASSERT = "all" }
-```
-
-## Limitations
-
-- Env var pass through not yet implemented
 
 ## See Also
 

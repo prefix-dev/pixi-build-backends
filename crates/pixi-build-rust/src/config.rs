@@ -104,8 +104,14 @@ mod tests {
 
         // env should merge with target taking precedence
         assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
-        assert_eq!(merged.env.get("TARGET_VAR"), Some(&"target_value".to_string()));
-        assert_eq!(merged.env.get("SHARED_VAR"), Some(&"target_shared".to_string()));
+        assert_eq!(
+            merged.env.get("TARGET_VAR"),
+            Some(&"target_value".to_string())
+        );
+        assert_eq!(
+            merged.env.get("SHARED_VAR"),
+            Some(&"target_shared".to_string())
+        );
 
         // debug_dir should use target value
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/target/debug")));

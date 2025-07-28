@@ -72,6 +72,14 @@ pub trait GenerateRecipe {
     }
 }
 
+/// Trait for configuration that can be merged with target-specific configuration.
+/// This allows backend configurations to be customized per target platform.
+pub trait TargetAwareBackendConfig: Clone + serde::Serialize {
+    /// Merge this configuration with a target-specific configuration.
+    /// Target-specific values typically override base values.
+    fn merge_with_target_config(&self, target_config: &Self) -> Self;
+}
+
 /// At least debug dir should be provided by the backend config
 pub trait BackendConfig: DeserializeOwned + Default {
     fn debug_dir(&self) -> Option<&Path>;

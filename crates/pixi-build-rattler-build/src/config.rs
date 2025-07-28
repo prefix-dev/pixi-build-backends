@@ -1,6 +1,6 @@
+use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case")]

@@ -2,7 +2,7 @@ name: Python bindings CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
     paths:
       # When we change code that bindings depend on, we want to ensure that the maturin builds still work

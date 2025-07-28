@@ -26,7 +26,6 @@ requirements:
     from_package:
       - cross-python_${{ target_platform }}
 
-
 build:
   script:
     - if: unix

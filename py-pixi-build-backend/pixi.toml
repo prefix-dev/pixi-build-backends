@@ -30,6 +30,7 @@ mypy = "*"
 
 pytest = "*"
 syrupy = "*"
+toml = "*"
 
 
 # for rust-analyzer

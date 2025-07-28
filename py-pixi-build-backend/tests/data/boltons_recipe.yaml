@@ -19,16 +19,11 @@ build:
 
 requirements:
   host:
-    # - if: linux
-    #   then:
     - python
     - pip
     - setuptools
-    # - numpy
-    # - ${{ stdlib('c') }}
   run:
     - pip
-    # - ${{ pin_compatible('numpy', min_pin='x.x', max_pin='x') }}
 
 about:
   license: BSD-3-Clause

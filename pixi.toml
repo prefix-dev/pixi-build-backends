@@ -80,21 +80,29 @@ lint-schema = "ruff check schema --fix"
 
 [feature.lint.dependencies]
 actionlint = ">=1.7.4,<2"
-pre-commit = ">=4.2,<5"
-pre-commit-hooks = ">=5,<6"
 shellcheck = ">=0.10.0,<0.11"
 taplo = ">=0.10,<0.11"
 typos = ">=1.23.1,<2"
+dprint = ">=0.50.0,<0.51"
+lefthook = ">=1.12.2,<2"
 
 [feature.lint.tasks]
 actionlint = { cmd = "actionlint", env = { SHELLCHECK_OPTS = "-e SC2086" } }
-lint = "pre-commit run --all-files --hook-stage=manual"
-pre-commit-install = "pre-commit install"
-pre-commit-run = "pre-commit run --all-files"
-toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
-toml-lint = "taplo lint --verbose **/pixi.toml"
 cargo-clippy = "cargo clippy --all-targets --workspace -- -D warnings"
 cargo-fmt = "cargo fmt --all"
+dprint-check = { cmd = "dprint check --log-level=silent", description = "Check formatting with dprint" }
+dprint-fmt = { cmd = "dprint fmt --incremental=false", description = "Format with dprint" }
+lefthook = { cmd = "lefthook", description = "Run lefthook" }
+lint = { depends-on = [
+  "lint-fast",
+  "lint-slow",
+], description = "Run all linters and formatters on all code" }
+lint-fast = { cmd = "lefthook run pre-commit --all-files --force", description = "Run all fast linters and formatters on all code (no clippy)" }
+lint-slow = { cmd = "lefthook run pre-push --all-files --force", description = "Run all slow linters and formatters on all code" }
+pre-commit-install = "lefthook install"
+pre-commit-install-minimal = "lefthook install pre-commit"
+toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
+toml-lint = "taplo lint --verbose **/pixi.toml"
 
 [feature.docs.dependencies]
 cairosvg = "2.8.2.*"

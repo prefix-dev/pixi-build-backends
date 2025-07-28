@@ -61,7 +61,7 @@ impl GenerateRecipe for PythonGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the python build tools are added to the `host` requirements.
         // Please note: this is a subtle difference for python, where the build tools are
@@ -158,7 +158,7 @@ impl GenerateRecipe for PythonGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         let base_globs = Vec::from([
             // Source files
             "**/*.c",

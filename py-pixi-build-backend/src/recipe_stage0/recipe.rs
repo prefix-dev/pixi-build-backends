@@ -576,7 +576,7 @@ impl PyConditionalRequirements {
     pub fn resolve(&self, host_platform: Option<&PyPlatform>) -> PyPackageSpecDependencies {
         let platform = host_platform.map(|p| p.inner);
 
-        let resolved = self.inner.resolve(platform.as_ref());
+        let resolved = self.inner.resolve(platform);
 
         resolved.into()
     }

@@ -4,20 +4,17 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-hashlink = "0.10.0"
-marked-yaml = "0.8.0"
+hashlink = { workspace = true }
+marked-yaml = { workspace = true }
 rattler_conda_types = { workspace = true }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_yaml = "0.9.34"
+serde = { workspace = true, features = ["derive"] }
+serde_yaml = { workspace = true }
 rattler-build = { workspace = true }
 indexmap = { workspace = true }
 url = { workspace = true }
-either = { workspace = true }
-pixi_build_types = { workspace = true }
-miette = { workspace = true }
 
 
 [dev-dependencies]
-insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
-serde_json = "1.0"
+insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
+serde_json = { workspace = true }
 pixi_build_types = { workspace = true }

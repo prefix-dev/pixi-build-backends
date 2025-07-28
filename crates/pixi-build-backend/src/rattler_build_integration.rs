@@ -140,7 +140,7 @@ pub async fn get_build_output(
                     &output_dir,
                     true,
                     &timestamp,
-                    false,
+                    recipe.build().merge_build_and_host_envs,
                 )
                 .into_diagnostic()?,
                 channels,

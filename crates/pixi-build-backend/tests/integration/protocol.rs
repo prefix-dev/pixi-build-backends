@@ -5,7 +5,7 @@ use imp::TestGenerateRecipe;
 use pixi_build_backend::{intermediate_backend::IntermediateBackend, protocol::Protocol};
 use pixi_build_types::{
     ChannelConfiguration, PlatformAndVirtualPackages,
-    procedures::{conda_build::CondaBuildParams, conda_metadata::CondaMetadataParams},
+    procedures::{conda_build_v0::CondaBuildParams, conda_metadata::CondaMetadataParams},
 };
 use rattler_build::console_utils::LoggingOutputHandler;
 use rattler_conda_types::Platform;
@@ -100,6 +100,7 @@ async fn test_conda_get_metadata() {
 
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
         pixi_manifest.clone(),
+        Some(tmp_dir_path.clone()),
         project_model_v1,
         Arc::default(),
         some_config,
@@ -159,6 +160,7 @@ async fn test_conda_build() {
 
     let intermediate_backend: IntermediateBackend<TestGenerateRecipe> = IntermediateBackend::new(
         pixi_manifest.clone(),
+        Some(tmp_dir_path.clone()),
         project_model_v1,
         Arc::default(),
         some_config,
@@ -168,7 +170,7 @@ async fn test_conda_build() {
     .unwrap();
 
     let conda_build_result = intermediate_backend
-        .conda_build(build_params)
+        .conda_build_v0(build_params)
         .await
         .unwrap();
 

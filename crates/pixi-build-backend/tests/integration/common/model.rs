@@ -190,6 +190,8 @@ fn convert_package_spec_to_v1(spec: &PackageSpec) -> PackageSpecV1 {
                 subdir: None,
                 md5: None,
                 sha256: None,
+                url: None,
+                license: None,
             }))
         }
         PackageSpec::Source(source_spec) => {

@@ -22,6 +22,7 @@ use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Script},
 };
+use std::collections::BTreeSet;
 
 #[derive(Default, Clone)]
 pub struct RustGenerator {}
@@ -45,7 +46,7 @@ impl GenerateRecipe for RustGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.
@@ -133,7 +134,7 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -186,10 +187,10 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.rs".to_string()));
-        assert!(result.contains(&"Cargo.toml".to_string()));
-        assert!(result.contains(&"Cargo.lock".to_string()));
-        assert!(result.contains(&"build.rs".to_string()));
+        assert!(result.contains("**/*.rs"));
+        assert!(result.contains("Cargo.toml"));
+        assert!(result.contains("Cargo.lock"));
+        assert!(result.contains("build.rs"));
     }
 
     #[macro_export]

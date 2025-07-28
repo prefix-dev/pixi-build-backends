@@ -1,7 +1,10 @@
 mod build_script;
 mod config;
 
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
@@ -36,7 +39,7 @@ impl GenerateRecipe for CMakeGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the compiler function is added to the build requirements
         // only if a specific compiler is not already present.
@@ -93,7 +96,7 @@ impl GenerateRecipe for CMakeGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         [
             // Source files
             "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
@@ -137,7 +140,12 @@ mod tests {
     use std::path::PathBuf;
 
     use indexmap::IndexMap;
-    use pixi_build_types::ProjectModelV1;
+    use pixi_build_backend::protocol::ProtocolInstantiator;
+    use pixi_build_types::{
+        ProjectModelV1,
+        procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
+    };
+    use rattler_build::console_utils::LoggingOutputHandler;
 
     use super::*;
 
@@ -328,5 +336,47 @@ mod tests {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script" => "[ ... script ... ]",
         });
+    }
+
+    #[tokio::test]
+    async fn test_windows_default_compiler() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+        });
+
+        let factory =
+            IntermediateBackendInstantiator::<CMakeGenerator>::new(LoggingOutputHandler::default())
+                .initialize(InitializeParams {
+                    source_dir: None,
+                    manifest_path: PathBuf::from("pixi.toml"),
+                    project_model: Some(project_model.into()),
+                    configuration: None,
+                    cache_directory: None,
+                })
+                .await
+                .unwrap();
+
+        let current_dir = std::env::current_dir().unwrap();
+        let outputs = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                host_platform: Platform::Win64,
+                build_platform: Platform::Win64,
+                variant_configuration: None,
+                work_directory: current_dir,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(
+            outputs.outputs[0]
+                .metadata
+                .variant
+                .get("cxx_compiler")
+                .map(String::as_str),
+            Some("vs2019"),
+            "On windows the default cxx_compiler variant should be vs2019"
+        );
     }
 }

@@ -1,11 +1,6 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
-
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use miette::IntoDiagnostic;
@@ -20,6 +15,11 @@ use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Script},
+};
+use std::collections::BTreeSet;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
 };
 
 #[derive(Default, Clone)]
@@ -44,7 +44,7 @@ impl GenerateRecipe for RustGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(&host_platform));
+        let resolved_requirements = requirements.resolve(Some(host_platform));
 
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.
@@ -132,7 +132,7 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> Vec<String> {
+    ) -> BTreeSet<String> {
         [
             "**/*.rs",
             // Cargo configuration files
@@ -183,10 +183,10 @@ mod tests {
         }
 
         // Verify that default globs are still present
-        assert!(result.contains(&"**/*.rs".to_string()));
-        assert!(result.contains(&"Cargo.toml".to_string()));
-        assert!(result.contains(&"Cargo.lock".to_string()));
-        assert!(result.contains(&"build.rs".to_string()));
+        assert!(result.contains("**/*.rs"));
+        assert!(result.contains("Cargo.toml"));
+        assert!(result.contains("Cargo.lock"));
+        assert!(result.contains("build.rs"));
     }
 
     #[macro_export]

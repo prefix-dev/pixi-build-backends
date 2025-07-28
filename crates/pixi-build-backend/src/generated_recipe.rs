@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
@@ -18,8 +18,8 @@ pub struct PythonParams {
     pub editable: bool,
 }
 
-/// The trait is responsible of converting a certain [`ProjectModelV1`] (or others in the future)
-/// into an [`IntermediateRecipe`].
+/// The trait is responsible of converting a certain [`ProjectModelV1`] (or
+/// others in the future) into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
 /// It also uses a [`BackendConfig`] to provide additional configuration
@@ -56,8 +56,8 @@ pub trait GenerateRecipe {
         _config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> Vec<String> {
-        vec![]
+    ) -> BTreeSet<String> {
+        BTreeSet::new()
     }
 
     /// Returns "default" variants for the given host platform. This allows
@@ -80,8 +80,8 @@ pub trait BackendConfig: DeserializeOwned + Default {
 #[derive(Default)]
 pub struct GeneratedRecipe {
     pub recipe: IntermediateRecipe,
-    pub metadata_input_globs: Vec<String>,
-    pub build_input_globs: Vec<String>,
+    pub metadata_input_globs: BTreeSet<String>,
+    pub build_input_globs: BTreeSet<String>,
 }
 
 impl GeneratedRecipe {
@@ -98,9 +98,12 @@ impl GeneratedRecipe {
             ),
         };
 
-        let source = ConditionalList::from([Item::Value(Value::Concrete(Source::path(
-            manifest_root.display().to_string(),
-        )))]);
+        let manifest_path = match manifest_root.display().to_string() {
+            path if path.is_empty() => String::from("."),
+            path => path,
+        };
+        let source =
+            ConditionalList::from([Item::Value(Value::Concrete(Source::path(manifest_path)))]);
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());

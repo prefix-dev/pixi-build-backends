@@ -102,10 +102,10 @@ extra:
 nav:
   - Home: index.md
   - Backends:
-    - pixi-build-cmake: backends/pixi-build-cmake.md
-    - pixi-build-python: backends/pixi-build-python.md
-    - pixi-build-rattler-build: backends/pixi-build-rattler-build.md
-    - pixi-build-rust: backends/pixi-build-rust.md
+      - pixi-build-cmake: backends/pixi-build-cmake.md
+      - pixi-build-python: backends/pixi-build-python.md
+      - pixi-build-rattler-build: backends/pixi-build-rattler-build.md
+      - pixi-build-rust: backends/pixi-build-rust.md
 
 validation:
   omitted_files: warn

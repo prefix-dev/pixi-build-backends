@@ -10,6 +10,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 clap-verbosity-flag = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true }
+ordermap = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 miette = { workspace = true }
@@ -32,6 +33,7 @@ url = { workspace = true }
 pyproject-toml = { workspace = true }
 dirs = { workspace = true }
 pathdiff = { workspace = true }
+thiserror = { workspace = true }
 
 pixi_build_types = { workspace = true }
 pixi_consts = { workspace = true }

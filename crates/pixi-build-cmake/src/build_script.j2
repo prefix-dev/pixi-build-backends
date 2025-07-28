@@ -1,45 +1,59 @@
+{%- set is_cmd_exe = build_platform == "windows" -%}
+{%- macro env(key) -%}
+{%- if is_cmd_exe %}{{ "%" ~ key ~ "%" }}{% else %}{{ "$" ~key }}{% endif -%}
+{% endmacro -%}
+
+{# - Set up common variables -#}
+{%- set build_dir = "build" -%}
+{%- set source_dir = env("SRC_DIR") -%}
+{%- set library_prefix =  "%LIBRARY_PREFIX%" if build_platform == "windows" else "$PREFIX" -%}
+
+{# Set up default CMake arguments -#}
+{%- set cmake_args = [
+    env("CMAKE_ARGS"),
+    "-GNinja",
+    "-S \"" ~ source_dir ~ "\"",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_INSTALL_PREFIX=" ~ library_prefix,
+    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    "-DBUILD_SHARED_LIBS=ON",
+]
+-%}
+
+{# Add Python executable if available -#}
+{%- if has_host_python -%}
+{%- set cmake_args = cmake_args + [
+    "-DPython_EXECUTABLE=" ~ env("PYTHON")
+] -%}
+{% endif -%}
+
+{#- Output version information -#}
 ninja --version
 cmake --version
 
-{# Windows #}
-{% if build_platform == "windows" -%}
-if not exist %SRC_DIR%\..\build\build.ninja (
-    cmake %CMAKE_ARGS% ^
-          -GNinja ^
-          -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-          -DBUILD_SHARED_LIBS=ON ^
-          {% if has_host_python -%}
-          -DPython_EXECUTABLE="%PYTHON%" ^
-          {% endif -%}
-          {{ extra_args | join(" ") }} ^
-          -B %SRC_DIR%\..\build ^
-          -S "{{ source_dir }}"
+{# Set up the build directory -#}
+{% if is_cmd_exe -%}
+if not exist {{ build_dir }} mkdir {{ build_dir }}
+{% else -%}
+mkdir -p build
+{% endif -%}
+pushd build
+
+{# Windows -#}
+{% if is_cmd_exe -%}
+if not exist build.ninja (
+    cmake {{ cmake_args | join(" ^\n        ") }}
     @if errorlevel 1 exit 1
 )
-cmake --build %SRC_DIR%\..\build --target install
+
+cmake --build . --target install
 @if errorlevel 1 exit 1
 
 {# Non Windows #}
 {% else -%}
-if [ ! -f "$SRC_DIR/../build/build.ninja" ]; then
-    cmake $CMAKE_ARGS \
-          -GNinja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=$PREFIX \
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-          {% if has_host_python -%}
-          -DPython_EXECUTABLE=$PYTHON \
-          {% endif -%}
-          -DBUILD_SHARED_LIBS=ON \
-          {{ extra_args | join(" ") }} \
-          -B $SRC_DIR/../build \
-          -S "{{ source_dir }}"
+if [ ! -f "build.ninja" ]; then
+    cmake {{ cmake_args | join(" \\\n        ") }}
 fi
-cmake --build $SRC_DIR/../build --target install
-{% endif -%}
 
-{% if build_platform == "windows" -%}
-@if errorlevel 1 exit 1
-{% endif %}
+cmake --build . --target install
+{% endif -%}

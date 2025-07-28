@@ -52,9 +52,9 @@ rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = 
   "rustls-tls",
 ] }
 
-rattler_conda_types = { version = "0.35.1", default-features = false }
-rattler_package_streaming = { version = "0.22.35", default-features = false }
-rattler_virtual_packages = { version = "2.0.9", default-features = false }
+rattler_conda_types = { version = "0.35.3", default-features = false }
+rattler_package_streaming = { version = "0.22.42", default-features = false }
+rattler_virtual_packages = { version = "2.0.16", default-features = false }
 
 pixi_build_types = { version = "*" }
 pixi_consts = { version = "*" }

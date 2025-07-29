@@ -704,6 +704,9 @@ class ItemPackageDependency:
 
     _inner: PyItemPackageDependency
 
+    def __init__(self, name: str):
+        self._inner = PyItemPackageDependency(name)
+
     @classmethod
     def _from_inner(cls, inner: PyItemPackageDependency) -> "ItemPackageDependency":
         """Create an ItemPackageDependency from a FFI PyItemPackageDependency."""

@@ -187,4 +187,22 @@ mod tests {
         // When target has value, should use target value
         assert_eq!(merged.noarch, Some(false));
     }
+
+    #[test]
+    fn test_merge_target_debug_dir_error() {
+        let base_config = PythonBackendConfig {
+            debug_dir: Some(PathBuf::from("/base/debug")),
+            ..Default::default()
+        };
+
+        let target_config = PythonBackendConfig {
+            debug_dir: Some(PathBuf::from("/target/debug")),
+            ..Default::default()
+        };
+
+        let result = base_config.merge_with_target_config(&target_config);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("`debug_dir` cannot have a target specific value"));
+    }
 }

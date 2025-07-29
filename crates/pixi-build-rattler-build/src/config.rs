@@ -90,4 +90,22 @@ mod tests {
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
     }
+
+    #[test]
+    fn test_merge_target_debug_dir_error() {
+        let base_config = RattlerBuildBackendConfig {
+            debug_dir: Some(PathBuf::from("/base/debug")),
+            ..Default::default()
+        };
+
+        let target_config = RattlerBuildBackendConfig {
+            debug_dir: Some(PathBuf::from("/target/debug")),
+            ..Default::default()
+        };
+
+        let result = base_config.merge_with_target_config(&target_config);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("`debug_dir` cannot have a target specific value"));
+    }
 }

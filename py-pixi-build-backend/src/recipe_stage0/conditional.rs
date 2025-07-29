@@ -1,7 +1,8 @@
 use pyo3::exceptions::PyTypeError;
 use pyo3::types::PyAnyMethods;
-use pyo3::{Bound, FromPyObject, PyAny, PyErr, intern, pyclass, pymethods};
+use pyo3::{Bound, FromPyObject, PyAny, PyErr, PyResult, intern, pyclass, pymethods};
 use recipe_stage0::matchspec::PackageDependency;
+use recipe_stage0::recipe::Value;
 use recipe_stage0::recipe::{Conditional, Item, ListOrItem};
 
 macro_rules! create_py_item {
@@ -14,6 +15,17 @@ macro_rules! create_py_item {
 
         #[pymethods]
         impl $name {
+            #[new]
+            pub fn new(value: String) -> PyResult<Self> {
+                let val = value
+                    .parse::<$type>()
+                    .map_err(|_| PyTypeError::new_err(format!("Failed to parse {value}")))?;
+
+                Ok($name {
+                    inner: Item::Value(Value::Concrete(val)),
+                })
+            }
+
             pub fn is_value(&self) -> bool {
                 matches!(self.inner, Item::Value(_))
             }

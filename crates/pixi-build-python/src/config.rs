@@ -62,6 +62,7 @@ impl BackendConfig for PythonBackendConfig {
 #[cfg(test)]
 mod tests {
     use super::PythonBackendConfig;
+    use pixi_build_backend::generated_recipe::BackendConfig;
     use serde_json::json;
     use std::path::PathBuf;
 

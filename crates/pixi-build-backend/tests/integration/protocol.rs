@@ -102,12 +102,15 @@ async fn test_conda_get_metadata() {
         "debug-dir": "some_debug_dir",
     });
 
+    let target_config = Default::default();
+
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
         pixi_manifest.clone(),
         Some(tmp_dir_path.clone()),
         project_model_v1,
         TestGenerateRecipe::default(),
         some_config,
+        target_config,
         LoggingOutputHandler::default(),
         None,
     )
@@ -162,12 +165,15 @@ async fn test_conda_build() {
         "debug-dir": "some_debug_dir",
     });
 
+    let target_config = Default::default();
+
     let intermediate_backend = IntermediateBackend::new(
         pixi_manifest.clone(),
         Some(tmp_dir_path.clone()),
         project_model_v1,
         TestGenerateRecipe::default(),
         some_config,
+        target_config,
         LoggingOutputHandler::default(),
         None,
     )

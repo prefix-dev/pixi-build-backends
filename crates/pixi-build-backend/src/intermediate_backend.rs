@@ -7,8 +7,10 @@ use std::{
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
+use ordermap::OrderMap;
 use pixi_build_types::{
     BackendCapabilities, CondaPackageMetadata, PathSpecV1, ProjectModelV1, SourcePackageSpecV1,
+    TargetSelectorV1,
     procedures::{
         conda_build_v0::{
             CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
@@ -95,6 +97,7 @@ pub struct IntermediateBackend<T: GenerateRecipe + Clone> {
     pub(crate) project_model: ProjectModelV1,
     pub(crate) generate_recipe: T,
     pub(crate) config: T::Config,
+    pub(crate) target_config: OrderMap<TargetSelectorV1, T::Config>,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
@@ -104,6 +107,7 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
         project_model: ProjectModelV1,
         generate_recipe: T,
         config: serde_json::Value,
+        target_config: OrderMap<TargetSelectorV1, serde_json::Value>,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -136,12 +140,25 @@ impl<T: GenerateRecipe + Clone> IntermediateBackend<T> {
             .into_diagnostic()
             .context("failed to parse configuration")?;
 
+        let target_config = target_config
+            .into_iter()
+            .map(|(target, config)| {
+                let config = serde_json::from_value::<T::Config>(config)
+                    .into_diagnostic()
+                    .wrap_err_with(|| {
+                        format!("failed to parse target configuration for {target}")
+                    })?;
+                Ok((target, config))
+            })
+            .collect::<Result<_, miette::Report>>()?;
+
         Ok(Self {
             source_dir,
             manifest_rel_path,
             project_model,
             generate_recipe,
             config,
+            target_config,
             logging_output_handler,
             cache_dir,
         })
@@ -180,12 +197,19 @@ where
             serde_json::Value::Object(Default::default())
         };
 
+        let target_config = if let Some(target_config) = params.target_configuration {
+            target_config
+        } else {
+            OrderMap::default()
+        };
+
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
             params.source_dir,
             project_model,
             self.generator.clone(),
             config,
+            target_config,
             self.logging_output_handler.clone(),
             params.cache_directory,
         )?;

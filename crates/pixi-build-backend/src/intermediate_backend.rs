@@ -568,10 +568,16 @@ where
 
         let build_platform = Platform::current();
 
+        let config = TargetSelectorV1::from_str(host_platform.as_str())
+            .ok()
+            .and_then(|host_platform| self.target_config.get(&host_platform))
+            .map(|target_config| self.config.merge_with_target_config(&target_config))
+            .unwrap_or_else(|| self.config.clone());
+
         // Construct the intermediate recipe
         let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
-            &self.config,
+            &config,
             self.source_dir.clone(),
             host_platform,
             Some(PythonParams {
@@ -791,11 +797,8 @@ where
                 .await?;
 
             // Extract the input globs from the build and recipe
-            let mut input_globs = T::extract_input_globs_from_build(
-                &self.config,
-                &params.work_directory,
-                params.editable,
-            );
+            let mut input_globs =
+                T::extract_input_globs_from_build(&config, &params.work_directory, params.editable);
             input_globs.append(&mut generated_recipe.build_input_globs);
 
             let built_package = CondaBuiltPackage {
@@ -818,10 +821,16 @@ where
     ) -> miette::Result<CondaOutputsResult> {
         let build_platform = params.host_platform;
 
+        let config = TargetSelectorV1::from_str(params.host_platform.as_str())
+            .ok()
+            .and_then(|host_platform| self.target_config.get(&host_platform))
+            .map(|target_config| self.config.merge_with_target_config(&target_config))
+            .unwrap_or_else(|| self.config.clone());
+
         // Construct the intermediate recipe
         let recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
-            &self.config,
+            &config,
             self.source_dir.clone(),
             params.host_platform,
             Some(PythonParams { editable: false }),
@@ -1055,10 +1064,16 @@ where
             .as_ref()
             .map_or_else(Platform::current, |prefix| prefix.platform);
 
+        let config = TargetSelectorV1::from_str(host_platform.as_str())
+            .ok()
+            .and_then(|host_platform| self.target_config.get(&host_platform))
+            .map(|target_config| self.config.merge_with_target_config(&target_config))
+            .unwrap_or_else(|| self.config.clone());
+
         // Construct the intermediate recipe
         let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
-            &self.config,
+            &config,
             self.source_dir.clone(),
             host_platform,
             Some(PythonParams {
@@ -1190,7 +1205,7 @@ where
 
         // Extract the input globs from the build and recipe
         let mut input_globs = T::extract_input_globs_from_build(
-            &self.config,
+            &config,
             &params.work_directory,
             params.editable.unwrap_or_default(),
         );

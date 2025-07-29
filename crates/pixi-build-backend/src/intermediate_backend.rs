@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
 };
 
@@ -259,10 +260,16 @@ where
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
 
+        let config = TargetSelectorV1::from_str(host_platform.as_str())
+            .ok()
+            .and_then(|host_platform| self.target_config.get(&host_platform))
+            .map(|target_config| self.config.merge_with_target_config(&target_config))
+            .unwrap_or_else(|| self.config.clone());
+
         // Construct the intermediate recipe
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
-            &self.config,
+            &config,
             self.source_dir.clone(),
             host_platform,
             Some(PythonParams { editable: false }),

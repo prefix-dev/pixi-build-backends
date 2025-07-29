@@ -1,10 +1,7 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-};
+use std::{collections::BTreeMap, collections::BTreeSet, path::Path, sync::Arc};
 
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
@@ -127,8 +124,10 @@ impl GenerateRecipe for CMakeGenerator {
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) =
-        pixi_build_backend::cli::main(IntermediateBackendInstantiator::<CMakeGenerator>::new).await
+    if let Err(err) = pixi_build_backend::cli::main(|log| {
+        IntermediateBackendInstantiator::<CMakeGenerator>::new(log, Arc::default())
+    })
+    .await
     {
         eprintln!("{err:?}");
         std::process::exit(1);
@@ -345,18 +344,20 @@ mod tests {
             "version": "0.1.0",
         });
 
-        let factory =
-            IntermediateBackendInstantiator::<CMakeGenerator>::new(LoggingOutputHandler::default())
-                .initialize(InitializeParams {
-                    source_dir: None,
-                    manifest_path: PathBuf::from("pixi.toml"),
-                    project_model: Some(project_model.into()),
-                    configuration: None,
-                    target_configuration: None,
-                    cache_directory: None,
-                })
-                .await
-                .unwrap();
+        let factory = IntermediateBackendInstantiator::<CMakeGenerator>::new(
+            LoggingOutputHandler::default(),
+            Arc::default(),
+        )
+        .initialize(InitializeParams {
+            source_dir: None,
+            manifest_path: PathBuf::from("pixi.toml"),
+            project_model: Some(project_model.into()),
+            configuration: None,
+            target_configuration: None,
+            cache_directory: None,
+        })
+        .await
+        .unwrap();
 
         let current_dir = std::env::current_dir().unwrap();
         let outputs = factory

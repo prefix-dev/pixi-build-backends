@@ -1,0 +1,77 @@
+[package]
+name = "py-pixi-build-backend"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "pixi_build_backend"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PyO3 for Python bindings
+pyo3 = { version = "0.24", features = [
+  "extension-module",
+  "abi3-py38",
+  "serde",
+  "py-clone",
+  "experimental-async",
+] }
+
+pyo3-async-runtimes = { version = "0.24.0", features = ["tokio-runtime"] }
+
+# Core pixi-build dependencies (local crates)
+pixi-build-backend = { path = "../crates/pixi-build-backend" }
+recipe-stage0 = { path = "../crates/recipe-stage0" }
+
+
+# Pixi types
+pixi_build_types = "*"
+pixi_manifest = "*"
+pixi_spec = "*"
+pixi_build_type_conversions = "*"
+
+# Core serialization and async support
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "rt"] }
+toml_edit = "0.22.24"
+toml = "0.8"
+
+rattler_conda_types = { version = "0.35.5", default-features = false }
+rattler_package_streaming = { version = "0.22.35", default-features = false }
+rattler_virtual_packages = { version = "2.0.9", default-features = false }
+
+
+# Error handling
+miette = "7.5.0"
+thiserror = "2.0.12"
+
+# We want to point to the latest known hash commit where rattler is not bumped yet
+# and doesn't conflict with the pixi build types.
+py-rattler = { git = "https://github.com/conda/rattler", rev = "ac1a946121f5b9d949e4b5f6229626795b00f39a" }
+
+# Utilities
+indexmap = "2.7.1"
+pythonize = "0.24"
+dict_derive = "0.6.0"
+paste = "1.0.15"
+
+[dev-dependencies]
+tempfile = "3.16.0"
+
+[build-dependencies]
+pyo3-build-config = "0.25"
+
+# Prevent package from thinking it's in the workspace
+[workspace]
+
+
+[patch.crates-io]
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", tag = "v0.50.0" }
+pixi_consts = { git = "https://github.com/prefix-dev/pixi", tag = "v0.50.0" }
+pixi_manifest = { git = "https://github.com/prefix-dev/pixi", tag = "v0.50.0" }
+pixi_spec = { git = "https://github.com/prefix-dev/pixi", tag = "v0.50.0" }
+pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", tag = "v0.50.0" }
+
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }

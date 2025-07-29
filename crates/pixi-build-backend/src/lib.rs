@@ -19,3 +19,5 @@ pub mod utils;
 pub mod variants;
 
 pub use traits::{PackageSourceSpec, PackageSpec, ProjectModel, TargetSelector, Targets};
+
+pub use cli::main_ext as cli_main;

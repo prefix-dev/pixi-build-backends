@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
 use pixi_build_types::procedures::{
     conda_outputs::{CondaOutputsParams, CondaOutputsResult},
@@ -64,18 +64,20 @@ where
         .build()
         .unwrap();
     runtime.block_on(async move {
-        let (protocol, _result) =
-            IntermediateBackendInstantiator::<T>::new(LoggingOutputHandler::default())
-                .initialize(InitializeParams {
-                    source_dir,
-                    manifest_path,
-                    project_model: project_model.map(Into::into),
-                    configuration: None,
-                    target_configuration: None,
-                    cache_directory: None,
-                })
-                .await
-                .unwrap();
+        let (protocol, _result) = IntermediateBackendInstantiator::<T>::new(
+            LoggingOutputHandler::default(),
+            Arc::new(T::default()),
+        )
+        .initialize(InitializeParams {
+            source_dir,
+            manifest_path,
+            project_model: project_model.map(Into::into),
+            configuration: None,
+            target_configuration: None,
+            cache_directory: None,
+        })
+        .await
+        .unwrap();
 
         let current_dir = std::env::current_dir().unwrap();
         let result = protocol

@@ -42,7 +42,7 @@ pub struct App {
     verbose: Verbosity<InfoLevel>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Get conda metadata for a recipe.
     GetCondaMetadata {
@@ -72,12 +72,11 @@ async fn run_server<T: ProtocolInstantiator>(port: Option<u16>, protocol: T) -> 
     }
 }
 
-/// Run the main CLI.
-pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
+/// The actual implementation of the main function that runs the CLI.
+pub(crate) async fn main_impl<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
     factory: F,
+    args: App,
 ) -> miette::Result<()> {
-    let args = App::parse();
-
     // Setup logging
     let log_handler = LoggingOutputHandler::default();
 
@@ -139,6 +138,23 @@ pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>
             Ok(())
         }
     }
+}
+
+/// The entry point for the CLI which should be called from the backends implementation.
+pub async fn main<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
+    factory: F,
+) -> miette::Result<()> {
+    let args = App::parse();
+    main_impl(factory, args).await
+}
+
+/// The entry point for the CLI which should be called from the backends implementation.
+pub async fn main_ext<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHandler) -> T>(
+    factory: F,
+    args: Vec<String>,
+) -> miette::Result<()> {
+    let args = App::parse_from(args);
+    main_impl(factory, args).await
 }
 
 /// Negotiate the capabilities of the backend and initialize the backend.

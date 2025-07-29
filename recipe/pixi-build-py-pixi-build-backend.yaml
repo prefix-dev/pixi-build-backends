@@ -1,0 +1,44 @@
+package:
+  name: py-pixi-build-backend
+  version: "${{ env.get('PY_PIXI_BUILD_BACKEND', default='0.1.0dev') }}"
+
+source:
+  path: ..
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.2.2,<2
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+  host:
+    - python
+    - python-abi3
+    - maturin >=1.2.2,<2
+    - pip
+
+  run:
+    - python >=3.8
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}
+
+build:
+  script:
+    - if: unix
+      then:
+        - cd py-pixi-build-backend
+        - pip install . -vv
+      else:
+        - pip install . -vv
+
+  python:
+    version_independent: true
+
+tests:
+  - python:
+      imports:
+        - pixi_build_backend

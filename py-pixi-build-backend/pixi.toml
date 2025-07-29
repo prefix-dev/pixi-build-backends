@@ -1,0 +1,61 @@
+[project]
+name = "py-pixi-build-backend"
+description = "Add a short description here"
+authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+license = "BSD-3-Clause"
+
+[tasks]
+
+[feature.build.dependencies]
+python = "*"
+maturin = "~=1.2.2"
+pip = "~=23.2.1"
+rust = "~=1.86.0"
+
+[feature.build.tasks]
+build = "PIP_REQUIRE_VIRTUALENV=false maturin develop"
+build-release = "PIP_REQUIRE_VIRTUALENV=false maturin develop --release"
+
+[feature.build.target.linux-64.dependencies]
+patchelf = "~=0.17.2"
+
+[feature.test.dependencies]
+# Python 3.8 is the minimum supported version, so we use that for testing
+python = "3.8.*"
+
+ruff = ">=0.12.3,<0.13"
+mypy = "*"
+
+pytest = "*"
+syrupy = "*"
+toml = "*"
+
+
+# for rust-analyzer
+rust-src = "~=1.86.0"
+
+[feature.test.pypi-dependencies]
+types-toml = "*"
+
+
+[feature.test.tasks]
+test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
+fmt-python = "ruff format pixi_build_backend examples tests"
+fmt-rust = "cargo fmt --all"
+lint-python = "ruff check ."
+lint-rust = "cargo clippy --all"
+fmt = { depends-on = ["fmt-python", "fmt-rust"] }
+lint = { depends-on = ["type-check", "lint-python", "lint-rust"] }
+type-check = { cmd = "mypy", depends-on = ["build"] }
+
+# checks for the CI
+fmt-rust-check = "cargo fmt --all --check"
+fmt-python-check = "ruff format pixi_build_backend examples tests --diff"
+fmt-check = { depends-on = ["fmt-python-check", "fmt-rust-check"] }
+
+
+[environments]
+test = { features = ["build", "test"], solve-group = "default" }
+build = ["build"]

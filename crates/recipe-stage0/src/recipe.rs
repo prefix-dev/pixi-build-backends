@@ -297,15 +297,23 @@ impl<T: Debug> Debug for Conditional<T> {
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct IntermediateRecipe {
+    #[serde(default)]
     pub context: IndexMap<String, Value<String>>,
+    #[serde(default)]
     pub package: Package,
+    #[serde(default)]
     pub source: ConditionalList<Source>,
+    #[serde(default)]
     pub build: Build,
+    #[serde(default)]
     pub requirements: ConditionalRequirements,
+    #[serde(default)]
     pub tests: Vec<Test>,
+    #[serde(default)]
     pub about: Option<About>,
+    #[serde(default)]
     pub extra: Option<Extra>,
 }
 
@@ -316,7 +324,7 @@ pub struct EvaluatedDependencies {
     pub run_constraints: Option<Vec<SerializableMatchSpec>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Package {
     pub name: Value<String>,
     pub version: Value<String>,
@@ -414,14 +422,16 @@ pub struct PathSource {
     pub sha256: Option<Value<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Script {
     pub content: Vec<String>,
+    #[serde(default)]
     pub env: IndexMap<String, String>,
+    #[serde(default)]
     pub secrets: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum NoArchKind {
     Python,
@@ -444,7 +454,7 @@ impl Python {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Build {
     pub number: Option<Value<u64>>,
     pub script: Script,
@@ -483,11 +493,15 @@ pub enum Target {
 }
 
 /// A type that is very specific to rattler-build /recipe.yaml side
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct ConditionalRequirements {
+    #[serde(default)]
     pub build: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub host: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub run: ConditionalList<PackageDependency>,
+    #[serde(default)]
     pub run_constraints: ConditionalList<PackageDependency>,
 }
 
@@ -561,18 +575,18 @@ pub(crate) struct Requirements {
     pub run_constraints: Vec<SerializableMatchSpec>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Test {
     pub package_contents: Option<PackageContents>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PackageContents {
     pub include: Option<ConditionalList<String>>,
     pub files: Option<ConditionalList<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct About {
     pub homepage: Option<Value<String>>,
     pub license: Option<Value<String>>,
@@ -583,7 +597,7 @@ pub struct About {
     pub repository: Option<Value<String>>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Extra {
     #[serde(rename = "recipe-maintainers")]
     pub recipe_maintainers: ConditionalList<String>,

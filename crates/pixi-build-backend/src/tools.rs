@@ -23,9 +23,8 @@ use rattler_build::{
     system_tools::SystemTools,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig, VariantConfigError},
 };
-use rattler_conda_types::{
-    GenericVirtualPackage, Platform, compression_level::CompressionLevel, package::ArchiveType,
-};
+use rattler_conda_types::compression_level::CompressionLevel;
+use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType};
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 

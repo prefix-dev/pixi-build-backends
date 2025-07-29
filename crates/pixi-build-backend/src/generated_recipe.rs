@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::Debug,
     path::{Path, PathBuf},
 };
 
@@ -81,7 +82,7 @@ pub trait BackendConfig: DeserializeOwned + Default + Clone + serde::Serialize {
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self>;
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GeneratedRecipe {
     pub recipe: IntermediateRecipe,
     pub metadata_input_globs: BTreeSet<String>,

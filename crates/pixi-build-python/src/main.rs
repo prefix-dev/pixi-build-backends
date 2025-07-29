@@ -1,6 +1,13 @@
 mod build_script;
 mod config;
 
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
+
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
@@ -12,11 +19,6 @@ use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
 use recipe_stage0::recipe::{NoArchKind, Python, Script};
-use std::collections::BTreeSet;
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -205,8 +207,10 @@ impl GenerateRecipe for PythonGenerator {
 
 #[tokio::main]
 pub async fn main() {
-    if let Err(err) =
-        pixi_build_backend::cli::main(IntermediateBackendInstantiator::<PythonGenerator>::new).await
+    if let Err(err) = pixi_build_backend::cli::main(|log| {
+        IntermediateBackendInstantiator::<PythonGenerator>::new(log, Arc::default())
+    })
+    .await
     {
         eprintln!("{err:?}");
         std::process::exit(1);

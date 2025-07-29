@@ -1,4 +1,4 @@
-use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
+use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -16,20 +16,12 @@ impl BackendConfig for RattlerBuildBackendConfig {
     fn debug_dir(&self) -> Option<&Path> {
         self.debug_dir.as_deref()
     }
-}
 
-impl TargetAwareBackendConfig for RattlerBuildBackendConfig {
-    fn merge_with_target_config(&self, target_config: &Self) -> Self {
-        RattlerBuildBackendConfig::merge_with_target_config(self, target_config)
-    }
-}
-
-impl RattlerBuildBackendConfig {
     /// Merge this configuration with a target-specific configuration.
     /// Target-specific values override base values using the following rules:
     /// - debug_dir: Platform-specific takes precedence
     /// - extra_input_globs: Platform-specific completely replaces base
-    pub fn merge_with_target_config(&self, target_config: &Self) -> Self {
+    fn merge_with_target_config(&self, target_config: &Self) -> Self {
         Self {
             debug_dir: target_config.debug_dir.clone().or(self.debug_dir.clone()),
             extra_input_globs: if target_config.extra_input_globs.is_empty() {
@@ -44,6 +36,7 @@ impl RattlerBuildBackendConfig {
 #[cfg(test)]
 mod tests {
     use super::RattlerBuildBackendConfig;
+    use pixi_build_backend::generated_recipe::BackendConfig;
     use serde_json::json;
     use std::path::PathBuf;
 

@@ -954,6 +954,7 @@ mod tests {
                 manifest_path: recipe,
                 project_model: None,
                 configuration: None,
+                target_configuration: None,
                 cache_directory: None,
             })
             .await
@@ -992,6 +993,7 @@ mod tests {
                         manifest_path: recipe_path.to_path_buf(),
                         project_model: None,
                         configuration: None,
+                        target_configuration: None,
                         cache_directory: None,
                     })
                     .await
@@ -1027,6 +1029,7 @@ mod tests {
                 manifest_path: recipe,
                 project_model: None,
                 configuration: None,
+                target_configuration: None,
                 cache_directory: None,
             })
             .await

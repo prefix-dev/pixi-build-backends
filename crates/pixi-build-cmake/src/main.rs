@@ -352,6 +352,7 @@ mod tests {
                     manifest_path: PathBuf::from("pixi.toml"),
                     project_model: Some(project_model.into()),
                     configuration: None,
+                    target_configuration: None,
                     cache_directory: None,
                 })
                 .await

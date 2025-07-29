@@ -71,6 +71,7 @@ where
                     manifest_path,
                     project_model: project_model.map(Into::into),
                     configuration: None,
+                    target_configuration: None,
                     cache_directory: None,
                 })
                 .await

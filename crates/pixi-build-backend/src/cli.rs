@@ -177,6 +177,7 @@ async fn initialize<T: ProtocolInstantiator>(
             project_model,
             cache_directory: None,
             configuration: None,
+            target_configuration: None,
         })
         .await?;
     Ok(protocol)

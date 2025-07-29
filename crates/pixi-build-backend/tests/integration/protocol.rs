@@ -18,9 +18,9 @@ mod imp {
     use pixi_build_backend::generated_recipe::{
         BackendConfig, GenerateRecipe, GeneratedRecipe, PythonParams,
     };
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Default, Deserialize, Clone)]
+    #[derive(Debug, Default, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "kebab-case")]
     pub struct TestBackendConfig {
         /// If set, internal state will be logged as files in that directory
@@ -34,6 +34,12 @@ mod imp {
     impl BackendConfig for TestBackendConfig {
         fn debug_dir(&self) -> Option<&Path> {
             self.debug_dir.as_deref()
+        }
+
+        fn merge_with_target_config(&self, target_config: &Self) -> Self {
+            Self {
+                debug_dir: target_config.debug_dir.clone().or(self.debug_dir.clone()),
+            }
         }
     }
 

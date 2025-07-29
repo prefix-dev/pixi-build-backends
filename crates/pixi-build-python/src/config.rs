@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
+use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
 use std::{
     convert::identity,
@@ -34,22 +34,14 @@ impl BackendConfig for PythonBackendConfig {
     fn debug_dir(&self) -> Option<&Path> {
         self.debug_dir.as_deref()
     }
-}
 
-impl TargetAwareBackendConfig for PythonBackendConfig {
-    fn merge_with_target_config(&self, target_config: &Self) -> Self {
-        PythonBackendConfig::merge_with_target_config(self, target_config)
-    }
-}
-
-impl PythonBackendConfig {
     /// Merge this configuration with a target-specific configuration.
     /// Target-specific values override base values using the following rules:
     /// - noarch: Platform-specific takes precedence (critical for cross-platform)
     /// - env: Platform env vars override base, others merge
     /// - debug_dir: Platform-specific takes precedence
     /// - extra_input_globs: Platform-specific completely replaces base
-    pub fn merge_with_target_config(&self, target_config: &Self) -> Self {
+    fn merge_with_target_config(&self, target_config: &Self) -> Self {
         Self {
             noarch: target_config.noarch.or(self.noarch),
             env: {

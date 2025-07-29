@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use indexmap::IndexMap;
-use pixi_build_backend::generated_recipe::{BackendConfig, TargetAwareBackendConfig};
+use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
@@ -24,22 +24,14 @@ impl BackendConfig for CMakeBackendConfig {
     fn debug_dir(&self) -> Option<&Path> {
         self.debug_dir.as_deref()
     }
-}
 
-impl TargetAwareBackendConfig for CMakeBackendConfig {
-    fn merge_with_target_config(&self, target_config: &Self) -> Self {
-        self.merge_with_target_config(target_config)
-    }
-}
-
-impl CMakeBackendConfig {
     /// Merge this configuration with a target-specific configuration.
     /// Target-specific values override base values using the following rules:
     /// - extra_args: Platform-specific completely replaces base
     /// - env: Platform env vars override base, others merge
     /// - debug_dir: Platform-specific takes precedence
     /// - extra_input_globs: Platform-specific completely replaces base
-    pub fn merge_with_target_config(&self, target_config: &Self) -> Self {
+    fn merge_with_target_config(&self, target_config: &Self) -> Self {
         Self {
             extra_args: if target_config.extra_args.is_empty() {
                 self.extra_args.clone()
@@ -63,6 +55,7 @@ impl CMakeBackendConfig {
 
 #[cfg(test)]
 mod tests {
+    use pixi_build_backend::generated_recipe::BackendConfig;
     use serde_json::json;
     use std::path::PathBuf;
 

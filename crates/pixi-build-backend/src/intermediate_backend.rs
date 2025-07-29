@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 
@@ -55,6 +54,7 @@ use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 
 use crate::{
+    TargetSelector,
     dependencies::{
         convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
     },
@@ -260,10 +260,11 @@ where
             .map(|p| p.platform)
             .unwrap_or(Platform::current());
 
-        let config = TargetSelectorV1::from_str(host_platform.as_str())
-            .ok()
-            .and_then(|host_platform| self.target_config.get(&host_platform))
-            .map(|target_config| self.config.merge_with_target_config(&target_config))
+        let config = self
+            .target_config
+            .iter()
+            .find(|(selector, _)| selector.matches(host_platform))
+            .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| self.config.clone());
 
         // Construct the intermediate recipe
@@ -568,10 +569,11 @@ where
 
         let build_platform = Platform::current();
 
-        let config = TargetSelectorV1::from_str(host_platform.as_str())
-            .ok()
-            .and_then(|host_platform| self.target_config.get(&host_platform))
-            .map(|target_config| self.config.merge_with_target_config(&target_config))
+        let config = self
+            .target_config
+            .iter()
+            .find(|(selector, _)| selector.matches(host_platform))
+            .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| self.config.clone());
 
         // Construct the intermediate recipe
@@ -821,10 +823,11 @@ where
     ) -> miette::Result<CondaOutputsResult> {
         let build_platform = params.host_platform;
 
-        let config = TargetSelectorV1::from_str(params.host_platform.as_str())
-            .ok()
-            .and_then(|host_platform| self.target_config.get(&host_platform))
-            .map(|target_config| self.config.merge_with_target_config(&target_config))
+        let config = self
+            .target_config
+            .iter()
+            .find(|(selector, _)| selector.matches(params.host_platform))
+            .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| self.config.clone());
 
         // Construct the intermediate recipe
@@ -1064,10 +1067,11 @@ where
             .as_ref()
             .map_or_else(Platform::current, |prefix| prefix.platform);
 
-        let config = TargetSelectorV1::from_str(host_platform.as_str())
-            .ok()
-            .and_then(|host_platform| self.target_config.get(&host_platform))
-            .map(|target_config| self.config.merge_with_target_config(&target_config))
+        let config = self
+            .target_config
+            .iter()
+            .find(|(selector, _)| selector.matches(host_platform))
+            .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| self.config.clone());
 
         // Construct the intermediate recipe

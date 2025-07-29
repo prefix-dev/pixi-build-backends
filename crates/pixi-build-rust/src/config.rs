@@ -47,7 +47,7 @@ impl BackendConfig for RustBackendConfig {
                 merged_env.extend(target_config.env.clone());
                 merged_env
             },
-            debug_dir: target_config.debug_dir.clone().or(self.debug_dir.clone()),
+            debug_dir: self.debug_dir.clone(),
             extra_input_globs: if target_config.extra_input_globs.is_empty() {
                 self.extra_input_globs.clone()
             } else {

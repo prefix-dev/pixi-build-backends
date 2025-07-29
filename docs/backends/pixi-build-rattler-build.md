@@ -65,16 +65,6 @@ If specified, internal build state and debug information will be written to this
 debug-dir = "debug-output"
 ```
 
-For target-specific configuration, platform-specific debug directory overrides the base:
-
-```toml
-[package.build.configuration]
-debug-dir = "debug-base"
-
-[package.build.configuration.targets.linux-64]
-debug-dir = "debug-linux"
-# Result for linux-64: "debug-linux"
-```
 
 ### `extra-input-globs`
 

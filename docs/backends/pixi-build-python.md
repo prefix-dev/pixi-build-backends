@@ -66,6 +66,7 @@ You can customize the Python backend behavior using the `[package.build.configur
 
 - **Type**: `Boolean`
 - **Default**: `true`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific noarch setting takes precedence over base
 
 Controls whether to build a platform-independent (noarch) package or a platform-specific package. Most pure Python packages should be `noarch` and therefore don't need to set this option since the default is `noarch = true`.
 
@@ -74,10 +75,22 @@ Controls whether to build a platform-independent (noarch) package or a platform-
 noarch = false  # Build platform-specific package
 ```
 
+For target-specific configuration, platform-specific noarch setting overrides the base:
+
+```toml
+[package.build.configuration]
+noarch = true
+
+[package.build.configuration.targets.win-64]
+noarch = false  # Windows needs platform build
+# Result for win-64: false
+```
+
 ### `env`
 
 - **Type**: `Map<String, String>`
 - **Default**: `{}`
+- **Target Merge Behavior**: `Merge` - Platform environment variables override base variables with same name, others are merged
 
 Environment variables to set during the build process. These variables are available during package installation.
 
@@ -86,10 +99,22 @@ Environment variables to set during the build process. These variables are avail
 env = { SETUPTOOLS_SCM_PRETEND_VERSION = "1.0.0" }
 ```
 
+For target-specific configuration, platform environment variables are merged with base variables:
+
+```toml
+[package.build.configuration]
+env = { PYTHONPATH = "/base/path", COMMON_VAR = "base" }
+
+[package.build.configuration.targets.win-64]
+env = { COMMON_VAR = "windows", WIN_SPECIFIC = "value" }
+# Result for win-64: { PYTHONPATH = "/base/path", COMMON_VAR = "windows", WIN_SPECIFIC = "value" }
+```
+
 ### `debug-dir`
 
 - **Type**: `String` (path)
 - **Default**: Not set
+- **Target Merge Behavior**: `Overwrite` - Platform-specific directory takes precedence over base
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
@@ -98,10 +123,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+For target-specific configuration, platform-specific debug directory overrides the base:
+
+```toml
+[package.build.configuration]
+debug-dir = ".build-debug"
+
+[package.build.configuration.targets.win-64]
+debug-dir = ".build-debug-windows"
+# Result for win-64: ".build-debug-windows"
+```
+
 ### `extra-input-globs`
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
 
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include Python source files, configuration files (`setup.py`, `pyproject.toml`, etc.), and other build-related files.
 
@@ -113,6 +150,18 @@ extra-input-globs = [
     "*.md"
 ]
 ```
+
+For target-specific configuration, platform-specific globs completely replace the base:
+
+```toml
+[package.build.configuration]
+extra-input-globs = ["*.py"]
+
+[package.build.configuration.targets.win-64]
+extra-input-globs = ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
+# Result for win-64: ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
+```
+
 
 ## Build Process
 

@@ -60,6 +60,7 @@ You can customize the Rust backend behavior using the `[package.build.configurat
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific arguments completely replace base arguments
 
 Additional command-line arguments to pass to the `cargo install` command. These arguments are appended to the cargo command that builds and installs your project.
 
@@ -71,10 +72,22 @@ extra-args = [
 ]
 ```
 
+For target-specific configuration, platform arguments completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+extra-args = ["--release"]
+
+[package.build.configuration.targets.linux-64]
+extra-args = ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
+# Result for linux-64: ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
+```
+
 ### `env`
 
 - **Type**: `Map<String, String>`
 - **Default**: `{}`
+- **Target Merge Behavior**: `Merge` - Platform environment variables override base variables with same name, others are merged
 
 Environment variables to set during the build process. These variables are available during compilation.
 
@@ -83,10 +96,22 @@ Environment variables to set during the build process. These variables are avail
 env = { RUST_LOG = "debug", CARGO_PROFILE_RELEASE_LTO = "true" }
 ```
 
+For target-specific configuration, platform environment variables are merged with base variables:
+
+```toml
+[package.build.configuration]
+env = { RUST_LOG = "info", COMMON_VAR = "base" }
+
+[package.build.configuration.targets.linux-64]
+env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
+# Result for linux-64: { RUST_LOG = "info", COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
+```
+
 ### `debug-dir`
 
 - **Type**: `String` (path)
 - **Default**: Not set
+- **Target Merge Behavior**: `Overwrite` - Platform-specific directory takes precedence over base
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
@@ -95,10 +120,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+For target-specific configuration, platform-specific debug directory overrides the base:
+
+```toml
+[package.build.configuration]
+debug-dir = ".build-debug"
+
+[package.build.configuration.targets.linux-64]
+debug-dir = ".build-debug-linux"
+# Result for linux-64: ".build-debug-linux"
+```
+
 ### `extra-input-globs`
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
 
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include Rust source files (`**/*.rs`), Cargo configuration files (`Cargo.toml`, `Cargo.lock`), build scripts (`build.rs`), and other build-related files.
 
@@ -110,6 +147,18 @@ extra-input-globs = [
     "*.md"
 ]
 ```
+
+For target-specific configuration, platform-specific globs completely replace the base:
+
+```toml
+[package.build.configuration]
+extra-input-globs = ["*.txt"]
+
+[package.build.configuration.targets.linux-64]
+extra-input-globs = ["*.txt", "*.so", "linux-configs/**/*"]
+# Result for linux-64: ["*.txt", "*.so", "linux-configs/**/*"]
+```
+
 
 ## Build Process
 

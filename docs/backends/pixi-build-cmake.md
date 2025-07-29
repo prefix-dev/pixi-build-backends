@@ -61,6 +61,7 @@ You can customize the CMake backend behavior using the `[package.build.configura
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific arguments completely replace base arguments
 
 Additional command-line arguments to pass to the CMake configuration step. These arguments are inserted into the `cmake` command that configures your project.
 
@@ -72,10 +73,22 @@ extra-args = [
 ]
 ```
 
+For target-specific configuration, platform arguments completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+extra-args = ["-DCMAKE_BUILD_TYPE=Release"]
+
+[package.build.configuration.targets.linux-64]
+extra-args = ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
+# Result for linux-64: ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
+```
+
 ### `env`
 
 - **Type**: `Map<String, String>`
 - **Default**: `{}`
+- **Target Merge Behavior**: `Merge` - Platform environment variables override base variables with same name, others are merged
 
 Environment variables to set during the build process. These variables are available to both the CMake configuration and build steps.
 
@@ -84,10 +97,22 @@ Environment variables to set during the build process. These variables are avail
 env = { CMAKE_VERBOSE_MAKEFILE = "ON", CXXFLAGS = "-O3 -march=native" }
 ```
 
+For target-specific configuration, platform environment variables are merged with base variables:
+
+```toml
+[package.build.configuration]
+env = { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "base" }
+
+[package.build.configuration.targets.linux-64]
+env = { COMMON_VAR = "linux", LINUX_VAR = "value" }
+# Result for linux-64: { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "linux", LINUX_VAR = "value" }
+```
+
 ### `debug-dir`
 
 - **Type**: `String` (path)
 - **Default**: Not set
+- **Target Merge Behavior**: `Overwrite` - Platform-specific directory takes precedence over base
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
@@ -96,10 +121,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = ".build-debug"
 ```
 
+For target-specific configuration, platform-specific debug directory overrides the base:
+
+```toml
+[package.build.configuration]
+debug-dir = ".build-debug"
+
+[package.build.configuration.targets.linux-64]
+debug-dir = ".build-debug-linux"
+# Result for linux-64: ".build-debug-linux"
+```
+
 ### `extra-input-globs`
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
 
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include source files (`**/*.{c,cc,cxx,cpp,h,hpp,hxx}`), CMake files (`**/*.{cmake,cmake.in}`, `**/CMakeFiles.txt`), and other build-related files.
 
@@ -111,6 +148,18 @@ extra-input-globs = [
     "*.md"
 ]
 ```
+
+For target-specific configuration, platform-specific globs completely replace the base:
+
+```toml
+[package.build.configuration]
+extra-input-globs = ["*.txt"]
+
+[package.build.configuration.targets.linux-64]
+extra-input-globs = ["*.txt", "*.linux", "linux-configs/**/*"]
+# Result for linux-64: ["*.txt", "*.linux", "linux-configs/**/*"]
+```
+
 
 ## Build Process
 

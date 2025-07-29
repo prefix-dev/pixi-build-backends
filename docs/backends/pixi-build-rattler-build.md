@@ -56,6 +56,7 @@ The rattler-build backend supports the following TOML configuration options:
 
 - **Type**: `String` (path)
 - **Default**: Not set
+- **Target Merge Behavior**: `Overwrite` - Platform-specific directory takes precedence over base
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
@@ -64,10 +65,22 @@ If specified, internal build state and debug information will be written to this
 debug-dir = "debug-output"
 ```
 
+For target-specific configuration, platform-specific debug directory overrides the base:
+
+```toml
+[package.build.configuration]
+debug-dir = "debug-base"
+
+[package.build.configuration.targets.linux-64]
+debug-dir = "debug-linux"
+# Result for linux-64: "debug-linux"
+```
+
 ### `extra-input-globs`
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
 
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that are determined from the recipe sources and package directory structure.
 
@@ -78,6 +91,17 @@ extra-input-globs = [
     "scripts/*.sh",
     "*.md"
 ]
+```
+
+For target-specific configuration, platform-specific globs completely replace the base:
+
+```toml
+[package.build.configuration]
+extra-input-globs = ["*.yaml", "*.md"]
+
+[package.build.configuration.targets.linux-64]
+extra-input-globs = ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
+# Result for linux-64: ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 ```
 
 ## Build Process

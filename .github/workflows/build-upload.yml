@@ -27,7 +27,7 @@ jobs:
       matrix: ${{ steps.set_version.outputs.matrix }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: prefix-dev/setup-pixi@b1ab8f237b57292b58384631d89ce0b0863766bc # v0.8.13
+      - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
       - name: Extract versions
         id: set_version
         run: |
@@ -49,7 +49,7 @@ jobs:
     runs-on: ${{ matrix.bins.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: prefix-dev/setup-pixi@b1ab8f237b57292b58384631d89ce0b0863766bc # v0.8.13
+      - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
         with:
           environments: build
       - name: Enable long paths (Windows)
@@ -106,7 +106,7 @@ jobs:
           path: conda-packages
           merge-multiple: true
           run-id: ${{ github.run_id }}
-      - uses: prefix-dev/setup-pixi@b1ab8f237b57292b58384631d89ce0b0863766bc # v0.8.13
+      - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
         with:
           environments: build
       - name: Upload packages

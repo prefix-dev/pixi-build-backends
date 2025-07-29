@@ -101,6 +101,7 @@ pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) cache_dir: Option<PathBuf>,
 }
 impl<T: GenerateRecipe> IntermediateBackend<T> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         manifest_path: PathBuf,
         source_dir: Option<PathBuf>,
@@ -197,11 +198,7 @@ where
             serde_json::Value::Object(Default::default())
         };
 
-        let target_config = if let Some(target_config) = params.target_configuration {
-            target_config
-        } else {
-            OrderMap::default()
-        };
+        let target_config = params.target_configuration.unwrap_or_default();
 
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,

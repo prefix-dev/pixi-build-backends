@@ -19,17 +19,21 @@ impl BackendConfig for RattlerBuildBackendConfig {
 
     /// Merge this configuration with a target-specific configuration.
     /// Target-specific values override base values using the following rules:
-    /// - debug_dir: Platform-specific takes precedence
+    /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
-    fn merge_with_target_config(&self, target_config: &Self) -> Self {
-        Self {
+    fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
+        if target_config.debug_dir.is_some() {
+            miette::bail!("`debug_dir` cannot have a target specific value");
+        }
+
+        Ok(Self {
             debug_dir: target_config.debug_dir.clone().or(self.debug_dir.clone()),
             extra_input_globs: if target_config.extra_input_globs.is_empty() {
                 self.extra_input_globs.clone()
             } else {
                 target_config.extra_input_globs.clone()
             },
-        }
+        })
     }
 }
 

@@ -265,7 +265,7 @@ where
             .iter()
             .find(|(selector, _)| selector.matches(host_platform))
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
-            .unwrap_or_else(|| self.config.clone());
+            .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
         let generated_recipe = self.generate_recipe.generate_recipe(
@@ -574,7 +574,7 @@ where
             .iter()
             .find(|(selector, _)| selector.matches(host_platform))
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
-            .unwrap_or_else(|| self.config.clone());
+            .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
         let mut generated_recipe = self.generate_recipe.generate_recipe(
@@ -828,7 +828,7 @@ where
             .iter()
             .find(|(selector, _)| selector.matches(params.host_platform))
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
-            .unwrap_or_else(|| self.config.clone());
+            .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
         let recipe = self.generate_recipe.generate_recipe(
@@ -1072,7 +1072,7 @@ where
             .iter()
             .find(|(selector, _)| selector.matches(host_platform))
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
-            .unwrap_or_else(|| self.config.clone());
+            .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
         let mut recipe = self.generate_recipe.generate_recipe(

@@ -29,10 +29,14 @@ impl BackendConfig for RustBackendConfig {
     /// Target-specific values override base values using the following rules:
     /// - extra_args: Platform-specific completely replaces base
     /// - env: Platform env vars override base, others merge
-    /// - debug_dir: Platform-specific takes precedence
+    /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
-    fn merge_with_target_config(&self, target_config: &Self) -> Self {
-        Self {
+    fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
+        if target_config.debug_dir.is_some() {
+            miette::bail!("`debug_dir` cannot have a target specific value");
+        }
+
+        Ok(Self {
             extra_args: if target_config.extra_args.is_empty() {
                 self.extra_args.clone()
             } else {
@@ -49,7 +53,7 @@ impl BackendConfig for RustBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
-        }
+        })
     }
 }
 
@@ -90,7 +94,9 @@ mod tests {
             extra_input_globs: vec!["*.target".to_string()],
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // extra_args should be completely overridden
         assert_eq!(merged.extra_args, vec!["--target-arg".to_string()]);
@@ -127,7 +133,9 @@ mod tests {
 
         let empty_target_config = RustBackendConfig::default();
 
-        let merged = base_config.merge_with_target_config(&empty_target_config);
+        let merged = base_config
+            .merge_with_target_config(&empty_target_config)
+            .unwrap();
 
         // Should keep base values when target is empty
         assert_eq!(merged.extra_args, vec!["--base-arg".to_string()]);

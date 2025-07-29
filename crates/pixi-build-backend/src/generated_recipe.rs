@@ -78,7 +78,7 @@ pub trait BackendConfig: DeserializeOwned + Default + Clone + serde::Serialize {
 
     /// Merge this configuration with a target-specific configuration.
     /// Target-specific values typically override base values.
-    fn merge_with_target_config(&self, target_config: &Self) -> Self;
+    fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self>;
 }
 
 #[derive(Default)]

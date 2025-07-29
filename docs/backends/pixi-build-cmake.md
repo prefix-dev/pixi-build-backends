@@ -112,7 +112,7 @@ env = { COMMON_VAR = "linux", LINUX_VAR = "value" }
 
 - **Type**: `String` (path)
 - **Default**: Not set
-- **Target Merge Behavior**: `Overwrite` - Platform-specific directory takes precedence over base
+- **Target Merge Behavior**: Not allowed - Cannot have target specific value
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 

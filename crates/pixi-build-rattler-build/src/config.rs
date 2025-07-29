@@ -62,7 +62,9 @@ mod tests {
             extra_input_globs: vec!["*.target".to_string()],
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // debug_dir should use target value
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/target/debug")));
@@ -80,7 +82,9 @@ mod tests {
 
         let empty_target_config = RattlerBuildBackendConfig::default();
 
-        let merged = base_config.merge_with_target_config(&empty_target_config);
+        let merged = base_config
+            .merge_with_target_config(&empty_target_config)
+            .unwrap();
 
         // Should keep base values when target is empty
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));

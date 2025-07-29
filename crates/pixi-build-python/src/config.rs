@@ -7,7 +7,7 @@ use std::{
 };
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PythonBackendConfig {
     /// True if the package should be build as a python noarch package. Defaults
     /// to `true`.
@@ -100,7 +100,9 @@ mod tests {
             extra_input_globs: vec!["*.target".to_string()],
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // noarch should use target value
         assert_eq!(merged.noarch, Some(false));
@@ -137,7 +139,9 @@ mod tests {
 
         let empty_target_config = PythonBackendConfig::default();
 
-        let merged = base_config.merge_with_target_config(&empty_target_config);
+        let merged = base_config
+            .merge_with_target_config(&empty_target_config)
+            .unwrap();
 
         // Should keep base values when target is empty
         assert_eq!(merged.noarch, Some(true));
@@ -158,7 +162,9 @@ mod tests {
             ..Default::default()
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // When target has None, should keep base value
         assert_eq!(merged.noarch, Some(true));
@@ -174,7 +180,9 @@ mod tests {
             ..Default::default()
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // When target has value, should use target value
         assert_eq!(merged.noarch, Some(false));

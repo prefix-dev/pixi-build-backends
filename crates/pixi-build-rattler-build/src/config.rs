@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct RattlerBuildBackendConfig {
     /// If set, internal state will be logged as files in that directory
     pub debug_dir: Option<PathBuf>,

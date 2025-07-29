@@ -1,12 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use indexmap::IndexMap;
-use miette::miette;
 use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct CMakeBackendConfig {
     /// Extra args for CMake invocation
     #[serde(default)]
@@ -96,7 +95,9 @@ mod tests {
             extra_input_globs: vec!["*.target".to_string()],
         };
 
-        let merged = base_config.merge_with_target_config(&target_config);
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // extra_args should be completely overridden
         assert_eq!(merged.extra_args, vec!["--target-arg".to_string()]);
@@ -133,7 +134,9 @@ mod tests {
 
         let empty_target_config = CMakeBackendConfig::default();
 
-        let merged = base_config.merge_with_target_config(&empty_target_config);
+        let merged = base_config
+            .merge_with_target_config(&empty_target_config)
+            .unwrap();
 
         // Should keep base values when target is empty
         assert_eq!(merged.extra_args, vec!["--base-arg".to_string()]);

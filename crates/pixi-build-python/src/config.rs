@@ -186,6 +186,24 @@ mod tests {
 
         // When target has value, should use target value
         assert_eq!(merged.noarch, Some(false));
+
+        // Test when both have values - target should override base
+        let base_config = PythonBackendConfig {
+            noarch: Some(true),
+            ..Default::default()
+        };
+
+        let target_config = PythonBackendConfig {
+            noarch: Some(false),
+            ..Default::default()
+        };
+
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
+
+        // Target value should override base value
+        assert_eq!(merged.noarch, Some(false));
     }
 
     #[test]

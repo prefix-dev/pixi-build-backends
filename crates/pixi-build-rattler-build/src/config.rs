@@ -58,7 +58,7 @@ mod tests {
         };
 
         let target_config = RattlerBuildBackendConfig {
-            debug_dir: Some(PathBuf::from("/target/debug")),
+            debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
         };
 
@@ -66,8 +66,8 @@ mod tests {
             .merge_with_target_config(&target_config)
             .unwrap();
 
-        // debug_dir should use target value
-        assert_eq!(merged.debug_dir, Some(PathBuf::from("/target/debug")));
+        // debug_dir should use base value
+        assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);

@@ -90,7 +90,7 @@ mod tests {
         let target_config = RustBackendConfig {
             extra_args: vec!["--target-arg".to_string()],
             env: target_env,
-            debug_dir: Some(PathBuf::from("/target/debug")),
+            debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
         };
 
@@ -112,8 +112,8 @@ mod tests {
             Some(&"target_shared".to_string())
         );
 
-        // debug_dir should use target value
-        assert_eq!(merged.debug_dir, Some(PathBuf::from("/target/debug")));
+        // debug_dir should use base value
+        assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);

@@ -13,6 +13,7 @@ from pixi_build_backend.types.intermediate_recipe import NoArchKind, Python, Scr
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
+from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
 
 from .build_script import BuildScriptContext, Installer, BuildPlatform
 from .utils import extract_entry_points
@@ -69,25 +70,13 @@ class PythonGenerator(GenerateRecipeProtocol):
 
         # Add installer to host requirements if not present
         if installer_name not in resolved_requirements.host:
-            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
-            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
-
-            inner_dep = PyItemPackageDependency(installer_name)
-            requirements.host.append(ItemPackageDependency._from_inner(inner_dep))
+            requirements.host.append(ItemPackageDependency(installer_name))
 
         # Add python to both host and run requirements if not present
         if "python" not in resolved_requirements.host:
-            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
-            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
-
-            inner_dep = PyItemPackageDependency("python")
-            requirements.host.append(ItemPackageDependency._from_inner(inner_dep))
+            requirements.host.append(ItemPackageDependency("python"))
         if "python" not in resolved_requirements.run:
-            from pixi_build_backend.pixi_build_backend import PyItemPackageDependency
-            from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
-
-            inner_dep = PyItemPackageDependency("python")
-            requirements.run.append(ItemPackageDependency._from_inner(inner_dep))
+            requirements.run.append(ItemPackageDependency("python"))
 
         # Determine build platform
         build_platform = BuildPlatform.current()

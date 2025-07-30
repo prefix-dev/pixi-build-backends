@@ -94,7 +94,7 @@ impl GeneratedRecipe {
     /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
-    pub fn from_model(model: ProjectModelV1, manifest_path: PathBuf) -> Self {
+    pub fn from_model(model: ProjectModelV1, source_dir: PathBuf, manifest_path: PathBuf) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(
@@ -104,12 +104,12 @@ impl GeneratedRecipe {
             ),
         };
 
-        let manifest_path_str = match manifest_path.display().to_string() {
+        let source_dir_str = match source_dir.display().to_string() {
             path if path.is_empty() => String::from("."),
             path => path,
         };
         let source = ConditionalList::from([Item::Value(Value::Concrete(Source::path(
-            manifest_path_str,
+            source_dir_str,
         )))]);
 
         let requirements =

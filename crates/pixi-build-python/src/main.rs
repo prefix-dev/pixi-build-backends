@@ -58,7 +58,7 @@ impl GenerateRecipe for PythonGenerator {
         let params = python_params.unwrap_or_default();
 
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_path.clone());
+            GeneratedRecipe::from_model(model.clone(), source_dir.clone(), manifest_path.clone());
 
         let requirements = &mut generated_recipe.recipe.requirements;
 

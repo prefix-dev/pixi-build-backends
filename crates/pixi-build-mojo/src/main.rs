@@ -34,7 +34,7 @@ impl GenerateRecipe for MojoGenerator {
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_path.clone());
+            GeneratedRecipe::from_model(model.clone(), source_dir.clone(), manifest_path.clone());
 
         let cleaned_project_name = clean_project_name(
             generated_recipe

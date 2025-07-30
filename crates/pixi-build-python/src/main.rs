@@ -123,7 +123,9 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let manifest_dir = manifest_path.parent().expect("manifest path should have a parent directory");
+        let manifest_dir = manifest_path
+            .parent()
+            .expect("manifest path should have a parent directory");
         let pyproject_manifest_path = manifest_dir.join("pyproject.toml");
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;

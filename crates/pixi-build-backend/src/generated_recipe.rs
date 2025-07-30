@@ -108,8 +108,9 @@ impl GeneratedRecipe {
             path if path.is_empty() => String::from("."),
             path => path,
         };
-        let source =
-            ConditionalList::from([Item::Value(Value::Concrete(Source::path(manifest_path_str)))]);
+        let source = ConditionalList::from([Item::Value(Value::Concrete(Source::path(
+            manifest_path_str,
+        )))]);
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());

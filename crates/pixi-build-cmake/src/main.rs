@@ -69,7 +69,6 @@ impl GenerateRecipe for CMakeGenerator {
         // executable
         let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
 
-        
         let build_script = BuildScriptContext {
             build_platform: if build_platform.is_windows() {
                 BuildPlatform::Windows

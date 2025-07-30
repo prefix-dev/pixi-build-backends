@@ -50,14 +50,15 @@ impl GenerateRecipe for PythonGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: PathBuf,
+        source_dir: PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
+            GeneratedRecipe::from_model(model.clone(), manifest_path.clone());
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
@@ -109,7 +110,7 @@ impl GenerateRecipe for PythonGenerator {
                 BuildPlatform::Unix
             },
             editable,
-            manifest_root: manifest_root.clone(),
+            manifest_root: source_dir.clone(),
         }
         .render();
 
@@ -122,7 +123,8 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest_path = manifest_root.join("pyproject.toml");
+        let manifest_dir = manifest_path.parent().expect("manifest path should have a parent directory");
+        let pyproject_manifest_path = manifest_dir.join("pyproject.toml");
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =

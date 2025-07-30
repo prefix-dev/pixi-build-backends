@@ -25,12 +25,13 @@ impl GenerateRecipe for CMakeGenerator {
         &self,
         model: &pixi_build_types::ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
+        source_dir: std::path::PathBuf,
+        manifest_path: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
+            GeneratedRecipe::from_model(model.clone(), manifest_path.clone());
 
         // we need to add compilers
 
@@ -68,13 +69,14 @@ impl GenerateRecipe for CMakeGenerator {
         // executable
         let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
 
+        
         let build_script = BuildScriptContext {
             build_platform: if build_platform.is_windows() {
                 BuildPlatform::Windows
             } else {
                 BuildPlatform::Unix
             },
-            source_dir: manifest_root.display().to_string(),
+            source_dir: source_dir.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_host_python,
         }

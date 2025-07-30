@@ -268,6 +268,7 @@ where
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            self.source_dir.join(&self.manifest_rel_path),
             host_platform,
             Some(PythonParams { editable: false }),
         )?;
@@ -577,6 +578,7 @@ where
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            self.source_dir.join(&self.manifest_rel_path),
             host_platform,
             Some(PythonParams {
                 editable: params.editable,
@@ -831,6 +833,7 @@ where
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            self.source_dir.join(&self.manifest_rel_path),
             params.host_platform,
             Some(PythonParams { editable: false }),
         )?;
@@ -1075,6 +1078,7 @@ where
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            self.source_dir.join(&self.manifest_rel_path),
             host_platform,
             Some(PythonParams {
                 editable: params.editable.unwrap_or_default(),

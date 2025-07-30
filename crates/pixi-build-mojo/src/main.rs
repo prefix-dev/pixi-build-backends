@@ -28,12 +28,13 @@ impl GenerateRecipe for MojoGenerator {
         &self,
         model: &pixi_build_types::ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
+        source_dir: std::path::PathBuf,
+        manifest_path: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
+            GeneratedRecipe::from_model(model.clone(), manifest_path.clone());
 
         let cleaned_project_name = clean_project_name(
             generated_recipe
@@ -45,7 +46,7 @@ impl GenerateRecipe for MojoGenerator {
         );
 
         // Auto-derive bins and pkg fields/configs if needed
-        let (bins, pkg) = config.auto_derive(&manifest_root, &cleaned_project_name)?;
+        let (bins, pkg) = config.auto_derive(&source_dir, &cleaned_project_name)?;
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
@@ -65,7 +66,7 @@ impl GenerateRecipe for MojoGenerator {
         }
 
         let build_script = BuildScriptContext {
-            source_dir: manifest_root.display().to_string(),
+            source_dir: source_dir.display().to_string(),
             bins,
             pkg,
         }

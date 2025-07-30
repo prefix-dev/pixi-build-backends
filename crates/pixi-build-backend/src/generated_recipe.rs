@@ -37,6 +37,7 @@ pub trait GenerateRecipe {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
+        source_dir: PathBuf,
         manifest_path: PathBuf,
         // The host_platform will be removed in the future.
         // Right now it is used to determine if certain dependencies are present
@@ -93,7 +94,7 @@ impl GeneratedRecipe {
     /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
-    pub fn from_model(model: ProjectModelV1, manifest_root: PathBuf) -> Self {
+    pub fn from_model(model: ProjectModelV1, manifest_path: PathBuf) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(
@@ -103,12 +104,12 @@ impl GeneratedRecipe {
             ),
         };
 
-        let manifest_path = match manifest_root.display().to_string() {
+        let manifest_path_str = match manifest_path.display().to_string() {
             path if path.is_empty() => String::from("."),
             path => path,
         };
         let source =
-            ConditionalList::from([Item::Value(Value::Concrete(Source::path(manifest_path)))]);
+            ConditionalList::from([Item::Value(Value::Concrete(Source::path(manifest_path_str)))]);
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());

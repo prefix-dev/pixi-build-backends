@@ -6,6 +6,7 @@ on:
       - "pixi-build-python-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
+      - "pixi-build-mojo-v[0-9]+.[0-9]+.[0-9]+"
     # Build all backends on main branch
     branches: [main]
   workflow_dispatch:

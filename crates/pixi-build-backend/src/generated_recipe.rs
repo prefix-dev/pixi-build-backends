@@ -94,7 +94,7 @@ impl GeneratedRecipe {
     /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
-    pub fn from_model(model: ProjectModelV1, source_dir: PathBuf, manifest_path: PathBuf) -> Self {
+    pub fn from_model(model: ProjectModelV1, source_dir: PathBuf, _manifest_path: PathBuf) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(

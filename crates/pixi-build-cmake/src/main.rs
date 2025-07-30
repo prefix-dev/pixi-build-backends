@@ -193,6 +193,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -232,6 +233,7 @@ mod tests {
                     ..Default::default()
                 },
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -273,6 +275,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -327,6 +330,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )

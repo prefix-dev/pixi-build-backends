@@ -189,6 +189,7 @@ async fn initialize<T: ProtocolInstantiator>(
     let (protocol, _initialize_result) = factory
         .initialize(InitializeParams {
             source_dir: None,
+            workspace_root: None,
             manifest_path: manifest_path.to_path_buf(),
             project_model,
             cache_directory: None,

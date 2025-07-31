@@ -355,6 +355,7 @@ mod tests {
         )
         .initialize(InitializeParams {
             source_dir: None,
+            workspace_root: None,
             manifest_path: PathBuf::from("pixi.toml"),
             project_model: Some(project_model.into()),
             configuration: None,

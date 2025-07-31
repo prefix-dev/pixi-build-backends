@@ -5,7 +5,10 @@ use url::Url;
 
 /// An internal type that supports converting a source dependency into a valid
 /// URL and back.
-pub struct EncodedSourceSpecUrl(Url);
+///
+/// This type is only used internally, it is not serialized. Therefore,
+/// stability of how the URL is encoded is not important.
+pub(crate) struct EncodedSourceSpecUrl(Url);
 
 impl From<EncodedSourceSpecUrl> for Url {
     fn from(value: EncodedSourceSpecUrl) -> Self {

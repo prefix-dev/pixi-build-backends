@@ -56,11 +56,13 @@ mod imp {
             &self,
             model: &pixi_build_types::ProjectModelV1,
             _config: &Self::Config,
+            source_dir: PathBuf,
             manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
         ) -> miette::Result<GeneratedRecipe> {
-            let generated_recipe = GeneratedRecipe::from_model(model.clone(), manifest_path);
+            let generated_recipe =
+                GeneratedRecipe::from_model(model.clone(), source_dir, manifest_path);
             Ok(generated_recipe)
         }
     }
@@ -113,6 +115,7 @@ async fn test_conda_get_metadata() {
     let intermediate_backend = IntermediateBackend::<TestGenerateRecipe>::new(
         pixi_manifest.clone(),
         Some(tmp_dir_path.clone()),
+        None,
         project_model_v1,
         Arc::default(),
         some_config,
@@ -176,6 +179,7 @@ async fn test_conda_build() {
     let intermediate_backend: IntermediateBackend<TestGenerateRecipe> = IntermediateBackend::new(
         pixi_manifest.clone(),
         Some(tmp_dir_path.clone()),
+        None,
         project_model_v1,
         Arc::default(),
         some_config,

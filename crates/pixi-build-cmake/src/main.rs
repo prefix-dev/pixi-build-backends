@@ -25,12 +25,13 @@ impl GenerateRecipe for CMakeGenerator {
         &self,
         model: &pixi_build_types::ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
+        source_dir: std::path::PathBuf,
+        manifest_path: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
+            GeneratedRecipe::from_model(model.clone(), source_dir.clone(), manifest_path.clone());
 
         // we need to add compilers
 
@@ -74,7 +75,7 @@ impl GenerateRecipe for CMakeGenerator {
             } else {
                 BuildPlatform::Unix
             },
-            source_dir: manifest_root.display().to_string(),
+            source_dir: source_dir.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_host_python,
         }
@@ -192,6 +193,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -231,6 +233,7 @@ mod tests {
                     ..Default::default()
                 },
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -272,6 +275,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -326,6 +330,7 @@ mod tests {
                 &project_model,
                 &CMakeBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -350,6 +355,7 @@ mod tests {
         )
         .initialize(InitializeParams {
             source_dir: None,
+            workspace_root: None,
             manifest_path: PathBuf::from("pixi.toml"),
             project_model: Some(project_model.into()),
             configuration: None,

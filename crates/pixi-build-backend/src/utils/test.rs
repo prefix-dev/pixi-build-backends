@@ -70,6 +70,7 @@ where
         )
         .initialize(InitializeParams {
             source_dir,
+            workspace_root: None,
             manifest_path,
             project_model: project_model.map(Into::into),
             configuration: None,

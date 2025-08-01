@@ -10,8 +10,8 @@ license = "BSD-3-Clause"
 
 [feature.build.dependencies]
 python = "*"
-maturin = "~=1.2.2"
-pip = "~=23.2.1"
+maturin = "~=1.9.2"
+pip = "~=23.3.2"
 rust = "~=1.86.0"
 
 [feature.build.tasks]
@@ -19,11 +19,11 @@ build = "PIP_REQUIRE_VIRTUALENV=false maturin develop"
 build-release = "PIP_REQUIRE_VIRTUALENV=false maturin develop --release"
 
 [feature.build.target.linux-64.dependencies]
-patchelf = "~=0.17.2"
+patchelf = "~=0.18.0"
 
 [feature.test.dependencies]
 # Python 3.8 is the minimum supported version, so we use that for testing
-python = "3.8.*"
+python = "3.13.*"
 
 ruff = ">=0.12.3,<0.13"
 mypy = "*"
@@ -34,7 +34,7 @@ toml = "*"
 
 
 # for rust-analyzer
-rust-src = "~=1.86.0"
+rust-src = "~=1.88.0"
 
 [feature.test.pypi-dependencies]
 types-toml = "*"

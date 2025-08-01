@@ -1181,11 +1181,23 @@ where
             finalized_dependencies: Some(FinalizedDependencies {
                 build: Some(ResolvedDependencies {
                     specs: vec![],
-                    resolved: vec![],
+                    resolved: params
+                        .build_prefix
+                        .map(|prefix| prefix.packages)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|pkg| pkg.repodata_record)
+                        .collect(),
                 }),
                 host: Some(ResolvedDependencies {
                     specs: vec![],
-                    resolved: vec![],
+                    resolved: params
+                        .host_prefix
+                        .map(|prefix| prefix.packages)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|pkg| pkg.repodata_record)
+                        .collect(),
                 }),
                 run: FinalizedRunDependencies {
                     depends: vec![],

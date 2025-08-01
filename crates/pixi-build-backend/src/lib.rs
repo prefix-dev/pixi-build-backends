@@ -11,6 +11,7 @@ pub mod common;
 pub mod compilers;
 mod consts;
 pub mod dependencies;
+mod encoded_source_spec_url;
 pub mod project;
 pub mod source;
 pub mod tools;

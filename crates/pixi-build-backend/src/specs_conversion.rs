@@ -1,10 +1,8 @@
-use std::{path::Path, str::FromStr};
+use std::str::FromStr;
 
 use miette::IntoDiagnostic;
 use ordermap::OrderMap;
-use pixi_build_types::{
-    GitSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1, UrlSpecV1,
-};
+use pixi_build_types::{PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1};
 use rattler_conda_types::{MatchSpec, PackageName};
 use recipe_stage0::{
     matchspec::{PackageDependency, SourceMatchSpec},
@@ -13,28 +11,11 @@ use recipe_stage0::{
 };
 use url::Url;
 
+use crate::encoded_source_spec_url::EncodedSourceSpecUrl;
+
 pub fn from_source_url_to_source_package(source_url: Url) -> Option<SourcePackageSpecV1> {
     match source_url.scheme() {
-        "source" => Some(SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
-            path: SafeRelativePathUrl::from(source_url).to_path(),
-        })),
-        "http" | "https" => {
-            // For now, we only support URL sources with no checksums.
-            Some(SourcePackageSpecV1::Url(UrlSpecV1 {
-                url: source_url,
-                md5: None,
-                sha256: None,
-            }))
-        }
-        "git" => {
-            // For git URLs, we can only support the URL without any additional metadata.
-            // This is a limitation of the current implementation.
-            Some(SourcePackageSpecV1::Git(GitSpecV1 {
-                git: source_url,
-                rev: None,
-                subdirectory: None,
-            }))
-        }
+        "source" => Some(EncodedSourceSpecUrl::from(source_url).into()),
         _ => None,
     }
 }
@@ -142,42 +123,6 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
     }
 }
 
-/// An internal type that supports converting a path (and relative paths) into a
-/// valid URL and back.
-struct SafeRelativePathUrl(Url);
-
-impl From<SafeRelativePathUrl> for Url {
-    fn from(value: SafeRelativePathUrl) -> Self {
-        value.0
-    }
-}
-
-impl From<Url> for SafeRelativePathUrl {
-    fn from(url: Url) -> Self {
-        // Ensure the URL is a file URL
-        assert_eq!(url.scheme(), "source", "URL must be a file URL");
-        Self(url)
-    }
-}
-
-impl SafeRelativePathUrl {
-    pub fn from_path(path: impl AsRef<Path>) -> Self {
-        let path = path.as_ref();
-        Self(
-            Url::from_str(&format!("source://?path={}", path.to_string_lossy()))
-                .expect("must be a valid URL now"),
-        )
-    }
-
-    pub fn to_path(&self) -> String {
-        self.0
-            .query_pairs()
-            .find_map(|(key, value)| (key == "path").then_some(value))
-            .expect("must have a path")
-            .into_owned()
-    }
-}
-
 pub(crate) fn source_package_spec_to_package_dependency(
     name: PackageName,
     source_spec: SourcePackageSpecV1,
@@ -187,17 +132,9 @@ pub(crate) fn source_package_spec_to_package_dependency(
         ..Default::default()
     };
 
-    let url_from_spec = match source_spec {
-        SourcePackageSpecV1::Path(path_spec) => {
-            SafeRelativePathUrl::from_path(Path::new(&path_spec.path)).into()
-        }
-        SourcePackageSpecV1::Url(url_spec) => url_spec.url,
-        SourcePackageSpecV1::Git(git_spec) => git_spec.git,
-    };
-
     Ok(SourceMatchSpec {
         spec,
-        location: url_from_spec,
+        location: EncodedSourceSpecUrl::from(source_spec).into(),
     })
 }
 
@@ -257,25 +194,4 @@ pub fn target_to_package_spec(target: &TargetV1) -> PackageSpecDependencies<Pack
     }
 
     bin_reqs
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_safe_relative_path_url() {
-        let url = SafeRelativePathUrl::from_path("..\\test\\path");
-        assert_eq!(url.to_path(), "..\\test\\path");
-
-        // Retains original slashes
-        let url = SafeRelativePathUrl::from_path("../test/path");
-        assert_eq!(url.to_path(), "../test/path");
-
-        let url = SafeRelativePathUrl::from_path("test/path");
-        assert_eq!(url.to_path(), "test/path");
-
-        let url = SafeRelativePathUrl::from_path("/absolute/test/path");
-        assert_eq!(url.to_path(), "/absolute/test/path");
-    }
 }

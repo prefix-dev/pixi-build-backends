@@ -91,9 +91,10 @@ impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
 
 pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
+    #[allow(dead_code)]
     pub(crate) workspace_root: Option<PathBuf>,
     pub(crate) source_dir: PathBuf,
-    /// The path to the manifest file relative to the workspace root.
+    /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
     pub(crate) project_model: ProjectModelV1,
     pub(crate) generate_recipe: Arc<T>,
@@ -130,14 +131,13 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
                     .to_path_buf();
                 (source_dir, manifest_rel_path)
             }
-            (Some(source_dir), Some(workspace_root)) => {
+            (Some(source_dir), Some(_workspace_root)) => {
                 let manifest_rel_path = if manifest_path.is_absolute() {
-                    pathdiff::diff_paths(&manifest_path, workspace_root)
-                        .ok_or_else(|| {
-                            miette::miette!("the manifest is not relative to the workspace root")
-                        })?
+                    pathdiff::diff_paths(&manifest_path, &source_dir).ok_or_else(|| {
+                        miette::miette!("the manifest is not relative to the source directory")
+                    })?
                 } else {
-                    // If manifest_path is already relative, assume it's relative to workspace_root
+                    // If manifest_path is already relative, assume it's relative to source_dir
                     manifest_path.clone()
                 };
                 (source_dir, manifest_rel_path)
@@ -280,10 +280,7 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
-        let manifest_path = self.workspace_root
-            .as_ref()
-            .unwrap_or(&self.source_dir)
-            .join(&self.manifest_rel_path);
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
@@ -594,10 +591,7 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
-        let manifest_path = self.workspace_root
-            .as_ref()
-            .unwrap_or(&self.source_dir)
-            .join(&self.manifest_rel_path);
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
@@ -853,10 +847,7 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
-        let manifest_path = self.workspace_root
-            .as_ref()
-            .unwrap_or(&self.source_dir)
-            .join(&self.manifest_rel_path);
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
@@ -1102,10 +1093,7 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
-        let manifest_path = self.workspace_root
-            .as_ref()
-            .unwrap_or(&self.source_dir)
-            .join(&self.manifest_rel_path);
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,

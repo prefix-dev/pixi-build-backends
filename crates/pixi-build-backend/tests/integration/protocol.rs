@@ -61,7 +61,8 @@ mod imp {
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
         ) -> miette::Result<GeneratedRecipe> {
-            let generated_recipe = GeneratedRecipe::from_model(model.clone(), source_dir, manifest_path);
+            let generated_recipe =
+                GeneratedRecipe::from_model(model.clone(), source_dir, manifest_path);
             Ok(generated_recipe)
         }
     }

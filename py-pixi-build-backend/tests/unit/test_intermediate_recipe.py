@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Any
-from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
+from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe, ItemPackageDependency
 
 
 def test_from_yaml(snapshot: Any) -> None:
@@ -10,3 +10,10 @@ def test_from_yaml(snapshot: Any) -> None:
     recipe = IntermediateRecipe.from_yaml(yaml_content)
 
     assert snapshot == recipe.to_yaml()
+
+def test_package_types() -> None:
+    package = ItemPackageDependency("test")
+    assert package.package_name == "test"
+
+    package = ItemPackageDependency.from_template("${{ compiler('c') }}")
+    assert package.package_name == "${{ compiler('c') }}"

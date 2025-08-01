@@ -1,0 +1,43 @@
+[project]
+dependencies = ["rosdistro", "catkin_pkg", "pytest", "toml", "pyyaml"]
+name = "pixi-build-ros"
+requires-python = ">= 3.11"
+version = "0.1.1"
+
+[project.scripts]
+pixi-build-ros = "pixi_build_ros.main:main"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["osx-arm64"]
+preview = ["pixi-build"]
+
+[tool.pixi.pypi-dependencies]
+pixi_build_ros = { path = ".", editable = true }
+py-pixi-build-backend = { path = "../../py-pixi-build-backend", editable = true }
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "*" }
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
+
+[tool.pixi.package]
+name = "pixi-build-ros"
+version = "0.1.2"
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+
+[tool.pixi.package.run-dependencies]
+rosdistro = "*"
+catkin_pkg = "*"
+toml = "*"
+pyyaml = "*"
+pixi-build-api-version = { path = "../../recipe/pixi-build-api-version" }
+py-pixi-build-backend = { path = "../../py-pixi-build-backend" }

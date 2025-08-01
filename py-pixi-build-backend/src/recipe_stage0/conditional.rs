@@ -1,44 +1,96 @@
+use crate::recipe_stage0::requirements::PyPackageDependency;
 use pyo3::exceptions::PyTypeError;
 use pyo3::types::PyAnyMethods;
 use pyo3::{Bound, FromPyObject, PyAny, PyErr, PyResult, intern, pyclass, pymethods};
 use recipe_stage0::matchspec::PackageDependency;
 use recipe_stage0::recipe::Value;
 use recipe_stage0::recipe::{Conditional, Item, ListOrItem};
+use std::fmt::Display;
 
+/// Creates a PyItem class for a given type.
+/// The first argument is the name of the class, the second
+/// is the type it wraps, and the third is the Python type.
+/// It is necessary to provide the Python type because
+/// the String equivalent is still String
+/// but for other types it will be some type
+/// prefixed with Py, like PyPackageDependency.
 macro_rules! create_py_item {
-    ($name: ident, $type: ident) => {
-        #[pyclass]
-        #[derive(Clone)]
-        pub struct $name {
-            pub(crate) inner: Item<$type>,
-        }
-
-        #[pymethods]
-        impl $name {
-            #[new]
-            pub fn new(value: String) -> PyResult<Self> {
-                let val = value
-                    .parse::<$type>()
-                    .map_err(|_| PyTypeError::new_err(format!("Failed to parse {value}")))?;
-
-                Ok($name {
-                    inner: Item::Value(Value::Concrete(val)),
-                })
+    ($name: ident, $type: ident, $py_type: ident) => {
+        paste::paste! {
+            #[pyclass]
+            #[derive(Clone)]
+            pub struct $name {
+                pub(crate) inner: Item<$type>,
             }
 
-            pub fn is_value(&self) -> bool {
-                matches!(self.inner, Item::Value(_))
+            #[pymethods]
+            impl $name {
+                #[new]
+                pub fn new(value: String) -> PyResult<Self> {
+                    let val = value
+                        .parse::<$type>()
+                        .map_err(|_| PyTypeError::new_err(format!("Failed to parse {value}")))?;
+
+                    Ok($name {
+                        inner: Item::Value(Value::Concrete(val)),
+                    })
+                }
+
+                #[staticmethod]
+                pub fn from_template(value: String) -> Self {
+                    $name {
+                        inner: Item::Value(Value::Template(value)),
+                    }
+                }
+
+                pub fn is_concrete(&self) -> bool {
+                    matches!(self.inner, Item::Value(Value::Concrete(_)))
+                }
+                
+                pub fn is_template(&self) -> bool {
+                    matches!(self.inner, Item::Value(Value::Template(_)))
+                }
+
+                pub fn is_conditional(&self) -> bool {
+                    matches!(self.inner, Item::Conditional(_))
+                }
+
+                pub fn __str__(&self) -> String {
+                    format!("{:?}", self.inner)
+                }
+
+                pub fn concrete(&self) -> Option<$py_type> {
+                    if let Item::Value(Value::Concrete(val)) = &self.inner {
+                        Some(val.clone().into())
+                    } else {
+                        None
+                    }
+                }
+                
+                pub fn template(&self) -> Option<String> {
+                    if let Item::Value(Value::Template(val)) = &self.inner {
+                        Some(val.clone().into())
+                    } else {
+                        None
+                    }
+                }
             }
 
-            pub fn is_conditional(&self) -> bool {
-                matches!(self.inner, Item::Conditional(_))
+            impl Display for $name {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.inner)
+                }
             }
         }
     };
 }
 
-create_py_item!(PyItemPackageDependency, PackageDependency);
-create_py_item!(PyItemString, String);
+create_py_item!(
+    PyItemPackageDependency,
+    PackageDependency,
+    PyPackageDependency
+);
+create_py_item!(PyItemString, String, String);
 
 macro_rules! create_pylist_or_item {
     ($name: ident, $type: ident) => {

@@ -38,6 +38,11 @@ impl PyGeneratedRecipe {
         self.inner.recipe.clone().into()
     }
 
+    #[setter]
+    pub fn set_recipe(&mut self, value: PyIntermediateRecipe) {
+        self.inner.recipe = value.inner;
+    }
+
     #[getter]
     pub fn metadata_input_globs(&self) -> Vec<String> {
         self.inner.metadata_input_globs.iter().cloned().collect()

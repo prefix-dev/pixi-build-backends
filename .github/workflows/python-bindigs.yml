@@ -34,16 +34,16 @@ jobs:
       - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
         with:
           manifest-path: py-pixi-build-backend/pixi.toml
-          environments: test
+          environments: default
       - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48 # v1.13.0
         with:
           components: clippy, rustfmt
       - name: Format and Lint
         run: |
           cd py-pixi-build-backend
-          pixi run -e test lint
-          pixi run -e test fmt-check
+          pixi run lint
+          pixi run fmt-check
       - name: Run tests
         run: |
           cd py-pixi-build-backend
-          pixi run -e test test --color=yes
+          pixi run test --color=yes

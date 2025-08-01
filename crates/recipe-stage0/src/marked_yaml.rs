@@ -72,7 +72,7 @@ where
     T: ToString,
 {
     fn to_marked_yaml(&self) -> MarkedNode {
-        let nodes: Vec<MarkedNode> = self.iter().map(|item| item.to_marked_yaml()).collect();
+        let nodes: Vec<MarkedNode> = self.0.iter().map(|item| item.to_marked_yaml()).collect();
         MarkedNode::Sequence(MarkedSequenceNode::new(Span::new_blank(), nodes))
     }
 }
@@ -148,28 +148,28 @@ impl ToMarkedYaml for ConditionalRequirements {
     fn to_marked_yaml(&self) -> MarkedNode {
         let mut mapping = MappingHash::new();
 
-        if !self.build.is_empty() {
+        if !self.build.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "build"),
                 self.build.to_marked_yaml(),
             );
         }
 
-        if !self.host.is_empty() {
+        if !self.host.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "host"),
                 self.host.to_marked_yaml(),
             );
         }
 
-        if !self.run.is_empty() {
+        if !self.run.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "run"),
                 self.run.to_marked_yaml(),
             );
         }
 
-        if !self.run_constraints.is_empty() {
+        if !self.run_constraints.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "run_constraints"),
                 self.run_constraints.to_marked_yaml(),
@@ -278,7 +278,7 @@ impl ToMarkedYaml for Extra {
     fn to_marked_yaml(&self) -> MarkedNode {
         let mut mapping = MappingHash::new();
 
-        if !self.recipe_maintainers.is_empty() {
+        if !self.recipe_maintainers.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "recipe-maintainers"),
                 self.recipe_maintainers.to_marked_yaml(),
@@ -314,7 +314,7 @@ impl ToMarkedYaml for IntermediateRecipe {
             self.package.to_marked_yaml(),
         );
 
-        if !self.source.is_empty() {
+        if !self.source.0.is_empty() {
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "build"),
                 self.source.to_marked_yaml(),

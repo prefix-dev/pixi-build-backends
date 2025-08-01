@@ -2,11 +2,18 @@
 name = "py-pixi-build-backend"
 description = "Add a short description here"
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
-channels = ["conda-forge"]
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 license = "BSD-3-Clause"
+preview = ["pixi-build"]
 
-[tasks]
+[dependencies]
+py-pixi-build-backend = { path = "." }
+pixi-build-api-version = { path = "/Users/rubenarts/dev/pixi-build-backends/recipe/output/noarch/pixi-build-api-version-1-h4616a5c_0.conda" }
+# pixi-build-api-version = "*"
 
 [feature.build.dependencies]
 python = "*"
@@ -32,13 +39,11 @@ pytest = "*"
 syrupy = "*"
 toml = "*"
 
-
 # for rust-analyzer
 rust-src = "~=1.86.0"
 
 [feature.test.pypi-dependencies]
 types-toml = "*"
-
 
 [feature.test.tasks]
 test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
@@ -57,5 +62,19 @@ fmt-check = { depends-on = ["fmt-python-check", "fmt-rust-check"] }
 
 
 [environments]
-test = { features = ["build", "test"], solve-group = "default" }
+default = { features = ["build", "test"], solve-group = "default" }
 build = ["build"]
+
+[package.build]
+backend = { name = "pixi-build-python", version = "*" }
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
+
+[package]
+name = "py-pixi-build-backend"
+version = "0.1.0"
+
+[package.host-dependencies]
+maturin = "*"

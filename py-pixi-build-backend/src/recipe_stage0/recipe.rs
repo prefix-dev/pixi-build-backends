@@ -14,10 +14,11 @@ use pyo3::{
 };
 use rattler_conda_types::package::EntryPoint;
 use recipe_stage0::recipe::{
-    About, Build, ConditionalRequirements, Extra, IntermediateRecipe, NoArchKind, Package,
-    PathSource, Python, Script, Source, UrlSource, Value,
+    About, Build, ConditionalList, ConditionalRequirements, Extra, IntermediateRecipe, NoArchKind,
+    Package, PathSource, Python, Script, Source, UrlSource, Value,
 };
 use std::collections::HashMap;
+use std::fmt::Display;
 
 // Main recipe structure
 #[pyclass]
@@ -42,6 +43,11 @@ impl PyIntermediateRecipe {
         }
     }
 
+    #[setter]
+    pub fn set_package(&mut self, value: PyPackage) {
+        self.inner.package = value.inner;
+    }
+
     #[getter]
     pub fn build(&self) -> PyBuild {
         PyBuild {
@@ -49,11 +55,21 @@ impl PyIntermediateRecipe {
         }
     }
 
+    #[setter]
+    pub fn set_build(&mut self, value: PyBuild) {
+        self.inner.build = value.inner;
+    }
+
     #[getter]
     pub fn requirements(&self) -> PyConditionalRequirements {
         PyConditionalRequirements {
             inner: self.inner.requirements.clone(),
         }
+    }
+
+    #[setter]
+    pub fn set_requirements(&mut self, value: PyConditionalRequirements) {
+        self.inner.requirements = value.inner;
     }
 
     #[getter]
@@ -123,11 +139,21 @@ impl PyPackage {
         }
     }
 
+    #[setter]
+    pub fn set_name(&mut self, name: PyValueString) {
+        self.inner.name = name.inner;
+    }
+
     #[getter]
     pub fn version(&self) -> PyValueString {
         PyValueString {
             inner: self.inner.version.clone(),
         }
+    }
+
+    #[setter]
+    pub fn set_version(&mut self, version: PyValueString) {
+        self.inner.version = version.inner;
     }
 }
 
@@ -497,7 +523,7 @@ impl PyConditionalRequirements {
     pub fn build(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
-            for dep in &self.inner.build {
+            for dep in &self.inner.build.0 {
                 list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
             Ok(list.unbind())
@@ -508,7 +534,7 @@ impl PyConditionalRequirements {
     pub fn host(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
-            for dep in &self.inner.host {
+            for dep in &self.inner.host.0 {
                 list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
             Ok(list.unbind())
@@ -519,7 +545,7 @@ impl PyConditionalRequirements {
     pub fn run(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
-            for dep in &self.inner.run {
+            for dep in &self.inner.run.0 {
                 list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
             Ok(list.unbind())
@@ -530,7 +556,7 @@ impl PyConditionalRequirements {
     pub fn run_constraints(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
-            for dep in &self.inner.run_constraints {
+            for dep in &self.inner.run_constraints.0 {
                 list.append(PyItemPackageDependency { inner: dep.clone() })?;
             }
             Ok(list.unbind())
@@ -542,7 +568,7 @@ impl PyConditionalRequirements {
         self.inner.build = build
             .into_iter()
             .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<PyResult<ConditionalList<_>>>()?;
         Ok(())
     }
 
@@ -551,7 +577,7 @@ impl PyConditionalRequirements {
         self.inner.host = host
             .into_iter()
             .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<PyResult<ConditionalList<_>>>()?;
         Ok(())
     }
 
@@ -560,7 +586,7 @@ impl PyConditionalRequirements {
         self.inner.run = run
             .into_iter()
             .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<PyResult<ConditionalList<_>>>()?;
         Ok(())
     }
 
@@ -569,8 +595,12 @@ impl PyConditionalRequirements {
         self.inner.run_constraints = run_constraints
             .into_iter()
             .map(|item| Ok(PyItemPackageDependency::try_from(item)?.inner))
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<PyResult<ConditionalList<_>>>()?;
         Ok(())
+    }
+
+    pub fn __str__(&self) -> String {
+        format!("{}", self.inner)
     }
 
     pub fn resolve(&self, host_platform: Option<&PyPlatform>) -> PyPackageSpecDependencies {
@@ -587,6 +617,12 @@ impl From<ConditionalRequirements> for PyConditionalRequirements {
         PyConditionalRequirements {
             inner: requirements,
         }
+    }
+}
+
+impl Display for PyConditionalRequirements {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
     }
 }
 
@@ -657,7 +693,7 @@ impl PyExtra {
     pub fn recipe_maintainers(&self) -> PyResult<Py<PyList>> {
         BindingPython::with_gil(|py| {
             let list = PyList::empty(py);
-            for dep in &self.inner.recipe_maintainers {
+            for dep in &self.inner.recipe_maintainers.0 {
                 list.append(PyItemString { inner: dep.clone() })?;
             }
             Ok(list.unbind())

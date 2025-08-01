@@ -43,11 +43,21 @@ class IntermediateRecipe:
     def build(self) -> "Build":
         """Get the build configuration."""
         return Build._from_inner(self._inner.build)
+    
+    @build.setter
+    def build(self, value: "Build") -> None:
+        """Set the build configuration."""
+        self._inner.build = value._inner
 
     @property
     def requirements(self) -> "ConditionalRequirements":
         """Get the requirements configuration."""
         return ConditionalRequirements._from_inner(self._inner.requirements)
+    
+    @requirements.setter
+    def requirements(self, value: "ConditionalRequirements") -> None:
+        """Set the requirements configuration."""
+        self._inner.requirements = value._inner
 
     @property
     def about(self) -> Optional["About"]:
@@ -132,11 +142,21 @@ class Package:
     def name(self) -> "ValueString":
         """Get the package name."""
         return ValueString._from_inner(self._inner.name)
+    
+    @name.setter
+    def name(self, value: "ValueString") -> None:
+        """Set the package name."""
+        self._inner.name = value._inner
 
     @property
     def version(self) -> "ValueString":
         """Get the package version."""
         return ValueString._from_inner(self._inner.version)
+
+    @version.setter
+    def version(self, value: "ValueString") -> None:
+        """Set the package version."""
+        self._inner.version = value._inner
 
     @classmethod
     def _from_inner(cls, inner: PyPackage) -> "Package":
@@ -220,7 +240,7 @@ class Script:
     @content.setter
     def content(self, value: List[str]) -> None:
         """Set the script content."""
-        self._inner.set_content(value)
+        self._inner.content = value
 
     @property
     def env(self) -> Dict[str, str]:
@@ -230,7 +250,7 @@ class Script:
     @env.setter
     def env(self, value: Dict[str, str]) -> None:
         """Set the environment variables."""
-        self._inner.set_env(value)
+        self._inner.env = value
 
     @property
     def secrets(self) -> List[str]:
@@ -240,7 +260,7 @@ class Script:
     @secrets.setter
     def secrets(self, value: List[str]) -> None:
         """Set the secrets."""
-        self._inner.set_secrets(value)
+        self._inner.secrets = value
 
     @classmethod
     def _from_inner(cls, inner: PyScript) -> "Script":
@@ -555,10 +575,13 @@ class ConditionalRequirements:
     def __init__(self) -> None:
         self._inner = PyConditionalRequirements()
 
+    def __repr__(self):
+        return str(self._inner)
+
     @property
     def build(self) -> "ConditionalListPackageDependency":
         """Get the build requirements."""
-        return self._inner.build
+        return [ItemPackageDependency._from_inner(build) for build in self._inner.build]
 
     @build.setter
     def build(self, value: "ConditionalListPackageDependency") -> None:
@@ -568,8 +591,7 @@ class ConditionalRequirements:
     @property
     def host(self) -> "ConditionalListPackageDependency":
         """Get the host requirements."""
-        # return ConditionalListPackageDependency._from_inner(self._inner.host)
-        return self._inner.host
+        return [ItemPackageDependency._from_inner(host) for host in self._inner.host]
 
     @host.setter
     def host(self, value: "ConditionalListPackageDependency") -> None:
@@ -579,7 +601,7 @@ class ConditionalRequirements:
     @property
     def run(self) -> "ConditionalListPackageDependency":
         """Get the run requirements."""
-        return self._inner.run
+        return [ItemPackageDependency._from_inner(run) for run in self._inner.run]
 
     @run.setter
     def run(self, value: "ConditionalListPackageDependency") -> None:
@@ -589,7 +611,7 @@ class ConditionalRequirements:
     @property
     def run_constraints(self) -> "ConditionalListPackageDependency":
         """Get the run constraints."""
-        return self._inner.run_constraints
+        return [ItemPackageDependency._from_inner(run_constraint) for run_constraint in self._inner.run_constraints]
 
     @run_constraints.setter
     def run_constraints(self, value: "ConditionalListPackageDependency") -> None:
@@ -707,6 +729,35 @@ class ItemPackageDependency:
     def __init__(self, name: str):
         self._inner = PyItemPackageDependency(name)
 
+
+    @staticmethod
+    def from_template(template: str) -> "ItemPackageDependency":
+        """
+        Create an ItemPackageDependency from a jinja template string.
+
+        Parameters
+        ----------
+        template : str
+            The jinja template string for the package dependency.
+
+        Returns
+        -------
+        ItemPackageDependency
+            The constructed ItemPackageDependency object.
+
+
+        Examples
+        --------
+        ```python
+        >>> model = ItemPackageDependency.from_template("my-project")
+        >>> str(model)
+        'Value(Template("my-project"))'
+        >>>
+        ```
+        """
+        return ItemPackageDependency._from_inner(PyItemPackageDependency.from_template(template))
+
+
     @classmethod
     def _from_inner(cls, inner: PyItemPackageDependency) -> "ItemPackageDependency":
         """Create an ItemPackageDependency from a FFI PyItemPackageDependency."""
@@ -714,6 +765,16 @@ class ItemPackageDependency:
         instance._inner = inner
         return instance
 
+    @property
+    def package_name(self) -> str:
+        """Get the package name."""
+        if self._inner.is_concrete():
+            return self._inner.concrete().package_name()
+        elif self._inner.is_template():
+            return str(self._inner.template())
+
+    def __repr__(self):
+        return str(self._inner)
 
 class ItemString:
     """A package dependency item wrapper."""

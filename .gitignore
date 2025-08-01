@@ -26,6 +26,7 @@ output/
 
 # pixi
 .pixi/
+*.conda
 
 # Visual studio files
 .vs/
@@ -37,5 +38,9 @@ output/
 # Output directory
 pixi-build-python-output/
 **/repodata.json
+
+# Python cache files
+__pycache__/
+*.pyc
 
 *.local*

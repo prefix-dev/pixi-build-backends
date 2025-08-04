@@ -56,11 +56,11 @@ mod imp {
             &self,
             model: &pixi_build_types::ProjectModelV1,
             _config: &Self::Config,
-            manifest_path: PathBuf,
+            _manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
         ) -> miette::Result<GeneratedRecipe> {
-            let generated_recipe = GeneratedRecipe::from_model(model.clone(), manifest_path);
+            let generated_recipe = GeneratedRecipe::from_model(model.clone());
             Ok(generated_recipe)
         }
     }

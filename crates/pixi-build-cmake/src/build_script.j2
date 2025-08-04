@@ -5,7 +5,6 @@
 
 {# - Set up common variables -#}
 {%- set build_dir = "build" -%}
-{%- set source_dir = env("SRC_DIR") -%}
 {%- set library_prefix =  "%LIBRARY_PREFIX%" if build_platform == "windows" else "$PREFIX" -%}
 
 {# Set up default CMake arguments -#}

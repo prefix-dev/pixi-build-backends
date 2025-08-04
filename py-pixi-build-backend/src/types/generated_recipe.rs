@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
 use pyo3::{
@@ -28,8 +26,8 @@ impl PyGeneratedRecipe {
     }
 
     #[staticmethod]
-    pub fn from_model(model: PyProjectModelV1, manifest_root: PathBuf) -> Self {
-        let recipe = GeneratedRecipe::from_model(model.inner.clone(), manifest_root);
+    pub fn from_model(model: PyProjectModelV1) -> Self {
+        let recipe = GeneratedRecipe::from_model(model.inner.clone());
         PyGeneratedRecipe { inner: recipe }
     }
 

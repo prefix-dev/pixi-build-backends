@@ -16,10 +16,10 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(cls, model: ProjectModelV1, manifest_root: Path) -> "GeneratedRecipe":
+    def from_model(cls, model: ProjectModelV1) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
-        instance._inner = PyGeneratedRecipe().from_model(model._inner, manifest_root)
+        instance._inner = PyGeneratedRecipe().from_model(model._inner)
         return instance
 
     @property

@@ -5,9 +5,7 @@
   package:
     name: test_project
     version: 1.0.0
-  source:
-  - path: .
-    sha256: null
+  source: []
   build:
     number: null
     script:

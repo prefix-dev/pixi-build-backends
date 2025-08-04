@@ -8,7 +8,7 @@ def test_generated_recipe_from_model(snapshot: Any) -> None:
     """Test initialization of ProjectModelV1."""
     model = ProjectModelV1(name="test_project", version="1.0.0")
 
-    generated_recipe = GeneratedRecipe.from_model(model, Path("."))
+    generated_recipe = GeneratedRecipe.from_model(model)
 
     print(type(generated_recipe.recipe))
 

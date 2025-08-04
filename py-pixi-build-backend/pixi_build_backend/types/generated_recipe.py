@@ -1,5 +1,4 @@
 from typing import Any, Dict, Optional, Protocol, List
-from pathlib import Path
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateRecipe
 from pixi_build_backend.types.platform import Platform

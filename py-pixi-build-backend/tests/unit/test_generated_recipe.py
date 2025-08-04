@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any
 from pixi_build_backend.types.generated_recipe import GeneratedRecipe
 from pixi_build_backend.types.project_model import ProjectModelV1

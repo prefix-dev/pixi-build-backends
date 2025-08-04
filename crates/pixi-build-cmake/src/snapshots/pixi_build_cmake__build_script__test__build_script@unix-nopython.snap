@@ -11,7 +11,7 @@ pushd build
 if [ ! -f "build.ninja" ]; then
     cmake $CMAKE_ARGS \
         -GNinja \
-        -S "$SRC_DIR" \
+        -S "my-prefix-dir" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=$PREFIX \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \

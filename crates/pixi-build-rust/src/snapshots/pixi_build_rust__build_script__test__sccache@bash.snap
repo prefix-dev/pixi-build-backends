@@ -3,5 +3,5 @@ source: crates/pixi-build-rust/src/build_script.rs
 expression: "script.join(\"\\n\")"
 ---
 export RUSTC_WRAPPER=sccache
-cargo install --locked --root "$PREFIX" --path my-prefix-dir --no-track  --force
+cargo install --locked --root "$PREFIX" --path my-prefix-dir --target-dir target --no-track  --force
 sccache --show-stats

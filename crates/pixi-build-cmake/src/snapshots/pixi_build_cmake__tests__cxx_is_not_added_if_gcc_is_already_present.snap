@@ -14,12 +14,12 @@ build:
   script: "[ ... script ... ]"
 requirements:
   build:
-    - gxx
+    - gxx *
     - cmake
     - ninja
   host: []
   run:
-    - boltons
+    - boltons *
   run_constraints: []
 tests: []
 about: ~

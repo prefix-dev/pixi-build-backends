@@ -3972,7 +3972,7 @@ dependencies = [
  "rattler-build",
  "rattler_conda_types",
  "recipe-stage0",
- "rstest 0.25.0",
+ "rstest",
  "serde",
  "serde_json",
  "strum",
@@ -3983,21 +3983,16 @@ dependencies = [
 name = "pixi-build-mojo"
 version = "0.1.0"
 dependencies = [
- "async-trait",
- "chrono",
  "indexmap 2.10.0",
  "insta",
  "miette",
  "minijinja",
  "pixi-build-backend",
- "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_manifest",
  "rattler-build",
  "rattler_conda_types",
- "rattler_package_streaming",
  "recipe-stage0",
- "rstest 0.23.0",
+ "rstest",
  "serde",
  "serde_json",
  "tempfile",
@@ -4058,7 +4053,7 @@ dependencies = [
  "pixi_build_types",
  "rattler_conda_types",
  "recipe-stage0",
- "rstest 0.25.0",
+ "rstest",
  "serde",
  "serde_json",
  "temp-env",
@@ -5504,44 +5499,14 @@ dependencies = [
 
 [[package]]
 name = "rstest"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a2c585be59b6b5dd66a9d2084aa1d8bd52fbdb806eafdeffb52791147862035"
-dependencies = [
- "futures",
- "futures-timer",
- "rstest_macros 0.23.0",
- "rustc_version",
-]
-
-[[package]]
-name = "rstest"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fc39292f8613e913f7df8fa892b8944ceb47c247b78e1b1ae2f09e019be789d"
 dependencies = [
  "futures-timer",
  "futures-util",
- "rstest_macros 0.25.0",
+ "rstest_macros",
  "rustc_version",
-]
-
-[[package]]
-name = "rstest_macros"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "825ea780781b15345a146be27eaefb05085e337e869bff01b4306a4fd4a9ad5a"
-dependencies = [
- "cfg-if 1.0.0",
- "glob",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "regex",
- "relative-path",
- "rustc_version",
- "syn",
- "unicode-ident",
 ]
 
 [[package]]

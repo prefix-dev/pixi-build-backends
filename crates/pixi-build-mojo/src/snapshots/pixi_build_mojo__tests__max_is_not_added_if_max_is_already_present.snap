@@ -14,10 +14,10 @@ build:
   script: "[ ... script ... ]"
 requirements:
   build:
-    - max
+    - max *
   host: []
   run:
-    - boltons
+    - boltons *
   run_constraints: []
 tests: []
 about: ~

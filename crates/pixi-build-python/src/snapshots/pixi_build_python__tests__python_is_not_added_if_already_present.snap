@@ -16,10 +16,10 @@ build:
 requirements:
   build: []
   host:
-    - python
+    - python *
     - pip
   run:
-    - boltons
+    - boltons *
     - python
   run_constraints: []
 tests: []

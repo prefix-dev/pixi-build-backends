@@ -9,7 +9,7 @@ packages:
     buildNumber: 0
     subdir: "[redacted]"
     depends:
-      - python
+      - python >=3.8
     constraints: []
     license: ~
     licenseFamily: ~

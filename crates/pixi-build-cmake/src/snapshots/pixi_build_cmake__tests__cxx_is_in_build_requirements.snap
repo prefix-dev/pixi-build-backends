@@ -19,7 +19,7 @@ requirements:
     - ninja
   host: []
   run:
-    - boltons
+    - boltons *
   run_constraints: []
 tests: []
 about: ~

@@ -19,7 +19,7 @@ requirements:
     - pip
     - python
   run:
-    - boltons
+    - boltons *
     - python
   run_constraints: []
 tests: []

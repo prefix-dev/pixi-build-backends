@@ -1,6 +1,7 @@
 ---
 source: crates/pixi-build-rust/src/main.rs
 expression: generated_recipe.recipe
+snapshot_kind: text
 ---
 context: {}
 package:
@@ -15,7 +16,7 @@ requirements:
     - "${{ compiler('rust') }}"
   host: []
   run:
-    - boltons *
+    - boltons
   run_constraints: []
 tests: []
 about: ~

@@ -1,6 +1,7 @@
 ---
 source: crates/pixi-build-python/src/main.rs
 expression: generated_recipe.recipe
+snapshot_kind: text
 ---
 context: {}
 package:
@@ -17,7 +18,7 @@ requirements:
     - pip
     - python
   run:
-    - boltons *
+    - boltons
     - python
   run_constraints: []
 tests: []

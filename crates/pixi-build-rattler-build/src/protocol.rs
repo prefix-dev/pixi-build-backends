@@ -1004,6 +1004,7 @@ mod tests {
                 let result = factory
                     .0
                     .conda_outputs(CondaOutputsParams {
+                        channels: vec![],
                         host_platform: Platform::Linux64,
                         build_platform: Platform::Linux64,
                         variant_configuration: None,

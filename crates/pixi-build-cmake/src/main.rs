@@ -29,8 +29,7 @@ impl GenerateRecipe for CMakeGenerator {
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
-        let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), manifest_root.clone());
+        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
 
         // we need to add compilers
 
@@ -363,6 +362,7 @@ mod tests {
         let outputs = factory
             .0
             .conda_outputs(CondaOutputsParams {
+                channels: vec![],
                 host_platform: Platform::Win64,
                 build_platform: Platform::Win64,
                 variant_configuration: None,

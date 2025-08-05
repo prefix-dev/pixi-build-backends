@@ -1,5 +1,4 @@
 from typing import Any, Dict, Optional, Protocol, List
-from pathlib import Path
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateRecipe
 from pixi_build_backend.types.platform import Platform
@@ -16,10 +15,10 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(cls, model: ProjectModelV1, manifest_root: Path) -> "GeneratedRecipe":
+    def from_model(cls, model: ProjectModelV1) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
-        instance._inner = PyGeneratedRecipe().from_model(model._inner, manifest_root)
+        instance._inner = PyGeneratedRecipe().from_model(model._inner)
         return instance
 
     @property

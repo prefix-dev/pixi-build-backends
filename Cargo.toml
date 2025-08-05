@@ -88,3 +88,14 @@ pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", bran
 #rattler_virtual_packages = { path = "../rattler/crates/rattler_virtual_packages" }
 #rattler_repodata_gateway = { path = "../rattler/crates/rattler_repodata_gateway" }
 #simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
+
+[profile.ci]
+codegen-units = 16
+inherits = "release"
+lto = false
+opt-level = 0
+strip = false

@@ -61,7 +61,7 @@ pub trait Protocol {
         unimplemented!("conda_outputs not implemented");
     }
 
-    /// Called when the client calls `conda/build_v2`.
+    /// Called when the client calls `conda/build_v1`.
     async fn conda_build_v1(
         &self,
         _params: CondaBuildV1Params,

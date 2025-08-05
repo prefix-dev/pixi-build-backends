@@ -1,9 +1,10 @@
-use std::str::FromStr;
+use std::sync::Arc;
 
-use miette::IntoDiagnostic;
 use ordermap::OrderMap;
-use pixi_build_types::{PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1};
-use rattler_conda_types::{MatchSpec, PackageName};
+use pixi_build_types::{
+    BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1,
+};
+use rattler_conda_types::{Channel, MatchSpec, PackageName};
 use recipe_stage0::{
     matchspec::{PackageDependency, SourceMatchSpec},
     recipe::{Conditional, ConditionalList, ConditionalRequirements, Item, ListOrItem},
@@ -138,23 +139,66 @@ pub(crate) fn source_package_spec_to_package_dependency(
     })
 }
 
+fn binary_package_spec_to_package_dependency(
+    name: PackageName,
+    binary_spec: BinaryPackageSpecV1,
+) -> PackageDependency {
+    let BinaryPackageSpecV1 {
+        version,
+        build,
+        build_number,
+        file_name,
+        channel,
+        subdir,
+        md5,
+        sha256,
+        url,
+        license,
+    } = binary_spec;
+
+    // If the version is "*", we treat it as None
+    // so later rattler-build can detect the PackageDependency as a variant.
+    let version = version.filter(|v| v != &rattler_conda_types::VersionSpec::Any);
+
+    PackageDependency::Binary(MatchSpec {
+        name: Some(name),
+        version,
+        build,
+        build_number,
+        file_name,
+        extras: None,
+        channel: channel.map(Channel::from_url).map(Arc::new),
+        subdir,
+        namespace: None,
+        md5,
+        sha256,
+        url,
+        license,
+    })
+}
+
+fn package_spec_to_package_dependency(
+    name: PackageName,
+    spec: PackageSpecV1,
+) -> miette::Result<PackageDependency> {
+    match spec {
+        PackageSpecV1::Binary(binary_spec) => Ok(binary_package_spec_to_package_dependency(
+            name,
+            *binary_spec,
+        )),
+        PackageSpecV1::Source(source_spec) => Ok(PackageDependency::Source(
+            source_package_spec_to_package_dependency(name, source_spec)?,
+        )),
+    }
+}
+
 pub(crate) fn package_specs_to_package_dependency(
     specs: OrderMap<String, PackageSpecV1>,
 ) -> miette::Result<Vec<PackageDependency>> {
     specs
         .into_iter()
-        .map(|(name, spec)| match spec {
-            PackageSpecV1::Binary(_binary_spec) => Ok(PackageDependency::Binary(
-                MatchSpec::from_str(name.as_str(), rattler_conda_types::ParseStrictness::Strict)
-                    .into_diagnostic()?,
-            )),
-
-            PackageSpecV1::Source(source_spec) => Ok(PackageDependency::Source(
-                source_package_spec_to_package_dependency(
-                    PackageName::from_str(&name).into_diagnostic()?,
-                    source_spec,
-                )?,
-            )),
+        .map(|(name, spec)| {
+            package_spec_to_package_dependency(PackageName::new_unchecked(name), spec)
         })
         .collect()
 }
@@ -194,4 +238,31 @@ pub fn target_to_package_spec(target: &TargetV1) -> PackageSpecDependencies<Pack
     }
 
     bin_reqs
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_binary_package_conversion() {
+        let name = PackageName::new_unchecked("foobar");
+        let spec = BinaryPackageSpecV1 {
+            version: Some("3.12.*".parse().unwrap()),
+            ..BinaryPackageSpecV1::default()
+        };
+        let match_spec = binary_package_spec_to_package_dependency(name, spec);
+        assert_eq!(match_spec.to_string(), "foobar 3.12.*");
+    }
+
+    #[test]
+    fn test_binary_package_conversion_any_is_treated_as_none() {
+        let name = PackageName::new_unchecked("python");
+        let spec = BinaryPackageSpecV1 {
+            version: Some("*".parse().unwrap()),
+            ..BinaryPackageSpecV1::default()
+        };
+        let match_spec = binary_package_spec_to_package_dependency(name, spec);
+        assert_eq!(match_spec.to_string(), "python");
+    }
 }

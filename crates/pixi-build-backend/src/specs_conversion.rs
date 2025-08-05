@@ -218,6 +218,10 @@ fn binary_package_spec_to_package_dependency(
         license,
     } = binary_spec;
 
+    // If the version is "*", we treat it as None
+    // so later rattler-build can detect the PackageDependency as a variant.
+    let version = version.and_then(|v| if v.to_string() == "*" { None } else { Some(v) });
+
     PackageDependency::Binary(MatchSpec {
         name: Some(name),
         version,
@@ -327,5 +331,16 @@ mod test {
         };
         let match_spec = binary_package_spec_to_package_dependency(name, spec);
         assert_eq!(match_spec.to_string(), "foobar 3.12.*");
+    }
+
+    #[test]
+    fn test_binary_package_conversion_any_is_treated_as_none() {
+        let name = PackageName::new_unchecked("python");
+        let spec = BinaryPackageSpecV1 {
+            version: Some("*".parse().unwrap()),
+            ..BinaryPackageSpecV1::default()
+        };
+        let match_spec = binary_package_spec_to_package_dependency(name, spec);
+        assert_eq!(match_spec.to_string(), "python");
     }
 }

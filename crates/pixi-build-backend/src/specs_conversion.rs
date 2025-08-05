@@ -220,7 +220,7 @@ fn binary_package_spec_to_package_dependency(
 
     // If the version is "*", we treat it as None
     // so later rattler-build can detect the PackageDependency as a variant.
-    let version = version.and_then(|v| if v.to_string() == "*" { None } else { Some(v) });
+    let version = version.filter(|v| v != &rattler_conda_types::VersionSpec::Any);
 
     PackageDependency::Binary(MatchSpec {
         name: Some(name),

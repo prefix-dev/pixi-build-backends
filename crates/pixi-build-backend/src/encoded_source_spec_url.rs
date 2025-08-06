@@ -48,11 +48,12 @@ impl From<EncodedSourceSpecUrl> for SourcePackageSpecV1 {
                 Some(GitReferenceV1::Rev(rev.into_owned()))
             } else if let Some(branch) = pairs.remove("branch") {
                 Some(GitReferenceV1::Branch(branch.into_owned()))
-            } else if let Some(tag) = pairs.remove("tag") {
-                Some(GitReferenceV1::Tag(tag.into_owned()))
             } else {
-                None
+                pairs
+                    .remove("tag")
+                    .map(|tag| GitReferenceV1::Tag(tag.into_owned()))
             };
+
             let subdirectory = pairs.remove("subdirectory").map(|s| s.into_owned());
             SourcePackageSpecV1::Git(GitSpecV1 {
                 git: git_url,

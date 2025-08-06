@@ -10,11 +10,20 @@ name = "py-pixi-build-backend"
 version = "0.1.0"
 
 [package.build]
-backend = { name = "pixi-build-rust", version = "*" }
+backend = { name = "pixi-build-python", version = "*" }
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",
 ]
+
+[package.build.configuration]
+noarch = false
+
+[package.build-dependencies]
+rust = "*"
+
+[package.host-dependencies]
+maturin = "*"
 
 
 [feature.build.dependencies]

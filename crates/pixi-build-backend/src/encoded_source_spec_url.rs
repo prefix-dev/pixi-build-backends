@@ -25,7 +25,6 @@ impl From<Url> for EncodedSourceSpecUrl {
 }
 
 impl From<EncodedSourceSpecUrl> for SourcePackageSpecV1 {
-    #[allow(clippy::manual_map)]
     fn from(value: EncodedSourceSpecUrl) -> Self {
         let url = value.0;
         assert_eq!(url.scheme(), "source", "URL must be a file URL");

@@ -6,6 +6,7 @@ use std::{collections::BTreeMap, collections::BTreeSet, path::Path, sync::Arc};
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
+use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
     compilers::{Language, compiler_requirement, default_compiler},
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
@@ -29,7 +30,9 @@ impl GenerateRecipe for CMakeGenerator {
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
-        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
+        let mut generated_recipe =
+            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+                .into_diagnostic()?;
 
         // we need to add compilers
 

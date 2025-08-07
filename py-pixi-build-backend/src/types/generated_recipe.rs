@@ -1,7 +1,11 @@
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
+use pixi_build_backend::generated_recipe::{
+    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
+};
 use pyo3::{
-    PyObject, Python, pyclass, pymethods,
+    PyErr, PyObject, PyResult, Python,
+    exceptions::PyValueError,
+    pyclass, pymethods,
     types::{PyAnyMethods, PyString},
 };
 
@@ -26,9 +30,10 @@ impl PyGeneratedRecipe {
     }
 
     #[staticmethod]
-    pub fn from_model(model: PyProjectModelV1) -> Self {
-        let recipe = GeneratedRecipe::from_model(model.inner.clone());
-        PyGeneratedRecipe { inner: recipe }
+    pub fn from_model(model: PyProjectModelV1) -> PyResult<Self> {
+        let recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        Ok(PyGeneratedRecipe { inner: recipe })
     }
 
     #[getter]

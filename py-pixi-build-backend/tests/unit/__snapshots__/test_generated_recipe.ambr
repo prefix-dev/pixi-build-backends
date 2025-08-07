@@ -18,7 +18,14 @@
     run: []
     run_constraints: []
   tests: []
-  about: null
+  about:
+    homepage: null
+    license: null
+    license_file: null
+    summary: null
+    description: null
+    documentation: null
+    repository: null
   extra: null
   
   '''

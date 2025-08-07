@@ -10,6 +10,7 @@ use std::{
 use build_script::BuildScriptContext;
 use config::{MojoBackendConfig, clean_project_name};
 use miette::{Error, IntoDiagnostic};
+use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
@@ -32,7 +33,9 @@ impl GenerateRecipe for MojoGenerator {
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
-        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
+        let mut generated_recipe =
+            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+                .into_diagnostic()?;
 
         let cleaned_project_name = clean_project_name(
             generated_recipe

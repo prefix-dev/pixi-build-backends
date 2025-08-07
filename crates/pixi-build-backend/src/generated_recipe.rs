@@ -1,14 +1,16 @@
+use miette::Diagnostic;
+use pixi_build_types::ProjectModelV1;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
+use rattler_conda_types::{Platform, Version};
+use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
+use serde::de::DeserializeOwned;
+use std::convert::Infallible;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Debug,
     path::{Path, PathBuf},
 };
-
-use pixi_build_types::ProjectModelV1;
-use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::Platform;
-use recipe_stage0::recipe::{IntermediateRecipe, Package, Value};
-use serde::de::DeserializeOwned;
+use thiserror::Error;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
@@ -82,6 +84,16 @@ pub trait BackendConfig: DeserializeOwned + Clone {
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self>;
 }
 
+#[derive(Debug, Error, Diagnostic)]
+pub enum GenerateRecipeError<MetadataProviderError: Diagnostic + 'static> {
+    #[error("There was no name defined for the recipe")]
+    NoNameDefined,
+    #[error("There was no version defined for the recipe")]
+    NoVersionDefined,
+    #[error("An error occurred while querying the {0}")]
+    MetadataProviderError(String, #[source] MetadataProviderError),
+}
+
 #[derive(Default, Clone)]
 pub struct GeneratedRecipe {
     pub recipe: IntermediateRecipe,
@@ -93,28 +105,139 @@ impl GeneratedRecipe {
     /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
-    pub fn from_model(model: ProjectModelV1) -> Self {
+    pub fn from_model<M: MetadataProvider>(
+        model: ProjectModelV1,
+        provider: &mut M,
+    ) -> Result<Self, GenerateRecipeError<M::Error>> {
+        // If the name is not defined in the model, we try to get it from the provider.
+        // If the provider cannot provide a name, we return an error.
+        let name = if model.name.is_empty() {
+            provider
+                .name()
+                .map_err(|e| GenerateRecipeError::MetadataProviderError(String::from("name"), e))?
+                .ok_or(GenerateRecipeError::NoNameDefined)?
+        } else {
+            model.name
+        };
+
+        // If the version is not defined in the model, we try to get it from the
+        // provider. If the provider cannot provide a version, we return an
+        // error.
+        let version = match model.version {
+            Some(v) => v,
+            None => provider
+                .version()
+                .map_err(|e| {
+                    GenerateRecipeError::MetadataProviderError(String::from("version"), e)
+                })?
+                .ok_or(GenerateRecipeError::NoVersionDefined)?,
+        };
+
         let package = Package {
-            name: Value::Concrete(model.name),
-            version: Value::Concrete(
-                model.version
-                  .expect("`version` is required at the moment. In the future we will read this from `Cargo.toml`.")
-                  .to_string(),
-            ),
+            name: Value::Concrete(name),
+            version: Value::Concrete(version.to_string()),
         };
 
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());
 
+        macro_rules! derive_value {
+            ($ident:ident) => {
+                match model.$ident {
+                    Some(v) => Some(v.to_string()),
+                    None => provider.$ident().map_err(|e| {
+                        GenerateRecipeError::MetadataProviderError(
+                            String::from(stringify!($ident)),
+                            e,
+                        )
+                    })?,
+                }
+            };
+        }
+
+        let about = About {
+            homepage: derive_value!(homepage).map(Value::Concrete),
+            license: derive_value!(license).map(Value::Concrete),
+            description: derive_value!(description).map(Value::Concrete),
+            documentation: derive_value!(documentation).map(Value::Concrete),
+            repository: derive_value!(repository).map(Value::Concrete),
+            license_file: match model.license_file {
+                Some(v) => Some(Value::Concrete(v.display().to_string())),
+                None => provider
+                    .license_file()
+                    .map_err(|e| {
+                        GenerateRecipeError::MetadataProviderError(String::from("license-file"), e)
+                    })?
+                    .map(Value::Concrete),
+            },
+            summary: provider
+                .summary()
+                .map_err(|e| {
+                    GenerateRecipeError::MetadataProviderError(String::from("summary"), e)
+                })?
+                .map(Value::Concrete),
+        };
+
         let ir = IntermediateRecipe {
             package,
             requirements,
+            about: Some(about),
             ..Default::default()
         };
 
-        GeneratedRecipe {
+        Ok(GeneratedRecipe {
             recipe: ir,
             ..Default::default()
-        }
+        })
     }
+}
+
+#[derive(Debug, Error, Diagnostic)]
+pub enum MetadataProviderError {
+    #[error("The metadata provider cannot provide an about section for the recipe")]
+    CannotParseVersion(#[from] rattler_conda_types::ParseVersionError),
+}
+
+pub trait MetadataProvider {
+    type Error: Diagnostic;
+
+    /// Returns the name of the package or `None` if the provider does not
+    /// provide a name.
+    fn name(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+
+    /// Returns the version of the package or `None` if the provider does not
+    /// provide a version.
+    fn version(&mut self) -> Result<Option<Version>, Self::Error> {
+        Ok(None)
+    }
+
+    fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn license(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn summary(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn description(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+    fn repository(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(None)
+    }
+}
+
+pub struct DefaultMetadataProvider;
+
+impl MetadataProvider for DefaultMetadataProvider {
+    type Error = Infallible;
 }

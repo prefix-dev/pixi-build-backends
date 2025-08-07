@@ -11,6 +11,7 @@ use std::{
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
+use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
@@ -56,7 +57,9 @@ impl GenerateRecipe for PythonGenerator {
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
-        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
+        let mut generated_recipe =
+            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+                .into_diagnostic()?;
 
         let requirements = &mut generated_recipe.recipe.requirements;
 

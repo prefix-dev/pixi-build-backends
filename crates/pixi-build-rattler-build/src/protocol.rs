@@ -951,6 +951,7 @@ mod tests {
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 source_dir: None,
+                workspace_root: None,
                 manifest_path: recipe,
                 project_model: None,
                 configuration: None,
@@ -990,6 +991,7 @@ mod tests {
                 let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
                     .initialize(InitializeParams {
                         source_dir: None,
+                        workspace_root: None,
                         manifest_path: recipe_path.to_path_buf(),
                         project_model: None,
                         configuration: None,
@@ -1027,6 +1029,7 @@ mod tests {
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 source_dir: None,
+                workspace_root: None,
                 manifest_path: recipe,
                 project_model: None,
                 configuration: None,

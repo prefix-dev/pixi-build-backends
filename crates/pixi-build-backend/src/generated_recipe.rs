@@ -7,7 +7,7 @@ use std::{
 use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::Platform;
-use recipe_stage0::recipe::{IntermediateRecipe, Package, Value};
+use recipe_stage0::recipe::{ConditionalList, IntermediateRecipe, Item, Package, Source, Value};
 use serde::de::DeserializeOwned;
 
 use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
@@ -37,6 +37,7 @@ pub trait GenerateRecipe {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
+        source_dir: PathBuf,
         manifest_path: PathBuf,
         // The host_platform will be removed in the future.
         // Right now it is used to determine if certain dependencies are present
@@ -94,6 +95,16 @@ impl GeneratedRecipe {
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
     pub fn from_model(model: ProjectModelV1) -> Self {
+        Self::from_model_with_source(model, None)
+    }
+
+    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`] with optional source path.
+    /// This is required after the "stop copying source" changes - backends must specify
+    /// where rattler-build should find the source code.
+    pub fn from_model_with_source(
+        model: ProjectModelV1,
+        source_dir: Option<std::path::PathBuf>,
+    ) -> Self {
         let package = Package {
             name: Value::Concrete(model.name),
             version: Value::Concrete(
@@ -106,9 +117,22 @@ impl GeneratedRecipe {
         let requirements =
             from_targets_v1_to_conditional_requirements(&model.targets.unwrap_or_default());
 
+        // Add source information if provided and it's not the current
+        // directory. If we would add current directory, then it would
+        // require copying sources, which we would like to avoid.
+        let source = source_dir
+            .and_then(|path| {
+                let path_str = path.display().to_string();
+                (path != Path::new(".") && !path.as_os_str().is_empty()).then(|| {
+                    ConditionalList::from([Item::Value(Value::Concrete(Source::path(path_str)))])
+                })
+            })
+            .unwrap_or_default();
+
         let ir = IntermediateRecipe {
             package,
             requirements,
+            source,
             ..Default::default()
         };
 

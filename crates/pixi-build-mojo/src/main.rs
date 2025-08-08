@@ -16,7 +16,7 @@ use pixi_build_backend::{
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::Script;
+use recipe_stage0::recipe::{ConditionalRequirements, Script};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
@@ -48,7 +48,13 @@ impl GenerateRecipe for MojoGenerator {
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
-        let resolved_requirements = requirements.resolve(Some(host_platform));
+        let resolved_requirements = ConditionalRequirements::resolve(
+            requirements.build.as_ref(),
+            requirements.host.as_ref(),
+            requirements.run.as_ref(),
+            requirements.run_constraints.as_ref(),
+            Some(host_platform),
+        );
 
         // Ensure the compiler function is added to the build requirements
         // only if a specific compiler is not already present.

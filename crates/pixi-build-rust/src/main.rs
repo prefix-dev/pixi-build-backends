@@ -20,7 +20,7 @@ use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
-    recipe::{Item, Script},
+    recipe::{ConditionalRequirements, Item, Script},
 };
 use std::collections::BTreeSet;
 
@@ -45,7 +45,13 @@ impl GenerateRecipe for RustGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(host_platform));
+        let resolved_requirements = ConditionalRequirements::resolve(
+            requirements.build.as_ref(),
+            requirements.host.as_ref(),
+            requirements.run.as_ref(),
+            requirements.run_constraints.as_ref(),
+            Some(host_platform),
+        );
 
         // Ensure the compiler function is added to the build requirements
         // only if it is not already present.

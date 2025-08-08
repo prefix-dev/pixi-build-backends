@@ -25,6 +25,7 @@ use pixi_build_types::{
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
+use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -791,7 +792,9 @@ where
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
             let tool_config = tool_config.clone();
             let (output, package) = temp_recipe
-                .within_context_async(move || async move { run_build(output, &tool_config).await })
+                .within_context_async(move || async move {
+                    run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await
+                })
                 .await?;
 
             // Extract the input globs from the build and recipe
@@ -1213,7 +1216,8 @@ where
             extra_meta: None,
         };
 
-        let (output, output_path) = run_build(output, &tool_config).await?;
+        let (output, output_path) =
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
 
         // Extract the input globs from the build and recipe
         let mut input_globs = T::extract_input_globs_from_build(

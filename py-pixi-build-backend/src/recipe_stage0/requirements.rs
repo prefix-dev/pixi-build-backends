@@ -3,6 +3,7 @@ use rattler_conda_types::MatchSpec;
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec, SourceMatchSpec};
 use recipe_stage0::requirements::{PackageSpecDependencies, Selector};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 #[pyclass]
 #[derive(Clone, Default)]
@@ -76,7 +77,7 @@ impl PyPackageSpecDependencies {
     }
 }
 
-#[pyclass]
+#[pyclass(str)]
 #[derive(Clone)]
 pub struct PyPackageDependency {
     pub(crate) inner: PackageDependency,
@@ -84,14 +85,12 @@ pub struct PyPackageDependency {
 
 #[pymethods]
 impl PyPackageDependency {
-    #[staticmethod]
-    pub fn binary(matchspec: String) -> pyo3::PyResult<Self> {
-        let spec = matchspec.parse::<MatchSpec>().map_err(|e| {
+    #[new]
+    pub fn new(matchspec: String) -> pyo3::PyResult<Self> {
+        let spec = matchspec.parse::<PackageDependency>().map_err(|e| {
             pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {}", e))
         })?;
-        Ok(PyPackageDependency {
-            inner: PackageDependency::Binary(spec),
-        })
+        Ok(PyPackageDependency { inner: spec })
     }
 
     #[staticmethod]
@@ -123,6 +122,22 @@ impl PyPackageDependency {
             }),
             _ => None,
         }
+    }
+
+    pub fn package_name(&self) -> String {
+        self.inner.package_name().as_normalized().to_string()
+    }
+}
+
+impl Display for PyPackageDependency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl From<PackageDependency> for PyPackageDependency {
+    fn from(dep: PackageDependency) -> Self {
+        PyPackageDependency { inner: dep }
     }
 }
 
@@ -266,12 +281,6 @@ impl From<PackageSpecDependencies<PackageDependency>> for PyPackageSpecDependenc
 impl From<PyPackageSpecDependencies> for PackageSpecDependencies<PackageDependency> {
     fn from(py_deps: PyPackageSpecDependencies) -> Self {
         py_deps.inner
-    }
-}
-
-impl From<PackageDependency> for PyPackageDependency {
-    fn from(dep: PackageDependency) -> Self {
-        PyPackageDependency { inner: dep }
     }
 }
 

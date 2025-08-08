@@ -31,6 +31,7 @@ use pixi_build_types::{
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
+use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
     build::run_build,
     console_utils::LoggingOutputHandler,
@@ -577,7 +578,12 @@ impl Protocol for RattlerBuildBackend {
 
             let (output, build_path) = temp_recipe
                 .within_context_async(move || async move {
-                    run_build(output_with_build_string, tool_config).await
+                    run_build(
+                        output_with_build_string,
+                        tool_config,
+                        WorkingDirectoryBehavior::Preserve,
+                    )
+                    .await
                 })
                 .await?;
 
@@ -722,7 +728,8 @@ impl Protocol for RattlerBuildBackend {
             extra_meta: None,
         };
 
-        let (output, output_path) = run_build(output, &tool_config).await?;
+        let (output, output_path) =
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
 
         Ok(CondaBuildV1Result {
             output_file: output_path,

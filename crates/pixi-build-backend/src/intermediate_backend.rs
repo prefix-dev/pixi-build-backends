@@ -26,7 +26,7 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
-    build::run_build,
+    build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{
@@ -47,8 +47,9 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_conda_types::compression_level::CompressionLevel;
-use rattler_conda_types::{ChannelConfig, MatchSpec, Platform, package::ArchiveType};
+use rattler_conda_types::{
+    ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
+};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 
@@ -791,7 +792,9 @@ where
             let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
             let tool_config = tool_config.clone();
             let (output, package) = temp_recipe
-                .within_context_async(move || async move { run_build(output, &tool_config).await })
+                .within_context_async(move || async move {
+                    run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await
+                })
                 .await?;
 
             // Extract the input globs from the build and recipe
@@ -1213,7 +1216,8 @@ where
             extra_meta: None,
         };
 
-        let (output, output_path) = run_build(output, &tool_config).await?;
+        let (output, output_path) =
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
 
         // Extract the input globs from the build and recipe
         let mut input_globs = T::extract_input_globs_from_build(

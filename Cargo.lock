@@ -5181,6 +5181,7 @@ dependencies = [
  "hashlink",
  "indexmap 2.10.0",
  "insta",
+ "itertools 0.14.0",
  "marked-yaml",
  "pixi_build_types",
  "rattler-build",

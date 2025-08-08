@@ -56,6 +56,7 @@ indexmap = "2.7.1"
 pythonize = "0.24"
 dict_derive = "0.6.0"
 paste = "1.0.15"
+itertools = "0.14.0"
 
 [dev-dependencies]
 tempfile = "3.16.0"

@@ -1,0 +1,26 @@
+---
+source: crates/pixi-build-rust/src/main.rs
+assertion_line: 280
+expression: generated_recipe.recipe
+---
+context: {}
+package:
+  name: foobar
+  version: 0.1.0
+source:
+  - path: "[ ... path ... ]"
+    sha256: ~
+build:
+  number: ~
+  script: "[ ... script ... ]"
+requirements:
+  build:
+    - rust
+    - sccache
+  host: []
+  run:
+    - boltons
+  run_constraints: []
+tests: []
+about: ~
+extra: ~

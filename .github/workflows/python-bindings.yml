@@ -10,7 +10,7 @@ on:
       - Cargo.*
 
       # When something in the bindings themselves changes
-      - py-pixi-build-backend/**/*
+      - py-pixi-build-backend/**
 
       # Or when this workflow changes
       - .github/workflows/python-bindings.yml
@@ -41,8 +41,8 @@ jobs:
       - name: Format and Lint
         run: |
           cd py-pixi-build-backend
-          pixi run -e test lint
           pixi run -e test fmt-check
+          pixi run -e test lint
       - name: Run tests
         run: |
           cd py-pixi-build-backend

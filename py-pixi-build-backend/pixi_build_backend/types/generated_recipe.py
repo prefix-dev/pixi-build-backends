@@ -26,6 +26,11 @@ class GeneratedRecipe:
         """Get the recipe."""
         return IntermediateRecipe._from_inner(self._inner.recipe)
 
+    @recipe.setter
+    def recipe(self, value: IntermediateRecipe) -> None:
+        """Set the recipe."""
+        self._inner.recipe = value._inner
+
     @property
     def metadata_input_globs(self) -> List[str]:
         """Get the metadata input globs."""

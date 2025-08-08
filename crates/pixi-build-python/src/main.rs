@@ -18,7 +18,7 @@ use pixi_build_backend::{
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
-use recipe_stage0::recipe::{NoArchKind, Python, Script};
+use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -60,7 +60,13 @@ impl GenerateRecipe for PythonGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = requirements.resolve(Some(host_platform));
+        let resolved_requirements = ConditionalRequirements::resolve(
+            requirements.build.as_ref(),
+            requirements.host.as_ref(),
+            requirements.run.as_ref(),
+            requirements.run_constraints.as_ref(),
+            Some(host_platform),
+        );
 
         // Ensure the python build tools are added to the `host` requirements.
         // Please note: this is a subtle difference for python, where the build tools are

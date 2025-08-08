@@ -13,7 +13,7 @@ from pixi_build_backend.types.intermediate_recipe import NoArchKind, Python, Scr
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
-from pixi_build_backend.types.intermediate_recipe import ItemPackageDependency
+from pixi_build_backend.types.item import ItemPackageDependency
 
 from .build_script import BuildScriptContext, Installer, BuildPlatform
 from .utils import extract_entry_points

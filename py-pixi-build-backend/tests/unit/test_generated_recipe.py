@@ -7,7 +7,6 @@ from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 
 
-
 def test_generated_recipe_from_model(snapshot: Any) -> None:
     """Test initialization of ProjectModelV1."""
     model = ProjectModelV1(name="test_project", version="1.0.0")

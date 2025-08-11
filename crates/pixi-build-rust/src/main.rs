@@ -523,6 +523,7 @@ mod tests {
         );
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("no name defined"));
+        let error_message = result.err().unwrap().to_string();
+        assert!(error_message.contains("no name defined"));
     }
 }

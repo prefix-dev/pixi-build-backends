@@ -31,8 +31,13 @@ pub struct CargoMetadataProvider {
 }
 
 impl CargoMetadataProvider {
-    /// Constructs a new `CargoMetadataProvider` with the given manifest root
-    /// (e.g. the directory that contains the `Cargo.toml` file).
+    /// Constructs a new `CargoMetadataProvider` with the given manifest root.
+    ///
+    /// # Arguments
+    ///
+    /// * `manifest_root` - The directory that contains the `Cargo.toml` file
+    /// * `ignore_cargo_manifest` - If `true`, all metadata methods will return `None`,
+    ///   effectively disabling Cargo.toml metadata extraction
     pub fn new(manifest_root: impl Into<PathBuf>, ignore_cargo_manifest: bool) -> Self {
         Self {
             manifest_root: Arc::new(manifest_root.into()),
@@ -67,8 +72,17 @@ impl CargoMetadataProvider {
         Ok(manifest.workspace.as_ref().and_then(|w| w.package.as_ref()))
     }
 
-    /// Returns the set of globs that match files that influence the metadata of
-    /// this package.
+    /// Returns the set of globs that match files that influence the metadata of this package.
+    ///
+    /// This includes the package's own `Cargo.toml` file and any workspace `Cargo.toml` files
+    /// if workspace inheritance is detected. These globs can be used for incremental builds
+    /// to determine when metadata might have changed.
+    ///
+    /// # Returns
+    ///
+    /// A `BTreeSet` of glob patterns as strings. Common patterns include:
+    /// - `"Cargo.toml"` - The package's manifest file
+    /// - `"../../**/Cargo.toml"` - Workspace manifest files (when workspace inheritance is used)
     pub fn input_globs(&self) -> BTreeSet<String> {
         let mut input_globs = BTreeSet::new();
 
@@ -102,6 +116,10 @@ impl CargoMetadataProvider {
 impl MetadataProvider for CargoMetadataProvider {
     type Error = MetadataError;
 
+    /// Returns the package name from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the name from the package section of the Cargo.toml file.
     fn name(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -109,6 +127,11 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(self.ensure_manifest()?.map(|pkg| pkg.name.clone()))
     }
 
+    /// Returns the package version from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the version from the package section, handling workspace inheritance if needed.
+    /// The version string is parsed into a `rattler_conda_types::Version`.
     fn version(&mut self) -> Result<Option<Version>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -130,6 +153,10 @@ impl MetadataProvider for CargoMetadataProvider {
         ))
     }
 
+    /// Returns the package description from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the description from the package section, handling workspace inheritance if needed.
     fn description(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -152,6 +179,10 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(description.clone()))
     }
 
+    /// Returns the package homepage URL from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the homepage from the package section, handling workspace inheritance if needed.
     fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -174,6 +205,10 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(homepage.clone()))
     }
 
+    /// Returns the package license from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the license from the package section, handling workspace inheritance if needed.
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -196,6 +231,11 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(license.clone()))
     }
 
+    /// Returns the package license file path from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the license-file from the package section, handling workspace inheritance if needed.
+    /// The path is converted to a string representation.
     fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -218,10 +258,18 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(license_file.display().to_string()))
     }
 
+    /// Returns the package summary from the Cargo.toml manifest.
+    ///
+    /// Currently always returns `None` as Cargo.toml does not have a summary field.
+    /// This could be implemented to return the description field as a fallback.
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
 
+    /// Returns the package documentation URL from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the documentation from the package section, handling workspace inheritance if needed.
     fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
@@ -244,6 +292,10 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(documentation.clone()))
     }
 
+    /// Returns the package repository URL from the Cargo.toml manifest.
+    ///
+    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// the repository from the package section, handling workspace inheritance if needed.
     fn repository(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);

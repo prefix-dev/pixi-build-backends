@@ -402,9 +402,6 @@ mod tests {
             )
             .expect("Failed to generate recipe");
 
-        // Verify that the about section is populated correctly
-        eprintln!("{:#?}", generated_recipe.recipe);
-
         // Manually load the Cargo manifest to ensure it works
         let current_dir = std::env::current_dir().unwrap();
         let package_manifest_path = current_dir.join("Cargo.toml");
@@ -475,5 +472,57 @@ mod tests {
         - "../../**/Cargo.toml"
         - Cargo.toml
         "###);
+    }
+
+    #[test]
+    fn test_error_handling_missing_cargo_manifest() {
+        let project_model = project_fixture!({
+            "name": "",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "dependency": "*"
+                    }
+                },
+            }
+        });
+
+        // Try to generate recipe from a non-existent directory
+        let result = RustGenerator::default().generate_recipe(
+            &project_model,
+            &RustBackendConfig::default(),
+            PathBuf::from("/non/existent/path"),
+            Platform::Linux64,
+            None,
+        );
+
+        // Should fail when trying to read Cargo.toml from non-existent path
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_handling_ignore_manifest_with_empty_name() {
+        let project_model = project_fixture!({
+            "name": "",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "dependency": "*"
+                    }
+                },
+            }
+        });
+
+        // Should fail because name is empty and we're ignoring cargo manifest
+        let result = RustGenerator::default().generate_recipe(
+            &project_model,
+            &RustBackendConfig::default_with_ignore_cargo_manifest(),
+            std::env::current_dir().unwrap(),
+            Platform::Linux64,
+            None,
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no name defined"));
     }
 }

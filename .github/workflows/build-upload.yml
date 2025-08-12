@@ -1,15 +1,26 @@
 on:
   push:
-    # Run full workflow on tags
-    tags:
-      - "pixi-build-cmake-v[0-9]+.[0-9]+.[0-9]+"
-      - "pixi-build-python-v[0-9]+.[0-9]+.[0-9]+"
-      - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
-      - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
-      - "pixi-build-mojo-v[0-9]+.[0-9]+.[0-9]+"
-    # Build all backends on main branch
     branches: [main]
   workflow_dispatch:
+    inputs:
+      backend:
+        description: "Select existing backend"
+        type: choice
+        required: true
+        options:
+          - pixi-build-cmake
+          - pixi-build-python
+          - pixi-build-rattler-build
+          - pixi-build-rust
+          - pixi-build-mojo
+          - custom_backend_name
+      custom_backend_name:
+        description: "Custom backend name (overrides selection)"
+        type: string
+      version:
+        description: "Version number (without the 'v', e.g. 1.2.3)"
+        required: true
+        type: string
 
 name: "Conda Packages"
 
@@ -22,7 +33,43 @@ permissions:
   contents: read
 
 jobs:
+  setup-release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    outputs:
+      backend: ${{ steps.set_backend.outputs.backend }}
+      tag: ${{ steps.set_backend.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
+        with:
+          environments: bump
+      - name: Determine backend and tag
+        id: set_backend
+        run: |
+          BACKEND="${{ github.event.inputs.custom_backend_name || github.event.inputs.backend }}"
+          echo "backend=$BACKEND" >> $GITHUB_OUTPUT
+          TAG="${BACKEND}-v${{ github.event.inputs.version }}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      - name: Install cargo edit
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          pixi run cargo-set-version set-version --package ${{ steps.set_backend.outputs.backend }} ${{ github.event.inputs.version }}
+      - name: Show changes
+        run: git diff
+      - name: Commit changes
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: bump version of ${{ steps.set_backend.outputs.backend }} to ${{ github.event.inputs.version }}"
+          git push origin HEAD:${{ github.ref_name }}
+
   generate-matrix:
+    needs: [setup-release]
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set_version.outputs.matrix }}
@@ -32,10 +79,7 @@ jobs:
       - name: Extract versions
         id: set_version
         run: |
-          # extract names and versions from cargo metadata
-          # and generate a matrix entries for the build job
           MATRIX_JSON=$(pixi run generate-matrix)
-
           echo "Generated matrix: $MATRIX_JSON"
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
@@ -55,20 +99,17 @@ jobs:
           environments: build
       - name: Enable long paths (Windows)
         if: ${{ matrix.bins.os == 'windows-latest' }}
-        run: |
-          git config --global core.longpaths true
+        run: git config --global core.longpaths true
         shell: bash
       - name: Set environment variable for recipe version
         shell: bash
-        run: |
-          echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
+        run: echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
-        run: |
-          pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}.yaml ${{ matrix.bins.target }}
+        run: pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}.yaml ${{ matrix.bins.target }}
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -95,7 +136,7 @@ jobs:
           path: conda-artifacts-${{ matrix.target }}/**/*.conda
 
   upload:
-    needs: aggregate
+    needs: [aggregate, setup-release]
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags') && github.repository == 'prefix-dev/pixi-build-backends' }}
     steps:
@@ -117,3 +158,19 @@ jobs:
             echo "Uploading ${file}"
             pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
           done
+
+  tag:
+    needs: [setup-release, upload]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch'}}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Tag release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ needs.setup-release.outputs.tag }}" -m "Release ${{ needs.setup-release.outputs.tag }}"
+          git push origin "${{ needs.setup-release.outputs.tag }}"

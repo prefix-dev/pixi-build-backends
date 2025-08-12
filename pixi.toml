@@ -118,6 +118,8 @@ pillow = ">=9.4.0"
 build-docs = "mkdocs build --strict"
 docs = { cmd = "mkdocs serve", description = "Serve the docs locally" }
 
+[feature.bump.dependencies]
+cargo-edit = ">=0.13.6,<0.14"
 
 [environments]
 default = { solve-group = "default" }
@@ -125,3 +127,4 @@ lint = { features = ["lint"], solve-group = "default" }
 docs = { features = ["docs"], no-default-feature = true }
 schema = { features = ["schema"], no-default-feature = true }
 build = { features = ["build"], no-default-feature = true }
+bump = { features = ["bump"], no-default-feature = true }

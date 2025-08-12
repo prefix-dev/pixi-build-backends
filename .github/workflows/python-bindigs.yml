@@ -28,10 +28,10 @@ jobs:
     name: Format, Lint and Test the Python bindings
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           submodules: recursive
-      - uses: prefix-dev/setup-pixi@8ca4608ef7f4daeb54f5205b20d0b7cb42f11143 # v0.8.14
+      - uses: prefix-dev/setup-pixi@fef5c9568ca6c4ff7707bf840ab0692ba3f08293 # v0.9.0
         with:
           manifest-path: py-pixi-build-backend/pixi.toml
           environments: test

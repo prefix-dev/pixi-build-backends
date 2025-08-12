@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -49,7 +49,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Create Dev Drive
         run: ${{ github.workspace }}/.github/workflows/setup-dev-drive.ps1
       - name: Copy Git Repo to Dev Drive
@@ -82,7 +82,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -109,7 +109,7 @@ jobs:
     needs: build-binary-linux-x86_64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           repository: prefix-dev/pixi-build-testsuite
 
@@ -144,7 +144,7 @@ jobs:
     needs: build-binary-windows-x86_64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           repository: prefix-dev/pixi-build-testsuite
 
@@ -186,7 +186,7 @@ jobs:
     needs: build-binary-macos-aarch64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           repository: prefix-dev/pixi-build-testsuite
 

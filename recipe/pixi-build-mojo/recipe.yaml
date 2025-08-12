@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 context:
-  name: pixi-build-rust
-  version: "${{ env.get('PIXI_BUILD_RUST_VERSION', default='0.1.0dev') }}"
+  name: pixi-build-mojo
+  version: "${{ env.get('PIXI_BUILD_MOJO_VERSION', default='0.1.0dev') }}"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  path: ..
+  path: ../..
 
 build:
   script:
@@ -53,9 +53,9 @@ tests:
 
 about:
   homepage: https://github.com/prefix-dev/pixi-build-backends
-  summary: A pixi build backend to build Rust packages.
+  summary: A pixi build backend to build Mojo packages.
   description: |
-    This package provides a build backend for pixi that allows building Rust packages.
+    This package provides a build backend for pixi that allows building packages using Mojo.
   license: BSD-3-Clause
   license_file:
     - LICENSE

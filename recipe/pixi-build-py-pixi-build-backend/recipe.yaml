@@ -3,7 +3,7 @@ package:
   version: "${{ env.get('PY_PIXI_BUILD_BACKEND', default='0.1.0dev') }}"
 
 source:
-  path: ..
+  path: ../..
 
 requirements:
   build:

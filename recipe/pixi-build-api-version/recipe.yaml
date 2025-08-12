@@ -8,7 +8,9 @@ package:
   version: ${{ version }}
 
 source:
-  path: ..
+  path: ../..
+  filter:
+    - LICENSE
 
 build:
   noarch: generic
@@ -21,6 +23,5 @@ about:
   license: BSD-3-Clause
   license_file:
     - LICENSE
-    - THIRDPARTY.yml
   documentation: https://prefix-dev.github.io/pixi-build-backends
   repository: https://github.com/prefix-dev/pixi-build-backends

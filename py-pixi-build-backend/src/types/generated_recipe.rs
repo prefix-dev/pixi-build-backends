@@ -31,6 +31,14 @@ impl PyGeneratedRecipe {
         PyGeneratedRecipe { inner: recipe }
     }
 
+    #[staticmethod]
+    pub fn from_model_with_source(model: PyProjectModelV1, source_dir: Option<String>) -> Self {
+        let source_path = source_dir.map(std::path::PathBuf::from);
+
+        let recipe = GeneratedRecipe::from_model_with_source(model.inner.clone(), source_path);
+        PyGeneratedRecipe { inner: recipe }
+    }
+
     #[getter]
     pub fn recipe(&self) -> PyIntermediateRecipe {
         self.inner.recipe.clone().into()
@@ -81,11 +89,13 @@ impl GenerateRecipe for PyGenerateRecipe {
         &self,
         model: &pixi_build_types::ProjectModelV1,
         config: &Self::Config,
+        source_dir: std::path::PathBuf,
         manifest_path: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         python_params: Option<pixi_build_backend::generated_recipe::PythonParams>,
     ) -> miette::Result<pixi_build_backend::generated_recipe::GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::with_gil(|py| {
+            let source_str = source_dir.to_string_lossy().to_string();
             let manifest_str = manifest_path.to_string_lossy().to_string();
 
             // we dont pass the wrapper but the python inner model directly
@@ -133,6 +143,7 @@ impl GenerateRecipe for PyGenerateRecipe {
                     (
                         project_model,
                         py_object,
+                        PyString::new(py, source_str.as_str()),
                         PyString::new(py, manifest_str.as_str()),
                         platform_model,
                         python_params_model,

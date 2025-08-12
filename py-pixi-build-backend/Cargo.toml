@@ -68,10 +68,11 @@ pyo3-build-config = "0.25"
 
 
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+
+pixi_build_types = { git = "https://github.com/remimimimimi/pixi", branch = "feat/build-backend-alternative-source-root" }
+pixi_consts = { git = "https://github.com/remimimimimi/pixi", branch = "feat/build-backend-alternative-source-root" }
+pixi_manifest = { git = "https://github.com/remimimimimi/pixi", branch = "feat/build-backend-alternative-source-root" }
+pixi_spec = { git = "https://github.com/remimimimimi/pixi", branch = "feat/build-backend-alternative-source-root" }
+pixi_build_type_conversions = { git = "https://github.com/remimimimimi/pixi", branch = "feat/build-backend-alternative-source-root" }
 
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }

@@ -34,11 +34,13 @@ impl GenerateRecipe for RustGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: PathBuf,
+        source_dir: PathBuf,
+        _manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
-        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
+        let mut generated_recipe =
+            GeneratedRecipe::from_model_with_source(model.clone(), Some(source_dir.clone()));
 
         // we need to add compilers
         let compiler_function = compiler_requirement(&Language::Rust);
@@ -111,7 +113,7 @@ impl GenerateRecipe for RustGenerator {
         }
 
         let build_script = BuildScriptContext {
-            source_dir: manifest_root.display().to_string(),
+            source_dir: source_dir.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_openssl,
             has_sccache,
@@ -224,6 +226,7 @@ mod tests {
                 &project_model,
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -265,6 +268,7 @@ mod tests {
                 &project_model,
                 &RustBackendConfig::default(),
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -304,6 +308,7 @@ mod tests {
                     ..Default::default()
                 },
                 PathBuf::from("."),
+                PathBuf::from("pixi.toml"),
                 Platform::Linux64,
                 None,
             )
@@ -346,6 +351,7 @@ mod tests {
                         ..Default::default()
                     },
                     PathBuf::from("."),
+                    PathBuf::from("pixi.toml"),
                     Platform::Linux64,
                     None,
                 )

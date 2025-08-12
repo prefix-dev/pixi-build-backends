@@ -92,6 +92,8 @@ impl<T: GenerateRecipe> IntermediateBackendInstantiator<T> {
 
 pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) logging_output_handler: LoggingOutputHandler,
+    #[allow(dead_code)]
+    pub(crate) workspace_root: Option<PathBuf>,
     pub(crate) source_dir: PathBuf,
     /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
@@ -106,6 +108,7 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
         source_dir: Option<PathBuf>,
+        workspace_root: Option<PathBuf>,
         project_model: ProjectModelV1,
         generate_recipe: Arc<T>,
         config: serde_json::Value,
@@ -114,8 +117,8 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
         // Determine the root directory of the manifest
-        let (source_dir, manifest_rel_path) = match source_dir {
-            None => {
+        let (source_dir, manifest_rel_path) = match (source_dir, workspace_root.as_ref()) {
+            (None, _) => {
                 let source_dir = manifest_path
                     .parent()
                     .ok_or_else(|| {
@@ -129,7 +132,18 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
                     .to_path_buf();
                 (source_dir, manifest_rel_path)
             }
-            Some(source_dir) => {
+            (Some(source_dir), Some(_workspace_root)) => {
+                let manifest_rel_path = if manifest_path.is_absolute() {
+                    pathdiff::diff_paths(&manifest_path, &source_dir).ok_or_else(|| {
+                        miette::miette!("the manifest is not relative to the source directory")
+                    })?
+                } else {
+                    // If manifest_path is already relative, assume it's relative to source_dir
+                    manifest_path.clone()
+                };
+                (source_dir, manifest_rel_path)
+            }
+            (Some(source_dir), None) => {
                 let manifest_rel_path = pathdiff::diff_paths(manifest_path, &source_dir)
                     .ok_or_else(|| {
                         miette::miette!("the manifest is not relative to the source directory")
@@ -155,6 +169,7 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
             .collect::<Result<_, miette::Report>>()?;
 
         Ok(Self {
+            workspace_root,
             source_dir,
             manifest_rel_path,
             project_model,
@@ -204,6 +219,7 @@ where
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
             params.source_dir,
+            params.workspace_root,
             project_model,
             self.generator.clone(),
             config,
@@ -265,10 +281,12 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            manifest_path.clone(),
             host_platform,
             Some(PythonParams { editable: false }),
         )?;
@@ -277,7 +295,7 @@ where
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
         // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let recipe_path = manifest_path.clone();
         let named_source = Source {
             name: self.manifest_rel_path.display().to_string(),
             code: Arc::from(
@@ -334,7 +352,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+            recipe_path: Some(manifest_path.clone()),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
@@ -574,10 +592,12 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            manifest_path.clone(),
             host_platform,
             Some(PythonParams {
                 editable: params.editable,
@@ -588,7 +608,7 @@ where
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
         // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let recipe_path = manifest_path.clone();
         let named_source = Source {
             name: self.manifest_rel_path.display().to_string(),
             code: Arc::from(
@@ -635,7 +655,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+            recipe_path: Some(manifest_path.clone()),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let mut discovered_outputs = variant_config.find_variants(
@@ -830,10 +850,12 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            manifest_path.clone(),
             params.host_platform,
             Some(PythonParams { editable: false }),
         )?;
@@ -842,7 +864,7 @@ where
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
         // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let recipe_path = manifest_path.clone();
         let named_source = Source {
             name: self.manifest_rel_path.display().to_string(),
             code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
@@ -883,7 +905,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+            recipe_path: Some(manifest_path.clone()),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
@@ -1074,10 +1096,12 @@ where
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
         // Construct the intermediate recipe
+        let manifest_path = self.source_dir.join(&self.manifest_rel_path);
         let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
             self.source_dir.clone(),
+            manifest_path.clone(),
             host_platform,
             Some(PythonParams {
                 editable: params.editable.unwrap_or_default(),
@@ -1088,7 +1112,7 @@ where
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
         // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let recipe_path = manifest_path.clone();
         let named_source = Source {
             name: self.manifest_rel_path.display().to_string(),
             code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
@@ -1118,7 +1142,7 @@ where
             variant: Default::default(),
             experimental: false,
             allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+            recipe_path: Some(manifest_path.clone()),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(

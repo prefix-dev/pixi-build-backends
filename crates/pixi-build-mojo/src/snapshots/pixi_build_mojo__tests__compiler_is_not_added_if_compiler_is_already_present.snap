@@ -6,7 +6,9 @@ context: {}
 package:
   name: foobar
   version: 0.1.0
-source: []
+source:
+  - path: "[ ... path ... ]"
+    sha256: ~
 build:
   number: ~
   script: "[ ... script ... ]"

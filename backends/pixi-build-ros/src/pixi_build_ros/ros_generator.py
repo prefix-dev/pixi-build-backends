@@ -77,7 +77,7 @@ class ROSGenerator(GenerateRecipeProtocol):
         if "undefined" in str(generated_recipe.recipe.package.name):
             package.name = f"ros-{distro.name}-{package_xml.name.replace('_', '-')}"
 
-        if "0.0.0" in generated_recipe.recipe.package.version:
+        if "0.0.0" in str(generated_recipe.recipe.package.version):
             package.version = package_xml.version
 
         # Get requirements from package.xml

@@ -64,10 +64,9 @@ authors = ["J. Doe <jdoe@mail.com>"]
 platforms = ["linux-64"]
 preview = ["pixi-build"]
 channels = [
-    "conda-forge",
+    "https://prefix.dev/conda-forge",
     "https://conda.modular.com/max-nightly",
-    "https://prefix.dev/pixi-build-backends",
-    "https://repo.prefix.dev/modular-community"
+    "https://prefix.dev/modular-community"
 ]
 
 [package]
@@ -80,15 +79,15 @@ backend = { name = "pixi-build-mojo", version = "0.1.*" }
 [tasks]
 
 [package.host-dependencies]
-max = "=25.4.0"
+mojo-compiler = "=25.5.0"
 
 [package.build-dependencies]
-max = "=25.4.0"
+mojo-compiler = "=25.5.0"
 small_time = ">=25.4.1,<26"
 extramojo = ">=0.16.0,<0.17"
 
 [package.run-dependencies]
-max = "=25.4.0"
+mojo-compiler = "=25.5.0"
 
 [dependencies]
 # For running `mojo test` while developing add all dependencies under

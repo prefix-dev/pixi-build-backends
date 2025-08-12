@@ -31,10 +31,8 @@ version = "0.1.0"
 
 [package.build]
 backend = { name = "pixi-build-python", version = "*" }
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
+channels = ["https://prefix.dev/conda-forge"]
+
 ```
 
 ### Required Dependencies

@@ -42,3 +42,17 @@ Repository = "https://github.com/prefix-dev/pixi-build-backends"
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.pixi.workspace]
+channels = ["https://prefix.dev/conda-forge"]
+preview = ["pixi-build"]
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "*" }
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"

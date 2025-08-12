@@ -19,7 +19,7 @@ build:
     secrets: []
 requirements:
   build:
-    - max
+    - mojo-compiler
   host: []
   run:
     - boltons

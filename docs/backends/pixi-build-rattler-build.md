@@ -33,10 +33,7 @@ version = "0.1.0"
 
 [package.build]
 backend = { name = "pixi-build-rattler-build", version = "*" }
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
+channels = ["https://prefix.dev/conda-forge"]
 ```
 
 The backend expects a rattler-build recipe file in one of these locations (searched in order):

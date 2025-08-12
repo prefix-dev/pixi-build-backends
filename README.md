@@ -39,10 +39,7 @@ For example, this `build-section` will use the python backend to build a python 
 build-backend = { name = "pixi-build-python", version = "*" }
 # These are the conda channels that are used to resolve the dependencies of the
 # build backend package.
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
+channels = ["https://prefix.dev/conda-forge"]
 ```
 
 

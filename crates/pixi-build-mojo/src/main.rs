@@ -55,11 +55,17 @@ impl GenerateRecipe for MojoGenerator {
 
         // Ensure the compiler function is added to the build requirements
         // only if a specific compiler is not already present.
-        let mojo_compiler_pkg = "max".to_string();
+        let mojo_compiler_pkg = "mojo-compiler".to_string();
+        // All of these packages also contain the mojo compiler and maintain backward compat.
+        // They should be removable at a future point.
+        let alt_names = ["max", "mojo", "modular"];
 
         if !resolved_requirements
             .build
             .contains_key(&PackageName::new_unchecked(&mojo_compiler_pkg))
+            && !alt_names
+                .iter()
+                .any(|alt| resolved_requirements.build.contains_key(*alt))
         {
             requirements
                 .build
@@ -240,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_max_is_in_build_requirements() {
+    fn test_compiler_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -321,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn test_max_is_not_added_if_max_is_already_present() {
+    fn test_compiler_is_not_added_if_compiler_is_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -335,7 +341,7 @@ mod tests {
                         }
                     },
                     "buildDependencies": {
-                        "max": {
+                        "mojo-compiler": {
                             "binary": {
                                 "version": "*"
                             }

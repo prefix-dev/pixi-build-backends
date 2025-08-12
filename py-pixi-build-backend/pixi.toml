@@ -1,12 +1,30 @@
-[project]
-name = "py-pixi-build-backend"
-description = "Add a short description here"
+[workspace]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
-channels = ["conda-forge"]
+channels = ["https://prefix.dev/conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 license = "BSD-3-Clause"
+preview = ["pixi-build"]
 
-[tasks]
+[package]
+name = "py-pixi-build-backend"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-python", version = "*" }
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
+
+[package.build.configuration]
+noarch = false
+
+[package.build-dependencies]
+rust = "*"
+
+[package.host-dependencies]
+maturin = "*"
+
 
 [feature.build.dependencies]
 python = "*"

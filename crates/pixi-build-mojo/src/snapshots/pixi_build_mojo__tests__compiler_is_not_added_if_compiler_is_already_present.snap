@@ -12,7 +12,7 @@ build:
   script: "[ ... script ... ]"
 requirements:
   build:
-    - max
+    - mojo-compiler
   host: []
   run:
     - boltons

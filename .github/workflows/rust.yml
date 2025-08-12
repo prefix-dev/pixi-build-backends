@@ -21,7 +21,7 @@ jobs:
     name: Check intra-doc links
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48 # v1
       - shell: bash
         run: >
@@ -30,7 +30,7 @@ jobs:
     name: Format and Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -54,7 +54,7 @@ jobs:
     needs: [format_and_lint]
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}

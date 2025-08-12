@@ -1,24 +1,32 @@
 [package]
 name = "pixi-build-rust"
 version = "0.3.2"
+description = "A Rust build backend for Pixi"
+documentation = "https://prefix-dev.github.io/pixi-build-backends/backends/pixi-build-rust/"
+repository.workspace = true
+license.workspace = true
 edition.workspace = true
 
 [dependencies]
+fs-err = { workspace = true }
 indexmap = { workspace = true }
 miette = { workspace = true }
 minijinja = { workspace = true, features = ["json"] }
+once_cell = { workspace = true }
 rattler_conda_types = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-
+cargo_toml = "0.22.3"
+pathdiff = { workspace = true }
 pixi-build-backend = { workspace = true }
 pixi_build_types = { workspace = true }
 
 recipe-stage0 = { workspace = true }
-
 
 [dev-dependencies]
 insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
 rstest = { workspace = true }
 temp-env = { workspace = true }
 serde_json = { workspace = true }
+tempfile = { workspace = true }

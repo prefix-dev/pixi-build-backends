@@ -332,7 +332,7 @@ impl<T: Display> Display for Conditional<T> {
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct IntermediateRecipe {
     #[serde(default)]
     pub context: IndexMap<String, Value<String>>,
@@ -667,7 +667,7 @@ pub(crate) struct Requirements {
     pub run_constraints: Vec<SerializableMatchSpec>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Test {
     pub package_contents: Option<PackageContents>,
 }
@@ -682,7 +682,7 @@ impl Display for Test {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct PackageContents {
     pub include: Option<ConditionalList<String>>,
     pub files: Option<ConditionalList<String>>,
@@ -726,7 +726,7 @@ impl Display for About {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Extra {
     #[serde(rename = "recipe-maintainers")]
     pub recipe_maintainers: ConditionalList<String>,

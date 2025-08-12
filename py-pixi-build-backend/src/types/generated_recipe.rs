@@ -1,9 +1,12 @@
 use std::collections::BTreeSet;
 
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
+use pixi_build_backend::generated_recipe::{
+    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
+};
 use pyo3::{
-    Py, PyObject, PyResult, Python, pyclass, pymethods,
+    Py, PyErr, PyObject, PyResult, Python, pyclass, pymethods,
+    exceptions::PyValueError,
     types::{PyAnyMethods, PyString},
 };
 use recipe_stage0::recipe::IntermediateRecipe;
@@ -41,22 +44,19 @@ impl PyGeneratedRecipe {
     }
 
     #[staticmethod]
-    pub fn from_model(py: Python, model: PyProjectModelV1) -> Self {
-        let recipe = GeneratedRecipe::from_model(model.inner.clone());
-        let py_generated_recipe = PyIntermediateRecipe::from_intermediate_recipe(recipe.recipe, py);
-
-        let metadata_input_globs_vec: Vec<String> =
-            recipe.metadata_input_globs.into_iter().collect();
-        let build_input_globs_vec: Vec<String> = recipe.build_input_globs.into_iter().collect();
-
-        let metadata_input_globs_vec = PyVecString::from(metadata_input_globs_vec);
-        let build_input_globs_vec = PyVecString::from(build_input_globs_vec);
-
-        PyGeneratedRecipe {
-            recipe: Py::new(py, py_generated_recipe).unwrap(),
-            metadata_input_globs: Py::new(py, metadata_input_globs_vec).unwrap(),
-            build_input_globs: Py::new(py, build_input_globs_vec).unwrap(),
-        }
+    pub fn from_model(py: Python, model: PyProjectModelV1) -> PyResult<Self> {
+        let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        
+        let py_recipe = Py::new(py, PyIntermediateRecipe::from_intermediate_recipe(generated_recipe.recipe, py))?;
+        let py_metadata_globs = Py::new(py, PyVecString::from(generated_recipe.metadata_input_globs.into_iter().collect::<Vec<String>>()))?;
+        let py_build_globs = Py::new(py, PyVecString::from(generated_recipe.build_input_globs.into_iter().collect::<Vec<String>>()))?;
+        
+        Ok(PyGeneratedRecipe { 
+            recipe: py_recipe,
+            metadata_input_globs: py_metadata_globs,
+            build_input_globs: py_build_globs,
+        })
     }
 }
 

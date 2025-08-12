@@ -33,7 +33,7 @@ use pixi_build_types::{
 };
 use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
-    build::run_build,
+    build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{

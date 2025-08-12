@@ -1,14 +1,16 @@
 mod build_script;
 mod config;
+mod metadata;
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
+use metadata::CargoMetadataProvider;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
@@ -22,7 +24,6 @@ use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{ConditionalRequirements, Item, Script},
 };
-use std::collections::BTreeSet;
 
 #[derive(Default, Clone)]
 pub struct RustGenerator {}
@@ -38,7 +39,16 @@ impl GenerateRecipe for RustGenerator {
         host_platform: Platform,
         _python_params: Option<PythonParams>,
     ) -> miette::Result<GeneratedRecipe> {
-        let mut generated_recipe = GeneratedRecipe::from_model(model.clone());
+        // Construct a CargoMetadataProvider to read the Cargo.toml file
+        // and extract metadata from it.
+        let mut cargo_metadata = CargoMetadataProvider::new(
+            &manifest_root,
+            config.ignore_cargo_manifest.is_some_and(|ignore| ignore),
+        );
+
+        // Create the recipe
+        let mut generated_recipe =
+            GeneratedRecipe::from_model(model.clone(), &mut cargo_metadata).into_diagnostic()?;
 
         // we need to add compilers
         let compiler_function = compiler_requirement(&Language::Rust);
@@ -87,7 +97,8 @@ impl GenerateRecipe for RustGenerator {
                 // we need to set them as secrets
                 let system_sccache_keys = system_env_vars
                     .keys()
-                    // we set only those keys that are present in the system environment variables and not in the config env
+                    // we set only those keys that are present in the system environment variables
+                    // and not in the config env
                     .filter(|key| {
                         system_sccache_keys.contains(&key.as_str())
                             && !config_env.contains_key(*key)
@@ -131,6 +142,11 @@ impl GenerateRecipe for RustGenerator {
             secrets: sccache_secrets,
         };
 
+        // Add the input globs from the Cargo metadata provider
+        generated_recipe
+            .metadata_input_globs
+            .extend(cargo_metadata.input_globs());
+
         Ok(generated_recipe)
     }
 
@@ -169,6 +185,7 @@ pub async fn main() {
 
 #[cfg(test)]
 mod tests {
+    use cargo_toml::Manifest;
     use indexmap::IndexMap;
 
     use super::*;
@@ -228,7 +245,7 @@ mod tests {
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
-                &RustBackendConfig::default(),
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
@@ -269,7 +286,7 @@ mod tests {
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
-                &RustBackendConfig::default(),
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
@@ -307,6 +324,7 @@ mod tests {
                 &project_model,
                 &RustBackendConfig {
                     env: env.clone(),
+                    ignore_cargo_manifest: Some(true),
                     ..Default::default()
                 },
                 PathBuf::from("."),
@@ -349,6 +367,7 @@ mod tests {
                     &project_model,
                     &RustBackendConfig {
                         env,
+                        ignore_cargo_manifest: Some(true),
                         ..Default::default()
                     },
                     PathBuf::from("."),
@@ -364,5 +383,153 @@ mod tests {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script.content" => "[ ... script ... ]",
         });
+    }
+    #[test]
+    fn test_with_cargo_manifest() {
+        let project_model = project_fixture!({
+            "name": "",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "dependency": "*"
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default(),
+                // Using this crate itself, as it has interesting metadata, using .workspace
+                std::env::current_dir().unwrap(),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        // Manually load the Cargo manifest to ensure it works
+        let current_dir = std::env::current_dir().unwrap();
+        let package_manifest_path = current_dir.join("Cargo.toml");
+        let mut manifest = Manifest::from_path(&package_manifest_path).unwrap();
+        manifest.complete_from_path(&package_manifest_path).unwrap();
+
+        assert_eq!(
+            manifest.clone().package.unwrap().name.clone(),
+            generated_recipe.recipe.package.name.to_string()
+        );
+        assert_eq!(
+            *manifest.clone().package.unwrap().version.get().unwrap(),
+            generated_recipe.recipe.package.version.to_string()
+        );
+        assert_eq!(
+            *manifest
+                .clone()
+                .package
+                .unwrap()
+                .description
+                .unwrap()
+                .get()
+                .unwrap(),
+            generated_recipe
+                .recipe
+                .about
+                .as_ref()
+                .and_then(|a| a.description.clone())
+                .unwrap()
+                .to_string()
+        );
+        assert_eq!(
+            *manifest
+                .clone()
+                .package
+                .unwrap()
+                .license
+                .unwrap()
+                .get()
+                .unwrap(),
+            generated_recipe
+                .recipe
+                .about
+                .as_ref()
+                .and_then(|a| a.license.clone())
+                .unwrap()
+                .to_string()
+        );
+        assert_eq!(
+            *manifest
+                .clone()
+                .package
+                .unwrap()
+                .repository
+                .unwrap()
+                .get()
+                .unwrap(),
+            generated_recipe
+                .recipe
+                .about
+                .as_ref()
+                .and_then(|a| a.repository.clone())
+                .unwrap()
+                .to_string()
+        );
+
+        insta::assert_yaml_snapshot!(&generated_recipe.metadata_input_globs, @r###"
+        - "../../**/Cargo.toml"
+        - Cargo.toml
+        "###);
+    }
+
+    #[test]
+    fn test_error_handling_missing_cargo_manifest() {
+        let project_model = project_fixture!({
+            "name": "",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "dependency": "*"
+                    }
+                },
+            }
+        });
+
+        // Try to generate recipe from a non-existent directory
+        let result = RustGenerator::default().generate_recipe(
+            &project_model,
+            &RustBackendConfig::default(),
+            PathBuf::from("/non/existent/path"),
+            Platform::Linux64,
+            None,
+        );
+
+        // Should fail when trying to read Cargo.toml from non-existent path
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_handling_ignore_manifest_with_empty_name() {
+        let project_model = project_fixture!({
+            "name": "",
+            "targets": {
+                "default_target": {
+                    "run_dependencies": {
+                        "dependency": "*"
+                    }
+                },
+            }
+        });
+
+        // Should fail because name is empty and we're ignoring cargo manifest
+        let result = RustGenerator::default().generate_recipe(
+            &project_model,
+            &RustBackendConfig::default_with_ignore_cargo_manifest(),
+            std::env::current_dir().unwrap(),
+            Platform::Linux64,
+            None,
+        );
+
+        assert!(result.is_err());
+        let error_message = result.err().unwrap().to_string();
+        assert!(error_message.contains("no name defined"));
     }
 }

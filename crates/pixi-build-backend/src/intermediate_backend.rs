@@ -25,9 +25,8 @@ use pixi_build_types::{
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
-use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
-    build::run_build,
+    build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{
@@ -48,8 +47,9 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_conda_types::compression_level::CompressionLevel;
-use rattler_conda_types::{ChannelConfig, MatchSpec, Platform, package::ArchiveType};
+use rattler_conda_types::{
+    ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
+};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 

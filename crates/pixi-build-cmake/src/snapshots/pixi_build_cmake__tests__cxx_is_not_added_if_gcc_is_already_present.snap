@@ -20,5 +20,12 @@ requirements:
     - boltons
   run_constraints: []
 tests: []
-about: ~
+about:
+  homepage: ~
+  license: ~
+  license_file: ~
+  summary: ~
+  description: ~
+  documentation: ~
+  repository: ~
 extra: ~

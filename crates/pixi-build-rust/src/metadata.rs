@@ -630,7 +630,7 @@ license.workspace = true
     }
 
     #[test]
-    fn test_input_globs_with_workspace_inheritance() {
+    fn test_input_globs_with_workspace_in_same_file() {
         let cargo_toml_content = r#"
 [workspace]
 members = []
@@ -651,8 +651,73 @@ version.workspace = true
 
         let globs = provider.input_globs();
         assert!(globs.contains("Cargo.toml"));
-        // Note: When workspace is in the same file, no additional glob is needed
-        // This is correct behavior - only separate workspace files need additional globs
+        // When workspace is in the same file, no additional glob is needed
+        assert_eq!(
+            globs.len(),
+            1,
+            "Expected only Cargo.toml glob when workspace is in same file, got: {:?}",
+            globs
+        );
+    }
+
+    #[test]
+    fn test_input_globs_with_separate_workspace_file() {
+        // Create workspace root directory
+        let workspace_dir = TempDir::new().expect("Failed to create workspace temp directory");
+        let workspace_cargo_toml = r#"
+[workspace]
+members = ["package"]
+
+[workspace.package]
+version = "2.0.0"
+description = "Workspace description"
+"#;
+        fs::write(
+            workspace_dir.path().join("Cargo.toml"),
+            workspace_cargo_toml,
+        )
+        .expect("Failed to write workspace Cargo.toml");
+
+        // Create package subdirectory
+        let package_dir = workspace_dir.path().join("package");
+        fs::create_dir(&package_dir).expect("Failed to create package directory");
+        let package_cargo_toml = r#"
+[package]
+name = "test-package"
+version.workspace = true
+description.workspace = true
+"#;
+        fs::write(package_dir.join("Cargo.toml"), package_cargo_toml)
+            .expect("Failed to write package Cargo.toml");
+
+        let mut provider = create_metadata_provider(&package_dir);
+
+        // Force loading of manifest and workspace
+        let version_result = provider.version();
+        assert!(
+            version_result.is_ok(),
+            "Version should be inherited from workspace"
+        );
+        assert_eq!(version_result.unwrap().unwrap().to_string(), "2.0.0");
+
+        let globs = provider.input_globs();
+        assert!(globs.contains("Cargo.toml"));
+        // Should include workspace glob since workspace inheritance from separate file is detected
+        assert!(
+            globs.len() >= 2,
+            "Expected at least 2 globs when workspace is in separate file, got: {:?}",
+            globs
+        );
+
+        // Check that a workspace-related glob pattern is included
+        let has_workspace_glob = globs
+            .iter()
+            .any(|glob| glob.contains("**/Cargo.toml") && glob != "Cargo.toml");
+        assert!(
+            has_workspace_glob,
+            "Expected workspace glob pattern, got: {:?}",
+            globs
+        );
     }
 
     #[test]
@@ -670,7 +735,59 @@ version = "1.0.0"
         let _ = provider.version().unwrap();
 
         let globs = provider.input_globs();
-        assert_eq!(globs.len(), 1);
+        assert_eq!(
+            globs.len(),
+            1,
+            "Expected exactly 1 glob when no workspace is present, got: {:?}",
+            globs
+        );
+        assert!(globs.contains("Cargo.toml"));
+
+        // Verify no workspace-related globs are present
+        let has_workspace_glob = globs
+            .iter()
+            .any(|glob| glob.contains("**/Cargo.toml") && glob != "Cargo.toml");
+        assert!(
+            !has_workspace_glob,
+            "No workspace globs should be present when no workspace inheritance occurs, got: {:?}",
+            globs
+        );
+    }
+
+    #[test]
+    fn test_input_globs_no_inheritance_with_workspace_present() {
+        let cargo_toml_content = r#"
+[workspace]
+members = []
+
+[workspace.package]
+version = "2.0.0"
+
+[package]
+name = "test-package"
+version = "1.0.0"
+description = "Direct package values"
+"#;
+
+        let temp_dir = create_temp_cargo_project(cargo_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        // Force loading of manifest - no inheritance should occur
+        let version = provider.version().unwrap().unwrap();
+        assert_eq!(
+            version.to_string(),
+            "1.0.0",
+            "Should use direct package version, not workspace version"
+        );
+
+        let globs = provider.input_globs();
+        // When workspace exists but no inheritance is used, only Cargo.toml should be included
+        assert_eq!(
+            globs.len(),
+            1,
+            "Expected exactly 1 glob when workspace exists but no inheritance is used, got: {:?}",
+            globs
+        );
         assert!(globs.contains("Cargo.toml"));
     }
 

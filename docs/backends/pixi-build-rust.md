@@ -17,6 +17,7 @@ The `pixi-build-rust` backend is designed for building Rust projects using [Carg
 This backend automatically generates conda packages from Rust projects by:
 
 - **Using Cargo**: Leverages Rust's native build system for compilation and installation
+- **Cargo.toml Integration**: Automatically reads package metadata (name, version, description, license, etc.) from your `Cargo.toml` file when not specified in `pixi.toml`
 - **Cross-platform support**: Works consistently across Linux, macOS, and Windows
 - **Optimization support**: Automatically detects and integrates with `sccache` for faster compilation
 - **OpenSSL integration**: Handles OpenSSL linking when available in the environment
@@ -35,6 +36,45 @@ backend = { name = "pixi-build-rust", version = "*" }
 channels = ["https://prefix.dev/conda-forge"]
 
 ```
+
+### Automatic Metadata Detection
+
+The backend will automatically read metadata from your `Cargo.toml` file to populate package information **that is not** explicitly defined in your `pixi.toml`.
+This includes:
+
+- **Package name and version**: Automatically used if not specified in `pixi.toml`
+- **License**: Extracted from `Cargo.toml` license field
+- **Description**: Uses the description from `Cargo.toml`
+- **Homepage**: From the homepage field in `Cargo.toml`
+- **Repository**: From the repository field in `Cargo.toml`
+- **Documentation**: From the documentation field in `Cargo.toml`
+
+For example, if your `Cargo.toml` contains:
+
+```toml
+[package]
+name = "my-rust-tool"
+version = "1.0.0"
+description = "A useful Rust command-line tool"
+license = "MIT"
+homepage = "https://github.com/user/my-rust-tool"
+repository = "https://github.com/user/my-rust-tool"
+```
+
+You can create a minimal `pixi.toml`:
+
+```toml
+[package.build]
+backend = { name = "pixi-build-rust", version = "*" }
+channels = ["https://prefix.dev/conda-forge"]
+```
+
+The backend will automatically use the metadata from `Cargo.toml` to generate a complete conda package.
+
+??? warning "It still requires you to specify the `name` and `version`"
+    We're in the process of making this optional in `pixi`, but for now, you need to specify them explicitly.
+    This is the tracking issue to fix this in [Pixi](https://github.com/prefix-dev/pixi/issues/4317)
+
 
 ### Required Dependencies
 
@@ -145,6 +185,37 @@ extra-input-globs = ["*.txt"]
 [package.build.configuration.targets.linux-64]
 extra-input-globs = ["*.txt", "*.so", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.so", "linux-configs/**/*"]
+```
+
+### `ignore-cargo-manifest`
+
+- **Type**: `Boolean`
+- **Default**: `false`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific value overrides base value if set
+
+When set to `true`, disables automatic metadata extraction from `Cargo.toml`.
+The backend will only use metadata explicitly defined in your `pixi.toml` file, ignoring any information from the Cargo manifest.
+
+```toml
+[package.build.configuration]
+ignore-cargo-manifest = true
+```
+
+This is useful when:
+
+- You want to explicitly control all package metadata through `pixi.toml`
+- The `Cargo.toml` contains metadata that conflicts with your conda package requirements
+- When using the `Cargo.toml` results in an error that you cannot resolve.
+
+For target-specific configuration:
+
+```toml
+[package.build.configuration]
+ignore-cargo-manifest = false
+
+[package.build.configuration.targets.linux-64]
+ignore-cargo-manifest = true
+# Result for linux-64: Cargo.toml metadata will be ignored
 ```
 
 

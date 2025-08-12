@@ -677,10 +677,7 @@ impl Display for Test {
         write!(
             f,
             "Test {{ package_contents: {} }}",
-            self.package_contents
-                .as_ref()
-                .into_iter()
-                .format("")
+            self.package_contents.as_ref().into_iter().format("")
         )
     }
 }

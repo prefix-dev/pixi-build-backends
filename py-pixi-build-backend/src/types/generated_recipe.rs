@@ -5,8 +5,9 @@ use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
 };
 use pyo3::{
-    Py, PyErr, PyObject, PyResult, Python, pyclass, pymethods,
+    Py, PyErr, PyObject, PyResult, Python,
     exceptions::PyValueError,
+    pyclass, pymethods,
     types::{PyAnyMethods, PyString},
 };
 use recipe_stage0::recipe::IntermediateRecipe;
@@ -45,14 +46,34 @@ impl PyGeneratedRecipe {
 
     #[staticmethod]
     pub fn from_model(py: Python, model: PyProjectModelV1) -> PyResult<Self> {
-        let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
-        
-        let py_recipe = Py::new(py, PyIntermediateRecipe::from_intermediate_recipe(generated_recipe.recipe, py))?;
-        let py_metadata_globs = Py::new(py, PyVecString::from(generated_recipe.metadata_input_globs.into_iter().collect::<Vec<String>>()))?;
-        let py_build_globs = Py::new(py, PyVecString::from(generated_recipe.build_input_globs.into_iter().collect::<Vec<String>>()))?;
-        
-        Ok(PyGeneratedRecipe { 
+        let generated_recipe =
+            GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
+                .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+        let py_recipe = Py::new(
+            py,
+            PyIntermediateRecipe::from_intermediate_recipe(generated_recipe.recipe, py),
+        )?;
+        let py_metadata_globs = Py::new(
+            py,
+            PyVecString::from(
+                generated_recipe
+                    .metadata_input_globs
+                    .into_iter()
+                    .collect::<Vec<String>>(),
+            ),
+        )?;
+        let py_build_globs = Py::new(
+            py,
+            PyVecString::from(
+                generated_recipe
+                    .build_input_globs
+                    .into_iter()
+                    .collect::<Vec<String>>(),
+            ),
+        )?;
+
+        Ok(PyGeneratedRecipe {
             recipe: py_recipe,
             metadata_input_globs: py_metadata_globs,
             build_input_globs: py_build_globs,

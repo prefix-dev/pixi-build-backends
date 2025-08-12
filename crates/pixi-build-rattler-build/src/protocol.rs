@@ -580,7 +580,7 @@ impl Protocol for RattlerBuildBackend {
                     run_build(
                         output_with_build_string,
                         tool_config,
-                        WorkingDirectoryBehavior::Preserve,
+                        WorkingDirectoryBehavior::Cleanup,
                     )
                     .await
                 })
@@ -728,7 +728,7 @@ impl Protocol for RattlerBuildBackend {
         };
 
         let (output, output_path) =
-            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Cleanup).await?;
 
         Ok(CondaBuildV1Result {
             output_file: output_path,

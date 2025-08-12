@@ -679,8 +679,8 @@ impl Display for Test {
             "Test {{ package_contents: {} }}",
             self.package_contents
                 .as_ref()
-                .map(|pc| pc.to_string())
-                .unwrap_or_default()
+                .into_iter()
+                .format("")
         )
     }
 }

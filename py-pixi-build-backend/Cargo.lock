@@ -5745,6 +5745,7 @@ version = "0.1.0"
 dependencies = [
  "hashlink",
  "indexmap 2.10.0",
+ "itertools 0.14.0",
  "marked-yaml",
  "rattler-build",
  "rattler_conda_types 0.37.0",

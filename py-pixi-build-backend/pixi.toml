@@ -25,6 +25,9 @@ rust = "*"
 [package.host-dependencies]
 maturin = "*"
 
+[package.run-dependencies]
+typing-extensions = "*"
+
 
 [feature.build.dependencies]
 python = "*"

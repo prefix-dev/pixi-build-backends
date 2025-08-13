@@ -21,7 +21,6 @@ version = "0.1.2"
 
 [package.host-dependencies]
 hatchling = "*"
-#python = "==3.11"
 
 [package.run-dependencies]
 rosdistro = "*"

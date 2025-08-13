@@ -17,7 +17,6 @@ from pixi_build_backend.pixi_build_backend import (
     PyPathSource,
     PyPackageSpecDependencies,
     PyItemString,
-    PyVecItemPackageDependency
 )
 from pixi_build_backend.types.item import VecItemPackageDependency, ItemPackageDependency
 from pixi_build_backend.types.platform import Platform
@@ -622,10 +621,10 @@ class ConditionalRequirements:
     def build(self) -> "VecItemPackageDependency":
         """Get the build requirements."""
         return VecItemPackageDependency._from_inner(self._inner.build)
-    
+
     @build.setter
     def build(self, value: Union[List[ItemPackageDependency], "VecItemPackageDependency"]) -> None:
-        """Set the build requirements."""    
+        """Set the build requirements."""
         if isinstance(value, VecItemPackageDependency):
             # assert False, f"HERE I FAIL IN ELSE BRANCHING {value} type {type(value)}"
             self._inner.build = value._inner
@@ -657,7 +656,6 @@ class ConditionalRequirements:
             vec.extend(value)
             # assert False, "HERE I FAIL AFTER EXTEND"
             self._inner.host = vec._inner
-        
 
     @property
     def run(self) -> "ConditionalListPackageDependency":

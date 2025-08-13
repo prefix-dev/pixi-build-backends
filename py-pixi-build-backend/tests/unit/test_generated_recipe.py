@@ -5,10 +5,6 @@ from pixi_build_backend.types.generated_recipe import GeneratedRecipe
 from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
-<<<<<<< HEAD
-
-=======
->>>>>>> main
 
 
 def test_generated_recipe_from_model(snapshot: Any) -> None:

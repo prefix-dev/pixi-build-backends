@@ -2,7 +2,6 @@ import subprocess
 import json
 import re
 import sys
-import os
 from datetime import datetime
 
 
@@ -22,17 +21,13 @@ def get_git_tags():
 
 def get_git_short_hash():
     """Get the short git hash of the current HEAD"""
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--short=7", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        print(f"Warning: Failed to get git hash: {e}. Using 'unknown'")
-        return "unknown"
+    result = subprocess.run(
+        ["git", "rev-parse", "--short=7", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
 
 
 def get_current_date():
@@ -51,18 +46,13 @@ def extract_name_and_version_from_tag(tag):
 
 def generate_matrix():
     # Run cargo metadata
-    try:
-        result = subprocess.run(
-            ["cargo", "metadata", "--format-version=1", "--no-deps"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        metadata = json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to run cargo metadata: {e}") from e
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Failed to parse cargo metadata JSON: {e}") from e
+    result = subprocess.run(
+        ["cargo", "metadata", "--format-version=1", "--no-deps"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    metadata = json.loads(result.stdout)
     # this is to overcome the issue of matrix generation from github actions side
     # https://github.com/orgs/community/discussions/67591
     targets = [
@@ -75,7 +65,7 @@ def generate_matrix():
     ]
 
     git_tags = get_git_tags()
-    is_main_branch_build = len(git_tags) == 0
+    is_untagged_build = len(git_tags) == 0
 
     # Extract bin names, versions, and generate env and recipe names
     matrix = []
@@ -83,12 +73,12 @@ def generate_matrix():
     if "packages" not in metadata:
         raise ValueError("No packages found using cargo metadata")
 
-    if is_main_branch_build:
-        # Main branch build - include all packages with auto-versioning
+    if is_untagged_build:
+        # Untagged build - include all packages with auto-versioning
         date_suffix = get_current_date()
         git_hash = get_git_short_hash()
         
-        print(f"Building all packages for main branch with date suffix: {date_suffix}, git hash: {git_hash}", file=sys.stderr)
+        print(f"Building all packages for untagged build with date suffix: {date_suffix}, git hash: {git_hash}", file=sys.stderr)
         
         packages_with_binaries = []
         for package in metadata["packages"]:
@@ -104,13 +94,13 @@ def generate_matrix():
                             "bin": package["name"],
                             "target": target["target"],
                             "version": auto_version,
-                            "env_name": f"{package["name"].replace("-", "_").upper()}_VERSION",
+                            "env_name": f"{package['name'].replace('-', '_').upper()}_VERSION",
                             "os": target["os"],
                         }
                     )
         
         if not packages_with_binaries:
-            raise RuntimeError("No packages with binary targets found for main branch build")
+            raise RuntimeError("No packages with binary targets found for untagged build")
         
         print(f"Found {len(packages_with_binaries)} packages with binaries: {', '.join(packages_with_binaries)}", file=sys.stderr)
     else:
@@ -153,7 +143,7 @@ def generate_matrix():
                     )
 
     # Only validate tags for tag-based builds
-    if not is_main_branch_build and git_tags:
+    if not is_untagged_build and git_tags:
         for git_tag, has_a_package in tagged_packages.items():
             if not has_a_package:
                 raise ValueError(
@@ -161,8 +151,8 @@ def generate_matrix():
                 )
 
     if not matrix:
-        if is_main_branch_build:
-            raise RuntimeError("No packages found to build for main branch")
+        if is_untagged_build:
+            raise RuntimeError("No packages found to build for untagged build")
         else:
             raise RuntimeError("No tagged packages found to build")
     

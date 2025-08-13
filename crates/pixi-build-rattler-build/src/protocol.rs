@@ -31,7 +31,6 @@ use pixi_build_types::{
         negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
     },
 };
-use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
     build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,

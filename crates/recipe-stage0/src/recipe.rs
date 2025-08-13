@@ -1,12 +1,17 @@
-use indexmap::IndexMap;
-use rattler_conda_types::package::EntryPoint;
-use rattler_conda_types::{PackageName, Platform};
-use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display};
-use std::str::FromStr;
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
-use crate::matchspec::{PackageDependency, SerializableMatchSpec};
-use crate::requirements::PackageSpecDependencies;
+use indexmap::IndexMap;
+use itertools::Itertools;
+use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    matchspec::{PackageDependency, SerializableMatchSpec},
+    requirements::PackageSpecDependencies,
+};
 
 // Core enum for values that can be either concrete or templated
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -200,8 +205,9 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ListOrItem<T> 
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::{Error, Visitor};
         use std::fmt;
+
+        use serde::de::{Error, Visitor};
 
         struct ListOrItemVisitor<T>(std::marker::PhantomData<T>);
 
@@ -326,7 +332,7 @@ impl<T: Display> Display for Conditional<T> {
 pub type ConditionalList<T> = Vec<Item<T>>;
 
 // Main recipe structure
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct IntermediateRecipe {
     #[serde(default)]
     pub context: IndexMap<String, Value<String>>,
@@ -502,8 +508,9 @@ impl Display for NoArchKind {
 /// Python specific build configuration
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Python {
-    /// For a Python noarch package to have executables it is necessary to specify the python entry points.
-    /// These contain the name of the executable and the module + function that should be executed.
+    /// For a Python noarch package to have executables it is necessary to
+    /// specify the python entry points. These contain the name of the
+    /// executable and the module + function that should be executed.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub entry_points: Vec<EntryPoint>,
 }
@@ -644,26 +651,10 @@ impl Display for ConditionalRequirements {
         write!(
             f,
             "{{ build: {}, host: {}, run: {}, run_constraints: {} }}",
-            self.build
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-            self.host
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-            self.run
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-            self.run_constraints
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+            self.build.iter().format(", "),
+            self.host.iter().format(", "),
+            self.run.iter().format(", "),
+            self.run_constraints.iter().format(", "),
         )
     }
 }
@@ -676,7 +667,7 @@ pub(crate) struct Requirements {
     pub run_constraints: Vec<SerializableMatchSpec>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Test {
     pub package_contents: Option<PackageContents>,
 }
@@ -686,15 +677,12 @@ impl Display for Test {
         write!(
             f,
             "Test {{ package_contents: {} }}",
-            self.package_contents
-                .as_ref()
-                .map(|pc| pc.to_string())
-                .unwrap_or_default()
+            self.package_contents.as_ref().into_iter().format("")
         )
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct PackageContents {
     pub include: Option<ConditionalList<String>>,
     pub files: Option<ConditionalList<String>>,
@@ -705,22 +693,8 @@ impl Display for PackageContents {
         write!(
             f,
             "PackageContents {{ include: {}, files: {} }}",
-            self.include
-                .as_ref()
-                .map(|include| include
-                    .iter()
-                    .map(|i| i.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "))
-                .unwrap_or_default(),
-            self.files
-                .as_ref()
-                .map(|files| files
-                    .iter()
-                    .map(|f| f.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "))
-                .unwrap_or_default()
+            self.include.as_ref().into_iter().flatten().format(", "),
+            self.files.as_ref().into_iter().flatten().format(", "),
         )
     }
 }
@@ -741,39 +715,18 @@ impl Display for About {
         write!(
             f,
             "About {{ homepage: {}, license: {}, license_file: {}, summary: {}, description: {}, documentation: {}, repository: {} }}",
-            self.homepage
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.license
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.license_file
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.summary
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.description
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.documentation
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            self.repository
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or_default()
+            self.homepage.as_ref().into_iter().format(", "),
+            self.license.as_ref().into_iter().format(", "),
+            self.license_file.as_ref().into_iter().format(", "),
+            self.summary.as_ref().into_iter().format(", "),
+            self.description.as_ref().into_iter().format(", "),
+            self.documentation.as_ref().into_iter().format(", "),
+            self.repository.as_ref().into_iter().format(", ")
         )
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Extra {
     #[serde(rename = "recipe-maintainers")]
     pub recipe_maintainers: ConditionalList<String>,
@@ -784,11 +737,7 @@ impl Display for Extra {
         write!(
             f,
             "{{ recipe_maintainers: {} }}",
-            self.recipe_maintainers
-                .iter()
-                .map(|m| m.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+            self.recipe_maintainers.iter().format(", ")
         )
     }
 }

@@ -15,12 +15,12 @@ use url::Url;
 
 #[cfg(test)]
 mod imp {
-    use std::path::{Path, PathBuf};
-
+    use miette::IntoDiagnostic;
     use pixi_build_backend::generated_recipe::{
-        BackendConfig, GenerateRecipe, GeneratedRecipe, PythonParams,
+        BackendConfig, DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
     };
     use serde::{Deserialize, Serialize};
+    use std::path::{Path, PathBuf};
 
     #[derive(Debug, Default, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "kebab-case")]
@@ -60,8 +60,8 @@ mod imp {
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
         ) -> miette::Result<GeneratedRecipe> {
-            let generated_recipe = GeneratedRecipe::from_model(model.clone());
-            Ok(generated_recipe)
+            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+                .into_diagnostic()
         }
     }
 }

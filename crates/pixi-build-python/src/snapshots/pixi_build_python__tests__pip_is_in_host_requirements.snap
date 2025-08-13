@@ -1,7 +1,6 @@
 ---
 source: crates/pixi-build-python/src/main.rs
 expression: generated_recipe.recipe
-snapshot_kind: text
 ---
 context: {}
 package:
@@ -22,5 +21,12 @@ requirements:
     - python
   run_constraints: []
 tests: []
-about: ~
+about:
+  homepage: ~
+  license: ~
+  license_file: ~
+  summary: ~
+  description: ~
+  documentation: ~
+  repository: ~
 extra: ~

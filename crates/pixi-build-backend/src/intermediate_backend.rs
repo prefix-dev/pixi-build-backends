@@ -27,7 +27,7 @@ use pixi_build_types::{
 };
 use rattler_build::build::WorkingDirectoryBehavior;
 use rattler_build::{
-    build::run_build,
+    build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{
@@ -48,8 +48,9 @@ use rattler_build::{
     tool_configuration::Configuration,
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
-use rattler_conda_types::compression_level::CompressionLevel;
-use rattler_conda_types::{ChannelConfig, MatchSpec, Platform, package::ArchiveType};
+use rattler_conda_types::{
+    ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
+};
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
 
@@ -1217,7 +1218,9 @@ where
         };
 
         let (output, output_path) =
-            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
+            // WorkingDirectoryBehavior::Preserve is blocked by
+            // https://github.com/prefix-dev/rattler-build/issues/1825
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Cleanup).await?;
 
         // Extract the input globs from the build and recipe
         let mut input_globs = T::extract_input_globs_from_build(

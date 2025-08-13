@@ -1,7 +1,9 @@
 use std::collections::BTreeSet;
 
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::{GenerateRecipe, GeneratedRecipe};
+use pixi_build_backend::generated_recipe::{
+    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
+};
 use pyo3::{
     Py, PyObject, PyResult, Python, pyclass, pymethods,
     types::{PyAnyMethods, PyString},

@@ -18,6 +18,19 @@ pub struct RustBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
+    /// Ignore the cargo manifest and depend only on the project model.
+    #[serde(default)]
+    pub ignore_cargo_manifest: Option<bool>,
+}
+
+impl RustBackendConfig {
+    /// Creates a new [`RustBackendConfig`] with default values.
+    pub fn default_with_ignore_cargo_manifest() -> Self {
+        Self {
+            ignore_cargo_manifest: Some(true),
+            ..Default::default()
+        }
+    }
 }
 
 impl BackendConfig for RustBackendConfig {
@@ -53,6 +66,9 @@ impl BackendConfig for RustBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
+            ignore_cargo_manifest: target_config
+                .ignore_cargo_manifest
+                .or(self.ignore_cargo_manifest),
         })
     }
 }
@@ -81,6 +97,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            ignore_cargo_manifest: None,
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -92,6 +109,7 @@ mod tests {
             env: target_env,
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
+            ignore_cargo_manifest: Some(true),
         };
 
         let merged = base_config
@@ -129,6 +147,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            ignore_cargo_manifest: None,
         };
 
         let empty_target_config = RustBackendConfig::default();

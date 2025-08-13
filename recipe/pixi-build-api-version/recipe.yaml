@@ -7,6 +7,11 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  path: ../..
+  filter:
+    - LICENSE
+
 build:
   noarch: generic
 
@@ -16,5 +21,7 @@ about:
   description: |
     This package is used to define the API version of the protocol used by pixi build backends.
   license: BSD-3-Clause
+  license_file:
+    - LICENSE
   documentation: https://prefix-dev.github.io/pixi-build-backends
   repository: https://github.com/prefix-dev/pixi-build-backends

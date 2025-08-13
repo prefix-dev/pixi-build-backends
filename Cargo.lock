@@ -1020,6 +1020,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1bf2a5fb3207c12b5d208ebc145f967fea5cac41a021c37417ccc31ba40f39ee"
 
 [[package]]
+name = "cargo_toml"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374b7c592d9c00c1f4972ea58390ac6b18cbb6ab79011f3bdc90a0b82ca06b77"
+dependencies = [
+ "serde",
+ "toml 0.9.5",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4042,10 +4052,14 @@ dependencies = [
 name = "pixi-build-rust"
 version = "0.3.2"
 dependencies = [
+ "cargo_toml",
+ "fs-err",
  "indexmap 2.10.0",
  "insta",
  "miette",
  "minijinja",
+ "once_cell",
+ "pathdiff",
  "pixi-build-backend",
  "pixi_build_types",
  "rattler_conda_types",
@@ -4054,6 +4068,8 @@ dependencies = [
  "serde",
  "serde_json",
  "temp-env",
+ "tempfile",
+ "thiserror 2.0.12",
  "tokio",
 ]
 
@@ -5181,6 +5197,7 @@ dependencies = [
  "hashlink",
  "indexmap 2.10.0",
  "insta",
+ "itertools 0.14.0",
  "marked-yaml",
  "pixi_build_types",
  "rattler-build",

@@ -2,6 +2,7 @@ import subprocess
 import json
 import re
 import sys
+import tomllib
 from datetime import datetime
 
 
@@ -36,9 +37,15 @@ def get_current_date():
 
 
 def extract_name_and_version_from_tag(tag):
-    match = re.match(r"(pixi-build-[a-zA-Z-]+)-v(\d+\.\d+\.\d+)", tag)
-    if match:
-        return match.group(1), match.group(2)
+    # Handle both Rust packages and Python package
+    rust_match = re.match(r"(pixi-build-[a-zA-Z-]+)-v(\d+\.\d+\.\d+)", tag)
+    python_match = re.match(r"(py-pixi-build-backend)-v(\d+\.\d+\.\d+)", tag)
+
+    if rust_match:
+        return rust_match.group(1), rust_match.group(2)
+    elif python_match:
+        return python_match.group(1), python_match.group(2)
+
     raise ValueError(
         f"Invalid Git tag format: {tag}. Expected format: pixi-build-[name]-v[version]"
     )
@@ -52,7 +59,31 @@ def generate_matrix():
         text=True,
         check=True,
     )
-    metadata = json.loads(result.stdout)
+    cargo_metadata = json.loads(result.stdout)
+    
+    # Get all packages with binary or cdylib targets
+    all_packages = []
+    
+    if "packages" in cargo_metadata:
+        for package in cargo_metadata["packages"]:
+            # Include packages with binary targets (Rust binaries)
+            has_binary = any(target["kind"][0] == "bin" for target in package.get("targets", []))
+            
+            if has_binary:
+                all_packages.append({
+                    "name": package["name"],
+                    "version": package["version"],
+                    "type": "rust"
+                })
+    
+    # Add py-pixi-build-backend manually since it's outside the workspace
+    with open("py-pixi-build-backend/Cargo.toml", "rb") as f:
+        cargo_toml = tomllib.load(f)
+        all_packages.append({
+            "name": "py-pixi-build-backend",
+            "version": cargo_toml["package"]["version"],
+            "type": "python"
+        })
     # this is to overcome the issue of matrix generation from github actions side
     # https://github.com/orgs/community/discussions/67591
     targets = [
@@ -70,8 +101,8 @@ def generate_matrix():
     # Extract bin names, versions, and generate env and recipe names
     matrix = []
 
-    if "packages" not in metadata:
-        raise ValueError("No packages found using cargo metadata")
+    if not all_packages:
+        raise ValueError("No packages found")
 
     if is_untagged_build:
         # Untagged build - include all packages with auto-versioning
@@ -80,67 +111,75 @@ def generate_matrix():
         
         print(f"Building all packages for untagged build with date suffix: {date_suffix}, git hash: {git_hash}", file=sys.stderr)
         
-        packages_with_binaries = []
-        for package in metadata["packages"]:
-            # we need to find only the packages that have a binary target
-            if any(target["kind"][0] == "bin" for target in package.get("targets", [])):
-                packages_with_binaries.append(package["name"])
-                # Create auto-version: original_version.ddmmyyyy.git_hash
-                auto_version = f"{package['version']}.{date_suffix}.{git_hash}"
-                
-                for target in targets:
-                    matrix.append(
-                        {
-                            "bin": package["name"],
-                            "target": target["target"],
-                            "version": auto_version,
-                            "env_name": f"{package['name'].replace('-', '_').upper()}_VERSION",
-                            "os": target["os"],
-                        }
-                    )
+        package_names = []
+        for package in all_packages:
+            package_names.append(package["name"])
+            # Create auto-version: original_version.ddmmyyyy.git_hash
+            auto_version = f"{package['version']}.{date_suffix}.{git_hash}"
+            
+            # Generate environment variable name
+            if package["type"] == "python":
+                env_name = "PY_PIXI_BUILD_BACKEND_VERSION"
+            else:
+                env_name = f"{package['name'].replace('-', '_').upper()}_VERSION"
+            
+            for target in targets:
+                matrix.append(
+                    {
+                        "bin": package["name"],
+                        "target": target["target"],
+                        "version": auto_version,
+                        "env_name": env_name,
+                        "os": target["os"],
+                    }
+                )
+
+        if not package_names:
+            raise RuntimeError("No packages found for untagged build")
         
-        if not packages_with_binaries:
-            raise RuntimeError("No packages with binary targets found for untagged build")
-        
-        print(f"Found {len(packages_with_binaries)} packages with binaries: {', '.join(packages_with_binaries)}", file=sys.stderr)
+        print(f"Found {len(package_names)} packages: {', '.join(package_names)}", file=sys.stderr)
     else:
         # Tag-based build - only include tagged packages
         # verify that the tags match the package versions
         tagged_packages = {tag: False for tag in git_tags}
 
-        for package in metadata["packages"]:
+        for package in all_packages:
             package_tagged = False
-            # we need to find only the packages that have a binary target
-            if any(target["kind"][0] == "bin" for target in package.get("targets", [])):
-                for git_tag in git_tags:
-                    # verify that the git tag matches the package version
-                    tag_name, tag_version = extract_name_and_version_from_tag(git_tag)
-                    if package["name"] != tag_name:
-                        continue  # Skip packages that do not match the tag
+            for git_tag in git_tags:
+                # verify that the git tag matches the package version
+                tag_name, tag_version = extract_name_and_version_from_tag(git_tag)
+                if package["name"] != tag_name:
+                    continue  # Skip packages that do not match the tag
 
-                    if package["version"] != tag_version:
-                        raise ValueError(
-                            f"Version mismatch: Git tag version {tag_version} does not match Cargo version {package['version']} for {package['name']}"
-                        )
-
-                    tagged_packages[git_tag] = package
-                    package_tagged = True
-
-                # verify that tags exist for this HEAD
-                # and that the package has been tagged
-                if tagged_packages and not package_tagged:
-                    continue
-
-                for target in targets:
-                    matrix.append(
-                        {
-                            "bin": package["name"],
-                            "target": target["target"],
-                            "version": package["version"],
-                            "env_name": f"{package["name"].replace("-", "_").upper()}_VERSION",
-                            "os": target["os"],
-                        }
+                if package["version"] != tag_version:
+                    raise ValueError(
+                        f"Version mismatch: Git tag version {tag_version} does not match package version {package['version']} for {package['name']}"
                     )
+
+                tagged_packages[git_tag] = package
+                package_tagged = True
+
+            # verify that tags exist for this HEAD
+            # and that the package has been tagged
+            if tagged_packages and not package_tagged:
+                continue
+
+            # Generate environment variable name
+            if package["type"] == "python":
+                env_name = "PY_PIXI_BUILD_BACKEND_VERSION"
+            else:
+                env_name = f"{package['name'].replace('-', '_').upper()}_VERSION"
+
+            for target in targets:
+                matrix.append(
+                    {
+                        "bin": package["name"],
+                        "target": target["target"],
+                        "version": package["version"],
+                        "env_name": env_name,
+                        "os": target["os"],
+                    }
+                )
 
     # Only validate tags for tag-based builds
     if not is_untagged_build and git_tags:

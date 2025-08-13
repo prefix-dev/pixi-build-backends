@@ -1217,7 +1217,9 @@ where
         };
 
         let (output, output_path) =
-            run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
+            // WorkingDirectoryBehavior::Preserve is blocked by
+            // https://github.com/prefix-dev/rattler-build/issues/1825
+            run_build(output, &tool_config, WorkingDirectoryBehavior::Cleanup).await?;
 
         // Extract the input globs from the build and recipe
         let mut input_globs = T::extract_input_globs_from_build(

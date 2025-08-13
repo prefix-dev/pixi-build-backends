@@ -503,7 +503,7 @@ impl Display for PyBuild {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{{ number: {:?}, script: {}, noarch: {:?}, python: {} }}",
+            "{{ number: {}, script: {}, noarch: {}, python: {} }}",
             self.number, self.script, self.noarch, self.python
         )
     }
@@ -648,7 +648,7 @@ impl Display for PyPython {
     }
 }
 
-#[pyclass]
+#[pyclass(str)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PyNoArchKind {
     pub(crate) inner: NoArchKind,
@@ -933,7 +933,7 @@ impl PyAbout {
 
 impl Display for PyAbout {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PyAbout {{ {} }}", self.inner)
+        write!(f, "{{ {} }}", self.inner)
     }
 }
 

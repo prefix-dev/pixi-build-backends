@@ -239,6 +239,17 @@ class Build:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
+    
+    def __str__(self) -> str:
+        """
+        Get the string representation of the Build configuration.
+
+        Returns
+        -------
+        str
+            The string representation of the build configuration.
+        """
+        return str(self._inner)
 
 
 class Script:
@@ -407,6 +418,17 @@ class NoArchKind:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
+    
+    def __str__(self) -> str:
+        """
+        Get the string representation of the NoArch kind.
+
+        Returns
+        -------
+        str
+            The string representation of the NoArch kind.
+        """
+        return str(self._inner)
 
 
 class ValueString:

@@ -77,6 +77,6 @@ class PackageDependency:
         instance._inner = inner
         return instance
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return string representation."""
         return str(self._inner)

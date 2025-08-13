@@ -25,6 +25,8 @@ rust = "*"
 [package.host-dependencies]
 maturin = "*"
 
+[activation.env]
+PIP_REQUIRE_VIRTUALENV = "false"
 
 [feature.build.dependencies]
 python = "*"
@@ -32,48 +34,44 @@ maturin = "~=1.2.2"
 pip = "~=23.2.1"
 rust = "~=1.86.0"
 
-[feature.build.tasks]
-build = "PIP_REQUIRE_VIRTUALENV=false maturin develop"
-build-release = "PIP_REQUIRE_VIRTUALENV=false maturin develop --release"
-
 [feature.build.target.linux-64.dependencies]
 patchelf = "~=0.17.2"
 
-[feature.test.dependencies]
-# Python 3.8 is the minimum supported version, so we use that for testing
+[dependencies]
 python = "3.8.*"
 
-ruff = ">=0.12.3,<0.13"
+# Testing and type checking
 mypy = "*"
-
 pytest = "*"
 syrupy = "*"
 toml = "*"
-
-
-# for rust-analyzer
-rust-src = "~=1.86.0"
-
-[feature.test.pypi-dependencies]
 types-toml = "*"
 
+# Formatting and linting
+ruff = ">=0.12.3,<0.13"
 
-[feature.test.tasks]
+[feature.dev.dependencies]
+# Development tools (IDE support)
+rust-src = "~=1.86.0"
+
+[tasks]
+build = "maturin develop"
+build-release = "maturin develop --release"
+
 test = { cmd = "pytest --doctest-modules", depends-on = ["build"] }
+test-fast = "pytest --doctest-modules"
+
+fmt = { depends-on = ["fmt-python", "fmt-rust"] }
 fmt-python = "ruff format pixi_build_backend examples tests"
 fmt-rust = "cargo fmt --all"
+
+lint = { depends-on = ["lint-python", "lint-rust"] }
 lint-python = "ruff check ."
 lint-rust = "cargo clippy --all"
-fmt = { depends-on = ["fmt-python", "fmt-rust"] }
-lint = { depends-on = ["type-check", "lint-python", "lint-rust"] }
-type-check = { cmd = "mypy", depends-on = ["build"] }
-
-# checks for the CI
-fmt-rust-check = "cargo fmt --all --check"
-fmt-python-check = "ruff format pixi_build_backend examples tests --diff"
-fmt-check = { depends-on = ["fmt-python-check", "fmt-rust-check"] }
-
 
 [environments]
-test = { features = ["build", "test"], solve-group = "default" }
-build = ["build"]
+# Development environment with all tools (including rust-src for IDE support)  
+default = { features = ["build", "dev"], solve-group = "main" }
+
+# Minimal CI environment for automated testing and checks
+ci = { features = ["build"], solve-group = "main" }

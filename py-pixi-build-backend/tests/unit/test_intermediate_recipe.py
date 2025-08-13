@@ -52,5 +52,5 @@ def test_package_types_conditional() -> None:
 
     package = ItemPackageDependency("${{ compiler('c') }}")
 
-    assert package.concrete is not None
+    assert package.concrete is None
     assert package.template

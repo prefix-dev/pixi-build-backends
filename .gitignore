@@ -24,18 +24,20 @@ output/
 # rattler
 .prefix
 
-# pixi
-.pixi/
-
 # Visual studio files
 .vs/
 
 # pixi environments
 .pixi
 *.egg-info
+.conda
 
 # Output directory
 pixi-build-python-output/
 **/repodata.json
 
 *.local*
+
+# Python
+*.pyc
+__pycache__/

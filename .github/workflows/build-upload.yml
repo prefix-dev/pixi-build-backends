@@ -68,7 +68,7 @@ jobs:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
-          pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}.yaml ${{ matrix.bins.target }}
+          pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}/recipe.yaml ${{ matrix.bins.target }}
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

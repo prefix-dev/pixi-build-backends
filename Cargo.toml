@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "py-pixi-build-backend"]
 resolver = "2"
 
 [workspace.package]
@@ -7,13 +7,11 @@ edition = "2024"
 repository = "https://github.com/prefix-dev/pixi-build-backends"
 license = "BSD-3-Clause"
 
-
 [workspace.dependencies]
 async-trait = "0.1.86"
 chrono = "0.4.39"
 clap = "4.5.29"
 clap-verbosity-flag = "3.0.2"
-either = "1.15.0"
 fs-err = "3.1.0"
 hashlink = "0.10.0"
 insta = "1.43.1"
@@ -43,7 +41,6 @@ url = "2.5.4"
 pyproject-toml = "0.13.4"
 dirs = "6.0.0"
 pathdiff = "0.2.3"
-file_url = "0.2.5"
 thiserror = "2.0.12"
 strum = "0.27.2"
 temp-env = "0.3.6"

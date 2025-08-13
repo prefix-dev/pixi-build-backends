@@ -7,9 +7,13 @@ on:
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-mojo-v[0-9]+.[0-9]+.[0-9]+"
-    # Build all backends on main branch
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      push_to_channel:
+        description: "Push packages to conda channel after build"
+        required: false
+        default: true
+        type: boolean
 
 name: "Conda Packages"
 
@@ -97,7 +101,7 @@ jobs:
   upload:
     needs: aggregate
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags') && github.repository == 'prefix-dev/pixi-build-backends' }}
+    if: ${{ (startsWith(github.ref, 'refs/tags') || github.event.inputs.push_to_channel == 'true') && github.repository == 'prefix-dev/pixi-build-backends' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Download all conda packages

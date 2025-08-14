@@ -13,13 +13,14 @@ use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
+    compilers::add_compilers_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
-use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
+use recipe_stage0::recipe::{ConditionalRequirements, Item, NoArchKind, Python, Script, Value};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -100,6 +101,19 @@ impl GenerateRecipe for PythonGenerator {
             .contains_key(&PackageName::new_unchecked("python"))
         {
             requirements.run.push("python".parse().into_diagnostic()?);
+        }
+
+        // Get the list of compilers from config, defaulting to no compilers for pure Python packages
+        let compilers = config.compilers.clone().unwrap_or_else(Vec::new);
+
+        // Add configured compilers to build requirements if any are specified
+        if !compilers.is_empty() {
+            add_compilers_to_requirements(
+                &compilers,
+                &mut requirements.build,
+                &resolved_requirements.build,
+                &host_platform,
+            );
         }
 
         let build_platform = Platform::current();
@@ -377,5 +391,117 @@ mod tests {
         {
             ".content" => "[ ... script ... ]",
         });
+    }
+
+    #[test]
+    fn test_multiple_compilers_configuration() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = PythonGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &PythonBackendConfig {
+                    compilers: Some(vec!["c".to_string(), "cxx".to_string(), "rust".to_string()]),
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that we have exactly the expected compilers
+        let build_reqs = &generated_recipe.recipe.requirements.build;
+        let compiler_templates: Vec<String> = build_reqs
+            .iter()
+            .filter_map(|item| match item {
+                Item::Value(Value::Template(s)) if s.contains("compiler") => Some(s.clone()),
+                _ => None,
+            })
+            .collect();
+
+        // Should have exactly three compilers
+        assert_eq!(
+            compiler_templates.len(),
+            3,
+            "Should have exactly three compilers"
+        );
+
+        // Check we have the expected compilers
+        assert!(
+            compiler_templates.contains(&"${{ compiler('c') }}".to_string()),
+            "C compiler should be in build requirements"
+        );
+        assert!(
+            compiler_templates.contains(&"${{ compiler('cxx') }}".to_string()),
+            "C++ compiler should be in build requirements"
+        );
+        assert!(
+            compiler_templates.contains(&"${{ compiler('rust') }}".to_string()),
+            "Rust compiler should be in build requirements"
+        );
+    }
+
+    #[test]
+    fn test_default_no_compilers_when_not_specified() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = PythonGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &PythonBackendConfig {
+                    compilers: None,
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that no compilers are added by default
+        let build_reqs = &generated_recipe.recipe.requirements.build;
+        let compiler_templates: Vec<String> = build_reqs
+            .iter()
+            .filter_map(|item| match item {
+                Item::Value(Value::Template(s)) if s.contains("compiler") => Some(s.clone()),
+                _ => None,
+            })
+            .collect();
+
+        // Should have no compilers by default for Python packages
+        assert_eq!(
+            compiler_templates.len(),
+            0,
+            "Should have no compilers by default for pure Python packages"
+        );
     }
 }

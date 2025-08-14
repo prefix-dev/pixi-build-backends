@@ -72,7 +72,10 @@ impl BackendConfig for RustBackendConfig {
             ignore_cargo_manifest: target_config
                 .ignore_cargo_manifest
                 .or(self.ignore_cargo_manifest),
-            compilers: target_config.compilers.clone().or_else(|| self.compilers.clone()),
+            compilers: target_config
+                .compilers
+                .clone()
+                .or_else(|| self.compilers.clone()),
         })
     }
 }

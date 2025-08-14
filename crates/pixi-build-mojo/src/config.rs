@@ -28,6 +28,10 @@ pub struct MojoBackendConfig {
 
     /// Packages to produce.
     pub pkg: Option<MojoPkgConfig>,
+
+    /// List of compilers to use (e.g., ["mojo", "c", "cxx"])
+    /// If not specified, defaults to ["mojo"]
+    pub compilers: Option<Vec<String>>,
 }
 
 impl BackendConfig for MojoBackendConfig {
@@ -119,6 +123,10 @@ impl BackendConfig for MojoBackendConfig {
             },
             bins,
             pkg,
+            compilers: target_config
+                .compilers
+                .clone()
+                .or_else(|| self.compilers.clone()),
         })
     }
 }

@@ -11,16 +11,15 @@ use std::{
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
     compilers::add_compilers_to_requirements,
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
+    generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
-use recipe_stage0::recipe::{ConditionalRequirements, Item, NoArchKind, Python, Script, Value};
+use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -73,8 +72,9 @@ impl GenerateRecipe for PythonGenerator {
         );
 
         // Ensure the python build tools are added to the `host` requirements.
-        // Please note: this is a subtle difference for python, where the build tools are
-        // added to the `host` requirements, while for cmake/rust they are added to the `build` requirements.
+        // Please note: this is a subtle difference for python, where the build tools
+        // are added to the `host` requirements, while for cmake/rust they are
+        // added to the `build` requirements.
         let installer = Installer::determine_installer(&resolved_requirements);
 
         let installer_name = installer.package_name().to_string();
@@ -103,18 +103,15 @@ impl GenerateRecipe for PythonGenerator {
             requirements.run.push("python".parse().into_diagnostic()?);
         }
 
-        // Get the list of compilers from config, defaulting to no compilers for pure Python packages
-        let compilers = config.compilers.clone().unwrap_or_else(Vec::new);
-
-        // Add configured compilers to build requirements if any are specified
-        if !compilers.is_empty() {
-            add_compilers_to_requirements(
-                &compilers,
-                &mut requirements.build,
-                &resolved_requirements.build,
-                &host_platform,
-            );
-        }
+        // Get the list of compilers from config, defaulting to no compilers for pure
+        // Python packages and add them to the build requirements.
+        let compilers = config.compilers.clone().unwrap_or_default();
+        add_compilers_to_requirements(
+            &compilers,
+            &mut requirements.build,
+            &resolved_requirements.build,
+            &host_platform,
+        );
 
         let build_platform = Platform::current();
 

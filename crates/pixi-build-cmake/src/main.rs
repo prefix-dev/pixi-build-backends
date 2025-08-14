@@ -17,7 +17,7 @@ use pixi_build_backend::{
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Item, Script, Value};
+use recipe_stage0::recipe::{ConditionalRequirements, Script};
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -55,8 +55,6 @@ impl GenerateRecipe for CMakeGenerator {
             .clone()
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
-        let build_platform = Platform::current();
-
         // Add configured compilers to build requirements
         add_compilers_to_requirements(
             &compilers,
@@ -79,7 +77,7 @@ impl GenerateRecipe for CMakeGenerator {
         let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
 
         let build_script = BuildScriptContext {
-            build_platform: if build_platform.is_windows() {
+            build_platform: if Platform::current().is_windows() {
                 BuildPlatform::Windows
             } else {
                 BuildPlatform::Unix

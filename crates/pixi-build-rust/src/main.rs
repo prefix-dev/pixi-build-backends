@@ -22,7 +22,7 @@ use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::Platform;
 use recipe_stage0::{
     matchspec::PackageDependency,
-    recipe::{ConditionalRequirements, Item, Script, Value},
+    recipe::{ConditionalRequirements, Item, Script},
 };
 
 #[derive(Default, Clone)]
@@ -84,51 +84,51 @@ impl GenerateRecipe for RustGenerator {
 
         let system_env_vars = std::env::vars().collect::<HashMap<String, String>>();
 
-        // let all_env_vars = config_env
-        //     .clone()
-        //     .into_iter()
-        //     .chain(system_env_vars.clone())
-        //     .collect();
+        let all_env_vars = config_env
+            .clone()
+            .into_iter()
+            .chain(system_env_vars.clone())
+            .collect();
 
         let mut sccache_secrets = Vec::default();
 
-        // // Verify if user has set any sccache environment variables
-        // if sccache_envs(&all_env_vars).is_some() {
-        //     // check if we set some sccache in system env vars
-        //     if let Some(system_sccache_keys) = sccache_envs(&system_env_vars) {
-        //         // If sccache_envs are used in the system environment variables,
-        //         // we need to set them as secrets
-        //         let system_sccache_keys = system_env_vars
-        //             .keys()
-        //             // we set only those keys that are present in the system environment variables
-        //             // and not in the config env
-        //             .filter(|key| {
-        //                 system_sccache_keys.contains(&key.as_str())
-        //                     && !config_env.contains_key(*key)
-        //             })
-        //             .cloned()
-        //             .collect();
-        //
-        //         sccache_secrets = system_sccache_keys;
-        //     };
-        //
-        //     let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
-        //         .iter()
-        //         .map(|tool| tool.parse().into_diagnostic())
-        //         .collect::<miette::Result<Vec<_>>>()?;
-        //
-        //     // Add sccache tools to the build requirements
-        //     // only if they are not already present
-        //     let existing_reqs: Vec<_> = requirements.build.clone().into_iter().collect();
-        //
-        //     requirements.build.extend(
-        //         sccache_dep
-        //             .into_iter()
-        //             .filter(|dep| !existing_reqs.contains(dep)),
-        //     );
-        //
-        //     has_sccache = true;
-        // }
+        // Verify if user has set any sccache environment variables
+        if sccache_envs(&all_env_vars).is_some() {
+            // check if we set some sccache in system env vars
+            if let Some(system_sccache_keys) = sccache_envs(&system_env_vars) {
+                // If sccache_envs are used in the system environment variables,
+                // we need to set them as secrets
+                let system_sccache_keys = system_env_vars
+                    .keys()
+                    // we set only those keys that are present in the system environment variables
+                    // and not in the config env
+                    .filter(|key| {
+                        system_sccache_keys.contains(&key.as_str())
+                            && !config_env.contains_key(*key)
+                    })
+                    .cloned()
+                    .collect();
+
+                sccache_secrets = system_sccache_keys;
+            };
+
+            let sccache_dep: Vec<Item<PackageDependency>> = sccache_tools()
+                .iter()
+                .map(|tool| tool.parse().into_diagnostic())
+                .collect::<miette::Result<Vec<_>>>()?;
+
+            // Add sccache tools to the build requirements
+            // only if they are not already present
+            let existing_reqs: Vec<_> = requirements.build.clone().into_iter().collect();
+
+            requirements.build.extend(
+                sccache_dep
+                    .into_iter()
+                    .filter(|dep| !existing_reqs.contains(dep)),
+            );
+
+            has_sccache = true;
+        }
 
         let build_script = BuildScriptContext {
             source_dir: manifest_root.display().to_string(),

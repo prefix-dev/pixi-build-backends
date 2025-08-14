@@ -18,7 +18,7 @@ use pixi_build_backend::{
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Item, Script, Value};
+use recipe_stage0::recipe::{ConditionalRequirements, Script};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
@@ -67,7 +67,7 @@ impl GenerateRecipe for MojoGenerator {
             .unwrap_or_else(|| vec!["mojo".to_string()]);
 
         // Handle mojo compiler specially if it's in the list
-        if let Some(idx) = compilers.iter().position(|name| name == &"mojo") {
+        if let Some(idx) = compilers.iter().position(|name| name == "mojo") {
             let mojo_compiler_pkg = "mojo-compiler".to_string();
             // All of these packages also contain the mojo compiler and maintain backward compat.
             // They should be removable at a future point.

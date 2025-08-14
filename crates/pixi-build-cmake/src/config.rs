@@ -57,7 +57,10 @@ impl BackendConfig for CMakeBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
-            compilers: target_config.compilers.clone().or_else(|| self.compilers.clone()),
+            compilers: target_config
+                .compilers
+                .clone()
+                .or_else(|| self.compilers.clone()),
         })
     }
 }

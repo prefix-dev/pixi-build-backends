@@ -11,7 +11,7 @@ use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    compilers::default_compiler,
+    compilers::add_compilers_to_requirements,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
@@ -52,25 +52,18 @@ impl GenerateRecipe for CMakeGenerator {
         // Get the list of compilers from config, defaulting to ["cxx"] if not specified
         let compilers = config
             .compilers
-            .as_ref()
-            .map(|c| c.clone())
+            .clone()
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         let build_platform = Platform::current();
 
-        // Add each configured compiler to build requirements if not already present
-        for compiler_str in &compilers {
-            // Check if the specific compiler is already present
-            let language_compiler = default_compiler(&host_platform, &compiler_str);
-            if !resolved_requirements
-                .build
-                .contains_key(&PackageName::new_unchecked(language_compiler))
-            {
-                requirements.build.push(Item::Value(Value::Template(format!(
-                    "${{{{ compiler('{compiler_str}') }}}}"
-                ))));
-            }
-        }
+        // Add configured compilers to build requirements
+        add_compilers_to_requirements(
+            &compilers,
+            &mut requirements.build,
+            &resolved_requirements.build,
+            &host_platform,
+        );
 
         // add necessary build tools
         for tool in ["cmake", "ninja"] {
@@ -447,7 +440,7 @@ mod tests {
             3,
             "Should have exactly three compilers"
         );
-        
+
         // Check we have the expected compilers
         assert!(
             compiler_templates.contains(&"${{ compiler('c') }}".to_string()),
@@ -511,8 +504,7 @@ mod tests {
             "Should have exactly one compiler when not specified"
         );
         assert_eq!(
-            compiler_templates[0],
-            "${{ compiler('cxx') }}",
+            compiler_templates[0], "${{ compiler('cxx') }}",
             "Default compiler should be cxx"
         );
     }

@@ -13,12 +13,10 @@ build:
     content: "[ ... script ... ]"
     env:
       SCCACHE_BUCKET: my-bucket
-    secrets:
-      - SCCACHE_SYSTEM
+    secrets: []
 requirements:
   build:
     - "${{ compiler('rust') }}"
-    - sccache
   host: []
   run: []
   run_constraints: []

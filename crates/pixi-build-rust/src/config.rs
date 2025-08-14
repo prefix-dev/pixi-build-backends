@@ -21,6 +21,9 @@ pub struct RustBackendConfig {
     /// Ignore the cargo manifest and depend only on the project model.
     #[serde(default)]
     pub ignore_cargo_manifest: Option<bool>,
+    /// List of compilers to use (e.g., ["rust", "c", "cxx"])
+    /// If not specified, a default will be used
+    pub compilers: Option<Vec<String>>,
 }
 
 impl RustBackendConfig {
@@ -69,6 +72,7 @@ impl BackendConfig for RustBackendConfig {
             ignore_cargo_manifest: target_config
                 .ignore_cargo_manifest
                 .or(self.ignore_cargo_manifest),
+            compilers: target_config.compilers.clone().or_else(|| self.compilers.clone()),
         })
     }
 }
@@ -98,6 +102,7 @@ mod tests {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
             ignore_cargo_manifest: None,
+            compilers: Some(vec!["rust".to_string()]),
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -110,6 +115,7 @@ mod tests {
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
             ignore_cargo_manifest: Some(true),
+            compilers: Some(vec!["c".to_string(), "rust".to_string()]),
         };
 
         let merged = base_config
@@ -135,6 +141,12 @@ mod tests {
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
+
+        // compilers should be completely overridden by target
+        assert_eq!(
+            merged.compilers,
+            Some(vec!["c".to_string(), "rust".to_string()])
+        );
     }
 
     #[test]
@@ -148,6 +160,7 @@ mod tests {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
             ignore_cargo_manifest: None,
+            compilers: Some(vec!["rust".to_string()]),
         };
 
         let empty_target_config = RustBackendConfig::default();
@@ -161,6 +174,7 @@ mod tests {
         assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
+        assert_eq!(merged.compilers, Some(vec!["rust".to_string()]));
     }
 
     #[test]

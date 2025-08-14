@@ -149,6 +149,46 @@ extra-input-globs = ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 # Result for win-64: ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 ```
 
+### `compilers`
+
+- **Type**: `Array<String>`
+- **Default**: `[]` (no compilers)
+- **Target Merge Behavior**: `Overwrite` - Platform-specific compilers completely replace base compilers
+
+List of compilers to use for the build. Most pure Python packages don't need compilers, but this is useful for packages with C extensions or other compiled components. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
+
+```toml
+[package.build.configuration]
+compilers = ["c", "cxx"]
+```
+
+For target-specific configuration, platform compilers completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+compilers = []
+
+[package.build.configuration.targets.win-64]
+compilers = ["c", "cxx"]
+# Result for win-64: ["c", "cxx"] (only on Windows)
+```
+
+!!! info "Pure Python vs. Extension Packages"
+    The Python backend defaults to no compilers (`[]`) since most Python packages are pure Python and don't need compilation. This is different from other backends like CMake which default to `["cxx"]`. Only specify compilers if your package has C extensions or other compiled components:
+    
+    ```toml
+    # Pure Python package (default behavior)
+    [package.build.configuration]
+    # No compilers needed - defaults to []
+    
+    # Python package with C extensions  
+    [package.build.configuration]
+    compilers = ["c", "cxx"]
+    ```
+
+!!! info "Comprehensive Compiler Documentation"
+    For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
+
 
 ## Build Process
 

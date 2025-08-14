@@ -40,6 +40,10 @@ For the latest backend versions, you can extend the channel list with the [prefi
 
 Check out our [tutorial series](https://pixi.sh/latest/build/getting_started/) to learn how to use `pixi build` in practice.
 
+## 📚 Key Concepts
+
+### [Compilers](./key_concepts/compilers.md)
+Learn how pixi-build integrates with conda-forge's compiler infrastructure to provide cross-platform, ABI-compatible builds. Covers compiler configuration, platform-specific behavior, and available compiler options for supported backends.
 
 ## 🔗 Useful Links
 

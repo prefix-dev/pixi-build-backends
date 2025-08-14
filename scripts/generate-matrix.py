@@ -91,7 +91,7 @@ def generate_matrix():
         {"target": "linux-aarch64", "os": "ubuntu-latest"},
         {"target": "linux-ppc64le", "os": "ubuntu-latest"},
         {"target": "win-64", "os": "windows-latest"},
-        {"target": "osx-64", "os": "macos-13"},
+        {"target": "osx-64", "os": "macos-14"},
         {"target": "osx-arm64", "os": "macos-14"},
     ]
 

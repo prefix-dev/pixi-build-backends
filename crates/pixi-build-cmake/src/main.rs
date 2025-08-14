@@ -1,20 +1,23 @@
 mod build_script;
 mod config;
 
-use std::{collections::BTreeMap, collections::BTreeSet, path::Path, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
-    compilers::{Language, compiler_requirement, default_compiler},
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
+    compilers::default_compiler,
+    generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use recipe_stage0::recipe::{ConditionalRequirements, Item, Script, Value};
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -46,21 +49,27 @@ impl GenerateRecipe for CMakeGenerator {
             Some(host_platform),
         );
 
-        // Ensure the compiler function is added to the build requirements
-        // only if a specific compiler is not already present.
-        // TODO: Correctly, we should ask cmake to give us the language used in the
-        // project instead of assuming C++.
-        let language_compiler = default_compiler(&host_platform, &Language::Cxx.to_string());
+        // Get the list of compilers from config, defaulting to ["cxx"] if not specified
+        let compilers = config
+            .compilers
+            .as_ref()
+            .map(|c| c.clone())
+            .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         let build_platform = Platform::current();
 
-        if !resolved_requirements
-            .build
-            .contains_key(&PackageName::new_unchecked(language_compiler))
-        {
-            requirements
+        // Add each configured compiler to build requirements if not already present
+        for compiler_str in &compilers {
+            // Check if the specific compiler is already present
+            let language_compiler = default_compiler(&host_platform, &compiler_str);
+            if !resolved_requirements
                 .build
-                .push(compiler_requirement(&Language::Cxx));
+                .contains_key(&PackageName::new_unchecked(language_compiler))
+            {
+                requirements.build.push(Item::Value(Value::Template(format!(
+                    "${{{{ compiler('{compiler_str}') }}}}"
+                ))));
+            }
         }
 
         // add necessary build tools
@@ -388,6 +397,123 @@ mod tests {
                 .map(String::as_str),
             Some("vs2019"),
             "On windows the default cxx_compiler variant should be vs2019"
+        );
+    }
+
+    #[test]
+    fn test_multiple_compilers_configuration() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = CMakeGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &CMakeBackendConfig {
+                    compilers: Some(vec!["c".to_string(), "cxx".to_string(), "cuda".to_string()]),
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that we have exactly the expected compilers
+        let build_reqs = &generated_recipe.recipe.requirements.build;
+        let compiler_templates: Vec<String> = build_reqs
+            .iter()
+            .filter_map(|item| match item {
+                Item::Value(Value::Template(s)) if s.contains("compiler") => Some(s.clone()),
+                _ => None,
+            })
+            .collect();
+
+        // Should have exactly three compilers
+        assert_eq!(
+            compiler_templates.len(),
+            3,
+            "Should have exactly three compilers"
+        );
+        
+        // Check we have the expected compilers
+        assert!(
+            compiler_templates.contains(&"${{ compiler('c') }}".to_string()),
+            "C compiler should be in build requirements"
+        );
+        assert!(
+            compiler_templates.contains(&"${{ compiler('cxx') }}".to_string()),
+            "C++ compiler should be in build requirements"
+        );
+        assert!(
+            compiler_templates.contains(&"${{ compiler('cuda') }}".to_string()),
+            "CUDA compiler should be in build requirements"
+        );
+    }
+
+    #[test]
+    fn test_default_compiler_when_not_specified() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = CMakeGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &CMakeBackendConfig {
+                    compilers: None,
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that we have exactly the expected compilers and build tools
+        let build_reqs = &generated_recipe.recipe.requirements.build;
+        let compiler_templates: Vec<String> = build_reqs
+            .iter()
+            .filter_map(|item| match item {
+                Item::Value(Value::Template(s)) if s.contains("compiler") => Some(s.clone()),
+                _ => None,
+            })
+            .collect();
+
+        // Should have exactly one compiler: cxx
+        assert_eq!(
+            compiler_templates.len(),
+            1,
+            "Should have exactly one compiler when not specified"
+        );
+        assert_eq!(
+            compiler_templates[0],
+            "${{ compiler('cxx') }}",
+            "Default compiler should be cxx"
         );
     }
 }

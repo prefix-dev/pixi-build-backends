@@ -153,6 +153,7 @@ mod tests {
         procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
     };
     use rattler_build::console_utils::LoggingOutputHandler;
+    use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
 

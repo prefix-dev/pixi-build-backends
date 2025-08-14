@@ -156,10 +156,10 @@ pub async fn main() {
 mod tests {
     use std::path::PathBuf;
 
+    use crate::config::{MojoBinConfig, MojoPkgConfig};
     use indexmap::IndexMap;
     use pixi_build_types::ProjectModelV1;
-
-    use crate::config::{MojoBinConfig, MojoPkgConfig};
+    use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
 

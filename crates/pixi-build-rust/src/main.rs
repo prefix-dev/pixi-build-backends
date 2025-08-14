@@ -190,6 +190,7 @@ pub async fn main() {
 mod tests {
     use cargo_toml::Manifest;
     use indexmap::IndexMap;
+    use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
 

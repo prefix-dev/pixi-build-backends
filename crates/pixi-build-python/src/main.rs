@@ -239,6 +239,7 @@ pub async fn main() {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
+    use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
 

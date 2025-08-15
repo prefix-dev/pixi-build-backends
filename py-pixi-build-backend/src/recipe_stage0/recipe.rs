@@ -494,7 +494,7 @@ impl PyBuild {
             number: Py::new(py, PyOptionValueU64::default()).unwrap(),
             script: Py::new(py, PyScript::new(py, None, None, None)).unwrap(),
             noarch: Py::new(py, PyOptionPyNoArchKind::default()).unwrap(),
-            python: Py::new(py, PyPython::new(py, None).unwrap()).unwrap(),
+            python: Py::new(py, PyPython::new(None).unwrap()).unwrap(),
         }
     }
 }
@@ -503,11 +503,8 @@ impl Display for PyBuild {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{{ number: {:?}, script: {}, noarch: {:?}, python: {} }}",
-            self.number.to_string(),
-            self.script,
-            self.noarch.to_string(),
-            self.python
+            "{{ number: {}, script: {}, noarch: {}, python: {} }}",
+            self.number, self.script, self.noarch, self.python
         )
     }
 }
@@ -520,7 +517,7 @@ create_py_wrap!(PyHashMap, HashMap<String, String>, |map: &HashMap<String, Strin
     write!(f, "}}")
 });
 
-#[pyclass(set_all, get_all, str)]
+#[pyclass(get_all, set_all, str)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PyScript {
     pub content: Py<PyVecString>,
@@ -543,14 +540,18 @@ impl PyScript {
     #[new]
     pub fn new(
         py: Python,
-        content: Option<Py<PyVecString>>,
-        env: Option<Py<PyHashMap>>,
-        secrets: Option<Py<PyVecString>>,
+        content: Option<Vec<String>>,
+        env: Option<HashMap<String, String>>,
+        secrets: Option<Vec<String>>,
     ) -> Self {
+        let py_vec = PyVecString::from(content.unwrap_or_default());
+        let env = env.map(PyHashMap::from).unwrap_or_default();
+        let secrets = secrets.map(PyVecString::from).unwrap_or_default();
+
         PyScript {
-            content: content.unwrap_or_else(|| Py::new(py, PyVecString::default()).unwrap()),
-            env: env.unwrap_or_else(|| Py::new(py, PyHashMap::default()).unwrap()),
-            secrets: secrets.unwrap_or_else(|| Py::new(py, PyVecString::default()).unwrap()),
+            content: Py::new(py, py_vec).unwrap(),
+            env: Py::new(py, env).unwrap(),
+            secrets: Py::new(py, secrets).unwrap(),
         }
     }
 }
@@ -592,7 +593,7 @@ pub struct PyPython {
 #[pymethods]
 impl PyPython {
     #[new]
-    pub fn new(_py: Python, entry_points: Option<Vec<String>>) -> PyResult<Self> {
+    pub fn new(entry_points: Option<Vec<String>>) -> PyResult<Self> {
         let entry_points: Result<Vec<EntryPoint>, _> = entry_points
             .unwrap_or_default()
             .into_iter()
@@ -647,7 +648,7 @@ impl Display for PyPython {
     }
 }
 
-#[pyclass]
+#[pyclass(str)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PyNoArchKind {
     pub(crate) inner: NoArchKind,
@@ -932,7 +933,7 @@ impl PyAbout {
 
 impl Display for PyAbout {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PyAbout {{ {} }}", self.inner)
+        write!(f, "{{ {} }}", self.inner)
     }
 }
 

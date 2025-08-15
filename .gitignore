@@ -36,6 +36,10 @@ output/
 pixi-build-python-output/
 **/repodata.json
 
+# Python cache files
+__pycache__/
+*.pyc
+
 *.local*
 
 # Python

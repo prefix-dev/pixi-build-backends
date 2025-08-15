@@ -137,7 +137,7 @@ impl Display for PackageDependency {
             PackageDependency::Binary(spec) => write!(f, "{}", spec),
             PackageDependency::Source(source_spec) => {
                 let matchspec = SerializableMatchSpec::from(source_spec.spec.clone());
-                write!(f, "{}", matchspec)
+                write!(f, "Source(spec: {}, {})", matchspec, source_spec.location)
             }
         }
     }

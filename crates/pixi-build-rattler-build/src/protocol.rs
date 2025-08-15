@@ -659,7 +659,6 @@ impl Protocol for RattlerBuildBackend {
             params.build_prefix.as_ref().map(|p| p.prefix.as_path()),
             params.work_directory,
             self.cache_dir.as_deref(),
-            self.source_dir.clone(),
             params.output_directory.as_deref(),
             self.recipe_source.path.clone(),
         );

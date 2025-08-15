@@ -9,6 +9,9 @@ cd build
 # necessary for correctly linking SIP files (from python_qt_bindings)
 export LINK=$CXX
 
+# Rattler-build will not set the SRC_DIR anymore so we set it through templating
+export SRC_DIR="@SRC_DIR@"
+
 if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
   PYTHON_EXECUTABLE=$PREFIX/bin/python
   PKG_CONFIG_EXECUTABLE=$PREFIX/bin/pkg-config

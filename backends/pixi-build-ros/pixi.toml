@@ -4,7 +4,6 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 preview = ["pixi-build"]
 
 [dependencies]
-#python = "==3.11"
 pytest = "*"
 pixi-build-ros = { path = "." }
 
@@ -17,7 +16,7 @@ channels = [
 
 [package]
 name = "pixi-build-ros"
-version = "0.1.2"
+version = "0.1.0"
 
 [package.host-dependencies]
 hatchling = "*"
@@ -27,5 +26,8 @@ rosdistro = "*"
 catkin_pkg = "*"
 toml = "*"
 pyyaml = "*"
-pixi-build-api-version = { path = "../../recipe/pixi-build-api-version" }
+pixi-build-api-version = "1.*"
+# should be added to `py-pixi-build-backend`
+typing-extensions = "*"
+#py-pixi-build-backend = "*"
 py-pixi-build-backend = { path = "../../py-pixi-build-backend" }

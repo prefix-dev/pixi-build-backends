@@ -43,6 +43,14 @@ class ROSBackendConfig:
 
     def get_debug_dir(self) -> Optional[Path]:
         """Get debug directory if set."""
+        if self.debug_dir is not None:
+            # Ensure the debug directory is a Path object
+            if isinstance(self.debug_dir, str):
+                self.debug_dir = Path(self.debug_dir)
+            # Ensure it's an absolute path
+            if not self.debug_dir.is_absolute():
+                # Convert to absolute path relative to the current working directory
+                self.debug_dir = Path.cwd() / self.debug_dir
         return self.debug_dir
 
 class ROSGenerator(GenerateRecipeProtocol):
@@ -74,10 +82,10 @@ class ROSGenerator(GenerateRecipeProtocol):
         package = generated_recipe.recipe.package
 
         # Modify the name and version of the package based on the ROS distro and package.xml
-        if "undefined" in str(generated_recipe.recipe.package.name):
+        if package.name.get_concrete() == "undefined":
             package.name = f"ros-{distro.name}-{package_xml.name.replace('_', '-')}"
 
-        if "0.0.0" in str(generated_recipe.recipe.package.version):
+        if package.version == "0.0.0":
             package.version = package_xml.version
 
         # Get requirements from package.xml
@@ -108,17 +116,26 @@ class ROSGenerator(GenerateRecipeProtocol):
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
         generated_recipe.recipe.requirements = requirements
 
+
         # Determine build platform
         build_platform = BuildPlatform.current()
 
         # Generate build script
-        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform)
+        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root)
         build_script_lines = build_script_context.render()
 
         generated_recipe.recipe.build.script =  Script(
             content=build_script_lines,
             env=backend_config.env,
         )
+
+        debug_dir = backend_config.get_debug_dir()
+        if debug_dir:
+            recipe = generated_recipe.recipe.to_yaml()
+            debug_file_path = debug_dir / f"{package.name}-{package.version}-recipe.yaml"
+            debug_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(debug_file_path, 'w') as debug_file:
+                debug_file.write(recipe)
 
         # Test the build script before running to early out.
         # TODO: returned script.content list is not a list of strings, a container for that

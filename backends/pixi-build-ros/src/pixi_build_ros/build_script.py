@@ -27,16 +27,18 @@ class BuildScriptContext:
         self,
         script_content: str,
         build_platform: BuildPlatform,
+        source_dir: Path,
     ):
         self.script_content = script_content
         self.build_platform = build_platform
+        self.source_dir = source_dir
 
     def render(self) -> List[str]:
         """Render the build script content into a list of lines."""
         return self.script_content.splitlines()
 
     @classmethod
-    def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform) -> "BuildScriptContext":
+    def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path) -> "BuildScriptContext":
         """Get the build script from the template directory based on the package type."""
         # TODO: deal with other script languages, e.g. for Windows
         templates_dir = Path(__file__).parent.parent.parent / "templates"
@@ -51,8 +53,11 @@ class BuildScriptContext:
         
         with open(script_path, 'r') as f:
             script_content = f.read()
-    
+
+        script_content = script_content.replace("@SRC_DIR@", str(source_dir))
+
         return cls(
             script_content=script_content,
             build_platform=platform,
+            source_dir=source_dir,
         )

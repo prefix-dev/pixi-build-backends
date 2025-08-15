@@ -1,5 +1,17 @@
 # ROS pixi backend
-The is a pixi build backend for ROS packages.
+The is a PROTOTYPE pixi build backend for ROS packages.
+
+This can be used from a path in a pixi package. It works if you add the following to your `pixi.toml`:
+
+```toml
+[package] 
+name = "undefined" # Will be replaced by the value from the `package.xml`
+version = "0.0.0" # Will be replaced by the value from the `package.xml`
+
+[package.build]
+backend = { name = "pixi-build-ros", path = "/absolute/path/to/pixi-build-backends/backends/pixi-build-ros" } 
+configuration = { distro = "jazzy" }
+```
 
 # Interesting links used in development
 - RoboStack stacks:
@@ -16,3 +28,8 @@ The is a pixi build backend for ROS packages.
   - Should there be logic to handle the full mapping to `conda-forge`?
 - How to deal with `conditions` in a `depend`? e.g.: `<exec_depend condition="$ROS_VERSION == 1">catkin</exec_depend>`, `<depend condition="$PLATFORM == X3">hobot-multimedia-dev</depend>`
 - How do we handle `target` specific dependencies in a `package.xml`?
+
+# Big TODOs
+- [ ] Add the version of the dependencies to the requirements. They are fully ignored at the moment.
+- [ ] Proper e2e tests.
+- [ ] Add support for Windows.

@@ -4,6 +4,9 @@ set -eo pipefail
 
 CATKIN_BUILD_BINARY_PACKAGE="ON"
 
+# Rattler-build will not set the SRC_DIR anymore so we set it through templating
+export SRC_DIR="@SRC_DIR@"
+
 if [ "${PKG_NAME}" == "ros-noetic-catkin" ]; then
     # create catkin cookie to make it is a catkin workspace
     touch $PREFIX/.catkin

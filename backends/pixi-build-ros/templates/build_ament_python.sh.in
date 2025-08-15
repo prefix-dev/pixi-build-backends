@@ -3,6 +3,9 @@
 
 set -eo pipefail
 
+# Rattler-build will not set the SRC_DIR anymore so we set it through templating
+export SRC_DIR="@SRC_DIR@"
+
 pushd $SRC_DIR
 
 # If there is a setup.cfg that contains install-scripts then we should not set it here

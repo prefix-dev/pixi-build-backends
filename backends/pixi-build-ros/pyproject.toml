@@ -8,8 +8,7 @@ dependencies = [
   "distutils",
 ]
 name = "pixi-build-ros"
-#requires-python = "== 3.11"
-version = "0.1.1"
+version = "0.1.0"
 
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"

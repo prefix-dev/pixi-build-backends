@@ -1,10 +1,7 @@
 use indexmap::IndexMap;
 use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
-use std::{
-    convert::identity,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]

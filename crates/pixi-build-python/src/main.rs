@@ -528,13 +528,13 @@ mod tests {
     fn generate_test_recipe(
         config: &PythonBackendConfig,
     ) -> Result<GeneratedRecipe, Box<dyn std::error::Error>> {
-        PythonGenerator::default().generate_recipe(
+        Ok(PythonGenerator::default().generate_recipe(
             &minimal_project(),
             config,
             PathBuf::from("."),
             Platform::Linux64,
             None,
-        )
+        )?)
     }
 
     #[test]
@@ -542,9 +542,8 @@ mod tests {
         let recipe = generate_test_recipe(&PythonBackendConfig::default())
             .expect("Failed to generate recipe");
 
-        assert_eq!(
-            recipe.recipe.package.noarch,
-            Some(true),
+        assert!(
+            matches!(recipe.recipe.build.noarch, Some(NoArchKind::Python)),
             "noarch should default to true when no compilers specified"
         );
     }
@@ -558,9 +557,8 @@ mod tests {
 
         let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
 
-        assert_eq!(
-            recipe.recipe.package.noarch,
-            None, // None means platform-specific (not noarch)
+        assert!(
+            recipe.recipe.build.noarch.is_none(),
             "noarch should default to false when compilers are present"
         );
     }
@@ -575,9 +573,8 @@ mod tests {
 
         let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
 
-        assert_eq!(
-            recipe.recipe.package.noarch,
-            Some(true),
+        assert!(
+            matches!(recipe.recipe.build.noarch, Some(NoArchKind::Python)),
             "explicit noarch=true should override compiler presence"
         );
     }
@@ -592,9 +589,8 @@ mod tests {
 
         let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
 
-        assert_eq!(
-            recipe.recipe.package.noarch,
-            None, // None means platform-specific (not noarch)
+        assert!(
+            recipe.recipe.build.noarch.is_none(),
             "explicit noarch=false should override absence of compilers"
         );
     }

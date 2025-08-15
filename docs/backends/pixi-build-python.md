@@ -63,10 +63,14 @@ You can customize the Python backend behavior using the `[package.build.configur
 ### `noarch`
 
 - **Type**: `Boolean`
-- **Default**: `true`
+- **Default**: `true` (unless [compilers](#compilers) are specified)
 - **Target Merge Behavior**: `Overwrite` - Platform-specific noarch setting takes precedence over base
 
-Controls whether to build a platform-independent (noarch) package or a platform-specific package. Most pure Python packages should be `noarch` and therefore don't need to set this option since the default is `noarch = true`.
+Controls whether to build a platform-independent (noarch) package or a platform-specific package. 
+The backend tries to derive whether the package can be built as `noarch` based on the presence of [compilers](#compilers).
+If compilers are specified, the backend assume that native extensions are build as part of the build process.
+Most of the time these are platform-specific, so the package will be built as a platform-specific package.
+If no compilers are specified, the default value for `noarch` is `true`, meaning the package will be built as a noarch python package.
 
 ```toml
 [package.build.configuration]

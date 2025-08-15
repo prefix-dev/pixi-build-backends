@@ -134,10 +134,20 @@ impl GenerateRecipe for PythonGenerator {
 
         // Determine whether the package should be built as a noarch package or as a
         // generic package.
-        let noarch_kind = if config.noarch() {
+        let has_compilers = !compilers.is_empty();
+        let noarch_kind = if config.noarch == Some(true) {
+            // The user explicitly requested a noarch package.
             Some(NoArchKind::Python)
-        } else {
+        } else if config.noarch == Some(false) {
+            // The user explicitly requested a non-noarch package.
             None
+        } else if has_compilers {
+            // No specific user request, but we have compilers, not a noarch package.
+            None
+        } else {
+            // Otherwise, default to a noarch package.
+            // This is the default behavior for pure Python packages.
+            Some(NoArchKind::Python)
         };
 
         // read pyproject.toml content if it exists
@@ -500,6 +510,92 @@ mod tests {
             compiler_templates.len(),
             0,
             "Should have no compilers by default for pure Python packages"
+        );
+    }
+
+    // Helper function to create a minimal project fixture
+    fn minimal_project() -> ProjectModelV1 {
+        project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {}
+            }
+        })
+    }
+
+    // Helper function to generate recipe with given config
+    fn generate_test_recipe(
+        config: &PythonBackendConfig,
+    ) -> Result<GeneratedRecipe, Box<dyn std::error::Error>> {
+        PythonGenerator::default().generate_recipe(
+            &minimal_project(),
+            config,
+            PathBuf::from("."),
+            Platform::Linux64,
+            None,
+        )
+    }
+
+    #[test]
+    fn test_noarch_defaults_to_true_when_no_compilers() {
+        let recipe = generate_test_recipe(&PythonBackendConfig::default())
+            .expect("Failed to generate recipe");
+
+        assert_eq!(
+            recipe.recipe.package.noarch,
+            Some(true),
+            "noarch should default to true when no compilers specified"
+        );
+    }
+
+    #[test]
+    fn test_noarch_defaults_to_false_when_compilers_present() {
+        let config = PythonBackendConfig {
+            compilers: Some(vec!["c".to_string()]),
+            ..Default::default()
+        };
+
+        let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
+
+        assert_eq!(
+            recipe.recipe.package.noarch,
+            None, // None means platform-specific (not noarch)
+            "noarch should default to false when compilers are present"
+        );
+    }
+
+    #[test]
+    fn test_noarch_explicit_true_overrides_compilers() {
+        let config = PythonBackendConfig {
+            noarch: Some(true),
+            compilers: Some(vec!["c".to_string()]),
+            ..Default::default()
+        };
+
+        let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
+
+        assert_eq!(
+            recipe.recipe.package.noarch,
+            Some(true),
+            "explicit noarch=true should override compiler presence"
+        );
+    }
+
+    #[test]
+    fn test_noarch_explicit_false_overrides_no_compilers() {
+        let config = PythonBackendConfig {
+            noarch: Some(false),
+            compilers: None,
+            ..Default::default()
+        };
+
+        let recipe = generate_test_recipe(&config).expect("Failed to generate recipe");
+
+        assert_eq!(
+            recipe.recipe.package.noarch,
+            None, // None means platform-specific (not noarch)
+            "explicit noarch=false should override absence of compilers"
         );
     }
 }

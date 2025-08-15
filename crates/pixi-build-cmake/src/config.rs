@@ -18,6 +18,9 @@ pub struct CMakeBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
+    /// List of compilers to use (e.g., ["c", "cxx", "cuda"])
+    /// If not specified, a default will be used
+    pub compilers: Option<Vec<String>>,
 }
 
 impl BackendConfig for CMakeBackendConfig {
@@ -31,6 +34,7 @@ impl BackendConfig for CMakeBackendConfig {
     /// - env: Platform env vars override base, others merge
     /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
+    /// - compilers: Platform-specific completely replaces base
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
         if target_config.debug_dir.is_some() {
             miette::bail!("`debug_dir` cannot have a target specific value");
@@ -53,6 +57,10 @@ impl BackendConfig for CMakeBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
+            compilers: target_config
+                .compilers
+                .clone()
+                .or_else(|| self.compilers.clone()),
         })
     }
 }
@@ -82,6 +90,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            compilers: Some(vec!["cxx".to_string()]),
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -93,6 +102,7 @@ mod tests {
             env: target_env,
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
+            compilers: Some(vec!["c".to_string(), "cuda".to_string()]),
         };
 
         let merged = base_config
@@ -118,6 +128,12 @@ mod tests {
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
+
+        // compilers should be completely overridden by target
+        assert_eq!(
+            merged.compilers,
+            Some(vec!["c".to_string(), "cuda".to_string()])
+        );
     }
 
     #[test]
@@ -130,6 +146,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            compilers: Some(vec!["cxx".to_string()]),
         };
 
         let empty_target_config = CMakeBackendConfig::default();
@@ -143,6 +160,7 @@ mod tests {
         assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
+        assert_eq!(merged.compilers, Some(vec!["cxx".to_string()]));
     }
 
     #[test]

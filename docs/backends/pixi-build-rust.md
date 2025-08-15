@@ -218,6 +218,33 @@ ignore-cargo-manifest = true
 # Result for linux-64: Cargo.toml metadata will be ignored
 ```
 
+### `compilers`
+
+- **Type**: `Array<String>`
+- **Default**: `["rust"]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific compilers completely replace base compilers
+
+List of compilers to use for the build. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
+
+```toml
+[package.build.configuration]
+compilers = ["rust", "c", "cxx"]
+```
+
+For target-specific configuration, platform compilers completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+compilers = ["rust"]
+
+[package.build.configuration.targets.linux-64]
+compilers = ["rust", "c", "cxx"]
+# Result for linux-64: ["rust", "c", "cxx"]
+```
+
+!!! info "Comprehensive Compiler Documentation"
+    For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
+
 
 ## Build Process
 

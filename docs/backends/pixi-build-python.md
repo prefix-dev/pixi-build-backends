@@ -63,10 +63,14 @@ You can customize the Python backend behavior using the `[package.build.configur
 ### `noarch`
 
 - **Type**: `Boolean`
-- **Default**: `true`
+- **Default**: `true` (unless [compilers](#compilers) are specified)
 - **Target Merge Behavior**: `Overwrite` - Platform-specific noarch setting takes precedence over base
 
-Controls whether to build a platform-independent (noarch) package or a platform-specific package. Most pure Python packages should be `noarch` and therefore don't need to set this option since the default is `noarch = true`.
+Controls whether to build a platform-independent (noarch) package or a platform-specific package. 
+The backend tries to derive whether the package can be built as `noarch` based on the presence of [compilers](#compilers).
+If compilers are specified, the backend assume that native extensions are build as part of the build process.
+Most of the time these are platform-specific, so the package will be built as a platform-specific package.
+If no compilers are specified, the default value for `noarch` is `true`, meaning the package will be built as a noarch python package.
 
 ```toml
 [package.build.configuration]
@@ -148,6 +152,46 @@ extra-input-globs = ["*.py"]
 extra-input-globs = ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 # Result for win-64: ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 ```
+
+### `compilers`
+
+- **Type**: `Array<String>`
+- **Default**: `[]` (no compilers)
+- **Target Merge Behavior**: `Overwrite` - Platform-specific compilers completely replace base compilers
+
+List of compilers to use for the build. Most pure Python packages don't need compilers, but this is useful for packages with C extensions or other compiled components. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
+
+```toml
+[package.build.configuration]
+compilers = ["c", "cxx"]
+```
+
+For target-specific configuration, platform compilers completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+compilers = []
+
+[package.build.configuration.targets.win-64]
+compilers = ["c", "cxx"]
+# Result for win-64: ["c", "cxx"] (only on Windows)
+```
+
+!!! info "Pure Python vs. Extension Packages"
+    The Python backend defaults to no compilers (`[]`) since most Python packages are pure Python and don't need compilation. This is different from other backends like CMake which default to `["cxx"]`. Only specify compilers if your package has C extensions or other compiled components:
+    
+    ```toml
+    # Pure Python package (default behavior)
+    [package.build.configuration]
+    # No compilers needed - defaults to []
+    
+    # Python package with C extensions  
+    [package.build.configuration]
+    compilers = ["c", "cxx"]
+    ```
+
+!!! info "Comprehensive Compiler Documentation"
+    For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
 
 
 ## Build Process

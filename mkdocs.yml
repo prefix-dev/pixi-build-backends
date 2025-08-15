@@ -107,6 +107,8 @@ nav:
       - pixi-build-rattler-build: backends/pixi-build-rattler-build.md
       - pixi-build-rust: backends/pixi-build-rust.md
       - pixi-build-mojo: backends/pixi-build-mojo.md
+  - Key Concepts:
+      - Compilers: key_concepts/compilers.md
 
 validation:
   omitted_files: warn

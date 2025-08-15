@@ -2,8 +2,12 @@
 
 use std::fmt::Display;
 
-use rattler_conda_types::Platform;
-use recipe_stage0::{matchspec::PackageDependency, recipe::Item};
+use indexmap::IndexMap;
+use rattler_conda_types::{PackageName, Platform};
+use recipe_stage0::{
+    matchspec::PackageDependency,
+    recipe::{Item, Value},
+};
 
 pub enum Language<'a> {
     C,
@@ -67,6 +71,31 @@ pub fn compiler_requirement(language: &Language) -> Item<PackageDependency> {
     format!("${{{{ compiler('{language}') }}}}")
         .parse()
         .expect("Failed to parse compiler requirement")
+}
+
+/// Add configured compilers to build requirements if they are not already present.
+///
+/// # Arguments
+/// * `compilers` - List of compiler names (e.g., ["c", "cxx", "rust", "cuda"])
+/// * `requirements` - Mutable reference to the requirements to modify
+/// * `resolved_build_requirements` - IndexMap of already resolved build requirements
+/// * `host_platform` - The target platform for determining default compiler names
+pub fn add_compilers_to_requirements(
+    compilers: &[String],
+    requirements: &mut Vec<Item<PackageDependency>>,
+    resolved_build_requirements: &IndexMap<PackageName, PackageDependency>,
+    host_platform: &Platform,
+) {
+    for compiler_str in compilers {
+        // Check if the specific compiler is already present
+        let language_compiler = default_compiler(host_platform, compiler_str);
+
+        if !resolved_build_requirements.contains_key(&PackageName::new_unchecked(language_compiler))
+        {
+            let template = format!("${{{{ compiler('{}') }}}}", compiler_str);
+            requirements.push(Item::Value(Value::Template(template)));
+        }
+    }
 }
 
 #[cfg(test)]

@@ -149,6 +149,33 @@ extra-input-globs = ["*.txt", "*.linux", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.linux", "linux-configs/**/*"]
 ```
 
+### `compilers`
+
+- **Type**: `Array<String>`
+- **Default**: `["cxx"]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific compilers completely replace base compilers
+
+List of compilers to use for the build. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
+
+```toml
+[package.build.configuration]
+compilers = ["c", "cxx", "fortran"]
+```
+
+For target-specific configuration, platform compilers completely replace the base configuration:
+
+```toml
+[package.build.configuration]
+compilers = ["cxx"]
+
+[package.build.configuration.targets.linux-64]
+compilers = ["c", "cxx", "cuda"]
+# Result for linux-64: ["c", "cxx", "cuda"]
+```
+
+!!! info "Comprehensive Compiler Documentation"
+    For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
+
 
 ## Build Process
 

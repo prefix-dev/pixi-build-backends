@@ -174,11 +174,9 @@ where
     T::Config: Send + Sync + 'static,
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        let config = configuration
+        configuration
             .and_then(|config| serde_json::from_value::<T::Config>(config).ok())
-            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
-
-        config
+            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()))
     }
 
     async fn initialize(

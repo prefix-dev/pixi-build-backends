@@ -741,7 +741,7 @@ impl Protocol for RattlerBuildBackend {
 /// Extracts the package sources from an `Output` object that are mutable and
 /// should be watched for changes.
 fn extract_mutable_package_sources(output: &Output) -> Option<Vec<PathBuf>> {
-    let package_sources = output.finalized_sources.as_ref().map(|package_sources| {
+    output.finalized_sources.as_ref().map(|package_sources| {
         package_sources
             .iter()
             .filter_map(|source| {
@@ -752,8 +752,7 @@ fn extract_mutable_package_sources(output: &Output) -> Option<Vec<PathBuf>> {
                 }
             })
             .collect()
-    });
-    package_sources
+    })
 }
 
 /// Returns the relative path from `base` to `input`, joined by "/".
@@ -948,6 +947,7 @@ mod tests {
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
+                workspace_root: None,
                 source_dir: None,
                 manifest_path: recipe,
                 project_model: None,
@@ -987,6 +987,7 @@ mod tests {
             runtime.block_on(async move {
                 let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
                     .initialize(InitializeParams {
+                        workspace_root: None,
                         source_dir: None,
                         manifest_path: recipe_path.to_path_buf(),
                         project_model: None,
@@ -1024,6 +1025,7 @@ mod tests {
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
+                workspace_root: None,
                 source_dir: None,
                 manifest_path: recipe,
                 project_model: None,

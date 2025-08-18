@@ -3,6 +3,7 @@ use rattler_conda_types::MatchSpec;
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec, SourceMatchSpec};
 use recipe_stage0::requirements::{PackageSpecDependencies, Selector};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 #[pyclass]
 #[derive(Clone, Default)]
@@ -76,7 +77,7 @@ impl PyPackageSpecDependencies {
     }
 }
 
-#[pyclass]
+#[pyclass(str)]
 #[derive(Clone)]
 pub struct PyPackageDependency {
     pub(crate) inner: PackageDependency,
@@ -125,6 +126,12 @@ impl PyPackageDependency {
 
     pub fn package_name(&self) -> String {
         self.inner.package_name().as_normalized().to_string()
+    }
+}
+
+impl Display for PyPackageDependency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
     }
 }
 

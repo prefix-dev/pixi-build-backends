@@ -14,6 +14,10 @@ on:
         required: false
         default: true
         type: boolean
+      package_name:
+        description: "Build specific package only (optional)"
+        required: false
+        type: string
 
 name: "Conda Packages"
 
@@ -38,7 +42,11 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
-          MATRIX_JSON=$(pixi run generate-matrix)
+          if [ -n "${{ github.event.inputs.package_name }}" ]; then
+            MATRIX_JSON=$(pixi run generate-matrix --package "${{ github.event.inputs.package_name }}")
+          else
+            MATRIX_JSON=$(pixi run generate-matrix)
+          fi
 
           echo "Generated matrix: $MATRIX_JSON"
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT

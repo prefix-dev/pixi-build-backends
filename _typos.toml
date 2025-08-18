@@ -1,0 +1,5 @@
+[files]
+extend-exclude = [
+  "backends/pixi-build-ros/*.yaml",
+  "backends/pixi-build-ros/**/*.xml",
+]

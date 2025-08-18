@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
     PyIntermediateRecipe,
@@ -239,6 +239,17 @@ class Build:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
+    
+    def __str__(self) -> str:
+        """
+        Get the string representation of the Build configuration.
+
+        Returns
+        -------
+        str
+            The string representation of the build configuration.
+        """
+        return str(self._inner)
 
 
 class Script:
@@ -247,7 +258,7 @@ class Script:
     _inner: PyScript
 
     def __init__(self, content: List[str], env: Optional[Dict[str, str]] = None):
-        self._inner = PyScript(content, env)
+        self._inner = PyScript(content, env, None)
 
     @property
     def content(self) -> List[str]:
@@ -407,6 +418,17 @@ class NoArchKind:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
+    
+    def __str__(self) -> str:
+        """
+        Get the string representation of the NoArch kind.
+
+        Returns
+        -------
+        str
+            The string representation of the NoArch kind.
+        """
+        return str(self._inner)
 
 
 class ValueString:
@@ -622,35 +644,61 @@ class ConditionalRequirements:
         """Get the build requirements."""
         return VecItemPackageDependency._from_inner(self._inner.build)
 
+    @build.setter
+    def build(self, value: Union[List[ItemPackageDependency], "VecItemPackageDependency"]) -> None:
+        """Set the build requirements."""
+        if isinstance(value, VecItemPackageDependency):
+            self._inner.build = value._inner
+
+        else:
+            vec = VecItemPackageDependency()
+            vec.extend(value)
+            self._inner.build = vec._inner
+
     @property
-    def host(self) -> "ConditionalListPackageDependency":
+    def host(self) -> "VecItemPackageDependency":
         """Get the host requirements."""
-        return [ItemPackageDependency._from_inner(host) for host in self._inner.host]
+        return VecItemPackageDependency._from_inner(self._inner.host)
 
     @host.setter
-    def host(self, value: "ConditionalListPackageDependency") -> None:
+    def host(self, value: Union[List[ItemPackageDependency], "VecItemPackageDependency"]) -> None:
         """Set the host requirements."""
-        self._inner.host = value
+        if isinstance(value, VecItemPackageDependency):
+            self._inner.host = value._inner
+        else:
+            vec = VecItemPackageDependency()
+            vec.extend(value)
+            self._inner.host = vec._inner
 
     @property
-    def run(self) -> "ConditionalListPackageDependency":
+    def run(self) -> "VecItemPackageDependency":
         """Get the run requirements."""
-        return [ItemPackageDependency._from_inner(run) for run in self._inner.run]
+        return VecItemPackageDependency._from_inner(self._inner.run)
 
     @run.setter
-    def run(self, value: "ConditionalListPackageDependency") -> None:
+    def run(self, value: Union[List[ItemPackageDependency], "VecItemPackageDependency"]) -> None:
         """Set the run requirements."""
-        self._inner.run = value
+        if isinstance(value, VecItemPackageDependency):
+            self._inner.run = value._inner
+        else:
+            vec = VecItemPackageDependency()
+            vec.extend(value)
+            self._inner.run = vec._inner
 
     @property
-    def run_constraints(self) -> "ConditionalListPackageDependency":
+    def run_constraints(self) -> "VecItemPackageDependency":
         """Get the run constraints."""
-        return [ItemPackageDependency._from_inner(run_constraint) for run_constraint in self._inner.run_constraints]
+        return VecItemPackageDependency._from_inner(self._inner.run_constraints)
 
     @run_constraints.setter
-    def run_constraints(self, value: "ConditionalListPackageDependency") -> None:
+    def run_constraints(self, value: Union[List[ItemPackageDependency], "VecItemPackageDependency"]) -> None:
         """Set the run constraints."""
-        self._inner.run_constraints = value
+        if isinstance(value, VecItemPackageDependency):
+            self._inner.run_constraints = value._inner
+        else:
+            vec = VecItemPackageDependency()
+            vec.extend(value)
+            self._inner.run_constraints = vec._inner
 
     def resolve(self, host_platform: Optional[Platform] = None) -> "PackageSpecDependencies":
         """Resolve the requirements."""

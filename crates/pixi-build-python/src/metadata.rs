@@ -52,8 +52,7 @@ impl PyprojectMetadataProvider {
         self.pyproject_manifest.get_or_try_init(move || {
             let pyproject_toml_content =
                 fs_err::read_to_string(self.manifest_root.join("pyproject.toml"))?;
-            toml_edit::de::from_str(&pyproject_toml_content)
-                .map_err(MetadataError::PyProjectTomlError)
+            toml_edit::de::from_str(&pyproject_toml_content).map_err(MetadataError::PyProjectToml)
         })
     }
 
@@ -114,7 +113,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
             return Ok(None);
         };
         Ok(Some(
-            Version::from_str(&version.to_string()).map_err(MetadataError::ParseVersionError)?,
+            Version::from_str(&version.to_string()).map_err(MetadataError::ParseVersion)?,
         ))
     }
 
@@ -423,7 +422,7 @@ version = "not.a.valid.version.at.all"
         let result = provider.version();
         // The pyproject-toml parser should fail to parse this
         match result {
-            Err(MetadataError::PyProjectTomlError(_)) => {
+            Err(MetadataError::PyProjectToml(_)) => {
                 // This is expected - invalid version in pyproject.toml
             }
             other => panic!(
@@ -447,8 +446,8 @@ version = "1.0.0"
         let result = provider.name();
         assert!(result.is_err());
         match result.unwrap_err() {
-            MetadataError::PyProjectTomlError(_) => {}
-            err => panic!("Expected PyProjectTomlError, got: {:?}", err),
+            MetadataError::PyProjectToml(_) => {}
+            err => panic!("Expected PyProjectToml, got: {:?}", err),
         }
     }
 

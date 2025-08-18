@@ -17,7 +17,9 @@ Understanding conda-forge's compiler system is essential for effectively using `
 
 ### Compiler Selection and Platform Resolution
 
-When you specify `compilers = ["c", "cxx"]` in your `pixi-build` configuration, the backend automatically selects the appropriate platform-specific compiler packages based on your target platform and build variants
+When you specify `compilers = ["c", "cxx"]` in your `pixi-build` configuration, the backend automatically selects the appropriate platform-specific compiler packages based on your target platform and build variants.
+If you are cross-compiling the target platform will be the platform you are compiling for.
+Otherwise, it the target platform is your current platform.
 
 Using the conda-forge infrastructure, this will result in the following packages to be selected by default.
 

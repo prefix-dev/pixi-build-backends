@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{collections::BTreeSet, path::PathBuf, str::FromStr};
 
 use miette::Diagnostic;
 use once_cell::unsync::OnceCell;
@@ -14,8 +14,6 @@ pub enum MetadataError {
     ParseVersion(ParseVersionError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    // #[error("missing field in pyproject.toml: {0}")]
-    // MissingField(String),
 }
 
 /// An implementation of [`MetadataProvider`] that reads metadata from a
@@ -56,29 +54,29 @@ impl PyprojectMetadataProvider {
         })
     }
 
-    // /// Returns the set of globs that match files that influence the metadata of
-    // /// this package.
-    // ///
-    // /// This includes the package's own `pyproject.toml` file. These globs
-    // /// can be used for incremental builds to determine when metadata might
-    // /// have changed.
-    // ///
-    // /// # Returns
-    // ///
-    // /// A `BTreeSet` of glob patterns as strings. Common patterns include:
-    // /// - `"pyproject.toml"` - The package's manifest file
-    // pub fn input_globs(&self) -> BTreeSet<String> {
-    //     let mut input_globs = BTreeSet::new();
+    /// Returns the set of globs that match files that influence the metadata of
+    /// this package.
+    ///
+    /// This includes the package's own `pyproject.toml` file. These globs
+    /// can be used for incremental builds to determine when metadata might
+    /// have changed.
+    ///
+    /// # Returns
+    ///
+    /// A `BTreeSet` of glob patterns as strings. Common patterns include:
+    /// - `"pyproject.toml"` - The package's manifest file
+    pub fn input_globs(&self) -> BTreeSet<String> {
+        let mut input_globs = BTreeSet::new();
 
-    //     let Some(_) = self.pyproject_manifest.get() else {
-    //         return input_globs;
-    //     };
+        let Some(_) = self.pyproject_manifest.get() else {
+            return input_globs;
+        };
 
-    //     // Add the pyproject.toml manifest file itself.
-    //     input_globs.insert(String::from("pyproject.toml"));
+        // Add the pyproject.toml manifest file itself.
+        input_globs.insert(String::from("pyproject.toml"));
 
-    //     input_globs
-    // }
+        input_globs
+    }
 }
 
 impl MetadataProvider for PyprojectMetadataProvider {
@@ -323,24 +321,24 @@ requires = ["setuptools", "wheel"]
         assert_eq!(provider.description().unwrap(), None);
     }
 
-    //     #[test]
-    //     fn test_input_globs() {
-    //         let pyproject_toml_content = r#"
-    // [project]
-    // name = "test-package"
-    // version = "1.0.0"
-    // "#;
+    #[test]
+    fn test_input_globs() {
+        let pyproject_toml_content = r#"
+    [project]
+    name = "test-package"
+    version = "1.0.0"
+    "#;
 
-    //         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-    //         let mut provider = create_metadata_provider(temp_dir.path());
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
 
-    //         // Force loading of manifest
-    //         let _ = provider.name().unwrap();
+        // Force loading of manifest
+        let _ = provider.name().unwrap();
 
-    //         let globs = provider.input_globs();
-    //         assert_eq!(globs.len(), 1);
-    //         assert!(globs.contains("pyproject.toml"));
-    //     }
+        let globs = provider.input_globs();
+        assert_eq!(globs.len(), 1);
+        assert!(globs.contains("pyproject.toml"));
+    }
 
     #[test]
     fn test_ignore_pyproject_manifest_flag() {

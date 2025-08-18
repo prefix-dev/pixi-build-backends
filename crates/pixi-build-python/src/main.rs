@@ -164,6 +164,11 @@ impl GenerateRecipe for PythonGenerator {
             ..Script::default()
         };
 
+        // Add the metadata input globs from the MetadataProvider
+        generated_recipe
+            .metadata_input_globs
+            .extend(pyproject_metadata_provider.input_globs());
+
         Ok(generated_recipe)
     }
 

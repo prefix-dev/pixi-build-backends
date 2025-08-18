@@ -1,18 +1,12 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-};
-
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
+use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
-    compilers::add_compilers_to_requirements,
+    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
@@ -20,6 +14,13 @@ use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
 use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
+use std::collections::HashSet;
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -54,6 +55,7 @@ impl GenerateRecipe for PythonGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
+        variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
@@ -106,11 +108,12 @@ impl GenerateRecipe for PythonGenerator {
         // Get the list of compilers from config, defaulting to no compilers for pure
         // Python packages and add them to the build requirements.
         let compilers = config.compilers.clone().unwrap_or_default();
-        add_compilers_to_requirements(
+        add_compilers_and_stdlib_to_requirements(
             &compilers,
             &mut requirements.build,
             &resolved_requirements.build,
             &host_platform,
+            variants,
         );
 
         let build_platform = Platform::current();
@@ -312,6 +315,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -353,6 +357,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -392,6 +397,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -429,6 +435,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -492,6 +499,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -534,6 +542,7 @@ mod tests {
             PathBuf::from("."),
             Platform::Linux64,
             None,
+            &std::collections::HashSet::<pixi_build_backend::variants::NormalizedKey>::new(),
         )?)
     }
 

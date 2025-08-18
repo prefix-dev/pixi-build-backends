@@ -1,6 +1,8 @@
 use pixi_build_types as pbt;
 use rattler_conda_types::VersionSpec;
 
+pub use rattler_build::NormalizedKey;
+
 /// Returns true if the specified [`pbt::PackageSpecV1`] is a valid variant
 /// spec.
 ///

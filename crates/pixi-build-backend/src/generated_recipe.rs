@@ -4,9 +4,10 @@ use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{Platform, Version};
 use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
 use serde::de::DeserializeOwned;
-use std::convert::Infallible;
+use std::collections::HashSet;
 use std::{
     collections::{BTreeMap, BTreeSet},
+    convert::Infallible,
     fmt::Debug,
     path::{Path, PathBuf},
 };
@@ -35,20 +36,28 @@ pub trait GenerateRecipe {
     type Config: BackendConfig;
 
     /// Generates an [`IntermediateRecipe`] from a [`ProjectModelV1`].
+    ///
+    /// # Parameters
+    ///
+    /// * `model` - The project model to convert into a recipe
+    /// * `config` - Backend-specific configuration options  
+    /// * `manifest_path` - Path to the project manifest file
+    /// * `host_platform` - The host platform will be removed in the future.
+    ///   Right now it is used to determine if certain dependencies are present
+    ///   for the host platform. Instead, we should rely on recipe selectors and
+    ///   offload all the evaluation logic to the rattler-build.
+    /// * `python_params` - Used only by python backend right now and may
+    ///   be removed when profiles will be implemented.
+    /// * `variants` - The variant names that are available to the recipe. This might
+    ///   influence how the recipe is generated.
     fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
         manifest_path: PathBuf,
-        // The host_platform will be removed in the future.
-        // Right now it is used to determine if certain dependencies are present
-        // for the host platform.
-        // Instead, we should rely on recipe selectors and offload all the
-        // evaluation logic to the rattler-build.
         host_platform: Platform,
-        // Note: It is used only by python backend right now and may
-        // be removed when profiles will be implemented.
         python_params: Option<PythonParams>,
+        variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files

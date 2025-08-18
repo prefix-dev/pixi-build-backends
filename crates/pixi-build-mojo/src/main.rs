@@ -1,24 +1,24 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-    sync::Arc,
-};
-
 use build_script::BuildScriptContext;
 use config::{MojoBackendConfig, clean_project_name};
 use miette::{Error, IntoDiagnostic};
 use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
-    compilers::add_compilers_to_requirements,
+    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use std::collections::HashSet;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
@@ -33,6 +33,7 @@ impl GenerateRecipe for MojoGenerator {
         manifest_root: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
+        variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
@@ -89,11 +90,12 @@ impl GenerateRecipe for MojoGenerator {
             compilers.swap_remove(idx);
         }
 
-        add_compilers_to_requirements(
+        add_compilers_and_stdlib_to_requirements(
             &compilers,
             &mut requirements.build,
             &resolved_requirements.build,
             &host_platform,
+            variants,
         );
 
         let build_script = BuildScriptContext {
@@ -216,6 +218,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -261,6 +264,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -298,6 +302,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -341,6 +346,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -386,6 +392,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -427,6 +434,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -504,6 +512,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -568,6 +577,7 @@ mod tests {
                 temp.path().to_path_buf(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 

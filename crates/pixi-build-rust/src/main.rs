@@ -2,19 +2,14 @@ mod build_script;
 mod config;
 mod metadata;
 
-use std::{
-    collections::{BTreeSet, HashMap},
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-
 use build_script::BuildScriptContext;
 use config::RustBackendConfig;
 use metadata::CargoMetadataProvider;
 use miette::IntoDiagnostic;
+use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
-    compilers::add_compilers_to_requirements,
+    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
@@ -23,6 +18,12 @@ use rattler_conda_types::Platform;
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{ConditionalRequirements, Item, Script},
+};
+use std::collections::HashSet;
+use std::{
+    collections::{BTreeSet, HashMap},
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 
 #[derive(Default, Clone)]
@@ -38,6 +39,7 @@ impl GenerateRecipe for RustGenerator {
         manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
+        variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.
@@ -69,11 +71,12 @@ impl GenerateRecipe for RustGenerator {
             .unwrap_or_else(|| vec!["rust".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_to_requirements(
+        add_compilers_and_stdlib_to_requirements(
             &compilers,
             &mut requirements.build,
             &resolved_requirements.build,
             &host_platform,
+            variants,
         );
 
         let has_openssl = resolved_requirements.contains(&"openssl".parse().into_diagnostic()?);
@@ -253,6 +256,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -294,6 +298,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -334,6 +339,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -377,6 +383,7 @@ mod tests {
                     PathBuf::from("."),
                     Platform::Linux64,
                     None,
+                    &HashSet::new(),
                 )
                 .expect("Failed to generate recipe")
         });
@@ -409,6 +416,7 @@ mod tests {
                 std::env::current_dir().unwrap(),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -504,6 +512,7 @@ mod tests {
             PathBuf::from("/non/existent/path"),
             Platform::Linux64,
             None,
+            &std::collections::HashSet::new(),
         );
 
         // Should fail when trying to read Cargo.toml from non-existent path
@@ -530,6 +539,7 @@ mod tests {
             std::env::current_dir().unwrap(),
             Platform::Linux64,
             None,
+            &std::collections::HashSet::new(),
         );
 
         assert!(result.is_err());
@@ -566,6 +576,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -630,6 +641,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 

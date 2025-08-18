@@ -20,7 +20,10 @@ mod imp {
         BackendConfig, DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
     };
     use serde::{Deserialize, Serialize};
-    use std::path::{Path, PathBuf};
+    use std::{
+        collections::HashSet,
+        path::{Path, PathBuf},
+    };
 
     #[derive(Debug, Default, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "kebab-case")]
@@ -59,6 +62,7 @@ mod imp {
             _manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
+            _variants: &HashSet<pixi_build_backend::variants::NormalizedKey>,
         ) -> miette::Result<GeneratedRecipe> {
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()

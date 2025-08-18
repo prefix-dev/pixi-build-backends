@@ -264,32 +264,6 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct the intermediate recipe
-        let generated_recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            host_platform,
-            Some(PythonParams { editable: false }),
-        )?;
-
-        // Convert the recipe to source code.
-        // TODO(baszalmstra): In the future it would be great if we could just
-        // immediately use the intermediate recipe for some of this rattler-build
-        // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
-        let named_source = Source {
-            name: self.manifest_rel_path.display().to_string(),
-            code: Arc::from(
-                generated_recipe
-                    .recipe
-                    .to_yaml_pretty()
-                    .into_diagnostic()?
-                    .as_str(),
-            ),
-            path: recipe_path.clone(),
-        };
-
         // Construct a `VariantConfig` based on the input parameters.
         //
         // rattler-build recipes would also load variant.yaml (or
@@ -313,10 +287,32 @@ where
             .collect();
         let mut variants = recipe_variants;
         variants.append(&mut param_variant_configuration);
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
+
+        // Construct the intermediate recipe
+        let generated_recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &config,
+            self.source_dir.clone(),
+            host_platform,
+            Some(PythonParams { editable: false }),
+            &variants.keys().cloned().collect(),
+        )?;
+
+        // Convert the recipe to source code.
+        // TODO(baszalmstra): In the future it would be great if we could just
+        // immediately use the intermediate recipe for some of this rattler-build
+        // functions.
+        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let named_source = Source {
+            name: self.manifest_rel_path.display().to_string(),
+            code: Arc::from(
+                generated_recipe
+                    .recipe
+                    .to_yaml_pretty()
+                    .into_diagnostic()?
+                    .as_str(),
+            ),
+            path: recipe_path.clone(),
         };
 
         // Determine the different outputs that are supported by the recipe by expanding
@@ -337,6 +333,11 @@ where
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -573,6 +574,20 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
+        // Construct a `VariantConfig` based on the input parameters.
+        //
+        // rattler-build recipes would also load variant.yaml (or
+        // conda-build-config.yaml) files here, but we only respect the variant
+        // configuration passed in.
+        //
+        // Determine the variant configuration to use. This is a combination of defaults
+        // from the generator and the user supplied parameters. The parameters
+        // from the user take precedence over the default variants.
+        let recipe_variants = self.generate_recipe.default_variants(host_platform);
+        let param_variants =
+            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
+        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
+
         // Construct the intermediate recipe
         let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
@@ -582,6 +597,7 @@ where
             Some(PythonParams {
                 editable: params.editable,
             }),
+            &variants.keys().cloned().collect(),
         )?;
 
         // Convert the recipe to source code.
@@ -599,25 +615,6 @@ where
                     .as_str(),
             ),
             path: recipe_path.clone(),
-        };
-
-        // Construct a `VariantConfig` based on the input parameters.
-        //
-        // rattler-build recipes would also load variant.yaml (or
-        // conda-build-config.yaml) files here, but we only respect the variant
-        // configuration passed in.
-        //
-        // Determine the variant configuration to use. This is a combination of defaults
-        // from the generator and the user supplied parameters. The parameters
-        // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(host_platform);
-        let param_variants =
-            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
-        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
         };
 
         // Determine the different outputs that are supported by the recipe by expanding
@@ -638,6 +635,11 @@ where
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
         let mut discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -829,26 +831,6 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct the intermediate recipe
-        let recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            params.host_platform,
-            Some(PythonParams { editable: false }),
-        )?;
-
-        // Convert the recipe to source code.
-        // TODO(baszalmstra): In the future it would be great if we could just
-        // immediately use the intermediate recipe for some of this rattler-build
-        // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
-        let named_source = Source {
-            name: self.manifest_rel_path.display().to_string(),
-            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
-            path: recipe_path.clone(),
-        };
-
         // Construct a `VariantConfig` based on the input parameters.
         //
         // rattler-build recipes would also load variant.yaml (or
@@ -862,10 +844,26 @@ where
         let param_variants =
             convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
         let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
+
+        // Construct the intermediate recipe
+        let recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &config,
+            self.source_dir.clone(),
+            params.host_platform,
+            Some(PythonParams { editable: false }),
+            &variants.keys().cloned().collect(),
+        )?;
+
+        // Convert the recipe to source code.
+        // TODO(baszalmstra): In the future it would be great if we could just
+        // immediately use the intermediate recipe for some of this rattler-build
+        // functions.
+        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let named_source = Source {
+            name: self.manifest_rel_path.display().to_string(),
+            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
+            path: recipe_path.clone(),
         };
 
         // Determine the different outputs that are supported by the recipe by expanding
@@ -886,6 +884,11 @@ where
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -1073,6 +1076,16 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
+        // Construct the variants based on the input parameters. We only
+        // have a single variant here so we can just use the variant from the
+        // parameters.
+        let variants: BTreeMap<_, _> = params
+            .output
+            .variant
+            .iter()
+            .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+            .collect();
+
         // Construct the intermediate recipe
         let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
@@ -1082,6 +1095,7 @@ where
             Some(PythonParams {
                 editable: params.editable.unwrap_or_default(),
             }),
+            &variants.keys().cloned().collect(),
         )?;
 
         // Convert the recipe to source code.
@@ -1093,20 +1107,6 @@ where
             name: self.manifest_rel_path.display().to_string(),
             code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
             path: recipe_path.clone(),
-        };
-
-        // Construct a `VariantConfig` based on the input parameters. We only
-        // have a single variant here so we can just use the variant from the
-        // parameters.
-        let variant_config = VariantConfig {
-            variants: params
-                .output
-                .variant
-                .iter()
-                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
-                .collect(),
-            pin_run_as_build: None,
-            zip_keys: None,
         };
 
         // Determine the different outputs that are supported by the recipe.
@@ -1121,6 +1121,11 @@ where
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
+        let variant_config = VariantConfig {
+            variants,
+            pin_run_as_build: None,
+            zip_keys: None,
+        };
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),

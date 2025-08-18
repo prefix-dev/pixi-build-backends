@@ -16,8 +16,7 @@ requirements:
     - cmake
     - ninja
   host: []
-  run:
-    - boltons
+  run: []
   run_constraints: []
 tests: []
 about:

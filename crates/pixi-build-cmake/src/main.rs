@@ -1,23 +1,23 @@
 mod build_script;
 mod config;
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-    sync::Arc,
-};
-
 use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    compilers::add_compilers_to_requirements,
+    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use std::collections::HashSet;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
@@ -32,6 +32,7 @@ impl GenerateRecipe for CMakeGenerator {
         manifest_root: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
+        variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
@@ -56,11 +57,12 @@ impl GenerateRecipe for CMakeGenerator {
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_to_requirements(
+        add_compilers_and_stdlib_to_requirements(
             &compilers,
             &mut requirements.build,
             &resolved_requirements.build,
             &host_platform,
+            variants,
         );
 
         // add necessary build tools
@@ -203,6 +205,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -242,6 +245,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -258,13 +262,6 @@ mod tests {
             "version": "0.1.0",
             "targets": {
                 "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    },
                     "hostDependencies": {
                         "python": {
                             "binary": {
@@ -283,6 +280,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -312,13 +310,6 @@ mod tests {
             "version": "0.1.0",
             "targets": {
                 "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    },
                     "buildDependencies": {
                         "gxx": {
                             "binary": {
@@ -337,6 +328,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -397,17 +389,6 @@ mod tests {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
-            "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    }
-                },
-            }
         });
 
         let generated_recipe = CMakeGenerator::default()
@@ -420,6 +401,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -460,17 +442,6 @@ mod tests {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
-            "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    }
-                },
-            }
         });
 
         let generated_recipe = CMakeGenerator::default()
@@ -483,6 +454,7 @@ mod tests {
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
+                &HashSet::default(),
             )
             .expect("Failed to generate recipe");
 
@@ -505,6 +477,45 @@ mod tests {
         assert_eq!(
             compiler_templates[0], "${{ compiler('cxx') }}",
             "Default compiler should be cxx"
+        );
+    }
+
+    #[test]
+    fn test_stdlib_is_added() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+        });
+
+        let generated_recipe = CMakeGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &CMakeBackendConfig {
+                    compilers: None,
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that we have exactly the expected compilers and build tools
+        let build_reqs = &generated_recipe.recipe.requirements.build;
+        let stdlib_templates: Vec<String> = build_reqs
+            .iter()
+            .filter_map(|item| match item {
+                Item::Value(Value::Template(s)) if s.contains("stdlib") => Some(s.clone()),
+                _ => None,
+            })
+            .collect();
+
+        // Should have exactly one compiler: cxx
+        assert_eq!(stdlib_templates.len(), 1, "Should have exactly one stdlib");
+        assert_eq!(
+            stdlib_templates[0], "${{ stdlib('c') }}",
+            "Default stdlib should be c"
         );
     }
 }

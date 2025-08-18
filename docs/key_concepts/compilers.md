@@ -31,37 +31,6 @@ Using the conda-forge infrastructure, this will result in the following packages
 
 Compiler selection works through a build variant system. Build variants allow you to specify different versions or types of compilers for your builds, creating a build matrix that can target multiple compiler configurations.
 
-#### How Variants Work
-
-When you specify `compilers = ["c"]` in your pixi-build configuration, the system doesn't directly install a package named "c". Instead, it uses a **variant system** to determine the exact compiler package for your platform.
-
-Here's how it works step by step:
-
-1. **You specify a compiler**: `compilers = ["c"]`
-
-2. **The system builds a package specification** using variants with the following pattern:
-   ```
-   {compiler_type}_{host_platform} {compiler_version}
-   ```
-   The variant names follow the pattern `{language}_compiler` and `{language}_compiler_version`:
-
-3. **For the "c" compiler, this becomes**:
-   ```
-   {c_compiler}_{host_platform} {c_compiler_version}
-   ```
-   - `c_compiler` - determines the compiler type (constructed as "c" + "_compiler")
-   - `host_platform` - your target platform 
-   - `c_compiler_version` - the compiler version (constructed as "c" + "_compiler_version")
-
-4. **The variants resolve to actual values**:
-   - `c_compiler` → `gcc` (on Linux), `clang` (on macOS), `vs2019` (on Windows)
-   - `host_platform` → `linux-64`, `osx-64`, `win-64`, etc.
-   - `c_compiler_version` → `11.4`, `14.0`, `19.29`, etc.
-
-5. **Final result**: A concrete package like `gcc_linux-64 11.4`
-
-This variant system allows pixi-build to use sensible defaults while giving you precise control to override specific compilers or versions when needed.
-
 ### Overriding Compilers in Pixi Workspaces
 
 Pixi workspaces provide powerful mechanisms to override compiler variants through build variant configuration. 
@@ -94,6 +63,48 @@ cxx_compiler = ["vs"]
 c_compiler_version = ["2022"]
 cxx_compiler_version = ["2022"]
 ```
+
+#### How Compilers Are Selected
+
+When you specify `compilers = ["c"]` in your pixi-build configuration, the system doesn't directly install a package named "c". Instead, it uses a **variant system** to determine the exact compiler package for your platform.
+
+1. **Determine which compilers to add**
+
+   If you specified the compiler in the configuration, it will use that.
+   If the configuration has this entry `compilers = ["c"]`, the C compiler will be requested.
+   If there's no compiler configuration, the [default](./compilers.md#backend-specific-defaults) of the backend will be used.
+
+2. **For each compiler, determine the variants to take into account**
+   
+   The variant names follow the pattern `{language}_compiler` and `{language}_compiler_version`.
+   In our example that would lead to `c_compiler` and `c_compiler_version`.
+
+3. **For each variant combination, create an output**
+
+   Each variant can have multiple values and each combination of these values are outputs that can be selected.
+   For example with the following example multiple `gcc` versions could be used to build this package.
+
+   ```toml
+   [workspace.build-variants]
+   c_compiler = ["gcc"]
+   c_compiler_version = ["11.4", "14.0"]
+   ```
+
+   If `{language}_compiler_version` is not set, then there's no constraint on the compiler version.
+
+   If `{language}_compiler` is not set, the build-backends set default values for certain languages:
+   
+   - c: `gcc` on Linux, `clang` on osx and `vs2017` on Windows
+   - cxx: `gxx` on Linux, `clangxx` on osx and `vs2017` on Windows
+   - fortran: `gfortran` on Linux, `gfortran` on osx and `vs2017` on Windows
+   - rust: `rust`
+
+4. **Request a package for each output**
+
+   In our example we would create two outputs.
+   If we build on linux-64, one output would request `gcc_linux-64 11.4` and one would request `gcc_linux-64 14.0`
+   
+
 
 ## Available Compilers
 

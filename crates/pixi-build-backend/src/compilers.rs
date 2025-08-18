@@ -142,8 +142,7 @@ pub fn add_stdlib_to_requirements(
     for stdlib in compilers
         .iter()
         .map(Deref::deref)
-        .map(stdlib_for_language)
-        .flatten()
+        .filter_map(stdlib_for_language)
         .unique()
     {
         let stdlib_key = format!("{stdlib}_stdlib");

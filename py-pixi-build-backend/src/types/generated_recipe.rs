@@ -1,9 +1,10 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
 };
+use pixi_build_backend::variants::NormalizedKey;
 use pyo3::{
     Py, PyErr, PyObject, PyResult, Python,
     exceptions::PyValueError,
@@ -127,6 +128,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         manifest_path: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         python_params: Option<pixi_build_backend::generated_recipe::PythonParams>,
+        _variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<pixi_build_backend::generated_recipe::GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::with_gil(|py| {
             let manifest_str = manifest_path.to_string_lossy().to_string();

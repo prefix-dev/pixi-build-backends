@@ -42,8 +42,9 @@ Check out our [tutorial series](https://pixi.sh/latest/build/getting_started/) t
 
 ## 📚 Key Concepts
 
-### [Compilers](./key_concepts/compilers.md)
-Learn how pixi-build integrates with conda-forge's compiler infrastructure to provide cross-platform, ABI-compatible builds. Covers compiler configuration, platform-specific behavior, and available compiler options for supported backends.
+-  [Compilers](./key_concepts/compilers.md)
+
+    Learn how pixi-build integrates with conda-forge's compiler infrastructure to provide cross-platform, ABI-compatible builds. Covers compiler configuration, platform-specific behavior, and available compiler options for supported backends.
 
 ## 🔗 Useful Links
 

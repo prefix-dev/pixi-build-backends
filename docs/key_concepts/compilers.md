@@ -127,7 +127,7 @@ The table below lists the core compilers, specialized compilers, and some backen
 
 | Compiler | Description | Platforms |
 |----------|-------------|-----------|
-| `cuda` | NVIDIA CUDA compiler | Linux, Windows (limited macOS) |
+| `cuda` | NVIDIA CUDA compiler | Linux, Windows, (limited macOS) |
 
 ### Backend-Specific Compilers
 

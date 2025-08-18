@@ -21,7 +21,7 @@ When you specify `compilers = ["c", "cxx"]` in your `pixi-build` configuration, 
 If you are cross-compiling the target platform will be the platform you are compiling for.
 Otherwise, it the target platform is your current platform.
 
-Using the conda-forge infrastructure, this will result in the following packages to be selected by default.
+If your target platform is `amd64`, this will result in the following packages to be selected by default.
 
 | Compiler | Linux | macOS | Windows |
 |----------|-------|--------|---------|

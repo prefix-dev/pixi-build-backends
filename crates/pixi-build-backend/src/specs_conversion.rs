@@ -3,8 +3,16 @@ use std::sync::Arc;
 use ordermap::OrderMap;
 use pixi_build_types::{
     BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1,
+    procedures::conda_build_v1::{
+        CondaBuildV1Dependency, CondaBuildV1DependencySource, CondaBuildV1Prefix,
+        CondaBuildV1RunExports,
+    },
 };
-use rattler_conda_types::{Channel, MatchSpec, PackageName};
+use rattler_build::render::resolved_dependencies::{
+    DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
+    RunExportDependency, SourceDependency,
+};
+use rattler_conda_types::{Channel, MatchSpec, PackageName, package::RunExportsJson};
 use recipe_stage0::{
     matchspec::{PackageDependency, SourceMatchSpec},
     recipe::{Conditional, ConditionalList, ConditionalRequirements, Item, ListOrItem},
@@ -238,6 +246,103 @@ pub fn target_to_package_spec(target: &TargetV1) -> PackageSpecDependencies<Pack
     }
 
     bin_reqs
+}
+
+pub(crate) fn from_build_v1_dependency_to_dependency_info(
+    spec: CondaBuildV1Dependency,
+) -> DependencyInfo {
+    match spec.source {
+        Some(CondaBuildV1DependencySource::RunExport(run_export)) => {
+            DependencyInfo::RunExport(RunExportDependency {
+                spec: spec.spec,
+                from: run_export.from,
+                source_package: run_export.package_name.as_normalized().to_string(),
+            })
+        }
+        None => DependencyInfo::Source(SourceDependency { spec: spec.spec }),
+    }
+}
+
+pub(crate) fn from_build_v1_run_exports_to_run_exports(
+    run_exports: CondaBuildV1RunExports,
+) -> RunExportsJson {
+    RunExportsJson {
+        weak: run_exports
+            .weak
+            .into_iter()
+            .map(|dep| dep.spec.to_string())
+            .collect(),
+        strong: run_exports
+            .strong
+            .into_iter()
+            .map(|dep| dep.spec.to_string())
+            .collect(),
+        noarch: run_exports
+            .noarch
+            .into_iter()
+            .map(|dep| dep.spec.to_string())
+            .collect(),
+        strong_constrains: run_exports
+            .strong_constrains
+            .into_iter()
+            .map(|dep| dep.spec.to_string())
+            .collect(),
+        weak_constrains: run_exports
+            .weak_constrains
+            .into_iter()
+            .map(|dep| dep.spec.to_string())
+            .collect(),
+    }
+}
+
+pub fn from_build_v1_args_to_finalized_dependencies(
+    build_prefix: Option<CondaBuildV1Prefix>,
+    host_prefix: Option<CondaBuildV1Prefix>,
+    run_dependencies: Option<Vec<CondaBuildV1Dependency>>,
+    run_constraints: Option<Vec<CondaBuildV1Dependency>>,
+    run_exports: Option<CondaBuildV1RunExports>,
+) -> FinalizedDependencies {
+    FinalizedDependencies {
+        build: build_prefix.map(|prefix| ResolvedDependencies {
+            specs: prefix
+                .dependencies
+                .into_iter()
+                .map(from_build_v1_dependency_to_dependency_info)
+                .collect(),
+            resolved: prefix
+                .packages
+                .into_iter()
+                .map(|pkg| pkg.repodata_record)
+                .collect(),
+        }),
+        host: host_prefix.map(|prefix| ResolvedDependencies {
+            specs: prefix
+                .dependencies
+                .into_iter()
+                .map(from_build_v1_dependency_to_dependency_info)
+                .collect(),
+            resolved: prefix
+                .packages
+                .into_iter()
+                .map(|pkg| pkg.repodata_record)
+                .collect(),
+        }),
+        run: FinalizedRunDependencies {
+            depends: run_dependencies
+                .unwrap_or_default()
+                .into_iter()
+                .map(from_build_v1_dependency_to_dependency_info)
+                .collect(),
+            constraints: run_constraints
+                .unwrap_or_default()
+                .into_iter()
+                .map(from_build_v1_dependency_to_dependency_info)
+                .collect(),
+            run_exports: run_exports
+                .map(from_build_v1_run_exports_to_run_exports)
+                .unwrap_or_default(),
+        },
+    }
 }
 
 #[cfg(test)]

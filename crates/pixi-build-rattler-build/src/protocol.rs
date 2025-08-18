@@ -5,9 +5,11 @@ use std::{
     sync::Arc,
 };
 
+use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
 use fs_err::tokio as tokio_fs;
 use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
+use pixi_build_backend::specs_conversion::from_build_v1_args_to_finalized_dependencies;
 use pixi_build_backend::{
     dependencies::{convert_binary_dependencies, convert_dependencies},
     intermediate_backend::{conda_build_v1_directories, find_matching_output},
@@ -44,9 +46,7 @@ use rattler_build::{
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::{
-        DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
-    },
+    render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
     variant_config::{ParseErrors, VariantConfig},
@@ -57,8 +57,6 @@ use rattler_conda_types::{
 };
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
-
-use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
 pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
@@ -704,22 +702,13 @@ impl Protocol for RattlerBuildBackend {
                 debug: Debug::new(false),
                 exclude_newer: None,
             },
-            // TODO: We should pass these values to the build backend from pixi
-            finalized_dependencies: Some(FinalizedDependencies {
-                build: Some(ResolvedDependencies {
-                    specs: vec![],
-                    resolved: vec![],
-                }),
-                host: Some(ResolvedDependencies {
-                    specs: vec![],
-                    resolved: vec![],
-                }),
-                run: FinalizedRunDependencies {
-                    depends: vec![],
-                    constraints: vec![],
-                    run_exports: Default::default(),
-                },
-            }),
+            finalized_dependencies: Some(from_build_v1_args_to_finalized_dependencies(
+                params.build_prefix,
+                params.host_prefix,
+                params.run_dependencies,
+                params.run_constraints,
+                params.run_exports,
+            )),
             finalized_sources: None,
             finalized_cache_dependencies: None,
             finalized_cache_sources: None,

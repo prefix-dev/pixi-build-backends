@@ -12,7 +12,7 @@ use std::{
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
+// use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,

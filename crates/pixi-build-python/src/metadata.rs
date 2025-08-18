@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr};
 
 use miette::Diagnostic;
 use once_cell::unsync::OnceCell;
@@ -9,11 +9,11 @@ use rattler_conda_types::{ParseVersionError, Version};
 #[derive(Debug, thiserror::Error, Diagnostic)]
 pub enum MetadataError {
     #[error("failed to parse pyproject.toml, {0}")]
-    PyProjectTomlError(#[from] toml_edit::de::Error),
+    PyProjectToml(#[from] toml_edit::de::Error),
     #[error("failed to parse version from pyproject.toml, {0}")]
-    ParseVersionError(ParseVersionError),
+    ParseVersion(ParseVersionError),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     // #[error("missing field in pyproject.toml: {0}")]
     // MissingField(String),
 }

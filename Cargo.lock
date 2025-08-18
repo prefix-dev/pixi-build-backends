@@ -4010,10 +4010,12 @@ dependencies = [
 name = "pixi-build-python"
 version = "0.3.2"
 dependencies = [
+ "fs-err",
  "indexmap 2.10.0",
  "insta",
  "miette",
  "minijinja",
+ "once_cell",
  "pixi-build-backend",
  "pixi_build_types",
  "pyproject-toml",
@@ -4021,6 +4023,8 @@ dependencies = [
  "recipe-stage0",
  "serde",
  "serde_json",
+ "tempfile",
+ "thiserror 2.0.12",
  "tokio",
  "toml_edit 0.22.27",
 ]

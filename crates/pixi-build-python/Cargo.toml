@@ -12,6 +12,9 @@ serde = { workspace = true, features = ["derive"] }
 toml_edit = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 pyproject-toml = { workspace = true }
+fs-err = { workspace = true }
+once_cell = { workspace = true }
+thiserror = { workspace = true }
 
 pixi-build-backend = { workspace = true }
 
@@ -23,3 +26,4 @@ recipe-stage0 = { workspace = true }
 insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
 toml_edit = { workspace = true }
 serde_json = { workspace = true }
+tempfile = { workspace = true }

@@ -1,5 +1,6 @@
 mod build_script;
 mod config;
+mod metadata;
 
 use std::{
     collections::BTreeSet,
@@ -20,6 +21,8 @@ use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
 use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
+
+use crate::metadata::PyprojectMetadataProvider;
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -57,8 +60,15 @@ impl GenerateRecipe for PythonGenerator {
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
+        let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
+            &manifest_root,
+            config
+                .ignore_pyproject_manifest
+                .is_some_and(|ignore| ignore),
+        );
+
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+            GeneratedRecipe::from_model(model.clone(), &mut pyproject_metadata_provider)
                 .into_diagnostic()?;
 
         let requirements = &mut generated_recipe.recipe.requirements;

@@ -21,6 +21,9 @@ pub struct PythonBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
+    /// Ignore the pyproject.toml manifest and rely only on the project model.
+    #[serde(default)]
+    pub ignore_pyproject_manifest: Option<bool>,
 }
 
 impl PythonBackendConfig {
@@ -59,6 +62,9 @@ impl BackendConfig for PythonBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
+            ignore_pyproject_manifest: target_config
+                .ignore_pyproject_manifest
+                .or(self.ignore_pyproject_manifest),
         })
     }
 }
@@ -87,6 +93,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            ignore_pyproject_manifest: Some(true),
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -98,6 +105,7 @@ mod tests {
             env: target_env,
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
+            ignore_pyproject_manifest: None,
         };
 
         let merged = base_config
@@ -123,6 +131,9 @@ mod tests {
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
+
+        // ignore_pyproject_manifest should use target value
+        assert_eq!(merged.ignore_pyproject_manifest, None);
     }
 
     #[test]
@@ -135,6 +146,7 @@ mod tests {
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            ignore_pyproject_manifest: Some(true),
         };
 
         let empty_target_config = PythonBackendConfig::default();
@@ -148,6 +160,7 @@ mod tests {
         assert_eq!(merged.env.get("BASE_VAR"), Some(&"base_value".to_string()));
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
+        assert_eq!(merged.ignore_pyproject_manifest, Some(true));
     }
 
     #[test]

@@ -51,7 +51,7 @@ def extract_name_and_version_from_tag(tag):
     )
 
 
-def generate_matrix():
+def generate_matrix(filter_package_name=None):
     # Run cargo metadata
     result = subprocess.run(
         ["cargo", "metadata", "--format-version=1", "--no-deps"],
@@ -84,6 +84,16 @@ def generate_matrix():
             "version": cargo_toml["package"]["version"],
             "type": "python"
         })
+    
+    # Filter packages by name if specified
+    if filter_package_name:
+        available_packages = [pkg["name"] for pkg in all_packages]
+        filtered_packages = [pkg for pkg in all_packages if pkg["name"] == filter_package_name]
+        if not filtered_packages:
+            raise ValueError(f"Package '{filter_package_name}' not found. Available packages: {', '.join(available_packages)}")
+        all_packages = filtered_packages
+        print(f"Filtering to package: {filter_package_name}", file=sys.stderr)
+
     # this is to overcome the issue of matrix generation from github actions side
     # https://github.com/orgs/community/discussions/67591
     targets = [
@@ -204,4 +214,10 @@ def generate_matrix():
 
 
 if __name__ == "__main__":
-    generate_matrix()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Generate build matrix for packages")
+    parser.add_argument("--package", help="Filter to specific package name")
+    args = parser.parse_args()
+    
+    generate_matrix(args.package)

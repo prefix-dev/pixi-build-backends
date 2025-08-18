@@ -17,7 +17,6 @@ doctest = "cargo test --doc"
 test = [{ task = "nextest" }, { task = "doctest" }]
 generate-matrix = "python scripts/generate-matrix.py"
 
-
 install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }
 install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build-cmake  --locked --force" }
 install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build-rattler-build --locked --force" }
@@ -42,9 +41,8 @@ libzlib = ">=1.3.1,<2"
 liblzma = ">=5.8.1,<6"
 cargo-nextest = ">=0.9.96,<0.10"
 
-[activation]
-env.CARGO_TARGET_DIR = "target/pixi"
-
+[activation.env]
+CARGO_TARGET_DIR = "target/pixi"
 
 [target.linux-64.dependencies]
 clang = ">=20.1.5,<20.2"

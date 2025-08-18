@@ -25,6 +25,9 @@ rust = "*"
 [package.host-dependencies]
 maturin = "*"
 
+[package.run-dependencies]
+typing-extensions = "*"
+
 [activation.env]
 PIP_REQUIRE_VIRTUALENV = "false"
 

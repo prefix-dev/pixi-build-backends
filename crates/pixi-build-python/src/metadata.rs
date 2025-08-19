@@ -3,6 +3,7 @@ use std::{collections::BTreeSet, path::PathBuf, str::FromStr};
 use miette::Diagnostic;
 use once_cell::unsync::OnceCell;
 use pixi_build_backend::generated_recipe::MetadataProvider;
+use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{ParseVersionError, Version};
 
@@ -229,8 +230,11 @@ impl MetadataProvider for PyprojectMetadataProvider {
 mod tests {
     use std::fs;
 
-    use pixi_build_backend::generated_recipe::MetadataProvider;
+    use pixi_build_backend::generated_recipe::{GenerateRecipe, MetadataProvider};
+    use rattler_conda_types::Platform;
     use tempfile::TempDir;
+
+    use crate::{PythonGenerator, config::PythonBackendConfig, project_fixture};
 
     use super::*;
 
@@ -466,5 +470,56 @@ description = "Test description"
 
         assert_eq!(description, summary);
         assert_eq!(summary, Some("Test description".to_string()));
+    }
+
+    #[test]
+    fn test_generated_recipe_contains_pyproject_values() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "99.0.0"
+description = "A test package"
+license = {text = "MIT"}
+
+[project.urls]
+Homepage = "https://example.com"
+Repository = "https://github.com/example/test-package"
+Documentation = "https://docs.example.com"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        // let mut provider = create_metadata_provider(temp_dir.path());
+
+        // Now create project model and generate a recipe from it
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = PythonGenerator::default()
+            .generate_recipe(
+                &project_model,
+                // when using the default here we should read values from the pyproject.toml
+                &PythonBackendConfig::default(),
+                temp_dir.path().to_path_buf(),
+                Platform::Linux64,
+                None,
+            )
+            .expect("Failed to generate recipe");
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
+        ".source[0].path" => "[ ... path ... ]",
+        ".build.script" => "[ ... script ... ]",
+        });
     }
 }

@@ -24,7 +24,9 @@ pub struct RustBackendConfig {
 }
 
 impl RustBackendConfig {
-    /// Creates a new [`RustBackendConfig`] with default values.
+    /// Creates a new [`RustBackendConfig`] with default values and
+    /// `ignore_cargo_manifest` set to `true`.
+    #[cfg(test)]
     pub fn default_with_ignore_cargo_manifest() -> Self {
         Self {
             ignore_cargo_manifest: Some(true),

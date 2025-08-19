@@ -301,7 +301,7 @@ mod tests {
         let generated_recipe = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
-                &PythonBackendConfig::default(),
+                &PythonBackendConfig::default_with_ignore_pyproject_manifest(),
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
@@ -342,7 +342,7 @@ mod tests {
         let generated_recipe = PythonGenerator::default()
             .generate_recipe(
                 &project_model,
-                &PythonBackendConfig::default(),
+                &PythonBackendConfig::default_with_ignore_pyproject_manifest(),
                 PathBuf::from("."),
                 Platform::Linux64,
                 None,
@@ -380,6 +380,7 @@ mod tests {
                 &project_model,
                 &PythonBackendConfig {
                     env: env.clone(),
+                    ignore_pyproject_manifest: Some(true),
                     ..Default::default()
                 },
                 PathBuf::from("."),

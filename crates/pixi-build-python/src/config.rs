@@ -31,6 +31,16 @@ impl PythonBackendConfig {
     pub fn noarch(&self) -> bool {
         self.noarch.is_none_or(identity)
     }
+
+    /// Creates a new [`PythonBackendConfig`] with default values and
+    /// `ignore_pyproject_manifest` set to `true`.
+    #[cfg(test)]
+    pub fn default_with_ignore_pyproject_manifest() -> Self {
+        Self {
+            ignore_pyproject_manifest: Some(true),
+            ..Default::default()
+        }
+    }
 }
 
 impl BackendConfig for PythonBackendConfig {
@@ -105,7 +115,7 @@ mod tests {
             env: target_env,
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
-            ignore_pyproject_manifest: None,
+            ignore_pyproject_manifest: Some(false),
         };
 
         let merged = base_config
@@ -133,7 +143,7 @@ mod tests {
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
 
         // ignore_pyproject_manifest should use target value
-        assert_eq!(merged.ignore_pyproject_manifest, None);
+        assert_eq!(merged.ignore_pyproject_manifest, Some(false));
     }
 
     #[test]

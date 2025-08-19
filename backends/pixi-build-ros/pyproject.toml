@@ -18,7 +18,7 @@ pixi-build-ros = "pixi_build_ros.main:main"
 packages = ["src/pixi_build_ros"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"templates" = "pixi_build_ros/templates"
+"templates" = "site-packages/pixi_build_ros/templates"
 
 [build-system]
 build-backend = "hatchling.build"

@@ -1,10 +1,15 @@
 import os
+import sys
 from itertools import chain
-from pathlib import Path
 from pathlib import Path
 from typing import Any, List
 
 import yaml
+
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib_resources import files
 from catkin_pkg.package import Package as CatkinPackage, parse_package_string
 
 from pixi_build_backend.types.intermediate_recipe import ConditionalRequirements
@@ -74,9 +79,15 @@ def rosdep_to_conda_package_name(dep_name: str, distro: Distro) -> List[str]:
         return [f"ros-{distro.name}-{dep_name.replace('_', '-')}"]
 
     # TODO: Currently hardcoded and not able to override, this should be configurable
-    with open(Path(__file__).parent.parent.parent / "robostack.yaml") as f:
-        # Parse yaml file into dict
-        robostack_data = yaml.safe_load(f)
+    try:
+        # Try to load from package data first (when installed)
+        package_files = files("pixi_build_ros")
+        robostack_file = package_files / "robostack.yaml"
+        robostack_data = yaml.safe_load(robostack_file.read_text())
+    except (FileNotFoundError, ModuleNotFoundError):
+        # Fallback to development path (when running from source)
+        with open(Path(__file__).parent.parent.parent / "robostack.yaml") as f:
+            robostack_data = yaml.safe_load(f)
 
     if dep_name not in robostack_data:
         # If the dependency is not found in robostack.yaml, check the actual distro whether it exists

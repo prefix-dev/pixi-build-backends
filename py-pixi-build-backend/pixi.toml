@@ -55,7 +55,7 @@ ruff = ">=0.12.3,<0.13"
 
 [feature.dev.dependencies]
 # Development tools (IDE support)
-rust-src = "~=1.89.0"
+rust-src = "~=1.87.0"
 
 [tasks]
 build = "maturin develop"

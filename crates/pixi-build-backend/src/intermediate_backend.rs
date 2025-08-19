@@ -38,9 +38,7 @@ use rattler_build::{
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::{
-        DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
-    },
+    render::resolved_dependencies::DependencyInfo,
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
@@ -60,7 +58,9 @@ use crate::{
     },
     generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
-    specs_conversion::from_source_matchspec_into_package_spec,
+    specs_conversion::{
+        from_build_v1_args_to_finalized_dependencies, from_source_matchspec_into_package_spec,
+    },
     tools::{OneOrMultipleOutputs, output_directory},
     utils::TemporaryRenderedRecipe,
 };
@@ -174,11 +174,9 @@ where
     T::Config: Send + Sync + 'static,
 {
     fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        let config = configuration
+        configuration
             .and_then(|config| serde_json::from_value::<T::Config>(config).ok())
-            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()));
-
-        config
+            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()))
     }
 
     async fn initialize(
@@ -1179,34 +1177,13 @@ where
                 debug: Debug::new(false),
                 exclude_newer: None,
             },
-            // TODO: We should pass these values to the build backend from pixi
-            finalized_dependencies: Some(FinalizedDependencies {
-                build: Some(ResolvedDependencies {
-                    specs: vec![],
-                    resolved: params
-                        .build_prefix
-                        .map(|prefix| prefix.packages)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(|pkg| pkg.repodata_record)
-                        .collect(),
-                }),
-                host: Some(ResolvedDependencies {
-                    specs: vec![],
-                    resolved: params
-                        .host_prefix
-                        .map(|prefix| prefix.packages)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(|pkg| pkg.repodata_record)
-                        .collect(),
-                }),
-                run: FinalizedRunDependencies {
-                    depends: vec![],
-                    constraints: vec![],
-                    run_exports: Default::default(),
-                },
-            }),
+            finalized_dependencies: Some(from_build_v1_args_to_finalized_dependencies(
+                params.build_prefix,
+                params.host_prefix,
+                params.run_dependencies,
+                params.run_constraints,
+                params.run_exports,
+            )),
             finalized_sources: None,
             finalized_cache_dependencies: None,
             finalized_cache_sources: None,

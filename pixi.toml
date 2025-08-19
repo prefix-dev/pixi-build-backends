@@ -32,7 +32,7 @@ install-pixi-backends = { depends-on = [
 
 
 [dependencies]
-rust = ">=1.86.0,<1.87"
+rust = ">=1.87.0,<1.88"
 python = ">=3.12.4,<4"
 openssl = ">=3.5.0,<4"
 compilers = "1.9.0.*"

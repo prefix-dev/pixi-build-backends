@@ -3,7 +3,6 @@ use std::{collections::BTreeSet, path::PathBuf, str::FromStr};
 use miette::Diagnostic;
 use once_cell::unsync::OnceCell;
 use pixi_build_backend::generated_recipe::MetadataProvider;
-use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{ParseVersionError, Version};
 
@@ -235,6 +234,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{PythonGenerator, config::PythonBackendConfig, project_fixture};
+    use pixi_build_types::ProjectModelV1;
 
     use super::*;
 

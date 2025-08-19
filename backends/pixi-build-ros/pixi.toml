@@ -30,4 +30,4 @@ pixi-build-api-version = "1.*"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
 #py-pixi-build-backend = "*"
-py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
+py-pixi-build-backend = "*"

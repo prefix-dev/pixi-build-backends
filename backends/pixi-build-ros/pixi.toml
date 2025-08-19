@@ -7,8 +7,9 @@ preview = ["pixi-build"]
 pytest = "*"
 pixi-build-ros = { path = "." }
 
-[package.build]
-backend = { name = "pixi-build-python", version = "*" }
+[package.build.backend]
+name = "pixi-build-python"
+version = "*"
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",

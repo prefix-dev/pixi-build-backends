@@ -66,9 +66,9 @@ class BuildScriptContext:
         common_options = f"-vv --no-deps --no-build-isolation{editable_option}"
 
         if self.installer == Installer.UV:
-            command = f"uv pip install --python {python_var} {common_options} {src_dir}"
+            command = f'uv pip install --python "{python_var}" {common_options} "{src_dir}"'
         else:
-            command = f"{python_var} -m pip install --ignore-installed {common_options} {src_dir}"
+            command = f'"{python_var}" -m pip install --ignore-installed {common_options} "{src_dir}"'
 
         lines = [command]
 

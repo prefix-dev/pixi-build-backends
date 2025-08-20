@@ -75,15 +75,13 @@ impl ProjectModel for pbt::ProjectModelV1 {
             .flat_map(|target| target.run_dependencies(platform))
             .collect_vec();
 
-        let used_variants = build_dependencies
+        build_dependencies
             .iter()
             .chain(host_dependencies.iter())
             .chain(run_dependencies.iter())
             .filter(|(_, spec)| spec.can_be_used_as_variant())
             .map(|(name, _)| name.as_str().into())
-            .collect();
-
-        used_variants
+            .collect()
     }
 }
 

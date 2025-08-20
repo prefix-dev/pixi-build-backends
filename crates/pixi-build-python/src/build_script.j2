@@ -3,9 +3,9 @@
 {% set COMMON_OPTIONS = "-vv --no-deps --no-build-isolation" + EDITABLE_OPTION -%}
 
 {% if installer == "uv" -%}
-uv pip install --python {{ PYTHON }} {{ COMMON_OPTIONS }} {{ manifest_root }}
+uv pip install --python "{{ PYTHON }}" {{ COMMON_OPTIONS }} "{{ manifest_root }}"
 {% else %}
-{{ PYTHON }} -m pip install --ignore-installed {{ COMMON_OPTIONS }} {{ manifest_root }}
+"{{ PYTHON }}" -m pip install --ignore-installed {{ COMMON_OPTIONS }} "{{ manifest_root }}"
 {% endif -%}
 
 {% if build_platform == "windows" -%}

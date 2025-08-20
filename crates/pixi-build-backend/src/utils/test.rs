@@ -69,6 +69,7 @@ where
             Arc::new(T::default()),
         )
         .initialize(InitializeParams {
+            workspace_root: None,
             source_dir,
             manifest_path,
             project_model: project_model.map(Into::into),

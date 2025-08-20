@@ -8,6 +8,7 @@ async-trait = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 clap-verbosity-flag = { workspace = true }
+comfy-table = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true }
 ordermap = { workspace = true }
@@ -30,6 +31,7 @@ toml_edit = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
 url = { workspace = true }
 pyproject-toml = { workspace = true }
 dirs = { workspace = true }

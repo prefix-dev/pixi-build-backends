@@ -350,6 +350,7 @@ mod tests {
             Arc::default(),
         )
         .initialize(InitializeParams {
+            workspace_root: None,
             source_dir: None,
             manifest_path: PathBuf::from("pixi.toml"),
             project_model: Some(project_model.into()),

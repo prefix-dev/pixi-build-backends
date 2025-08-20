@@ -29,16 +29,13 @@ impl<T> Default for PackageSpecDependencies<T> {
 impl PackageSpecDependencies<PackageDependency> {
     /// Return the used variants of the package spec dependencies.
     pub fn used_variants(&self) -> HashSet<NormalizedKey> {
-        let used_variants = self
-            .build
+        self.build
             .iter()
             .chain(self.host.iter())
             .chain(self.run.iter())
             .filter(|(_, spec)| spec.can_be_used_as_variant())
             .map(|(name, _)| name.clone().as_normalized().into())
-            .collect();
-
-        used_variants
+            .collect()
     }
 
     pub fn contains(&self, name: &PackageName) -> bool {

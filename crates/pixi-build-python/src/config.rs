@@ -21,6 +21,26 @@ pub struct PythonBackendConfig {
     /// List of compilers to use (e.g., ["c", "cxx", "rust"])
     /// If not specified, no compilers are added (since most Python packages are pure Python)
     pub compilers: Option<Vec<String>>,
+    /// Ignore the pyproject.toml manifest and rely only on the project model.
+    #[serde(default)]
+    pub ignore_pyproject_manifest: Option<bool>,
+}
+
+impl PythonBackendConfig {
+    /// Whether to build a noarch package or a platform-specific package.
+    pub fn noarch(&self) -> bool {
+        self.noarch.unwrap_or(true)
+    }
+
+    /// Creates a new [`PythonBackendConfig`] with default values and
+    /// `ignore_pyproject_manifest` set to `true`.
+    #[cfg(test)]
+    pub fn default_with_ignore_pyproject_manifest() -> Self {
+        Self {
+            ignore_pyproject_manifest: Some(true),
+            ..Default::default()
+        }
+    }
 }
 
 impl BackendConfig for PythonBackendConfig {
@@ -56,6 +76,9 @@ impl BackendConfig for PythonBackendConfig {
                 .compilers
                 .clone()
                 .or_else(|| self.compilers.clone()),
+            ignore_pyproject_manifest: target_config
+                .ignore_pyproject_manifest
+                .or(self.ignore_pyproject_manifest),
         })
     }
 }
@@ -85,6 +108,7 @@ mod tests {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
             compilers: Some(vec!["c".to_string()]),
+            ignore_pyproject_manifest: Some(true),
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -97,6 +121,7 @@ mod tests {
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
             compilers: Some(vec!["cxx".to_string(), "rust".to_string()]),
+            ignore_pyproject_manifest: Some(false),
         };
 
         let merged = base_config
@@ -128,6 +153,8 @@ mod tests {
             merged.compilers,
             Some(vec!["cxx".to_string(), "rust".to_string()])
         );
+        // ignore_pyproject_manifest should use target value
+        assert_eq!(merged.ignore_pyproject_manifest, Some(false));
     }
 
     #[test]
@@ -141,6 +168,7 @@ mod tests {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
             compilers: None,
+            ignore_pyproject_manifest: Some(true),
         };
 
         let empty_target_config = PythonBackendConfig::default();
@@ -155,6 +183,7 @@ mod tests {
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
         assert_eq!(merged.compilers, None);
+        assert_eq!(merged.ignore_pyproject_manifest, Some(true));
     }
 
     #[test]

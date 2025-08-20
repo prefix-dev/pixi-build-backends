@@ -61,6 +61,7 @@ pub struct LoadedVariantConfig {
 impl LoadedVariantConfig {
     /// Load variant configuration from a recipe path. This checks if there is a
     /// `variants.yaml` and loads it alongside the recipe.
+    #[allow(clippy::result_large_err)]
     pub fn from_recipe_path(
         source_dir: &Path,
         recipe_path: &Path,

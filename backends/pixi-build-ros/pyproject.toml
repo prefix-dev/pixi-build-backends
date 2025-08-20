@@ -21,6 +21,13 @@ packages = ["src/pixi_build_ros"]
 "templates" = "site-packages/pixi_build_ros/templates"
 "robostack.yaml" = "site-packages/pixi_build_ros/robostack.yaml"
 
+[tool.hatch.build.targets.editable]
+packages = ["src/pixi_build_ros"]
+
+[tool.hatch.build.targets.editable.shared-data]
+"templates" = "site-packages/pixi_build_ros/templates"
+"robostack.yaml" = "site-packages/pixi_build_ros/robostack.yaml"
+
 [build-system]
 build-backend = "hatchling.build"
 requires = ["hatchling"]

@@ -47,13 +47,6 @@ class BuildScriptContext:
     def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path) -> "BuildScriptContext":
         """Get the build script from the template directory based on the package type."""
         # TODO: deal with other script languages, e.g. for Windows
-        try:
-            # Try to load from installed package data first
-            templates_pkg = files("pixi_build_ros") / "templates"
-        except (ImportError, FileNotFoundError):
-            # Fallback to development path
-            templates_pkg = Path(__file__).parent.parent.parent / "templates"
-        
         if pkg.get_build_type() in ["ament_cmake"]:
             template_name = "build_ament_cmake.sh.in"
         elif pkg.get_build_type() in ["ament_python"]:
@@ -63,12 +56,14 @@ class BuildScriptContext:
         else:
             raise ValueError(f"Unsupported build type: {pkg.get_build_type()}")
         
-        if hasattr(templates_pkg, 'joinpath'):
-            # Using importlib.resources
+        try:
+            # Try to load from installed package data first
+            templates_pkg = files("pixi_build_ros") / "templates"
             template_file = templates_pkg / template_name
             script_content = template_file.read_text()
-        else:
-            # Using fallback path
+        except (ImportError, FileNotFoundError):
+            # Fallback to development path
+            templates_pkg = Path(__file__).parent.parent.parent / "templates"
             script_path = templates_pkg / template_name
             with open(script_path, 'r') as f:
                 script_content = f.read()

@@ -12,14 +12,13 @@ source:
 
 requirements:
   host:
-    - python >=3.8
+    - python >=3.9
     - hatchling
     - pip
   run:
-    - python >=3.8
+    - python >=3.9
     - rosdistro
     - catkin_pkg
-    - toml
     - pyyaml
     - typing-extensions
     - py-pixi-build-backend

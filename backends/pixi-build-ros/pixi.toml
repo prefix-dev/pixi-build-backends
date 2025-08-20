@@ -25,7 +25,6 @@ hatchling = "*"
 [package.run-dependencies]
 rosdistro = "*"
 catkin_pkg = "*"
-toml = "*"
 pyyaml = "*"
 pixi-build-api-version = "1.*"
 # should be added to `py-pixi-build-backend`

@@ -6,13 +6,8 @@ from enum import Enum
 from pathlib import Path
 from typing import List
 import platform
-import sys
 from catkin_pkg.package import Package as CatkinPackage
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
+from importlib.resources import files
 
 class BuildPlatform(Enum):
     """Build platform types."""

@@ -6,10 +6,7 @@ from typing import Any, List
 
 import yaml
 
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
+from importlib.resources import files
 from catkin_pkg.package import Package as CatkinPackage, parse_package_string
 
 from pixi_build_backend.types.intermediate_recipe import ConditionalRequirements

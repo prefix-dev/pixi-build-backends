@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pixi-build-ros
+  version: "${{ env.get('PIXI_BUILD_ROS_VERSION', default='0.1.0dev') }}"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  path: ../../backends/pixi-build-ros
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - python >=3.8
+    - rosdistro
+    - catkin_pkg
+    - toml
+    - pyyaml
+    - typing-extensions
+    - py-pixi-build-backend
+    - pixi-build-api-version >=1,<2
+
+build:
+  script:
+    - pip install . -vv --no-build-isolation
+  noarch: python
+
+tests:
+  - script: ${{ name }} --help
+
+about:
+  homepage: https://github.com/prefix-dev/pixi-build-backends
+  summary: ROS build backend for Pixi
+  description: |
+    This package provides a ROS build backend for Pixi, allowing the integration of ROS packages into the Pixi build system.
+  license: BSD-3-Clause
+  documentation: https://prefix-dev.github.io/pixi-build-backends
+  repository: https://github.com/prefix-dev/pixi-build-backends

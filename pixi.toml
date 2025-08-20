@@ -22,12 +22,14 @@ install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build-cmake
 install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build-rattler-build --locked --force" }
 install-pixi-build-rust = { cmd = "cargo install --path crates/pixi-build-rust --locked --force" }
 install-pixi-build-mojo = { cmd = "cargo install --path crates/pixi-build-mojo --locked --force" }
+install-pixi-build-ros = { cmd = "pixi global install --force-reinstall --path backends/pixi-build-ros --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge" }
 install-pixi-backends = { depends-on = [
   "install-pixi-build-python",
   "install-pixi-build-cmake",
   "install-pixi-build-rattler-build",
   "install-pixi-build-rust",
   "install-pixi-build-mojo",
+  "install-pixi-build-ros",
 ] }
 
 

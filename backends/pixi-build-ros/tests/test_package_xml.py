@@ -43,3 +43,5 @@ def test_ament_cmake_package_xml_to_recipe_config(package_xmls: Path):
     distro = Distro("noetic")
     requirements = package_xml_to_conda_requirements(package, distro)
 
+    assert requirements.build[0].concrete.package_name == "ros-noetic-ament-cmake"
+

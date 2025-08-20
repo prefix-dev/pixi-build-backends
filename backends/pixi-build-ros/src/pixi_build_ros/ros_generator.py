@@ -9,7 +9,7 @@ from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
 )
-from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements, Package
+from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements
 
 from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.platform import Platform

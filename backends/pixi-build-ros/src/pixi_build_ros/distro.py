@@ -1,9 +1,6 @@
 import os
-import urllib.request
 
 from rosdistro import get_cached_distribution, get_index, get_index_url
-from rosdistro.dependency_walker import DependencyWalker
-from rosdistro.manifest_provider import get_release_tag
 
 
 class Distro(object):
@@ -33,5 +30,4 @@ class Distro(object):
 
     def has_package(self, package_name):
         """Check if the distribution has a specific package."""
-        packages = self._distro.release_packages
         return package_name in self._distro.release_packages

@@ -4,7 +4,7 @@ Build script generation for Python backend.
 
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 import platform
 import sys
 from catkin_pkg.package import Package as CatkinPackage

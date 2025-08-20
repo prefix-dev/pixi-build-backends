@@ -16,7 +16,7 @@ channels = [
   "https://prefix.dev/conda-forge",
 ]
 
-[package.build.configuration]
+[package.build.config]
 noarch = false
 
 [package.build-dependencies]

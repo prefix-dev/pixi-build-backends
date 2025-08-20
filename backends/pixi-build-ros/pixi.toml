@@ -1,19 +1,19 @@
 [workspace]
-channels = ["https://prefix.dev/conda-forge"]
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
 platforms = ["osx-arm64", "win-64", "linux-64"]
 preview = ["pixi-build"]
 
 [dependencies]
 pytest = "*"
+ruff = "*"
 pixi-build-ros = { path = "." }
 
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
 
 [package]
 name = "pixi-build-ros"
@@ -30,5 +30,4 @@ pyyaml = "*"
 pixi-build-api-version = "1.*"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
-#py-pixi-build-backend = "*"
 py-pixi-build-backend = "*"

@@ -103,6 +103,10 @@ When you specify `compilers = ["c"]` in your pixi-build configuration, the syste
 
 4. **Request a package for each output**
 
+   For each output a package will be requested as build dependency with the following pattern `{compiler}_{target_platform} {compiler_version}`.
+   `compiler` and `compiler_version` has been determined in the step before.
+   `target_platform` is the platform you are compiling for, if you are cross compiling the target platform would differ from your current platform.
+
    In our example we would create two outputs.
    If we build on linux-64, one output would request `gcc_linux-64 11.4` and one would request `gcc_linux-64 14.0`
    

@@ -193,6 +193,44 @@ compilers = ["c", "cxx"]
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
 
+### `ignore-pyproject-manifest`
+
+- **Type**: `Boolean`
+- **Default**: `false`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific setting takes precedence over base
+
+Controls whether to ignore the `pyproject.toml` manifest file and rely solely on the project model for package metadata. When set to `true`, the backend will not extract metadata (name, version, description, license, URLs) from `pyproject.toml` and will use only the information provided in the Pixi project model.
+
+```toml
+[package.build.configuration]
+ignore-pyproject-manifest = true  # Ignore pyproject.toml metadata
+```
+
+This option is useful when you want complete control over package metadata through the Pixi project configuration, or when the `pyproject.toml` contains metadata that conflicts with your conda package requirements.
+
+For target-specific configuration, platform-specific setting overrides the base:
+
+```toml
+[package.build.configuration]
+ignore-pyproject-manifest = false
+
+[package.build.configuration.targets.win-64]
+ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
+# Result for win-64: true
+```
+
+!!! info "Metadata Extraction from pyproject.toml"
+    By default (when `ignore-pyproject-manifest` is `false`), the backend automatically extracts package metadata from your `pyproject.toml` file, including:
+    
+    - **name**: Package name from `project.name`
+    - **version**: Package version from `project.version` 
+    - **description/summary**: From `project.description`
+    - **license**: From `project.license` (supports text, file, or SPDX formats)
+    - **homepage**: From `project.urls.Homepage`
+    - **repository**: From `project.urls.Repository`, `project.urls.Source`, or `project.urls."Source Code"`
+    - **documentation**: From `project.urls.Documentation` or `project.urls.Docs`
+    
+    This metadata is automatically included in the generated conda recipe. The `pyproject.toml` file itself is also added to the input globs for incremental build detection.
 
 ## Build Process
 

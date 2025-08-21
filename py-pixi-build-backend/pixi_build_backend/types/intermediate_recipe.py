@@ -257,18 +257,30 @@ class Script:
 
     _inner: PyScript
 
-    def __init__(self, content: List[str], env: Optional[Dict[str, str]] = None):
-        self._inner = PyScript(content, env, None)
+    def __init__(self, content: Union[str, List[str]], env: Optional[Dict[str, str]] = None):
+        # Convert to string for internal storage
+        if isinstance(content, list):
+            content_str = '\n'.join(content)
+        else:
+            content_str = content if content else ""
+        self._inner = PyScript(content_str, env, None)
 
     @property
     def content(self) -> List[str]:
         """Get the script content."""
-        return self._inner.content
+        # Convert string back to list for Python API
+        content_str = self._inner.content
+        if not content_str:
+            return []
+        return content_str.split('\n')
 
     @content.setter
-    def content(self, value: List[str]) -> None:
+    def content(self, value: Union[str, List[str]]) -> None:
         """Set the script content."""
-        self._inner.content = value
+        if isinstance(value, str):
+            self._inner.content = value
+        else:
+            self._inner.content = '\n'.join(value)
 
     @property
     def env(self) -> Dict[str, str]:

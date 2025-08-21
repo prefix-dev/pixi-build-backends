@@ -292,11 +292,8 @@ mod tests {
             ".script.content" => insta::dynamic_redaction(|value, _path| {
                 dbg!(&value);
                 // assert that the value looks like a uuid here
-                assert!(value
-                    .as_slice()
-                    .unwrap()
-                    .iter()
-                    .any(|c| c.as_str().unwrap().contains("-DPython_EXECUTABLE"))
+                assert!(value.as_str().unwrap().lines()
+                    .any(|c| c.contains("-DPython_EXECUTABLE"))
                 );
                 "[content]"
             })

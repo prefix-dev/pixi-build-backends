@@ -9,7 +9,7 @@
   build:
     number: null
     script:
-      content: []
+      content: ''
       env: {}
       secrets: []
   requirements:

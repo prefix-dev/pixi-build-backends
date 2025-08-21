@@ -1,6 +1,7 @@
 ---
 source: crates/pixi-build-mojo/src/main.rs
 expression: generated_recipe.recipe
+snapshot_kind: text
 ---
 context: {}
 package:
@@ -10,13 +11,7 @@ source: []
 build:
   number: ~
   script:
-    content:
-      - mojo --version
-      - "\t"
-      - "\t\tmojo build -i . ./main.mojo -o $PREFIX/bin/example"
-      - "\t"
-      - ""
-      - "\tmojo package -i . mylib -o $PREFIX/lib/mojo/lib.mojopkg"
+    content: "mojo --version\n\nmojo build -i . ./main.mojo -o $PREFIX/bin/example\n\n\nmojo package -i . mylib -o $PREFIX/lib/mojo/lib.mojopkg\n"
     env: {}
     secrets: []
 requirements:

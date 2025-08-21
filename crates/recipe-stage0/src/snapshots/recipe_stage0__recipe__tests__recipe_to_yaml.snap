@@ -1,6 +1,7 @@
 ---
 source: crates/recipe-stage0/src/recipe.rs
 expression: recipe
+snapshot_kind: text
 ---
 context:
   name: xtensor
@@ -14,7 +15,7 @@ source:
 build:
   number: ~
   script:
-    content: []
+    content: ""
     env: {}
     secrets: []
 requirements:

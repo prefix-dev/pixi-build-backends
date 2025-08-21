@@ -27,7 +27,7 @@ impl BuildScriptContext {
         let template = env
             .template_from_str(include_str!("build_script.j2"))
             .unwrap();
-        template.render(self).unwrap().to_string()
+        template.render(self).unwrap().trim().replace("\r\n", "\n")
     }
 }
 

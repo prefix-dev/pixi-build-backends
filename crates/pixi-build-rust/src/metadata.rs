@@ -131,7 +131,7 @@ impl MetadataProvider for CargoMetadataProvider {
     ///
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the name from the package section of the Cargo.toml file.
-    fn name(&mut self) -> Result<Option<String>, Self::Error> {
+    fn name(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -144,7 +144,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// the version from the package section, handling workspace inheritance if
     /// needed. The version string is parsed into a
     /// `rattler_conda_types::Version`.
-    fn version(&mut self) -> Result<Option<Version>, Self::Error> {
+    fn version(&self) -> Result<Option<Version>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -170,7 +170,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the description from the package section, handling workspace inheritance
     /// if needed.
-    fn description(&mut self) -> Result<Option<String>, Self::Error> {
+    fn description(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -197,7 +197,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the homepage from the package section, handling workspace inheritance if
     /// needed.
-    fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
+    fn homepage(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -224,7 +224,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the license from the package section, handling workspace inheritance if
     /// needed.
-    fn license(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -252,7 +252,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// the license-file from the package section, handling workspace
     /// inheritance if needed. The path is converted to a string
     /// representation.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_file(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -279,7 +279,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// Currently always returns `None` as Cargo.toml does not have a summary
     /// field. This could be implemented to return the description field as
     /// a fallback.
-    fn summary(&mut self) -> Result<Option<String>, Self::Error> {
+    fn summary(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
 
@@ -288,7 +288,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the documentation from the package section, handling workspace
     /// inheritance if needed.
-    fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
+    fn documentation(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -318,7 +318,7 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the repository from the package section, handling workspace inheritance
     /// if needed.
-    fn repository(&mut self) -> Result<Option<String>, Self::Error> {
+    fn repository(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -432,7 +432,7 @@ documentation.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Test that workspace inheritance works when workspace is in the same file
         assert_eq!(provider.name().unwrap(), Some("test-package".to_string()));
@@ -466,7 +466,7 @@ description = "Regular description"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Test that inheritance fails when no workspace is defined
         let result = provider.version();
@@ -483,7 +483,7 @@ description.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.description();
         assert_missing_inherited_value_error(result, "workspace.package.description");
@@ -499,7 +499,7 @@ license.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.license();
         assert_missing_inherited_value_error(result, "workspace.package.license");
@@ -515,7 +515,7 @@ homepage.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.homepage();
         assert_missing_inherited_value_error(result, "workspace.package.homepage");
@@ -531,7 +531,7 @@ repository.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.repository();
         assert_missing_inherited_value_error(result, "workspace.package.repository");
@@ -547,7 +547,7 @@ documentation.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.documentation();
         assert_missing_inherited_value_error(result, "workspace.package.documentation");
@@ -563,7 +563,7 @@ license-file.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.license_file();
         assert_missing_inherited_value_error(result, "workspace.package.license-file");
@@ -587,7 +587,7 @@ license = "Apache-2.0"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Test mixed inheritance and direct values
         assert_eq!(provider.version().unwrap().unwrap().to_string(), "2.0.0");
@@ -615,7 +615,7 @@ license.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Version should work
         assert_eq!(provider.version().unwrap().unwrap().to_string(), "1.5.0");
@@ -644,7 +644,7 @@ version.workspace = true
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Force loading of manifest and workspace
         let _ = provider.version().unwrap();
@@ -690,7 +690,7 @@ description.workspace = true
         fs::write(package_dir.join("Cargo.toml"), package_cargo_toml)
             .expect("Failed to write package Cargo.toml");
 
-        let mut provider = create_metadata_provider(&package_dir);
+        let provider = create_metadata_provider(&package_dir);
 
         // Force loading of manifest and workspace
         let version_result = provider.version();
@@ -729,7 +729,7 @@ version = "1.0.0"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Force loading of manifest
         let _ = provider.version().unwrap();
@@ -770,7 +770,7 @@ description = "Direct package values"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Force loading of manifest - no inheritance should occur
         let version = provider.version().unwrap().unwrap();
@@ -801,7 +801,7 @@ description = "Test description"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = CargoMetadataProvider::new(temp_dir.path(), true);
+        let provider = CargoMetadataProvider::new(temp_dir.path(), true);
 
         // All methods should return None when ignore_cargo_manifest is true
         assert_eq!(provider.name().unwrap(), None);
@@ -824,7 +824,7 @@ version = "not.a.valid.version.at.all"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.version();
         // Note: rattler_conda_types::Version is quite permissive, so let's test what actually happens
@@ -849,7 +849,7 @@ version = "1.0.0"
 "#;
 
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.name();
         assert!(result.is_err());

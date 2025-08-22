@@ -116,7 +116,7 @@ impl GeneratedRecipe {
     /// build scripts or other fields.
     pub fn from_model<M: MetadataProvider>(
         model: ProjectModelV1,
-        provider: &mut M,
+        provider: &M,
     ) -> Result<Self, GenerateRecipeError<M::Error>> {
         // If the name is not defined in the model, we try to get it from the provider.
         // If the provider cannot provide a name, we return an error.
@@ -212,35 +212,35 @@ pub trait MetadataProvider {
 
     /// Returns the name of the package or `None` if the provider does not
     /// provide a name.
-    fn name(&mut self) -> Result<Option<String>, Self::Error> {
+    fn name(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
 
     /// Returns the version of the package or `None` if the provider does not
     /// provide a version.
-    fn version(&mut self) -> Result<Option<Version>, Self::Error> {
+    fn version(&self) -> Result<Option<Version>, Self::Error> {
         Ok(None)
     }
 
-    fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
+    fn homepage(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn license(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_file(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn summary(&mut self) -> Result<Option<String>, Self::Error> {
+    fn summary(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn description(&mut self) -> Result<Option<String>, Self::Error> {
+    fn description(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
+    fn documentation(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn repository(&mut self) -> Result<Option<String>, Self::Error> {
+    fn repository(&self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
 }

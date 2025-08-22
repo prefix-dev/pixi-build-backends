@@ -36,7 +36,7 @@ impl GenerateRecipe for MojoGenerator {
         variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+            GeneratedRecipe::from_model(model.clone(), &DefaultMetadataProvider)
                 .into_diagnostic()?;
 
         let cleaned_project_name = clean_project_name(

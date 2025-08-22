@@ -64,8 +64,7 @@ mod imp {
             _python_params: Option<PythonParams>,
             _variants: &HashSet<pixi_build_backend::variants::NormalizedKey>,
         ) -> miette::Result<GeneratedRecipe> {
-            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
-                .into_diagnostic()
+            GeneratedRecipe::from_model(model.clone(), &DefaultMetadataProvider).into_diagnostic()
         }
     }
 }

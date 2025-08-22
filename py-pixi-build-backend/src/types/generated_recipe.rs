@@ -48,7 +48,7 @@ impl PyGeneratedRecipe {
     #[staticmethod]
     pub fn from_model(py: Python, model: PyProjectModelV1) -> PyResult<Self> {
         let generated_recipe =
-            GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
+            GeneratedRecipe::from_model(model.inner.clone(), &DefaultMetadataProvider)
                 .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         let py_recipe = Py::new(

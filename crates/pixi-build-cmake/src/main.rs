@@ -35,7 +35,7 @@ impl GenerateRecipe for CMakeGenerator {
         variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
+            GeneratedRecipe::from_model(model.clone(), &DefaultMetadataProvider)
                 .into_diagnostic()?;
 
         // we need to add compilers

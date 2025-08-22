@@ -62,7 +62,7 @@ impl GenerateRecipe for PythonGenerator {
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
-        let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
+        let pyproject_metadata_provider = PyprojectMetadataProvider::new(
             &manifest_root,
             config
                 .ignore_pyproject_manifest
@@ -70,7 +70,7 @@ impl GenerateRecipe for PythonGenerator {
         );
 
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut pyproject_metadata_provider)
+            GeneratedRecipe::from_model(model.clone(), &pyproject_metadata_provider)
                 .into_diagnostic()?;
 
         let requirements = &mut generated_recipe.recipe.requirements;

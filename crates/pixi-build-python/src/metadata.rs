@@ -86,7 +86,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the name from the project section of the pyproject.toml file.
-    fn name(&mut self) -> Result<Option<String>, Self::Error> {
+    fn name(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -100,7 +100,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the version from the project section. The version string is parsed into a
     /// `rattler_conda_types::Version`.
-    fn version(&mut self) -> Result<Option<Version>, Self::Error> {
+    fn version(&self) -> Result<Option<Version>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -119,7 +119,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the description from the project section.
-    fn description(&mut self) -> Result<Option<String>, Self::Error> {
+    fn description(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -132,7 +132,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the homepage from the project.urls section.
-    fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
+    fn homepage(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -146,7 +146,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the license from the project section.
-    fn license(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -165,7 +165,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the license file path from the project section if the license is specified
     /// as a file reference.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_file(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -183,7 +183,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// This returns the same as description since pyproject.toml doesn't have
     /// a separate summary field.
-    fn summary(&mut self) -> Result<Option<String>, Self::Error> {
+    fn summary(&self) -> Result<Option<String>, Self::Error> {
         self.description()
     }
 
@@ -191,7 +191,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the documentation URL from the project.urls section.
-    fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
+    fn documentation(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -209,7 +209,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the repository URL from the project.urls section.
-    fn repository(&mut self) -> Result<Option<String>, Self::Error> {
+    fn repository(&self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
@@ -268,7 +268,7 @@ Documentation = "https://docs.example.com"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.name().unwrap(), Some("test-package".to_string()));
         assert_eq!(provider.version().unwrap().unwrap().to_string(), "1.0.0");
@@ -301,7 +301,7 @@ license = {file = "LICENSE.txt"}
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), Some("LICENSE.txt".to_string()));
         assert_eq!(
@@ -318,7 +318,7 @@ requires = ["setuptools", "wheel"]
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.name().unwrap(), None);
         assert_eq!(provider.version().unwrap(), None);
@@ -334,7 +334,7 @@ requires = ["setuptools", "wheel"]
     "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // Force loading of manifest
         let _ = provider.name().unwrap();
@@ -354,7 +354,7 @@ description = "Test description"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
+        let provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
 
         // All methods should return None when ignore_pyproject_manifest is true
         assert_eq!(provider.name().unwrap(), None);
@@ -381,7 +381,7 @@ Docs = "https://docs.example.com"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(
             provider.repository().unwrap(),
@@ -402,7 +402,7 @@ version = "1.0.0a1"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         // This should parse successfully since it's a valid PEP440 version
         let result = provider.version();
@@ -419,7 +419,7 @@ version = "not.a.valid.version.at.all"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.version();
         // The pyproject-toml parser should fail to parse this
@@ -443,7 +443,7 @@ version = "1.0.0"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.name();
         assert!(result.is_err());
@@ -463,7 +463,7 @@ description = "Test description"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = create_metadata_provider(temp_dir.path());
+        let provider = create_metadata_provider(temp_dir.path());
 
         let description = provider.description().unwrap();
         let summary = provider.summary().unwrap();

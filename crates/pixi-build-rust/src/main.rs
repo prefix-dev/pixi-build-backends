@@ -43,14 +43,14 @@ impl GenerateRecipe for RustGenerator {
     ) -> miette::Result<GeneratedRecipe> {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.
-        let mut cargo_metadata = CargoMetadataProvider::new(
+        let cargo_metadata = CargoMetadataProvider::new(
             &manifest_root,
             config.ignore_cargo_manifest.is_some_and(|ignore| ignore),
         );
 
         // Create the recipe
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut cargo_metadata).into_diagnostic()?;
+            GeneratedRecipe::from_model(model.clone(), &cargo_metadata).into_diagnostic()?;
 
         // we need to add compilers
         let requirements = &mut generated_recipe.recipe.requirements;

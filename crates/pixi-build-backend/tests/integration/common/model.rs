@@ -119,7 +119,7 @@ pub(crate) fn convert_test_model_to_project_model_v1(
     };
 
     ProjectModelV1 {
-        name: test_model.name,
+        name: Some(test_model.name),
         version: Some(Version::from_str(&test_model.version).unwrap()),
         description: test_model.description,
         authors: test_model.authors,

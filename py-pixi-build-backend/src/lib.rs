@@ -79,6 +79,7 @@ fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyGenerateRecipe>()?;
     m.add_class::<types::PyPythonParams>()?;
     m.add_class::<types::PyBackendConfig>()?;
+    m.add_class::<types::PyMetadataProvider>()?;
 
     // Add recipe_stage0 types
     m.add_class::<recipe_stage0::recipe::PyIntermediateRecipe>()?;

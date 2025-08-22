@@ -1,7 +1,7 @@
 [project]
 dependencies = ["rosdistro", "catkin_pkg", "pytest", "toml", "pyyaml"]
 name = "pixi-build-ros"
-version = "0.1.0"
+version = "0.1.1"
 
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"

@@ -9,6 +9,9 @@ import platform
 from catkin_pkg.package import Package as CatkinPackage
 from importlib.resources import files
 
+from pixi_build_ros.distro import Distro
+
+
 class BuildPlatform(Enum):
     """Build platform types."""
 
@@ -39,7 +42,7 @@ class BuildScriptContext:
         return self.script_content.splitlines()
 
     @classmethod
-    def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path) -> "BuildScriptContext":
+    def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path, distro: Distro) -> "BuildScriptContext":
         """Get the build script from the template directory based on the package type."""
         # TODO: deal with other script languages, e.g. for Windows
         if pkg.get_build_type() in ["ament_cmake"]:
@@ -63,7 +66,7 @@ class BuildScriptContext:
             with open(script_path, 'r') as f:
                 script_content = f.read()
 
-        script_content = script_content.replace("@SRC_DIR@", str(source_dir))
+        script_content = script_content.replace("@SRC_DIR@", str(source_dir)).replace("@DISTRO@", distro.name)
 
         return cls(
             script_content=script_content,

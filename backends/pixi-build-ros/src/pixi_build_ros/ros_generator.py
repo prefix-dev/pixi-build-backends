@@ -121,7 +121,7 @@ class ROSGenerator(GenerateRecipeProtocol):
         build_platform = BuildPlatform.current()
 
         # Generate build script
-        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root)
+        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root, distro)
         build_script_lines = build_script_context.render()
 
         generated_recipe.recipe.build.script =  Script(

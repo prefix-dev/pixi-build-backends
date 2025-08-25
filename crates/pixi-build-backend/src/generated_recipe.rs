@@ -243,12 +243,6 @@ pub trait MetadataProvider {
     fn repository(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-
-    /// Returns the required Python version range from the metadata or `None`
-    /// if the provider does not provide a Python requirement.
-    fn requires_python(&self) -> Result<Option<String>, Self::Error> {
-        Ok(None)
-    }
 }
 
 pub struct DefaultMetadataProvider;

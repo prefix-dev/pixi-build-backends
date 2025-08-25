@@ -8,13 +8,14 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
     compilers::add_compilers_and_stdlib_to_requirements,
-    generated_recipe::{GenerateRecipe, GeneratedRecipe, MetadataProvider, PythonParams},
+    generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
-use recipe_stage0::recipe::{ConditionalRequirements, NoArchKind, Python, Script};
+use recipe_stage0::matchspec::PackageDependency;
+use recipe_stage0::recipe::{self, ConditionalRequirements, NoArchKind, Python, Script};
 use std::collections::HashSet;
 use std::{
     collections::BTreeSet,
@@ -101,28 +102,27 @@ impl GenerateRecipe for PythonGenerator {
                 .push(installer_name.parse().into_diagnostic()?);
         }
 
-        // add python in both host and run requirements
-        // If requires_python is available from pyproject.toml, use it as a constraint
-        let python_requirement_str = match pyproject_metadata_provider.requires_python() {
-            Ok(Some(requires_python)) => format!("python {}", requires_python),
-            _ => "python".to_string(),
+        // Helper function to get Python requirement spec
+        let get_python_requirement = || -> miette::Result<recipe::Item<PackageDependency>> {
+            let python_requirement_str = match pyproject_metadata_provider.requires_python() {
+                Ok(Some(requires_python)) => format!("python {}", requires_python),
+                _ => "python".to_string(),
+            };
+            python_requirement_str.parse().into_diagnostic()
         };
 
+        // add python in both host and run requirements
         if !resolved_requirements
             .host
             .contains_key(&PackageName::new_unchecked("python"))
         {
-            requirements
-                .host
-                .push(python_requirement_str.parse().into_diagnostic()?);
+            requirements.host.push(get_python_requirement()?);
         }
         if !resolved_requirements
             .run
             .contains_key(&PackageName::new_unchecked("python"))
         {
-            requirements
-                .run
-                .push(python_requirement_str.parse().into_diagnostic()?);
+            requirements.run.push(get_python_requirement()?);
         }
 
         // Get the list of compilers from config, defaulting to no compilers for pure

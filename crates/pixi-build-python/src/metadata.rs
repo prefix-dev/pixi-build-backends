@@ -223,12 +223,14 @@ impl MetadataProvider for PyprojectMetadataProvider {
                     .cloned()
             }))
     }
+}
 
+impl PyprojectMetadataProvider {
     /// Returns the required Python version from the pyproject.toml manifest.
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the requires-python from the project section.
-    fn requires_python(&self) -> Result<Option<String>, Self::Error> {
+    pub fn requires_python(&self) -> Result<Option<String>, MetadataError> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }

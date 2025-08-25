@@ -127,8 +127,11 @@ impl PyIntermediateRecipe {
     /// Creates a recipe from YAML string
     #[staticmethod]
     pub fn from_yaml(yaml: String, py: Python) -> PyResult<Self> {
+        // Preprocess the YAML to handle script content as both String and Vec<String>
+        let preprocessed_yaml = Self::preprocess_script_content(yaml)?;
+        
         let intermediate_recipe: IntermediateRecipe =
-            serde_yaml::from_str(&yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
+            serde_yaml::from_str(&preprocessed_yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
 
         let py_intermediate_recipe =
             PyIntermediateRecipe::from_intermediate_recipe(intermediate_recipe, py);
@@ -144,6 +147,40 @@ impl PyIntermediateRecipe {
 }
 
 impl PyIntermediateRecipe {
+    /// Preprocess YAML to convert script content from Vec<String> to String
+    fn preprocess_script_content(yaml: String) -> PyResult<String> {
+        use serde_yaml::Value;
+        
+        let mut value: Value = serde_yaml::from_str(&yaml)
+            .map_err(PyPixiBuildBackendError::YamlSerialization)?;
+        
+        // Navigate to build.script.content
+        if let Value::Mapping(ref mut map) = value {
+            if let Some(Value::Mapping(build_map)) = map.get_mut("build") {
+                if let Some(Value::Mapping(script_map)) = build_map.get_mut("script") {
+                    if let Some(content_value) = script_map.get_mut("content") {
+                        // If content is a sequence (Vec), convert to String
+                        if let &mut Value::Sequence(ref content_seq) = content_value {
+                            let content_strings: Vec<String> = content_seq
+                                .iter()
+                                .filter_map(|v| match v {
+                                    Value::String(s) => Some(s.clone()),
+                                    _ => None,
+                                })
+                                .collect();
+                            
+                            *content_value = Value::String(content_strings.join("\n"));
+                        }
+                        // If it's already a String, leave it as is
+                    }
+                }
+            }
+        }
+        
+        Ok(serde_yaml::to_string(&value)
+           .map_err(PyPixiBuildBackendError::YamlSerialization)?)
+    }
+
     pub fn from_intermediate_recipe(recipe: IntermediateRecipe, py: Python) -> Self {
         // Convert context (IndexMap<String, Value<String>>) to PyHashMap
         let context_map = recipe
@@ -520,7 +557,7 @@ create_py_wrap!(PyHashMap, HashMap<String, String>, |map: &HashMap<String, Strin
 #[pyclass(get_all, set_all, str)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PyScript {
-    pub content: Py<PyVecString>,
+    pub content: String,
     pub env: Py<PyHashMap>,
     pub secrets: Py<PyVecString>,
 }
@@ -540,16 +577,16 @@ impl PyScript {
     #[new]
     pub fn new(
         py: Python,
-        content: Option<Vec<String>>,
+        content: Option<String>,
         env: Option<HashMap<String, String>>,
         secrets: Option<Vec<String>>,
     ) -> Self {
-        let py_vec = PyVecString::from(content.unwrap_or_default());
+        let content = content.unwrap_or_default();
         let env = env.map(PyHashMap::from).unwrap_or_default();
         let secrets = secrets.map(PyVecString::from).unwrap_or_default();
 
         PyScript {
-            content: Py::new(py, py_vec).unwrap(),
+            content,
             env: Py::new(py, env).unwrap(),
             secrets: Py::new(py, secrets).unwrap(),
         }
@@ -559,7 +596,7 @@ impl PyScript {
 impl PyScript {
     pub fn into_script(self, py: Python) -> Script {
         Script {
-            content: self.content.borrow(py).inner.clone(),
+            content: self.content,
             env: (*self.env.borrow(py).clone())
                 .clone()
                 .into_iter()
@@ -569,15 +606,13 @@ impl PyScript {
     }
 
     pub fn from_script(py: Python, script: Script) -> Self {
-        let vec_string: PyVecString = script.content.into();
-
         let py_hashmap: PyHashMap =
             PyHashMap::from(script.env.into_iter().collect::<HashMap<_, _>>());
 
         let secrets_vec: PyVecString = script.secrets.into();
 
         PyScript {
-            content: Py::new(py, vec_string).unwrap(),
+            content: script.content,
             env: Py::new(py, py_hashmap).unwrap(),
             secrets: Py::new(py, secrets_vec).unwrap(),
         }

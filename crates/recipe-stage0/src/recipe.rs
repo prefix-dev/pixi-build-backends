@@ -483,7 +483,7 @@ pub struct PathSource {
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Script {
-    pub content: Vec<String>,
+    pub content: String,
     #[serde(default)]
     pub env: IndexMap<String, String>,
     #[serde(default)]
@@ -542,7 +542,7 @@ pub struct Build {
 }
 
 impl Build {
-    pub fn new(content: Vec<String>) -> Self {
+    pub fn new(content: String) -> Self {
         Build {
             number: None,
             script: Script {

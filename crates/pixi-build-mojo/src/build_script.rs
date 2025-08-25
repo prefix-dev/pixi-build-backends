@@ -13,12 +13,11 @@ pub struct BuildScriptContext {
 }
 
 impl BuildScriptContext {
-    pub fn render(&self) -> Vec<String> {
+    pub fn render(&self) -> String {
         let env = Environment::new();
         let template = env
             .template_from_str(include_str!("build_script.j2"))
             .unwrap();
-        let rendered = template.render(self).unwrap().to_string();
-        rendered.lines().map(|s| s.to_string()).collect()
+        template.render(self).unwrap().trim().to_string()
     }
 }

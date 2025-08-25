@@ -1,6 +1,9 @@
 [workspace]
 authors = ["Nichita Morcotilo <nichita@prefix.dev>"]
-channels = ["https://prefix.dev/conda-forge"]
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 license = "BSD-3-Clause"
 preview = ["pixi-build"]
@@ -18,16 +21,14 @@ channels = [
 ]
 
 [package.build.config]
-noarch = false
-
-[package.build-dependencies]
-rust = "*"
+compilers = ["rust"]
 
 [package.host-dependencies]
 maturin = "*"
 
 [package.run-dependencies]
 typing-extensions = "*"
+pixi-build-api-version = ">=1,<2"
 
 [activation.env]
 PIP_REQUIRE_VIRTUALENV = "false"
@@ -42,7 +43,8 @@ rust = "~=1.87.0"
 patchelf = "~=0.18.0"
 
 [dependencies]
-python = "3.8.*"
+# Skipping self as it's a long build, and it's not yet reused in the tests
+#py-pixi-build-backend = { path = "." }
 
 # Testing and type checking
 mypy = "*"

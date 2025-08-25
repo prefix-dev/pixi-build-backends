@@ -17,10 +17,7 @@ channels = [
 ]
 
 [package.build.config]
-noarch = false
-
-[package.build-dependencies]
-rust = "*"
+compilers = ["rust"]
 
 [package.host-dependencies]
 maturin = "*"
@@ -41,7 +38,8 @@ rust = "~=1.87.0"
 patchelf = "~=0.18.0"
 
 [dependencies]
-python = "3.8.*"
+#python = "3.8.*"
+py-pixi-build-backend = { path = "." }
 
 # Testing and type checking
 mypy = "*"

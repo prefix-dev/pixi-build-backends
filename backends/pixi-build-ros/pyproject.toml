@@ -8,7 +8,7 @@ dependencies = [
   "py-pixi-build-backend @ file:../../py-pixi-build-backend",
 ]
 name = "pixi-build-ros"
-version = "0.1.0"
+version = "0.1.1"
 
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"

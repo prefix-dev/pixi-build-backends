@@ -30,7 +30,7 @@ output/
 # pixi environments
 .pixi
 *.egg-info
-.conda
+*.conda
 
 # Output directory
 pixi-build-python-output/

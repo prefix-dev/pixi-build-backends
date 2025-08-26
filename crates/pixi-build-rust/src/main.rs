@@ -397,16 +397,7 @@ mod tests {
     }
     #[test]
     fn test_with_cargo_manifest() {
-        let project_model = project_fixture!({
-            "name": "",
-            "targets": {
-                "default_target": {
-                    "run_dependencies": {
-                        "dependency": "*"
-                    }
-                },
-            }
-        });
+        let project_model = project_fixture!({});
 
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
@@ -495,7 +486,6 @@ mod tests {
     #[test]
     fn test_error_handling_missing_cargo_manifest() {
         let project_model = project_fixture!({
-            "name": "",
             "targets": {
                 "default_target": {
                     "run_dependencies": {
@@ -520,9 +510,9 @@ mod tests {
     }
 
     #[test]
-    fn test_error_handling_ignore_manifest_with_empty_name() {
+    fn test_empty_name() {
         let project_model = project_fixture!({
-            "name": "",
+            "version": "0.1.0",
             "targets": {
                 "default_target": {
                     "run_dependencies": {

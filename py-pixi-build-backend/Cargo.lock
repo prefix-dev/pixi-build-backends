@@ -4066,6 +4066,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "path_resolver"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "493dd224adc6163e40a1e58cefbeec27dabb69696017677406417b3516c800fa"
+dependencies = [
+ "fs-err",
+ "fxhash",
+ "indexmap 2.10.0",
+ "itertools 0.14.0",
+ "proptest",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
 name = "pathdiff"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4306,7 +4321,7 @@ dependencies = [
  "itertools 0.14.0",
  "miette",
  "pixi_consts",
- "rattler 0.34.13",
+ "rattler 0.35.0",
  "rattler_conda_types 0.39.0",
  "rattler_networking 0.25.10",
  "rattler_repodata_gateway 0.24.1",
@@ -5113,6 +5128,48 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.4",
  "path_resolver 0.1.2",
+ "rattler_cache 0.3.31",
+ "rattler_conda_types 0.39.0",
+ "rattler_digest 1.1.5",
+ "rattler_menuinst 0.2.22",
+ "rattler_networking 0.25.10",
+ "rattler_package_streaming 0.23.1",
+ "rattler_shell 0.24.9",
+ "rayon",
+ "reflink-copy",
+ "regex",
+ "reqwest",
+ "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json",
+ "simple_spawn_blocking 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec",
+ "tempfile",
+ "thiserror 2.0.15",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "rattler"
+version = "0.35.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48febbcf33fff4df8131f86a373f57689a6cee4b1b52e3cad35938e47358820c"
+dependencies = [
+ "anyhow",
+ "digest",
+ "dirs",
+ "fs-err",
+ "futures",
+ "humantime",
+ "indexmap 2.10.0",
+ "itertools 0.14.0",
+ "memchr",
+ "memmap2",
+ "once_cell",
+ "parking_lot 0.12.4",
+ "path_resolver 0.2.0",
  "rattler_cache 0.3.31",
  "rattler_conda_types 0.39.0",
  "rattler_digest 1.1.5",

@@ -201,6 +201,7 @@ impl GeneratedRecipe {
 
         Ok(GeneratedRecipe {
             recipe: ir,
+            // TODO: extract real input globs from the model
             ..Default::default()
         })
     }

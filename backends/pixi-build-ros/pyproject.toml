@@ -10,6 +10,9 @@ dependencies = [
 name = "pixi-build-ros"
 version = "0.1.1"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"
 

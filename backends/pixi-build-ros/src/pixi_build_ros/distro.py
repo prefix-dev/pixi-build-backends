@@ -13,8 +13,6 @@ class Distro(object):
         self._distribution_type = index.distributions[distro_name]["distribution_type"]
         self._python_version = index.distributions[distro_name]["python_version"]
 
-        os.environ["ROS_VERSION"] = "1" if self.check_ros1() else "2"
-
     @property
     def name(self) -> str:
         return self.distro_name

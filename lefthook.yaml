@@ -22,6 +22,7 @@ pre-commit:
     - name: actionlint
       run: pixi {run} actionlint
     - name: cargo-fmt
+      stage_fixed: true
       glob: "*.rs"
       run: pixi {run} cargo-fmt
     - name: taplo

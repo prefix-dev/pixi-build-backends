@@ -5007,7 +5007,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.46.0"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#d90128bdb18a761718058cd3d68aad60fdeb6928"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#fd7f0bdb81b6f6a9a2657b62b42677b15dded722"
 dependencies = [
  "anyhow",
  "async-once-cell",

@@ -487,7 +487,8 @@ mod tests {
         );
 
         insta::assert_yaml_snapshot!(&generated_recipe.metadata_input_globs, @r###"
-        - "../../**/Cargo.toml"
+        - "../../Cargo.toml"
+        - "../Cargo.toml"
         - Cargo.toml
         "###);
     }

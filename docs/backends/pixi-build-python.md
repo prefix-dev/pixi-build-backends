@@ -66,7 +66,7 @@ You can customize the Python backend behavior using the `[package.build.configur
 - **Default**: `true` (unless [compilers](#compilers) are specified)
 - **Target Merge Behavior**: `Overwrite` - Platform-specific noarch setting takes precedence over base
 
-Controls whether to build a platform-independent (noarch) package or a platform-specific package. 
+Controls whether to build a platform-independent (noarch) package or a platform-specific package.
 The backend tries to derive whether the package can be built as `noarch` based on the presence of [compilers](#compilers).
 If compilers are specified, the backend assume that native extensions are build as part of the build process.
 Most of the time these are platform-specific, so the package will be built as a platform-specific package.
@@ -179,19 +179,43 @@ compilers = ["c", "cxx"]
 
 !!! info "Pure Python vs. Extension Packages"
     The Python backend defaults to no compilers (`[]`) since most Python packages are pure Python and don't need compilation. This is different from other backends like CMake which default to `["cxx"]`. Only specify compilers if your package has C extensions or other compiled components:
-    
+
     ```toml
     # Pure Python package (default behavior)
     [package.build.configuration]
     # No compilers needed - defaults to []
-    
-    # Python package with C extensions  
+
+    # Python package with C extensions
     [package.build.configuration]
     compilers = ["c", "cxx"]
     ```
 
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
+
+### `pip-config`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
+
+Settings to pass to [`pip`'s `--config-settings` parameter](https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-C).
+
+```toml
+[package.build.configuration]
+pip-config = ["builddir=mybuilddir"]
+```
+
+For target-specific configuration, platform-specific globs completely replace the base:
+
+```toml
+[package.build.configuration]
+pip-config = ["builddir=mybuilddir"]
+
+[package.build.configuration.targets.win-64]
+pip-config = ["builddir=foo"]
+# Result for win-64: ["builddir=foo"]
+```
 
 ### `ignore-pyproject-manifest`
 
@@ -221,15 +245,15 @@ ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
 
 !!! info "Metadata Extraction from pyproject.toml"
     By default (when `ignore-pyproject-manifest` is `false`), the backend automatically extracts package metadata from your `pyproject.toml` file, including:
-    
+
     - **name**: Package name from `project.name`
-    - **version**: Package version from `project.version` 
+    - **version**: Package version from `project.version`
     - **description/summary**: From `project.description`
     - **license**: From `project.license` (supports text, file, or SPDX formats)
     - **homepage**: From `project.urls.Homepage`
     - **repository**: From `project.urls.Repository`, `project.urls.Source`, or `project.urls."Source Code"`
     - **documentation**: From `project.urls.Documentation` or `project.urls.Docs`
-    
+
     This metadata is automatically included in the generated conda recipe. The `pyproject.toml` file itself is also added to the input globs for incremental build detection.
 
 ## Build Process

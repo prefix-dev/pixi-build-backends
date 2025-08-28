@@ -730,7 +730,7 @@ description.workspace = true
         // Check that a workspace-related glob pattern is included
         let has_workspace_glob = globs
             .iter()
-            .any(|glob| glob.contains("**/Cargo.toml") && glob != "Cargo.toml");
+            .any(|glob| glob.contains("../Cargo.toml") && glob != "Cargo.toml");
         assert!(
             has_workspace_glob,
             "Expected workspace glob pattern, got: {:?}",

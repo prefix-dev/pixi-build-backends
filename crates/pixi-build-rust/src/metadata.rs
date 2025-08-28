@@ -104,19 +104,36 @@ impl CargoMetadataProvider {
         // Add the Cargo.toml manifest file itself.
         input_globs.insert(String::from("Cargo.toml"));
 
-        // If the manifest has workspace inheritance, we need to include a glob that
-        // matches all Cargo.toml files up to the workspace root.
+        // If the manifest has workspace inheritance, include that as well.
         if let Some((_, workspace_path)) = self.workspace_manifest.get() {
+            // If the workspace is defined in the package we just include the path to the
+            // workspace itself.
+            let workspace_selected = self
+                .cargo_manifest
+                .get()
+                .and_then(|p| p.package.as_ref())
+                .is_some_and(|p| p.workspace.is_some());
+
             if let Some(path) = pathdiff::diff_paths(
                 workspace_path
                     .parent()
                     .expect("the workspace path is a file so it must have a parent"),
                 &self.manifest_root,
             ) {
-                input_globs.insert(format!(
-                    "{}/**/Cargo.toml",
-                    path.display().to_string().replace("\\", "/")
-                ));
+                if workspace_selected {
+                    input_globs.insert(format!(
+                        "{}/Cargo.toml",
+                        path.display().to_string().replace("\\", "/")
+                    ));
+                } else {
+                    // Otherwise we assume the file is located in a parent directory of the package.
+                    input_globs.extend(
+                        path.components()
+                            .take_while(|p| matches!(p, std::path::Component::ParentDir))
+                            .enumerate()
+                            .map(|(idx, _)| format!("{}Cargo.toml", "../".repeat(idx + 1))),
+                    )
+                }
             }
         }
 
@@ -702,7 +719,8 @@ description.workspace = true
 
         let globs = provider.input_globs();
         assert!(globs.contains("Cargo.toml"));
-        // Should include workspace glob since workspace inheritance from separate file is detected
+        // Should include workspace glob since workspace inheritance from separate file
+        // is detected
         assert!(
             globs.len() >= 2,
             "Expected at least 2 globs when workspace is in separate file, got: {:?}",
@@ -712,7 +730,7 @@ description.workspace = true
         // Check that a workspace-related glob pattern is included
         let has_workspace_glob = globs
             .iter()
-            .any(|glob| glob.contains("**/Cargo.toml") && glob != "Cargo.toml");
+            .any(|glob| glob.contains("../Cargo.toml") && glob != "Cargo.toml");
         assert!(
             has_workspace_glob,
             "Expected workspace glob pattern, got: {:?}",
@@ -781,7 +799,8 @@ description = "Direct package values"
         );
 
         let globs = provider.input_globs();
-        // When workspace exists but no inheritance is used, only Cargo.toml should be included
+        // When workspace exists but no inheritance is used, only Cargo.toml should be
+        // included
         assert_eq!(
             globs.len(),
             1,
@@ -827,10 +846,12 @@ version = "not.a.valid.version.at.all"
         let mut provider = create_metadata_provider(temp_dir.path());
 
         let result = provider.version();
-        // Note: rattler_conda_types::Version is quite permissive, so let's test what actually happens
+        // Note: rattler_conda_types::Version is quite permissive, so let's test what
+        // actually happens
         match result {
             Ok(Some(version)) => {
-                // If it parses successfully, that's also valid behavior - conda versions are flexible
+                // If it parses successfully, that's also valid behavior - conda versions are
+                // flexible
                 assert!(!version.to_string().is_empty());
             }
             Err(MetadataError::ParseVersionError(_)) => {

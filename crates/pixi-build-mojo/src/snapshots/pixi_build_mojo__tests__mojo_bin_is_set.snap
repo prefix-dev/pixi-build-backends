@@ -1,6 +1,7 @@
 ---
 source: crates/pixi-build-mojo/src/main.rs
 expression: generated_recipe.recipe
+snapshot_kind: text
 ---
 context: {}
 package:

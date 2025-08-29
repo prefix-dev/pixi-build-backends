@@ -35,7 +35,7 @@ pub trait ProjectModel {
     fn used_variants(&self, platform: Option<Platform>) -> HashSet<NormalizedKey>;
 
     /// Return the name of the project model
-    fn name(&self) -> &str;
+    fn name(&self) -> Option<&String>;
 
     /// Return the version of the project model
     fn version(&self) -> &Option<Version>;
@@ -48,8 +48,8 @@ impl ProjectModel for pbt::ProjectModelV1 {
         self.targets.as_ref()
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&String> {
+        self.name.as_ref()
     }
 
     fn version(&self) -> &Option<Version> {

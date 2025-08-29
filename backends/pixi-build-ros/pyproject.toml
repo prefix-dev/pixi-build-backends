@@ -1,7 +1,17 @@
 [project]
-dependencies = ["rosdistro", "catkin_pkg", "pytest", "toml", "pyyaml"]
+dependencies = [
+  "rosdistro",
+  "catkin_pkg",
+  "pytest",
+  "toml",
+  "pyyaml",
+  "py-pixi-build-backend @ file:../../py-pixi-build-backend",
+]
 name = "pixi-build-ros"
 version = "0.1.1"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"

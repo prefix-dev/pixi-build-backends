@@ -29,6 +29,7 @@ pixi_build_types = "*"
 pixi_manifest = "*"
 pixi_spec = "*"
 pixi_build_type_conversions = "*"
+pixi_consts = "*"
 
 # Core serialization and async support
 serde = { version = "1.0", features = ["derive"] }
@@ -74,5 +75,12 @@ pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+
+# Local path overrides for development
+#pixi_build_types = { path = "../../pixi_build_types/crates/pixi_build_types" }
+#pixi_consts = { path = "../../pixi/crates/pixi_consts" }
+#pixi_manifest = { path = "../../pixi/crates/pixi_manifest" }
+#pixi_spec = { path = "../../pixi/crates/pixi_spec" }
+#pixi_build_type_conversions = { path = "../../pixi/crates/pixi_build_type_conversions" }
 
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }

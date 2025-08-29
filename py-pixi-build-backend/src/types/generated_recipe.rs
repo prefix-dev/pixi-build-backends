@@ -16,7 +16,8 @@ use recipe_stage0::recipe::IntermediateRecipe;
 use crate::{
     create_py_wrap,
     recipe_stage0::recipe::PyIntermediateRecipe,
-    types::{PyBackendConfig, PyPlatform, PyProjectModelV1, PyPythonParams},
+    types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModelV1, PyPythonParams},
+    types::metadata_provider::get_input_globs_from_provider,
 };
 
 create_py_wrap!(PyVecString, Vec<String>, |v: &Vec<String>,
@@ -60,6 +61,47 @@ impl PyGeneratedRecipe {
             PyVecString::from(
                 generated_recipe
                     .metadata_input_globs
+                    .into_iter()
+                    .collect::<Vec<String>>(),
+            ),
+        )?;
+        let py_build_globs = Py::new(
+            py,
+            PyVecString::from(
+                generated_recipe
+                    .build_input_globs
+                    .into_iter()
+                    .collect::<Vec<String>>(),
+            ),
+        )?;
+
+        Ok(PyGeneratedRecipe {
+            recipe: py_recipe,
+            metadata_input_globs: py_metadata_globs,
+            build_input_globs: py_build_globs,
+        })
+    }
+
+    #[staticmethod]
+    pub fn from_model_with_provider(py: Python, model: PyProjectModelV1, metadata_provider: PyObject) -> PyResult<Self> {
+        let mut provider = PyMetadataProvider::new(metadata_provider.clone());
+        let generated_recipe =
+            GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
+                .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+        // Get additional input globs from the metadata provider if available
+        let mut metadata_input_globs = generated_recipe.metadata_input_globs;
+        let provider_globs = get_input_globs_from_provider(&metadata_provider);
+        metadata_input_globs.extend(provider_globs);
+
+        let py_recipe = Py::new(
+            py,
+            PyIntermediateRecipe::from_intermediate_recipe(generated_recipe.recipe, py),
+        )?;
+        let py_metadata_globs = Py::new(
+            py,
+            PyVecString::from(
+                metadata_input_globs
                     .into_iter()
                     .collect::<Vec<String>>(),
             ),

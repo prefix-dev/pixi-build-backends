@@ -9,6 +9,7 @@ from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
 )
+from .metadata_provider import ROSPackageXmlMetadataProvider
 from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements
 
 from pixi_build_backend.types.item import ItemPackageDependency
@@ -69,24 +70,19 @@ class ROSGenerator(GenerateRecipeProtocol):
 
         manifest_root = Path(manifest_path)
 
-        # Create base recipe from model
-        generated_recipe = GeneratedRecipe.from_model(model)
+        # Setup ROS distro first
+        distro = Distro(backend_config.distro)
+        
+        # Create metadata provider for package.xml
+        package_xml_path = manifest_root / "package.xml"
+        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro)
 
-        # Read package.xml
+        # Create base recipe from model with metadata provider
+        generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
+
+        # Read package.xml for dependency extraction
         package_xml_str = get_package_xml_content(manifest_root)
         package_xml = convert_package_xml_to_catkin_package(package_xml_str)
-
-        # Setup ROS distro
-        distro = Distro(backend_config.distro)
-
-        package = generated_recipe.recipe.package
-
-        # Modify the name and version of the package based on the ROS distro and package.xml
-        if package.name.get_concrete() == "undefined":
-            package.name = f"ros-{distro.name}-{package_xml.name.replace('_', '-')}"
-
-        if package.version == "0.0.0":
-            package.version = package_xml.version
 
         # Get requirements from package.xml
         package_requirements = package_xml_to_conda_requirements(package_xml, distro)
@@ -132,7 +128,8 @@ class ROSGenerator(GenerateRecipeProtocol):
         debug_dir = backend_config.get_debug_dir()
         if debug_dir:
             recipe = generated_recipe.recipe.to_yaml()
-            debug_file_path = debug_dir / f"{package.name}-{package.version}-recipe.yaml"
+            package = generated_recipe.recipe.package
+            debug_file_path = debug_dir / f"{package.name.get_concrete()}-{package.version}-recipe.yaml"
             debug_file_path.parent.mkdir(parents=True, exist_ok=True)
             with open(debug_file_path, 'w') as debug_file:
                 debug_file.write(recipe)

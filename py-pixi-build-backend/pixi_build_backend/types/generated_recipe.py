@@ -4,6 +4,7 @@ from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateR
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
+from pixi_build_backend.types.metadata_provider import MetadataProvider
 
 
 class GeneratedRecipe:
@@ -15,10 +16,13 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(cls, model: ProjectModelV1) -> "GeneratedRecipe":
+    def from_model(cls, model: ProjectModelV1, metadata_provider: Optional[MetadataProvider] = None) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
-        instance._inner = PyGeneratedRecipe().from_model(model._inner)
+        if metadata_provider is not None:
+            instance._inner = PyGeneratedRecipe().from_model_with_provider(model._inner, metadata_provider)
+        else:
+            instance._inner = PyGeneratedRecipe().from_model(model._inner)
         return instance
 
     @property

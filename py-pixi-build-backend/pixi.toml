@@ -10,7 +10,7 @@ preview = ["pixi-build"]
 
 [package]
 name = "py-pixi-build-backend"
-version = "0.1.0"
+version = "0.1.2"
 
 [package.build.backend]
 name = "pixi-build-python"

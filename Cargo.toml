@@ -77,17 +77,17 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 
 
 [patch.crates-io]
-#pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-#pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-#pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-#pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-#pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
-pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
-pixi_consts = { path = "../pixi/crates/pixi_consts" }
-pixi_manifest = { path = "../pixi/crates/pixi_manifest" }
-pixi_spec = { path = "../pixi/crates/pixi_spec" }
-pixi_build_type_conversions = { path = "../pixi/crates/pixi_build_type_conversions" }
+#pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
+#pixi_consts = { path = "../pixi/crates/pixi_consts" }
+#pixi_manifest = { path = "../pixi/crates/pixi_manifest" }
+#pixi_spec = { path = "../pixi/crates/pixi_spec" }
+#pixi_build_type_conversions = { path = "../pixi/crates/pixi_build_type_conversions" }
 
 #rattler_cache = { path = "../rattler/crates/rattler_cache" }
 #rattler_conda_types = { path = "../rattler/crates/rattler_conda_types" }

@@ -194,7 +194,7 @@ impl Protocol for RattlerBuildBackend {
 
             let depends = finalized_deps.depends.iter().map(DependencyInfo::spec);
 
-            let sources = outputs
+            let mut sources: HashMap<String, SourcePackageSpecV1> = outputs
                 .iter()
                 .cartesian_product(depends.clone())
                 .filter_map(|(output, depend)| {
@@ -214,6 +214,9 @@ impl Protocol for RattlerBuildBackend {
                     )
                 })
                 .collect();
+
+            // Add workspace dependencies to the sources
+            sources.extend(self.workspace_dependencies.clone());
 
             let conda = CondaPackageMetadata {
                 name: output.name().clone(),
@@ -289,7 +292,7 @@ impl Protocol for RattlerBuildBackend {
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let local_source_packages = discovered_outputs
+        let mut local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
             .iter()
             .map(|output| {
                 (
@@ -298,6 +301,11 @@ impl Protocol for RattlerBuildBackend {
                 )
             })
             .collect();
+
+        // Add workspace dependencies to the source packages mapping.
+        // This allows the recipe to reference workspace packages by name (e.g., "my-lib")
+        // and have them automatically resolved to source dependencies with the correct path.
+        local_source_packages.extend(self.workspace_dependencies.clone());
 
         let mut subpackages = HashMap::new();
         let mut outputs = Vec::new();
@@ -578,8 +586,7 @@ impl Protocol for RattlerBuildBackend {
                     run_build(
                         output_with_build_string,
                         tool_config,
-                        // WorkingDirectoryBehavior::Preserve is blocked by
-                        // https://github.com/prefix-dev/rattler-build/issues/1825
+                        // rattler-build requires a clean work dir
                         WorkingDirectoryBehavior::Cleanup,
                     )
                     .await
@@ -718,8 +725,7 @@ impl Protocol for RattlerBuildBackend {
         };
 
         let (output, output_path) =
-            // WorkingDirectoryBehavior::Preserve is blocked by
-            // https://github.com/prefix-dev/rattler-build/issues/1825
+            // rattler-build requires a clean work dir
             run_build(output, &tool_config, WorkingDirectoryBehavior::Cleanup).await?;
 
         Ok(CondaBuildV1Result {
@@ -852,47 +858,66 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
             RattlerBuildBackendConfig::default()
         };
 
+        let mut workspace_dependencies = HashMap::new();
+
         if let Some(target) = params
             .project_model
             .and_then(|m| m.into_v1())
             .and_then(|m| m.targets)
         {
-            fn enforce_empty_deps(target: TargetV1) -> miette::Result<()> {
-                for dep in [
+            fn extract_workspace_deps(
+                target: TargetV1,
+                workspace_deps: &mut HashMap<String, SourcePackageSpecV1>,
+            ) -> miette::Result<()> {
+                for dep_list in [
                     target.build_dependencies,
                     target.host_dependencies,
                     target.run_dependencies,
                 ] {
-                    let Some(dep) = dep else {
+                    let Some(deps) = dep_list else {
                         continue;
                     };
 
-                    if !dep.is_empty() {
-                        return Err(miette::miette!(
-                            "Specifying dependencies is unsupported with pixi-build-rattler-build, please specify all dependencies in the recipe."
-                        ));
+                    for (name, spec) in deps {
+                        match spec {
+                            pixi_build_types::PackageSpecV1::Source(source_spec) => {
+                                // Source dependencies are allowed - they represent workspace packages
+                                workspace_deps.insert(name, source_spec);
+                            }
+                            pixi_build_types::PackageSpecV1::Binary(_) => {
+                                // Binary dependencies must be specified in the recipe, not here
+                                return Err(miette::miette!(
+                                    "Binary dependency '{}' is not allowed in pixi-build-rattler-build. Please specify all binary dependencies in the recipe.",
+                                    name
+                                ));
+                            }
+                        }
                     }
                 }
                 Ok(())
             }
+
             if let Some(default_target) = target.default_target {
-                enforce_empty_deps(default_target)?;
+                extract_workspace_deps(default_target, &mut workspace_dependencies)?;
             }
 
             if let Some(targets) = target.targets {
                 for (_, target) in targets {
-                    enforce_empty_deps(target)?;
+                    extract_workspace_deps(target, &mut workspace_dependencies)?;
                 }
             }
         }
 
-        let instance = RattlerBuildBackend::new(
+        let mut instance = RattlerBuildBackend::new(
             params.source_dir,
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
             config,
         )?;
+
+        // Set the workspace dependencies
+        instance.workspace_dependencies = workspace_dependencies;
 
         Ok((Box::new(instance), InitializeResult {}))
     }

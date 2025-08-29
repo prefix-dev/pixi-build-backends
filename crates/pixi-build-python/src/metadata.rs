@@ -225,6 +225,22 @@ impl MetadataProvider for PyprojectMetadataProvider {
     }
 }
 
+impl PyprojectMetadataProvider {
+    /// Returns the required Python version from the pyproject.toml manifest.
+    ///
+    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
+    /// the requires-python from the project section.
+    pub fn requires_python(&self) -> Result<Option<String>, MetadataError> {
+        if self.ignore_pyproject_manifest {
+            return Ok(None);
+        }
+        Ok(self
+            .ensure_manifest_project()?
+            .and_then(|proj| proj.requires_python.as_ref())
+            .map(|req_py| req_py.to_string()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{collections::HashSet, fs};
@@ -366,6 +382,7 @@ description = "Test description"
         assert_eq!(provider.documentation().unwrap(), None);
         assert_eq!(provider.license_file().unwrap(), None);
         assert_eq!(provider.summary().unwrap(), None);
+        assert_eq!(provider.requires_python().unwrap(), None);
     }
 
     #[test]
@@ -473,6 +490,39 @@ description = "Test description"
     }
 
     #[test]
+    fn test_requires_python_extraction() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+requires-python = ">=3.13"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(
+            provider.requires_python().unwrap(),
+            Some(">=3.13".to_string())
+        );
+    }
+
+    #[test]
+    fn test_requires_python_with_ignore_flag() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+requires-python = ">=3.13"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
+
+        assert_eq!(provider.requires_python().unwrap(), None);
+    }
+
+    #[test]
     fn test_generated_recipe_contains_pyproject_values() {
         let pyproject_toml_content = r#"
 [project]
@@ -522,5 +572,67 @@ Documentation = "https://docs.example.com"
         ".source[0].path" => "[ ... path ... ]",
         ".build.script" => "[ ... script ... ]",
         });
+    }
+
+    #[test]
+    fn test_generated_recipe_respects_requires_python() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+requires-python = ">=3.13"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+
+        // Now create project model and generate a recipe from it
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let generated_recipe = PythonGenerator::default()
+            .generate_recipe(
+                &project_model,
+                // when using the default here we should read values from the pyproject.toml
+                &PythonBackendConfig::default(),
+                temp_dir.path().to_path_buf(),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+            )
+            .expect("Failed to generate recipe");
+
+        // Check that Python requirements include the version constraint
+        let host_requirements = &generated_recipe.recipe.requirements.host;
+        let run_requirements = &generated_recipe.recipe.requirements.run;
+
+        let has_python_constraint_host = host_requirements
+            .iter()
+            .any(|req| req.to_string().starts_with("python >=3.13"));
+        let has_python_constraint_run = run_requirements
+            .iter()
+            .any(|req| req.to_string().starts_with("python >=3.13"));
+
+        assert!(
+            has_python_constraint_host,
+            "Host requirements should include 'python >=3.13', found: {:?}",
+            host_requirements
+        );
+        assert!(
+            has_python_constraint_run,
+            "Run requirements should include 'python >=3.13', found: {:?}",
+            run_requirements
+        );
     }
 }

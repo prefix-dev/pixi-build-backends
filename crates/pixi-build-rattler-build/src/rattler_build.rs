@@ -1,10 +1,12 @@
 use std::{
+    collections::HashMap,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::source::Source;
+use pixi_build_types::SourcePackageSpecV1;
 use rattler_build::console_utils::LoggingOutputHandler;
 
 use crate::config::RattlerBuildBackendConfig;
@@ -18,6 +20,8 @@ pub struct RattlerBuildBackend {
     pub(crate) manifest_root: PathBuf,
     pub(crate) cache_dir: Option<PathBuf>,
     pub(crate) config: RattlerBuildBackendConfig,
+    /// Workspace dependencies from the project model
+    pub(crate) workspace_dependencies: HashMap<String, SourcePackageSpecV1>,
 }
 
 impl RattlerBuildBackend {
@@ -83,6 +87,7 @@ impl RattlerBuildBackend {
             manifest_root,
             cache_dir,
             config,
+            workspace_dependencies: HashMap::new(),
         })
     }
 }

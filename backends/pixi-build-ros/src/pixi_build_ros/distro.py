@@ -1,5 +1,3 @@
-import os
-
 from rosdistro import get_cached_distribution, get_index, get_index_url
 
 

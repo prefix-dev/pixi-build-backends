@@ -2,10 +2,40 @@
 ROS-specific metadata provider that extracts metadata from package.xml files.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 from pixi_build_backend.types import MetadataProvider
 from pixi_build_ros.distro import Distro
+
+
+class MaintainerInfo:
+    """Container for maintainer information from package.xml."""
+    
+    def __init__(self, name: str, email: str):
+        self.name = name
+        self.email = email
+
+
+class PackageData:
+    """Container for parsed package.xml data."""
+    
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        version: Optional[str] = None,
+        description: Optional[str] = None,
+        maintainers: Optional[List[MaintainerInfo]] = None,
+        licenses: Optional[List[str]] = None,
+        homepage: Optional[str] = None,
+        repository: Optional[str] = None,
+    ):
+        self.name = name
+        self.version = version
+        self.description = description
+        self.maintainers = maintainers or []
+        self.licenses = licenses or []
+        self.homepage = homepage
+        self.repository = repository
 
 class PackageXmlMetadataProvider(MetadataProvider):
     """
@@ -24,9 +54,10 @@ class PackageXmlMetadataProvider(MetadataProvider):
         """
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
-        self._package_data: Optional[Dict[str, Any]] = None
+        self._package_data: Optional[PackageData] = None
 
-    def _load_package_xml(self) -> Dict[str, Any]:
+    @property
+    def _package_xml_data(self) -> PackageData:
         """Load and parse the package.xml file."""
         if self._package_data is not None:
             return self._package_data
@@ -43,12 +74,12 @@ class PackageXmlMetadataProvider(MetadataProvider):
             description_elem = root.find('description')
 
             # Extract maintainer and author information
-            maintainers = []
+            maintainers: List[MaintainerInfo] = []
             for maintainer in root.findall('maintainer'):
-                maintainer_info = {
-                    'name': maintainer.text.strip() if maintainer.text else '',
-                    'email': maintainer.get('email', '')
-                }
+                maintainer_info = MaintainerInfo(
+                    name=maintainer.text.strip() if maintainer.text else '',
+                    email=maintainer.get('email', '')
+                )
                 maintainers.append(maintainer_info)
 
             # Extract license information
@@ -67,44 +98,38 @@ class PackageXmlMetadataProvider(MetadataProvider):
                 elif url_type == 'repository' and not repository:
                     repository = url.text.strip() if url.text else None
 
-            self._package_data = {
-                'name': name_elem.text.strip() if name_elem is not None and name_elem.text else None,
-                'version': version_elem.text.strip() if version_elem is not None and version_elem.text else None,
-                'description': description_elem.text.strip() if description_elem is not None and description_elem.text else None,
-                'maintainers': maintainers,
-                'licenses': licenses,
-                'homepage': homepage,
-                'repository': repository,
-            }
+            self._package_data = PackageData(
+                name=name_elem.text.strip() if name_elem is not None and name_elem.text else None,
+                version=version_elem.text.strip() if version_elem is not None and version_elem.text else None,
+                description=description_elem.text.strip() if description_elem is not None and description_elem.text else None,
+                maintainers=maintainers,
+                licenses=licenses,
+                homepage=homepage,
+                repository=repository,
+            )
 
         except Exception as e:
             print(f"Warning: Failed to parse package.xml at {self.package_xml_path}: {e}")
-            self._package_data = {}
+            self._package_data = PackageData()
 
         return self._package_data
 
     def name(self) -> Optional[str]:
         """Return the package name from package.xml."""
-        data = self._load_package_xml()
-        return data.get('name')
+        return self._package_xml_data.name
 
     def version(self) -> Optional[str]:
         """Return the package version from package.xml."""
-        data = self._load_package_xml()
-        return data.get('version')
+        return self._package_xml_data.version
 
     def homepage(self) -> Optional[str]:
         """Return the homepage URL from package.xml."""
-        data = self._load_package_xml()
-        return data.get('homepage')
+        return self._package_xml_data.homepage
 
     def license(self) -> Optional[str]:
         """Return the license from package.xml."""
-        data = self._load_package_xml()
-
         # TODO: Handle License parsing to conform to SPDX standards,
         # ROS package.xml does not enforce SPDX as strictly as rattler-build
-
         return None
 
     def license_file(self) -> Optional[str]:
@@ -113,8 +138,7 @@ class PackageXmlMetadataProvider(MetadataProvider):
 
     def summary(self) -> Optional[str]:
         """Return the description as summary from package.xml."""
-        data = self._load_package_xml()
-        description = data.get('description')
+        description = self._package_xml_data.description
         if description and len(description) > 100:
             # Truncate long descriptions for summary
             return description[:97] + "..."
@@ -122,8 +146,7 @@ class PackageXmlMetadataProvider(MetadataProvider):
 
     def description(self) -> Optional[str]:
         """Return the full description from package.xml."""
-        data = self._load_package_xml()
-        return data.get('description')
+        return self._package_xml_data.description
 
     def documentation(self) -> Optional[str]:
         """Return None as package.xml doesn't typically specify documentation URLs separately."""
@@ -131,12 +154,16 @@ class PackageXmlMetadataProvider(MetadataProvider):
 
     def repository(self) -> Optional[str]:
         """Return the repository URL from package.xml."""
-        data = self._load_package_xml()
-        return data.get('repository')
+        return self._package_xml_data.repository
 
     def input_globs(self) -> List[str]:
         """Return input globs that affect this metadata provider."""
-        return ["package.xml"]
+        return [
+            "package.xml",
+            "CMakeLists.txt", 
+            "setup.py",
+            "setup.cfg"
+        ]
 
 
 class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):

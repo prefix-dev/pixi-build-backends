@@ -28,7 +28,7 @@ maturin = "*"
 
 [package.run-dependencies]
 typing-extensions = "*"
-pixi-build-api-version = ">=1,<2"
+pixi-build-api-version = ">=2,<3"
 
 [activation.env]
 PIP_REQUIRE_VIRTUALENV = "false"

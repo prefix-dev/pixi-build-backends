@@ -27,20 +27,31 @@ jobs:
   format_lint_test:
     name: Format, Lint and Test the Python bindings
     runs-on: ubuntu-latest
+    container:
+      # Use AlmaLinux 8 container to ensure older glibc compatibility
+      image: almalinux:8
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
-      - uses: prefix-dev/setup-pixi@fef5c9568ca6c4ff7707bf840ab0692ba3f08293 # v0.9.0
-        with:
-          manifest-path: py-pixi-build-backend/pixi.toml
-          environments: ci
+      
+      # Install dependencies for container build
+      - name: Install container dependencies
+        run: |
+          dnf install -y git curl wget gcc gcc-c++ make python3 python3-devel
+          # Install pixi
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "/root/.pixi/bin" >> $GITHUB_PATH
+      
       - name: Format and Lint
         run: |
+          export PATH="/root/.pixi/bin:$PATH"
           cd py-pixi-build-backend
           pixi run -e ci fmt
           pixi run -e ci lint
+      
       - name: Run tests
         run: |
+          export PATH="/root/.pixi/bin:$PATH"
           cd py-pixi-build-backend
           pixi run -e ci test --color=yes

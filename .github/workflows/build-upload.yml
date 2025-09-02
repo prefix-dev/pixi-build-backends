@@ -60,27 +60,50 @@ jobs:
         bins: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
       fail-fast: false
     runs-on: ${{ matrix.bins.os }}
+    container:
+      # Use AlmaLinux 8 container for Linux builds to ensure older glibc compatibility
+      image: ${{ startsWith(matrix.bins.os, 'ubuntu') && 'almalinux:8' || '' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      
+      # Install dependencies for Linux container builds
+      - name: Install container dependencies (Linux)
+        if: ${{ startsWith(matrix.bins.os, 'ubuntu') }}
+        run: |
+          dnf install -y git curl wget gcc gcc-c++ make
+          # Install pixi
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "/root/.pixi/bin" >> $GITHUB_PATH
+      
+      # Setup pixi for all platforms
       - uses: prefix-dev/setup-pixi@fef5c9568ca6c4ff7707bf840ab0692ba3f08293 # v0.9.0
+        if: ${{ !startsWith(matrix.bins.os, 'ubuntu') }}
         with:
           environments: build
+      
       - name: Enable long paths (Windows)
         if: ${{ matrix.bins.os == 'windows-latest' }}
         run: |
           git config --global core.longpaths true
         shell: bash
+      
       - name: Set environment variable for recipe version
         shell: bash
         run: |
           echo "${{ matrix.bins.env_name }}=${{ matrix.bins.version }}" >> $GITHUB_ENV
+      
       - name: Build ${{ matrix.bins.bin }}
         shell: bash
         env:
           RATTLER_BUILD_ENABLE_GITHUB_INTEGRATION: "true"
           RATTLER_BUILD_COLOR: "always"
         run: |
+          # For Linux container builds, pixi should already be in PATH
+          if [[ "${{ matrix.bins.os }}" == ubuntu* ]]; then
+            export PATH="/root/.pixi/bin:$PATH"
+          fi
           pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}/recipe.yaml ${{ matrix.bins.target }}
+      
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

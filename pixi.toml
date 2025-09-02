@@ -119,19 +119,9 @@ pillow = ">=9.4.0"
 build-docs = "mkdocs build --strict"
 docs = { cmd = "mkdocs serve", description = "Serve the docs locally" }
 
-#[feature.dev.dependencies]
-#pixi-build-python = { path = "crates/pixi-build-python" }
-#pixi-build-cmake = { path = "crates/pixi-build-cmake" }
-#pixi-build-rattler-build = { path = "crates/pixi-build-rattler-build" }
-#pixi-build-rust = { path = "crates/pixi-build-rust" }
-#pixi-build-mojo = { path = "crates/pixi-build-mojo" }
-#pixi-build-ros = { path = "backends/pixi-build-ros" }
-#py-pixi-build-backend = { path = "crates/py-pixi-build-backend" }
-
 [environments]
 default = { solve-group = "default" }
 lint = { features = ["lint"], solve-group = "default" }
 docs = { features = ["docs"], no-default-feature = true }
 schema = { features = ["schema"], no-default-feature = true }
 build = { features = ["build"], no-default-feature = true }
-#dev = { features = ["dev"], no-default-feature = true }

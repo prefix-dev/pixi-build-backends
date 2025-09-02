@@ -7,6 +7,9 @@ on:
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-mojo-v[0-9]+.[0-9]+.[0-9]+"
+  pull_request:
+    paths:
+      - .github/workflows/build-upload.yml
   workflow_dispatch:
     inputs:
       push_to_channel:
@@ -28,6 +31,7 @@ concurrency:
 permissions:
   id-token: write
   contents: read
+  attestations: write
 
 jobs:
   generate-matrix:
@@ -81,11 +85,45 @@ jobs:
           RATTLER_BUILD_COLOR: "always"
         run: |
           pixi run build-recipe-ci $RUNNER_TEMP recipe/${{ matrix.bins.bin }}/recipe.yaml ${{ matrix.bins.target }}
+
+      - uses: actions/attest@daf44fb950173508f38bd2406030372c1d1162b1 # v3.0.0
+        id: attest
+        with:
+          subject-path: "${{ runner.temp }}/**/*.conda"
+          predicate-type: "https://schemas.conda.org/attestations-publish-1.schema.json"
+          predicate: "{\"targetChannel\": \"https://prefix.dev/pixi-build-backends\"}"
+
+      - name: Generate attestation for conda package
+        shell: bash
+        run: |
+          # Convert Windows paths to Unix-style for bash compatibility
+          RUNNER_TEMP_UNIX=$(echo "${{ runner.temp }}" | sed 's|\\|/|g')
+          BUNDLE_PATH_UNIX=$(echo "${{ steps.attest.outputs.bundle-path }}" | sed 's|\\|/|g')
+
+          # Find the actual conda package file (search recursively)
+          CONDA_PACKAGE=$(find "$RUNNER_TEMP_UNIX" -name "*.conda" -type f | head -1)
+          if [ -n "$CONDA_PACKAGE" ]; then
+            # Extract just the filename without path
+            PACKAGE_NAME=$(basename "$CONDA_PACKAGE")
+            # Create signature filename by replacing .conda with .sig
+            SIG_NAME="${PACKAGE_NAME%.conda}.sig"
+            # Get the directory where the conda package is located
+            PACKAGE_DIR=$(dirname "$CONDA_PACKAGE")
+            # Move the attestation bundle to the same directory as the conda package
+            mv "$BUNDLE_PATH_UNIX" "$PACKAGE_DIR/$SIG_NAME"
+            echo "Created attestation: $PACKAGE_DIR/$SIG_NAME"
+          else
+            echo "Error: No conda package found in $RUNNER_TEMP_UNIX"
+            exit 1
+          fi
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: conda-packages-${{ matrix.bins.bin }}-${{ matrix.bins.target }}
-          path: ${{ runner.temp }}/**/*.conda
+          path: |
+            ${{ runner.temp }}/**/*.conda
+            ${{ runner.temp }}/**/*.sig
 
   aggregate:
     needs: build
@@ -127,5 +165,13 @@ jobs:
         run: |
           for file in conda-packages/**/*.conda; do
             echo "Uploading ${file}"
-            pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
+            # Find corresponding attestation file
+            ATTESTATION_FILE="${file%.conda}.sig"
+            if [ -f "$ATTESTATION_FILE" ]; then
+              echo "Found attestation: $ATTESTATION_FILE"
+              pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file" --attestation "$ATTESTATION_FILE"
+            else
+              echo "Warning: No attestation found for $file"
+              pixi run -e build rattler-build upload prefix -c pixi-build-backends "$file"
+            fi
           done

@@ -41,3 +41,7 @@ cxx_compiler_version:
     then: 14
   - if: osx
     then: 19
+
+# Pin the compiler used
+rust_compiler_version:
+  - 1.87.0

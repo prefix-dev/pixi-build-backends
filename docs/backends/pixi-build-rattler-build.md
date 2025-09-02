@@ -48,10 +48,13 @@ Learn more about the `rattler-build`, and its recipe format in its [high level o
     If you expect your build script to be compatible with incremental compilation
     (re-using files from previous builds to speed-up future builds),
     you must ensure that the build directory for these files is set outside of the
-    source directory in order to enable it. This is because rattler-build requires
-    a clean working directory for each build. In practice, this may look like
-    changing directory to `../build_dir` in your build script before commencing the
-    build, or passing `../build_dir` as an argument to your build system.
+    root directory in order to enable the incremental compilation.
+    This is because we use a clean root directory for each build,
+    to ensure compatibility with recipes which make that assumption.
+    
+    In practice, this may look like changing directory to `../build_dir` in your
+    build script before commencing the build, or passing `../build_dir` as an
+    argument to your build system.
 
 ## Specifying dependencies
 

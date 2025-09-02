@@ -47,7 +47,7 @@ cargo-nextest = ">=0.9.96,<0.10"
 CARGO_TARGET_DIR = "target/pixi"
 
 [target.linux-64.dependencies]
-clang = ">=20.1.5,<20.2"
+clang = ">=21.1,<21.2"
 mold = ">=2.33.0,<3.0"
 patchelf = "==0.18.0"
 

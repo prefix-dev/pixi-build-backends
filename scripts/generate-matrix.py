@@ -32,7 +32,7 @@ def get_git_short_hash():
 
 
 def get_current_date():
-    """Get current date in ddmmyyyy format"""
+    """Get current date in yyyymmdd format"""
     return datetime.now().strftime("%Y%m%d")
 
 

@@ -23,13 +23,14 @@ Build backends are executables that follow a specific protocol to decouple the b
 
 ## 📦 Available Backends
 
-The repository currently provides four specialized build backends:
+The repository currently provides five specialized build backends:
 
 | Backend   | Use Case |
 |---------|----------|
 | [**`pixi-build-cmake`**](./backends/pixi-build-cmake.md) |  Projects using CMake |
 | [**`pixi-build-python`**](./backends/pixi-build-python.md) | Building Python packages |
 | [**`pixi-build-rattler-build`**](./backends/pixi-build-rattler-build.md) | Direct `recipe.yaml` builds with full control |
+| [**`pixi-build-ros`**](./backends/pixi-build-ros.md) | ROS (Robot Operating System) packages |
 | [**`pixi-build-rust`**](./backends/pixi-build-rust.md) |  Cargo-based Rust applications and libraries |
 | [**`pixi-build-mojo`**](./backends/pixi-build-mojo.md) |  Mojo applications and packages |
 

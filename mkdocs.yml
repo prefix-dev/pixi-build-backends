@@ -105,6 +105,7 @@ nav:
       - pixi-build-cmake: backends/pixi-build-cmake.md
       - pixi-build-python: backends/pixi-build-python.md
       - pixi-build-rattler-build: backends/pixi-build-rattler-build.md
+      - pixi-build-ros: backends/pixi-build-ros.md
       - pixi-build-rust: backends/pixi-build-rust.md
       - pixi-build-mojo: backends/pixi-build-mojo.md
   - Key Concepts:

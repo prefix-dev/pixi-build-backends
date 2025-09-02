@@ -63,7 +63,7 @@ ruff = ">=0.12.9,<0.13"
 rattler-build = ">=0.30.0,<1"
 
 [feature.build.tasks.build-recipe-ci]
-cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }}"
+cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }} --variant-config recipe/variants.yaml"
 args = ["output_dir", "recipe", "target_platform"]
 
 [feature.build.tasks.build-recipe]

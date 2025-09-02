@@ -60,7 +60,7 @@ pydantic = ">=2.8.2,<3"
 ruff = ">=0.12.9,<0.13"
 
 [feature.build.dependencies]
-rattler-build = ">=0.30.0,<1"
+rattler-build = ">=0.46.0,<1"
 
 [feature.build.tasks.build-recipe-ci]
 cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }} --variant-config recipe/variants.yaml"

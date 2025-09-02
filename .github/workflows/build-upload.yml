@@ -96,8 +96,12 @@ jobs:
       - name: Generate attestation for conda package
         shell: bash
         run: |
+          # Convert Windows paths to Unix-style for bash compatibility
+          RUNNER_TEMP_UNIX=$(echo "${{ runner.temp }}" | sed 's|\\|/|g')
+          BUNDLE_PATH_UNIX=$(echo "${{ steps.attest.outputs.bundle-path }}" | sed 's|\\|/|g')
+
           # Find the actual conda package file (search recursively)
-          CONDA_PACKAGE=$(find ${{ runner.temp }} -name "*.conda" -type f | head -1)
+          CONDA_PACKAGE=$(find "$RUNNER_TEMP_UNIX" -name "*.conda" -type f | head -1)
           if [ -n "$CONDA_PACKAGE" ]; then
             # Extract just the filename without path
             PACKAGE_NAME=$(basename "$CONDA_PACKAGE")
@@ -106,10 +110,10 @@ jobs:
             # Get the directory where the conda package is located
             PACKAGE_DIR=$(dirname "$CONDA_PACKAGE")
             # Move the attestation bundle to the same directory as the conda package
-            mv "${{ steps.attest.outputs.bundle-path }}" "$PACKAGE_DIR/$SIG_NAME"
+            mv "$BUNDLE_PATH_UNIX" "$PACKAGE_DIR/$SIG_NAME"
             echo "Created attestation: $PACKAGE_DIR/$SIG_NAME"
           else
-            echo "Error: No conda package found in ${{ runner.temp }}"
+            echo "Error: No conda package found in $RUNNER_TEMP_UNIX"
             exit 1
           fi
 

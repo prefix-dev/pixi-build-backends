@@ -193,7 +193,7 @@ compilers = ["c", "cxx"]
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
 
-### `pip-config`
+### `extra-args`
 
 - **Type**: `Array<String>`
 - **Default**: `[]`
@@ -202,19 +202,19 @@ compilers = ["c", "cxx"]
 Settings to pass to [`pip`'s `--config-settings` parameter](https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-C).
 
 ```toml
-[package.build.configuration]
-pip-config = ["builddir=mybuilddir"]
+[package.build.config]
+extra-args = ["-Cbuilddir=mybuilddir"]
 ```
 
 For target-specific configuration, platform-specific globs completely replace the base:
 
 ```toml
-[package.build.configuration]
-pip-config = ["builddir=mybuilddir"]
+[package.build.config]
+extra-args = ["-Cbuilddir=mybuilddir"]
 
-[package.build.configuration.targets.win-64]
-pip-config = ["builddir=foo"]
-# Result for win-64: ["builddir=foo"]
+[package.build.config.targets.win-64]
+extra-args = ["-Cbuilddir=foo"]
+# Result for win-64: ["-Cbuilddir=foo"]
 ```
 
 ### `ignore-pyproject-manifest`

@@ -10,9 +10,9 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
-    /// Settings to pass to pip as `--config-settings`
+    /// Extra args to pass to pip
     #[serde(default)]
-    pub pip_config: Vec<String>,
+    pub extra_args: Vec<String>,
     /// Environment Variables
     #[serde(default)]
     pub env: IndexMap<String, String>,
@@ -35,19 +35,6 @@ impl PythonBackendConfig {
         self.noarch.unwrap_or(true)
     }
 
-    pub fn pip_config_string(&self) -> String {
-        if self.pip_config.is_empty() {
-            String::new()
-        } else {
-            self.pip_config
-                .iter()
-                .map(|s| format!("--config-settings={}", s))
-                .collect::<Vec<_>>()
-                .join(" ")
-                + " "
-        }
-    }
-
     /// Creates a new [`PythonBackendConfig`] with default values and
     /// `ignore_pyproject_manifest` set to `true`.
     #[cfg(test)]
@@ -68,7 +55,7 @@ impl BackendConfig for PythonBackendConfig {
     /// Target-specific values override base values using the following rules:
     /// - noarch: Platform-specific takes precedence (critical for cross-platform)
     /// - env: Platform env vars override base, others merge
-    /// - pip_config: Platform-specific completely replaces base
+    /// - extra_args: Platform-specific completely replaces base
     /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
@@ -84,10 +71,10 @@ impl BackendConfig for PythonBackendConfig {
                 merged_env
             },
             debug_dir: self.debug_dir.clone(),
-            pip_config: if target_config.pip_config.is_empty() {
-                self.pip_config.clone()
+            extra_args: if target_config.extra_args.is_empty() {
+                self.extra_args.clone()
             } else {
-                target_config.pip_config.clone()
+                target_config.extra_args.clone()
             },
             extra_input_globs: if target_config.extra_input_globs.is_empty() {
                 self.extra_input_globs.clone()
@@ -128,7 +115,7 @@ mod tests {
             noarch: Some(true),
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
-            pip_config: vec!["builddir=mybuilddir".into()],
+            extra_args: vec!["-Cbuilddir=mybuilddir".into()],
             extra_input_globs: vec!["*.base".to_string()],
             compilers: Some(vec!["c".to_string()]),
             ignore_pyproject_manifest: Some(true),
@@ -142,7 +129,7 @@ mod tests {
             noarch: Some(false),
             env: target_env,
             debug_dir: None,
-            pip_config: vec![],
+            extra_args: vec![],
             extra_input_globs: vec!["*.target".to_string()],
             compilers: Some(vec!["cxx".to_string(), "rust".to_string()]),
             ignore_pyproject_manifest: Some(false),
@@ -190,7 +177,7 @@ mod tests {
             noarch: Some(true),
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
-            pip_config: vec!["builddir=mybuilddir".into()],
+            extra_args: vec!["-Cbuilddir=mybuilddir".into()],
             extra_input_globs: vec!["*.base".to_string()],
             compilers: None,
             ignore_pyproject_manifest: Some(true),

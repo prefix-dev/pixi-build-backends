@@ -4729,7 +4729,7 @@ dependencies = [
 
 [[package]]
 name = "py-pixi-build-backend"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dict_derive",
  "indexmap 2.11.0",

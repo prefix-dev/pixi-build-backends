@@ -1,6 +1,6 @@
 [package]
 name = "pixi-build-cmake"
-version = "0.3.2"
+version = "0.3.3"
 description = "CMake build backend for Pixi"
 edition.workspace = true
 

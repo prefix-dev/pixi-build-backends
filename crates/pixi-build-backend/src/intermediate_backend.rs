@@ -802,7 +802,7 @@ where
                 &config,
                 &params.work_directory,
                 params.editable,
-            );
+            )?;
             input_globs.append(&mut generated_recipe.build_input_globs);
 
             let built_package = CondaBuiltPackage {
@@ -1208,7 +1208,7 @@ where
             &config,
             &params.work_directory,
             params.editable.unwrap_or_default(),
-        );
+        )?;
         input_globs.append(&mut recipe.build_input_globs);
 
         Ok(CondaBuildV1Result {

@@ -216,7 +216,7 @@ impl GenerateRecipe for PythonGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         editable: bool,
-    ) -> BTreeSet<String> {
+    ) -> miette::Result<BTreeSet<String>> {
         let base_globs = Vec::from([
             // Source files
             "**/*.c",
@@ -254,12 +254,12 @@ impl GenerateRecipe for PythonGenerator {
             Vec::from(["**/*.py", "**/*.pyx"])
         };
 
-        base_globs
+        Ok(base_globs
             .iter()
             .chain(python_globs.iter())
             .map(|s| s.to_string())
             .chain(config.extra_input_globs.clone())
-            .collect()
+            .collect())
     }
 }
 

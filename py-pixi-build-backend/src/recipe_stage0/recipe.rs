@@ -129,9 +129,9 @@ impl PyIntermediateRecipe {
     pub fn from_yaml(yaml: String, py: Python) -> PyResult<Self> {
         // Preprocess the YAML to handle script content as both String and Vec<String>
         let preprocessed_yaml = Self::preprocess_script_content(yaml)?;
-        
-        let intermediate_recipe: IntermediateRecipe =
-            serde_yaml::from_str(&preprocessed_yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
+
+        let intermediate_recipe: IntermediateRecipe = serde_yaml::from_str(&preprocessed_yaml)
+            .map_err(PyPixiBuildBackendError::YamlSerialization)?;
 
         let py_intermediate_recipe =
             PyIntermediateRecipe::from_intermediate_recipe(intermediate_recipe, py);
@@ -150,10 +150,10 @@ impl PyIntermediateRecipe {
     /// Preprocess YAML to convert script content from Vec<String> to String
     fn preprocess_script_content(yaml: String) -> PyResult<String> {
         use serde_yaml::Value;
-        
-        let mut value: Value = serde_yaml::from_str(&yaml)
-            .map_err(PyPixiBuildBackendError::YamlSerialization)?;
-        
+
+        let mut value: Value =
+            serde_yaml::from_str(&yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
+
         // Navigate to build.script.content
         if let Value::Mapping(ref mut map) = value {
             if let Some(Value::Mapping(build_map)) = map.get_mut("build") {
@@ -168,7 +168,7 @@ impl PyIntermediateRecipe {
                                     _ => None,
                                 })
                                 .collect();
-                            
+
                             *content_value = Value::String(content_strings.join("\n"));
                         }
                         // If it's already a String, leave it as is
@@ -176,9 +176,8 @@ impl PyIntermediateRecipe {
                 }
             }
         }
-        
-        Ok(serde_yaml::to_string(&value)
-           .map_err(PyPixiBuildBackendError::YamlSerialization)?)
+
+        Ok(serde_yaml::to_string(&value).map_err(PyPixiBuildBackendError::YamlSerialization)?)
     }
 
     pub fn from_intermediate_recipe(recipe: IntermediateRecipe, py: Python) -> Self {

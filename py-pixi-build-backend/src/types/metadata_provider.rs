@@ -2,10 +2,7 @@ use std::collections::BTreeSet;
 
 use miette::Diagnostic;
 use pixi_build_backend::generated_recipe::MetadataProvider;
-use pyo3::{
-    PyErr, PyObject, Python,
-    pyclass, pymethods,
-};
+use pyo3::{PyErr, PyObject, Python, pyclass, pymethods};
 use rattler_conda_types::{ParseVersionError, Version};
 use std::str::FromStr;
 use thiserror::Error;
@@ -46,7 +43,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn name(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "name")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -59,7 +56,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn version(&mut self) -> Result<Option<Version>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "version")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -73,7 +70,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "homepage")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -86,7 +83,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "license")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -99,7 +96,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "license_file")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -112,7 +109,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "summary")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -125,7 +122,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn description(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "description")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -138,7 +135,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "documentation")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {
@@ -151,7 +148,7 @@ impl MetadataProvider for PyMetadataProvider {
     fn repository(&mut self) -> Result<Option<String>, Self::Error> {
         Python::with_gil(|py| {
             let result = self.inner.call_method0(py, "repository")?;
-            
+
             if result.is_none(py) {
                 Ok(None)
             } else {

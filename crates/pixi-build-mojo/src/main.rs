@@ -121,10 +121,10 @@ impl GenerateRecipe for MojoGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> BTreeSet<String> {
-        Self::globs()
+    ) -> miette::Result<BTreeSet<String>> {
+        Ok(Self::globs()
             .chain(config.extra_input_globs.clone())
-            .collect()
+            .collect())
     }
 
     fn default_variants(&self, _host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {

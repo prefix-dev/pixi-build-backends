@@ -69,8 +69,8 @@ pub trait GenerateRecipe {
         _config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> BTreeSet<String> {
-        BTreeSet::new()
+    ) -> miette::Result<BTreeSet<String>> {
+        Ok(BTreeSet::new())
     }
 
     /// Returns "default" variants for the given host platform. This allows

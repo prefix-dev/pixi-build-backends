@@ -36,7 +36,7 @@ impl PyProjectModelV1 {
     }
 
     #[getter]
-    pub fn name(&self) ->  Option<&String> {
+    pub fn name(&self) -> Option<&String> {
         self.inner.name.as_ref()
     }
 

@@ -162,8 +162,8 @@ impl GenerateRecipe for RustGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> BTreeSet<String> {
-        [
+    ) -> miette::Result<BTreeSet<String>> {
+        Ok([
             "**/*.rs",
             // Cargo configuration files
             "Cargo.toml",
@@ -174,7 +174,7 @@ impl GenerateRecipe for RustGenerator {
         .iter()
         .map(|s| s.to_string())
         .chain(config.extra_input_globs.clone())
-        .collect()
+        .collect())
     }
 }
 
@@ -207,7 +207,9 @@ mod tests {
 
         let generator = RustGenerator::default();
 
-        let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
+        let result = generator
+            .extract_input_globs_from_build(&config, PathBuf::new(), false)
+            .unwrap();
 
         // Verify that all extra globs are included in the result
         for extra_glob in &config.extra_input_globs {

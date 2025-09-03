@@ -17,8 +17,8 @@ use recipe_stage0::recipe::IntermediateRecipe;
 use crate::{
     create_py_wrap,
     recipe_stage0::recipe::PyIntermediateRecipe,
-    types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModelV1, PyPythonParams},
     types::metadata_provider::get_input_globs_from_provider,
+    types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModelV1, PyPythonParams},
 };
 
 create_py_wrap!(PyVecString, Vec<String>, |v: &Vec<String>,
@@ -84,11 +84,14 @@ impl PyGeneratedRecipe {
     }
 
     #[staticmethod]
-    pub fn from_model_with_provider(py: Python, model: PyProjectModelV1, metadata_provider: PyObject) -> PyResult<Self> {
+    pub fn from_model_with_provider(
+        py: Python,
+        model: PyProjectModelV1,
+        metadata_provider: PyObject,
+    ) -> PyResult<Self> {
         let mut provider = PyMetadataProvider::new(metadata_provider.clone());
-        let generated_recipe =
-            GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         // Get additional input globs from the metadata provider if available
         let mut metadata_input_globs = generated_recipe.metadata_input_globs;
@@ -101,11 +104,7 @@ impl PyGeneratedRecipe {
         )?;
         let py_metadata_globs = Py::new(
             py,
-            PyVecString::from(
-                metadata_input_globs
-                    .into_iter()
-                    .collect::<Vec<String>>(),
-            ),
+            PyVecString::from(metadata_input_globs.into_iter().collect::<Vec<String>>()),
         )?;
         let py_build_globs = Py::new(
             py,
@@ -252,27 +251,28 @@ impl GenerateRecipe for PyGenerateRecipe {
         config: &Self::Config,
         workdir: impl AsRef<Path>,
         editable: bool,
-    ) -> BTreeSet<String> {
-        let input_globs = Python::with_gil(|py| {
+    ) -> miette::Result<BTreeSet<String>> {
+        Python::with_gil(|py| {
             let workdir = workdir.as_ref();
             let editable = editable;
 
             // we don't pass the wrapper but the python inner model directly
             let py_object = config.model.clone();
 
-            let input_globs = self.model.bind(py).call_method(
-                "extract_input_globs_from_build",
-                (py_object, workdir, editable),
-                None,
-            ).into_diagnostic()?
-            .extract::<Vec<String>>()
-            .into_diagnostic()?
-            .into_iter()
-            .collect::<BTreeSet<String>>();
+            let input_globs = self
+                .model
+                .bind(py)
+                .call_method(
+                    "extract_input_globs_from_build",
+                    (py_object, workdir, editable),
+                    None,
+                )
+                .into_diagnostic()?
+                .extract::<Vec<String>>()
+                .into_diagnostic()?
+                .into_iter()
+                .collect::<BTreeSet<String>>();
             Ok::<_, miette::Report>(input_globs)
-        });
-
-        eprintln!("Extracted build input globs from Python: {:?}", input_globs);
-        input_globs.unwrap()
+        })
     }
 }

@@ -104,8 +104,8 @@ impl GenerateRecipe for CMakeGenerator {
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
-    ) -> BTreeSet<String> {
-        [
+    ) -> miette::Result<BTreeSet<String>> {
+        Ok([
             // Source files
             "**/*.{c,cc,cxx,cpp,h,hpp,hxx}",
             // CMake files
@@ -115,7 +115,7 @@ impl GenerateRecipe for CMakeGenerator {
         .iter()
         .map(|s: &&str| s.to_string())
         .chain(config.extra_input_globs.clone())
-        .collect()
+        .collect())
     }
 
     fn default_variants(&self, host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {

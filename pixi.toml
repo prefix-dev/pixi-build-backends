@@ -1,10 +1,11 @@
-[project]
+[workspace]
 name = "pixi-build"
 version = "0.1.0"
 description = "Binary for building pixi projects into packages"
 authors = ["Tim de Jager <tim@prefix.dev>"]
 channels = ["https://prefix.dev/conda-forge"]
 platforms = ["osx-arm64", "win-64", "linux-64", "osx-64"]
+preview = ["pixi-build"]
 
 [tasks]
 run = "cargo run"
@@ -47,7 +48,7 @@ cargo-nextest = ">=0.9.96,<0.10"
 CARGO_TARGET_DIR = "target/pixi"
 
 [target.linux-64.dependencies]
-clang = ">=20.1.5,<20.2"
+clang = ">=21.1,<21.2"
 mold = ">=2.33.0,<3.0"
 patchelf = "==0.18.0"
 
@@ -59,10 +60,10 @@ pydantic = ">=2.8.2,<3"
 ruff = ">=0.12.9,<0.13"
 
 [feature.build.dependencies]
-rattler-build = ">=0.30.0,<1"
+rattler-build = ">=0.46.0,<1"
 
 [feature.build.tasks.build-recipe-ci]
-cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }}"
+cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --output-dir={{ output_dir }} --recipe {{ recipe }} --target-platform {{ target_platform }} --variant-config recipe/variants.yaml"
 args = ["output_dir", "recipe", "target_platform"]
 
 [feature.build.tasks.build-recipe]
@@ -117,7 +118,6 @@ pillow = ">=9.4.0"
 [feature.docs.tasks]
 build-docs = "mkdocs build --strict"
 docs = { cmd = "mkdocs serve", description = "Serve the docs locally" }
-
 
 [environments]
 default = { solve-group = "default" }

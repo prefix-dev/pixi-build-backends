@@ -44,10 +44,22 @@ The backend expects a rattler-build recipe file in one of these locations (searc
 If the package is defined in the same location as the workspace, it is heavily encouraged to place the recipe file in its own directory `recipe`.
 Learn more about the `rattler-build`, and its recipe format in its [high level overview](https://rattler.build/latest/highlevel).
 
+!!! warning
+    If you expect your build script to be compatible with incremental compilation
+    (re-using files from previous builds to speed-up future builds),
+    you must ensure that the build directory for these files is set outside of the
+    root directory in order to enable the incremental compilation.
+    This is because we use a clean root directory for each build,
+    to ensure compatibility with recipes which make that assumption.
+    
+    In practice, this may look like changing directory to `../build_dir` in your
+    build script before commencing the build, or passing `../build_dir` as an
+    argument to your build system.
+
 ## Specifying dependencies
 
 We only allow source dependencies (workspace packages) in project manifest.
-Binary dependencies are not allowed in the project manifest when using `pixi-build-rattler-build`. 
+Binary dependencies are not allowed in the project manifest when using `pixi-build-rattler-build`.
 This is intentional because:
 
 1. The rattler-build recipe is the source of truth for binary dependencies. It already

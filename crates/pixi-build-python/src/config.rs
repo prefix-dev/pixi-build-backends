@@ -41,7 +41,7 @@ impl PythonBackendConfig {
         } else {
             self.pip_config
                 .iter()
-                .map(|s| format!("-C{}", s))
+                .map(|s| format!("--config-settings={}", s))
                 .collect::<Vec<_>>()
                 .join(" ")
                 + " "

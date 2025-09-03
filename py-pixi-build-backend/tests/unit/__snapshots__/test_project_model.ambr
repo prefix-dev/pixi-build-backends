@@ -1,4 +1,4 @@
 # serializer version: 1
 # name: test_project_model_initialization
-  'ProjectModelV1 { name: "test_project", version: Some(Version { version: [[0], [1], [0], [0]], local: [] }), description: None, authors: None, license: None, license_file: None, readme: None, homepage: None, repository: None, documentation: None, targets: None }'
+  'ProjectModelV1 { name: Some("test_project"), version: Some(Version { version: [[0], [1], [0], [0]], local: [] }), description: None, authors: None, license: None, license_file: None, readme: None, homepage: None, repository: None, documentation: None, targets: None }'
 # ---

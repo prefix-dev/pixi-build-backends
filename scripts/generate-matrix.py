@@ -32,8 +32,8 @@ def get_git_short_hash():
 
 
 def get_current_date():
-    """Get current date in ddmmyyyy format"""
-    return datetime.now().strftime("%d%m%Y")
+    """Get current date in yyyymmdd format"""
+    return datetime.now().strftime("%Y%m%d")
 
 
 def extract_name_and_version_from_tag(tag):

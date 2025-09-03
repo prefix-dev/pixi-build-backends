@@ -14,7 +14,7 @@ pub struct PyProjectModelV1 {
 impl PyProjectModelV1 {
     #[new]
     #[pyo3(signature = (name, version=None))]
-    pub fn new(name: String, version: Option<String>) -> Self {
+    pub fn new(name: Option<String>, version: Option<String>) -> Self {
         PyProjectModelV1 {
             inner: ProjectModelV1 {
                 name,
@@ -36,8 +36,8 @@ impl PyProjectModelV1 {
     }
 
     #[getter]
-    pub fn name(&self) -> &str {
-        &self.inner.name
+    pub fn name(&self) ->  Option<&String> {
+        self.inner.name.as_ref()
     }
 
     #[getter]

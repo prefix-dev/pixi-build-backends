@@ -1,14 +1,10 @@
-[workspace]
-channels = ["https://prefix.dev/conda-forge"]
-preview = ["pixi-build"]
-
-[package]
-name = "pixi-build-python"
-version = "0.3.2"
-
-[package.build]
-backend = { name = "pixi-build-rust", version = "*" }
+[package.build.backend]
+name = "pixi-build-rust"
+version = "*"
 channels = [
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",
 ]
+
+[package.run-dependencies]
+pixi-build-api-version = ">=2,<3"

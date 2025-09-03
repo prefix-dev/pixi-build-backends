@@ -22,7 +22,7 @@ requirements:
     - pyyaml
     - typing-extensions
     - py-pixi-build-backend
-    - pixi-build-api-version >=1,<2
+    - pixi-build-api-version >=2,<3
 
 build:
   script:

@@ -9,16 +9,11 @@ license = "BSD-3-Clause"
 preview = ["pixi-build"]
 
 [package]
-name = "py-pixi-build-backend"
-version = "0.1.0"
+version = "0.1.2"
 
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
 
 [package.build.config]
 compilers = ["rust"]
@@ -28,7 +23,7 @@ maturin = "*"
 
 [package.run-dependencies]
 typing-extensions = "*"
-pixi-build-api-version = ">=1,<2"
+pixi-build-api-version = ">=2,<3"
 
 [activation.env]
 PIP_REQUIRE_VIRTUALENV = "false"
@@ -36,7 +31,7 @@ PIP_REQUIRE_VIRTUALENV = "false"
 [feature.build.dependencies]
 python = "*"
 maturin = "~=1.9.3"
-pip = "~=23.3.2"
+pip = "~=25.2.0"
 rust = "~=1.87.0"
 
 [feature.build.target.linux-64.dependencies]

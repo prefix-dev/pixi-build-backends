@@ -9,7 +9,7 @@ class ProjectModelV1:
 
     _inner: PyProjectModelV1
 
-    def __init__(self, name: str, version: Optional[str] = None):
+    def __init__(self, name: Optional[str] = None, version: Optional[str] = None):
         self._inner = PyProjectModelV1(name, version)
 
     @property

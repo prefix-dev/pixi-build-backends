@@ -1,5 +1,12 @@
 [project]
-dependencies = ["rosdistro", "catkin_pkg", "pytest", "toml", "pyyaml"]
+dependencies = [
+  "rosdistro",
+  "catkin_pkg",
+  "pytest",
+  "toml",
+  "pyyaml",
+  "py-pixi-build-backend",
+]
 name = "pixi-build-ros"
 version = "0.1.1"
 

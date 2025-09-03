@@ -120,13 +120,18 @@ impl GeneratedRecipe {
     ) -> Result<Self, GenerateRecipeError<M::Error>> {
         // If the name is not defined in the model, we try to get it from the provider.
         // If the provider cannot provide a name, we return an error.
-        let name = if model.name.is_empty() {
-            provider
+        let name = match model.name {
+            Some(name) => {
+                if name.trim().is_empty() {
+                    return Err(GenerateRecipeError::NoNameDefined);
+                } else {
+                    name
+                }
+            }
+            None => provider
                 .name()
                 .map_err(|e| GenerateRecipeError::MetadataProviderError(String::from("name"), e))?
-                .ok_or(GenerateRecipeError::NoNameDefined)?
-        } else {
-            model.name
+                .ok_or(GenerateRecipeError::NoNameDefined)?,
         };
 
         // If the version is not defined in the model, we try to get it from the
@@ -196,6 +201,7 @@ impl GeneratedRecipe {
 
         Ok(GeneratedRecipe {
             recipe: ir,
+            // TODO: extract real input globs from the model
             ..Default::default()
         })
     }

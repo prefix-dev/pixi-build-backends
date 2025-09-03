@@ -34,6 +34,7 @@ build:
 requirements:
   build:
     - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
     - cargo-bundle-licenses
     - cargo-auditable
   host:
@@ -43,7 +44,7 @@ requirements:
     - if: unix
       then: openssl
   run:
-    - pixi-build-api-version >=0,<2
+    - pixi-build-api-version >=0,<3
 
 tests:
   - script: ${{ name }} --help

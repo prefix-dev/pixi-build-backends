@@ -23,7 +23,7 @@ Build backends are executables that follow a specific protocol to decouple the b
 
 ## 📦 Available Backends
 
-The repository currently provides five specialized build backends:
+The repository currently provides the following specialized build backends:
 
 | Backend   | Use Case |
 |---------|----------|

@@ -1,6 +1,7 @@
 # pixi-build-ros
 
-The `pixi-build-ros` backend is designed for building [ROS (Robot Operating System)](https://www.ros.org/) packages using the native ROS build systems like [colcon](https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Colcon-Tutorial.html) and [catkin](http://wiki.ros.org/catkin).
+The `pixi-build-ros` backend is designed for building [ROS (Robot Operating System)](https://www.ros.org/) packages using the native ROS build systems.
+No more requirement to use `colcon` or `catkin_tools` to build your ROS packages.
 It provides seamless integration with Pixi's package management workflow while supporting ROS1 and ROS2 packages with automatic dependency resolution.
 
 !!! warning

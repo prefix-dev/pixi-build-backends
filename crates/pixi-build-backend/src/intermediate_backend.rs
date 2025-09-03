@@ -798,8 +798,11 @@ where
                 .await?;
 
             // Extract the input globs from the build and recipe
-            let mut input_globs =
-                T::extract_input_globs_from_build(&config, &params.work_directory, params.editable);
+            let mut input_globs = self.generate_recipe.extract_input_globs_from_build(
+                &config,
+                &params.work_directory,
+                params.editable,
+            );
             input_globs.append(&mut generated_recipe.build_input_globs);
 
             let built_package = CondaBuiltPackage {
@@ -1201,7 +1204,7 @@ where
             run_build(output, &tool_config, WorkingDirectoryBehavior::Preserve).await?;
 
         // Extract the input globs from the build and recipe
-        let mut input_globs = T::extract_input_globs_from_build(
+        let mut input_globs = self.generate_recipe.extract_input_globs_from_build(
             &config,
             &params.work_directory,
             params.editable.unwrap_or_default(),

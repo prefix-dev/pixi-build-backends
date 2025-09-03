@@ -100,6 +100,7 @@ impl GenerateRecipe for CMakeGenerator {
     }
 
     fn extract_input_globs_from_build(
+        &self,
         config: &Self::Config,
         _workdir: impl AsRef<Path>,
         _editable: bool,
@@ -166,7 +167,9 @@ mod tests {
             ..Default::default()
         };
 
-        let result = CMakeGenerator::extract_input_globs_from_build(&config, PathBuf::new(), false);
+        let generator = CMakeGenerator::default();
+
+        let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
 
         insta::assert_debug_snapshot!(result);
     }

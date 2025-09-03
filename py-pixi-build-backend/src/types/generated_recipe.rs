@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashSet};
+use std::path::Path;
 
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{
@@ -240,5 +241,38 @@ impl GenerateRecipe for PyGenerateRecipe {
         })?;
 
         Ok(recipe)
+    }
+
+    /// Returns a list of globs that should be used to find the input files
+    /// for the build process.
+    /// For example, this could be a list of source files or configuration files
+    /// used by Cmake.
+    fn extract_input_globs_from_build(
+        &self,
+        config: &Self::Config,
+        workdir: impl AsRef<Path>,
+        editable: bool,
+    ) -> BTreeSet<String> {
+        let input_globs = Python::with_gil(|py| {
+            let workdir = workdir.as_ref();
+            let editable = editable;
+
+            // we don't pass the wrapper but the python inner model directly
+            let py_object = config.model.clone();
+
+            let input_globs = self.model.bind(py).call_method(
+                "extract_input_globs_from_build",
+                (py_object, workdir, editable),
+                None,
+            ).into_diagnostic()?
+            .extract::<Vec<String>>()
+            .into_diagnostic()?
+            .into_iter()
+            .collect::<BTreeSet<String>>();
+            Ok::<_, miette::Report>(input_globs)
+        });
+
+        eprintln!("Extracted build input globs from Python: {:?}", input_globs);
+        input_globs.unwrap()
     }
 }

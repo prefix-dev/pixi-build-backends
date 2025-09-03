@@ -19,7 +19,7 @@ def get_build_input_globs(config: Any, editable: bool) -> List[str]:
         # Source files
         "**/*.c",
         "**/*.cpp",
-        "**/*.h"
+        "**/*.h",
         "**/*.hpp",
         "**/*.rs",
         "**/*.sh",

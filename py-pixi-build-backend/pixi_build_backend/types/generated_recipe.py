@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, Optional, Protocol, List
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateRecipe
@@ -70,6 +71,10 @@ class GenerateRecipeProtocol(Protocol):
         python_params: Optional[PythonParams] = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
+        ...
+
+    def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> List[str]:
+        """Extract input globs for the build."""
         ...
 
 

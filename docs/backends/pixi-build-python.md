@@ -199,7 +199,8 @@ compilers = ["c", "cxx"]
 - **Default**: `[]`
 - **Target Merge Behavior**: `Overwrite` - Platform-specific globs completely replace base globs
 
-Settings to pass to [`pip`'s `--config-settings` parameter](https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-C).
+Extra arguments to pass to `pip`.
+A use-case could be [`pip`'s `--config-settings` parameter](https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-C).
 
 ```toml
 [package.build.config]

@@ -92,7 +92,7 @@ rust = "1.70"
 
 ## Configuration Options
 
-You can customize the Rust backend behavior using the `[package.build.configuration]` section in your `pixi.toml`. The backend supports the following configuration options:
+You can customize the Rust backend behavior using the `[package.build.config]` section in your `pixi.toml`. The backend supports the following configuration options:
 
 ### `extra-args`
 
@@ -103,7 +103,7 @@ You can customize the Rust backend behavior using the `[package.build.configurat
 Additional command-line arguments to pass to the `cargo install` command. These arguments are appended to the cargo command that builds and installs your project.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-args = [
     "--features", "serde,tokio",
     "--bin", "my-binary"
@@ -113,10 +113,10 @@ extra-args = [
 For target-specific configuration, platform arguments completely replace the base configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-args = ["--release"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 extra-args = ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 # Result for linux-64: ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 ```
@@ -130,17 +130,17 @@ extra-args = ["--features", "linux-specific", "--target", "x86_64-unknown-linux-
 Environment variables to set during the build process. These variables are available during compilation.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { RUST_LOG = "debug", CARGO_PROFILE_RELEASE_LTO = "true" }
 ```
 
 For target-specific configuration, platform environment variables are merged with base variables:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { RUST_LOG = "info", COMMON_VAR = "base" }
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 # Result for linux-64: { RUST_LOG = "info", COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 ```
@@ -154,7 +154,7 @@ env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 debug-dir = ".build-debug"
 ```
 
@@ -168,7 +168,7 @@ debug-dir = ".build-debug"
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include Rust source files (`**/*.rs`), Cargo configuration files (`Cargo.toml`, `Cargo.lock`), build scripts (`build.rs`), and other build-related files.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = [
     "assets/**/*",
     "migrations/*.sql",
@@ -179,10 +179,10 @@ extra-input-globs = [
 For target-specific configuration, platform-specific globs completely replace the base:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = ["*.txt"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 extra-input-globs = ["*.txt", "*.so", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.so", "linux-configs/**/*"]
 ```
@@ -197,7 +197,7 @@ When set to `true`, disables automatic metadata extraction from `Cargo.toml`.
 The backend will only use metadata explicitly defined in your `pixi.toml` file, ignoring any information from the Cargo manifest.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 ignore-cargo-manifest = true
 ```
 
@@ -210,10 +210,10 @@ This is useful when:
 For target-specific configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 ignore-cargo-manifest = false
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 ignore-cargo-manifest = true
 # Result for linux-64: Cargo.toml metadata will be ignored
 ```
@@ -227,17 +227,17 @@ ignore-cargo-manifest = true
 List of compilers to use for the build. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["rust", "c", "cxx"]
 ```
 
 For target-specific configuration, platform compilers completely replace the base configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["rust"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 compilers = ["rust", "c", "cxx"]
 # Result for linux-64: ["rust", "c", "cxx"]
 ```

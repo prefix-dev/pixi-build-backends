@@ -95,7 +95,7 @@ The rattler-build backend supports the following TOML configuration options:
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 debug-dir = "debug-output"
 ```
 
@@ -109,7 +109,7 @@ debug-dir = "debug-output"
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that are determined from the recipe sources and package directory structure.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = [
     "patches/**/*",
     "scripts/*.sh",
@@ -120,10 +120,10 @@ extra-input-globs = [
 For target-specific configuration, platform-specific globs completely replace the base:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = ["*.yaml", "*.md"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 extra-input-globs = ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 # Result for linux-64: ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 ```

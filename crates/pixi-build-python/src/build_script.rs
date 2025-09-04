@@ -11,6 +11,7 @@ pub struct BuildScriptContext {
     pub installer: Installer,
     pub build_platform: BuildPlatform,
     pub editable: bool,
+    pub extra_args: Vec<String>,
     pub manifest_root: PathBuf,
 }
 

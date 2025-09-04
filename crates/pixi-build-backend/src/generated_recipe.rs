@@ -17,7 +17,7 @@ use crate::specs_conversion::from_targets_v1_to_conditional_requirements;
 
 #[derive(Debug, Clone, Default)]
 pub struct PythonParams {
-    // Returns whetever the build is editable or not.
+    // Returns whether the build is editable or not.
     // Default to false
     pub editable: bool,
 }
@@ -40,7 +40,7 @@ pub trait GenerateRecipe {
     /// # Parameters
     ///
     /// * `model` - The project model to convert into a recipe
-    /// * `config` - Backend-specific configuration options  
+    /// * `config` - Backend-specific configuration options
     /// * `manifest_path` - Path to the project manifest file
     /// * `host_platform` - The host platform will be removed in the future.
     ///   Right now it is used to determine if certain dependencies are present

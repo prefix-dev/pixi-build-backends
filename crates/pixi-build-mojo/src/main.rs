@@ -11,7 +11,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use rattler_build::NormalizedKey;
-use rattler_conda_types::PackageName;
+use rattler_conda_types::{PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
 use std::{collections::BTreeSet, path::Path, sync::Arc};
@@ -27,7 +27,7 @@ impl GenerateRecipe for MojoGenerator {
         model: &pixi_build_types::ProjectModelV1,
         config: &Self::Config,
         manifest_root: std::path::PathBuf,
-        host_platform: rattler_conda_types::Platform,
+        host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<GeneratedRecipe> {

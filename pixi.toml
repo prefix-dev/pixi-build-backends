@@ -116,7 +116,7 @@ pillow = ">=9.4.0"
 
 [feature.docs.tasks]
 build-docs = "mkdocs build --strict"
-docs = { cmd = "mkdocs serve", description = "Serve the docs locally" }
+docs = { cmd = "mkdocs serve -a localhost:8004", description = "Serve the docs locally" }
 
 
 [environments]

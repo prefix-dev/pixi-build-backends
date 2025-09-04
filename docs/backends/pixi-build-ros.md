@@ -13,11 +13,6 @@ It provides seamless integration with Pixi's package management workflow while s
     preview = ["pixi-build"]
     ```
 
-!!! warning "Prototype Status"
-    The `pixi-build-ros` backend is currently in **PROTOTYPE** status.
-    While functional, it may have limitations and is subject to significant changes.
-    Use with caution in production environments.
-
 ## Overview
 
 This backend automatically generates conda packages from ROS projects by:
@@ -35,7 +30,11 @@ To use the ROS backend in your `pixi.toml`, add it to your package's build confi
 ```toml
 [workspace]
 preview = ["pixi-build"]
-channels = ["https://prefix.dev/pixi-build-backends", "https://prefix.dev/conda-forge"]
+channels = [
+    "https://prefix.dev/pixi-build-backends",
+    "https://prefix.dev/robostack-jazzy",  # or robostack-humble, robostack-noetic, etc.
+    "https://prefix.dev/conda-forge"
+]
 platforms = ["linux-64", "osx-arm64"]
 
 [package.build]
@@ -46,7 +45,7 @@ distro = "jazzy"  # or "humble", "noetic", etc.
 ```
 
 ??? Note "Workspace Configuration"
-    The workspace can be defined in the `pixi.toml` of the root package or in a separate `pixi.toml` at the workspace root.
+    The workspace can be defined in the `pixi.toml` of the package or in a separate `pixi.toml` at the workspace root.
     For example, with a workspace structure like this:
     ```shell
     tree -L 2
@@ -80,7 +79,6 @@ This includes:
 - **Package name and version**: Automatically used if not specified in `pixi.toml`
 - **Description**: Uses the description from `package.xml`
 - **Maintainers**: Extracted from maintainer fields in `package.xml`
-- **License**: From the license field in `package.xml`
 - **Homepage**: From URL fields with type "website" in `package.xml`
 - **Repository**: From URL fields with type "repository" in `package.xml`
 
@@ -92,7 +90,6 @@ For example, if your `package.xml` contains:
   <version>1.0.0</version>
   <description>A useful ROS package for navigation</description>
   <maintainer email="developer@example.com">John Doe</maintainer>
-  <license>MIT</license>
   <url type="website">https://github.com/user/my_ros_package</url>
   <url type="repository">https://github.com/user/my_ros_package</url>
 </package>
@@ -106,40 +103,12 @@ name = "my_ros_package"
 version = "1.0.0"
 description = "A useful ROS package for navigation"
 maintainers = ["John Doe <developer@@example.com"]
-license = "MIT"
 homepage = "https://github.com/user/my_ros_package"
 repository = "https://github.com/user/my_ros_package"
 ```
 
 The backend will automatically use the metadata from `package.xml` to generate a complete conda package named `ros-jazzy-my-ros-package`.
 The fields in the `pixi.toml` will override the values from `package.xml` if they are explicitly set.
-
-### Required Dependencies
-
-The backend automatically includes the following build tools based on your ROS package type:
-
-**Common dependencies:**
-
-- `ninja` - Fast build system
-- `python` - Python interpreter
-- `setuptools` - Python packaging tools
-- `git`, `git-lfs` - Version control tools
-- `cmake` - Build system
-- `cpython` - Python implementation
-- `pkg-config` - Package configuration tool
-- `numpy` - Numerical computing library
-- `pip` - Python package installer
-
-**Platform-specific dependencies:**
-
-- **Linux/macOS**: `patch`, `make`, `coreutils`
-- **macOS**: `tapi`
-- **Windows**: `m2-patch`
-
-**ROS-specific dependencies:**
-
-- Compiler dependencies: `${{ compiler('c') }}`, `${{ compiler('cxx') }}`
-- For ROS2 packages: `ros_workspace`
 
 ## Configuration Options
 
@@ -155,7 +124,7 @@ The ROS distribution to build for. This affects dependency mapping and build con
 If set the package name will be prefixed with `ros-<distro>-` automatically, otherwise the package name from `pixi.toml` or `package.xml` is used.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 distro = "jazzy"  # or "humble", "noetic", "iron", etc.
 ```
 
@@ -168,7 +137,7 @@ distro = "jazzy"  # or "humble", "noetic", "iron", etc.
 Controls whether to build a platform-independent (noarch) package or a platform-specific package.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 noarch = false  # Build platform-specific package
 ```
 
@@ -181,7 +150,7 @@ noarch = false  # Build platform-specific package
 Environment variables to set during the build process. These variables are available during compilation.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { ROS_VERSION = "2", AMENT_CMAKE_ENVIRONMENT_HOOKS_ENABLED = "1" }
 ```
 
@@ -194,7 +163,7 @@ env = { ROS_VERSION = "2", AMENT_CMAKE_ENVIRONMENT_HOOKS_ENABLED = "1" }
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 debug-dir = ".build-debug"
 ```
 
@@ -207,7 +176,7 @@ debug-dir = ".build-debug"
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include ROS-specific files.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = [
     "launch/**/*.py",
     "config/*.yaml",

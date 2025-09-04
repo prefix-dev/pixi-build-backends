@@ -20,7 +20,7 @@ This backend automatically generates conda packages from ROS projects by:
 - **package.xml Integration**: Automatically reads package metadata (name, version, description, maintainers, dependencies) from your ROS `package.xml` file
 - **Multi-build system support**: Supports ament_cmake, ament_python, catkin, and cmake build types
 - **ROS Distribution Support**: Works with both ROS1 and ROS2 distributions (noetic, humble, jazzy, etc.)
-- **Cross-platform support**: Supports Linux and macOS (Windows support is planned)
+- **Cross-platform support**: Supports Linux, macOS and Windows
 - **Automatic dependency mapping**: Maps ROS dependencies to conda packages using RoboStack mappings
 
 ## Basic Usage

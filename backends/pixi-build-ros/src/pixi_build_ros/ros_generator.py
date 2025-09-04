@@ -63,7 +63,7 @@ class ROSGenerator(GenerateRecipeProtocol):
         config: Dict[str, Any],
         manifest_path: str,
         host_platform: Platform,
-        python_params: Optional[PythonParams] = None,
+        _python_params: Optional[PythonParams] = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""        
         backend_config: ROSBackendConfig = ROSBackendConfig(**config)

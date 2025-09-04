@@ -10,6 +10,9 @@ pub struct PythonBackendConfig {
     /// to `true`.
     #[serde(default)]
     pub noarch: Option<bool>,
+    /// Extra args to pass to pip
+    #[serde(default)]
+    pub extra_args: Vec<String>,
     /// Environment Variables
     #[serde(default)]
     pub env: IndexMap<String, String>,
@@ -52,6 +55,7 @@ impl BackendConfig for PythonBackendConfig {
     /// Target-specific values override base values using the following rules:
     /// - noarch: Platform-specific takes precedence (critical for cross-platform)
     /// - env: Platform env vars override base, others merge
+    /// - extra_args: Platform-specific completely replaces base
     /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
@@ -67,6 +71,11 @@ impl BackendConfig for PythonBackendConfig {
                 merged_env
             },
             debug_dir: self.debug_dir.clone(),
+            extra_args: if target_config.extra_args.is_empty() {
+                self.extra_args.clone()
+            } else {
+                target_config.extra_args.clone()
+            },
             extra_input_globs: if target_config.extra_input_globs.is_empty() {
                 self.extra_input_globs.clone()
             } else {
@@ -106,6 +115,7 @@ mod tests {
             noarch: Some(true),
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
+            extra_args: vec!["-Cbuilddir=mybuilddir".into()],
             extra_input_globs: vec!["*.base".to_string()],
             compilers: Some(vec!["c".to_string()]),
             ignore_pyproject_manifest: Some(true),
@@ -119,6 +129,7 @@ mod tests {
             noarch: Some(false),
             env: target_env,
             debug_dir: None,
+            extra_args: vec![],
             extra_input_globs: vec!["*.target".to_string()],
             compilers: Some(vec!["cxx".to_string(), "rust".to_string()]),
             ignore_pyproject_manifest: Some(false),
@@ -166,6 +177,7 @@ mod tests {
             noarch: Some(true),
             env: base_env,
             debug_dir: Some(PathBuf::from("/base/debug")),
+            extra_args: vec!["-Cbuilddir=mybuilddir".into()],
             extra_input_globs: vec!["*.base".to_string()],
             compilers: None,
             ignore_pyproject_manifest: Some(true),

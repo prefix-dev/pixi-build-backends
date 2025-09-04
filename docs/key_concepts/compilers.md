@@ -35,7 +35,7 @@ Compiler selection works through a build variant system. Build variants allow yo
 
 ### Overriding Compilers in Pixi Workspaces
 
-Pixi workspaces provide powerful mechanisms to override compiler variants through build variant configuration. 
+Pixi workspaces provide powerful mechanisms to override compiler variants through build variant configuration.
 This allows users to customize compiler selection without modifying individual package recipes.
 
 To overwrite the default C compiler you can modify your `pixi.toml` file in the workspace root:
@@ -77,7 +77,7 @@ When you specify `compilers = ["c"]` in your pixi-build configuration, the syste
    If there's no compiler configuration, the [default](./compilers.md#backend-specific-defaults) of the backend will be used.
 
 2. **For each compiler, determine the variants to take into account**
-   
+
    The variant names follow the pattern `{language}_compiler` and `{language}_compiler_version`.
    In our example that would lead to `c_compiler` and `c_compiler_version`.
 
@@ -95,7 +95,7 @@ When you specify `compilers = ["c"]` in your pixi-build configuration, the syste
    If `{language}_compiler_version` is not set, then there's no constraint on the compiler version.
 
    If `{language}_compiler` is not set, the build-backends set default values for certain languages:
-   
+
    - c: `gcc` on Linux, `clang` on osx and `vs2017` on Windows
    - cxx: `gxx` on Linux, `clangxx` on osx and `vs2017` on Windows
    - fortran: `gfortran` on Linux, `gfortran` on osx and `vs2017` on Windows
@@ -109,12 +109,12 @@ When you specify `compilers = ["c"]` in your pixi-build configuration, the syste
 
    In our example we would create two outputs.
    If we build on linux-64, one output would request `gcc_linux-64 11.4` and one would request `gcc_linux-64 14.0`
-   
+
 
 
 ## Available Compilers
 
-Which compilers are available depends on the channels you target but through the conda-forge infrastructure the following compilers are generally available across all platforms. 
+Which compilers are available depends on the channels you target but through the conda-forge infrastructure the following compilers are generally available across all platforms.
 The table below lists the core compilers, specialized compilers, and some backend language-specific compilers that can be configured in `pixi-build`.
 
 ### Core Compilers
@@ -165,11 +165,11 @@ Compiler configuration is only available in backends that have specifically impl
 
 ```toml
 # Use default compilers for the backend
-[package.build.configuration]
+[package.build.config]
 # No compilers specified - uses backend defaults
 
 # Override with specific compilers
-[package.build.configuration]
+[package.build.config]
 compilers = ["c", "cxx", "fortran"]
 ```
 
@@ -177,14 +177,14 @@ compilers = ["c", "cxx", "fortran"]
 
 ```toml
 # Base configuration for most platforms
-[package.build.configuration]
+[package.build.config]
 compilers = ["cxx"]
 
 # Linux needs additional CUDA support
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 compilers = ["cxx", "cuda"]
 
 # Windows needs additional C compiler for some dependencies
-[package.build.configuration.targets.win-64]  
+[package.build.config.targets.win-64]
 compilers = ["c", "cxx"]
 ```

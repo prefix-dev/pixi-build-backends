@@ -151,6 +151,7 @@ impl GenerateRecipe for PythonGenerator {
                 BuildPlatform::Unix
             },
             editable,
+            extra_args: config.extra_args.clone(),
             manifest_root: manifest_root.clone(),
         }
         .render();

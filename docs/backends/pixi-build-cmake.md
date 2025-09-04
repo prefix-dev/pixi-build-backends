@@ -54,7 +54,7 @@ ninja = "1.13"
 
 ## Configuration Options
 
-You can customize the CMake backend behavior using the `[package.build.configuration]` section in your `pixi.toml`. The backend supports the following configuration options:
+You can customize the CMake backend behavior using the `[package.build.config]` section in your `pixi.toml`. The backend supports the following configuration options:
 
 ### `extra-args`
 
@@ -65,7 +65,7 @@ You can customize the CMake backend behavior using the `[package.build.configura
 Additional command-line arguments to pass to the CMake configuration step. These arguments are inserted into the `cmake` command that configures your project.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-args = [
     "-DENABLE_TESTING=ON",
     "-DCMAKE_CXX_STANDARD=17"
@@ -75,10 +75,10 @@ extra-args = [
 For target-specific configuration, platform arguments completely replace the base configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-args = ["-DCMAKE_BUILD_TYPE=Release"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 extra-args = ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
 # Result for linux-64: ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
 ```
@@ -92,17 +92,17 @@ extra-args = ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
 Environment variables to set during the build process. These variables are available to both the CMake configuration and build steps.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { CMAKE_VERBOSE_MAKEFILE = "ON", CXXFLAGS = "-O3 -march=native" }
 ```
 
 For target-specific configuration, platform environment variables are merged with base variables:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "base" }
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 env = { COMMON_VAR = "linux", LINUX_VAR = "value" }
 # Result for linux-64: { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "linux", LINUX_VAR = "value" }
 ```
@@ -116,7 +116,7 @@ env = { COMMON_VAR = "linux", LINUX_VAR = "value" }
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 debug-dir = ".build-debug"
 ```
 
@@ -130,7 +130,7 @@ debug-dir = ".build-debug"
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include source files (`**/*.{c,cc,cxx,cpp,h,hpp,hxx}`), CMake files (`**/*.{cmake,cmake.in}`, `**/CMakeFiles.txt`), and other build-related files.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = [
     "assets/**/*",
     "config/*.ini",
@@ -141,10 +141,10 @@ extra-input-globs = [
 For target-specific configuration, platform-specific globs completely replace the base:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = ["*.txt"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 extra-input-globs = ["*.txt", "*.linux", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.linux", "linux-configs/**/*"]
 ```
@@ -158,17 +158,17 @@ extra-input-globs = ["*.txt", "*.linux", "linux-configs/**/*"]
 List of compilers to use for the build. The backend automatically generates appropriate compiler dependencies using conda-forge's compiler infrastructure.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["c", "cxx", "fortran"]
 ```
 
 For target-specific configuration, platform compilers completely replace the base configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["cxx"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 compilers = ["c", "cxx", "cuda"]
 # Result for linux-64: ["c", "cxx", "cuda"]
 ```
@@ -200,7 +200,7 @@ The `pixi-build-cmake` backend places `extra-args` after the default CMake flags
 For example, to switch from the default Release build to Debug mode:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-args = ["-DCMAKE_BUILD_TYPE=Debug"]
 ```
 

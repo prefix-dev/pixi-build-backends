@@ -144,7 +144,7 @@ The auto-derive feature supports various common project layouts:
 
 ## Configuration Options
 
-You can customize the Mojo backend behavior using the `[package.build.configuration]` section in your `pixi.toml`. The backend supports the following configuration options:
+You can customize the Mojo backend behavior using the `[package.build.config]` section in your `pixi.toml`. The backend supports the following configuration options:
 
 #### `env`
 
@@ -154,7 +154,7 @@ You can customize the Mojo backend behavior using the `[package.build.configurat
 Environment variables to set during the build process.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 env = { ASSERT = "all" }
 ```
 
@@ -166,7 +166,7 @@ env = { ASSERT = "all" }
 Directory to place internal pixi debug information into.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 debug-dir = ".build-debug"
 ```
 
@@ -178,7 +178,7 @@ debug-dir = ".build-debug"
 Additional globs to pass to pixi to discover if the package should be rebuilt.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 extra-input-globs = ["**/*.c", "assets/**/*", "*.md"]
 ```
 
@@ -191,17 +191,17 @@ extra-input-globs = ["**/*.c", "assets/**/*", "*.md"]
 List of compilers to use for the build. The mojo compiler is handled specially and uses the `mojo-compiler` package, while other compilers use conda-forge's standard compiler infrastructure.
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["mojo", "c", "cxx"]
 ```
 
 For target-specific configuration, platform compilers completely replace the base configuration:
 
 ```toml
-[package.build.configuration]
+[package.build.config]
 compilers = ["mojo"]
 
-[package.build.configuration.targets.linux-64]
+[package.build.config.targets.linux-64]
 compilers = ["mojo", "c", "cuda"]
 # Result for linux-64: ["mojo", "c", "cuda"]
 ```
@@ -236,7 +236,7 @@ The name of the binary executable to create. If not specified:
 - For additional binaries, this field is required
 
 ```toml
-[[package.build.configuration.bins]]
+[[package.build.config.bins]]
 # name = "greet"  # Optional for first binary, defaults to project name
 ```
 
@@ -250,7 +250,7 @@ The path to the Mojo file that contains a `main` function. If not specified:
 - For additional binaries, this field is required
 
 ```toml
-[[package.build.configuration.bins]]
+[[package.build.config.bins]]
 # path = "./main.mojo"  # Optional if main.mojo exists in project root
 ```
 
@@ -262,7 +262,7 @@ The path to the Mojo file that contains a `main` function. If not specified:
 Additional command-line arguments to pass to the Mojo compiler when building this binary.
 
 ```toml
-[[package.build.configuration.bins]]
+[[package.build.config.bins]]
 extra-args = ["-I", "special-thing"]
 ```
 
@@ -290,7 +290,7 @@ Package configuration for creating Mojo package. The created Mojo package will b
 The name to give the Mojo package. The `.mojopkg` suffix will be added automatically. If not specified, defaults to the project name.
 
 ```toml
-[package.build.configuration.pkg]
+[package.build.config.pkg]
 name = "greetings"
 ```
 
@@ -302,7 +302,7 @@ name = "greetings"
 The path to the directory that constitutes the package. If not specified, searches for a directory with `__init__.mojo` or `__init__.🔥` as described above.
 
 ```toml
-[package.build.configuration.pkg]
+[package.build.config.pkg]
 path = "greetings"
 ```
 
@@ -314,7 +314,7 @@ path = "greetings"
 Additional command-line arguments to pass to the Mojo compiler when building this package.
 
 ```toml
-[package.build.configuration.pkg]
+[package.build.config.pkg]
 extra-args = ["-I", "special-thing"]
 ```
 

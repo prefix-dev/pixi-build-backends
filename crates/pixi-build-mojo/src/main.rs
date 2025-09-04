@@ -10,15 +10,11 @@ use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
-use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{PackageName, Platform};
+use rattler_build::NormalizedKey;
+use rattler_conda_types::PackageName;
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-    sync::Arc,
-};
+use std::{collections::BTreeSet, path::Path, sync::Arc};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}

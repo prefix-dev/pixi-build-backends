@@ -1,6 +1,5 @@
 [workspace]
 channels = [
-  "https://prefix.dev/ruben-arts",
   "https://prefix.dev/pixi-build-backends",
   "https://prefix.dev/conda-forge",
 ]
@@ -31,5 +30,4 @@ pixi-build-api-version = ">=2,<3"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
 #py-pixi-build-backend = "*"
-# py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
-pp = "*"
+py-pixi-build-backend = { path = "../../py-pixi-build-backend" }

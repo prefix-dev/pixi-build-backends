@@ -244,7 +244,6 @@ Example dependency mapping:
 
 ## Limitations
 
-- **Windows support**: Not yet implemented
 - **Version constraints**: Dependency versions from `package.xml` are currently ignored
 - **Conditional dependencies**: Dependencies with conditions are not fully supported yet
 - **Target-specific dependencies**: Platform-specific dependencies in `package.xml` need manual handling

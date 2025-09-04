@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "py-pixi-build-backend"
+name = "pp"
 description = "Python bindings for pixi-build-backends"
 requires-python = ">=3.8"
 license = { text = "BSD-3-Clause" }

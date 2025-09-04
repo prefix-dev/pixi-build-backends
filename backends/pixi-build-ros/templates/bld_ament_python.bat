@@ -4,8 +4,11 @@ setlocal
 
 set "PYTHONPATH=%LIBRARY_PREFIX%\lib\site-packages;%SP_DIR%"
 
-pushd %SRC_DIR%\%PKG_NAME%\src\work\@(additional_folder)
-set "PKG_NAME_SHORT=%PKG_NAME:*ros-@(ros_distro)-=%"
+:: Rattler-build will not set the SRC_DIR anymore so we set it through templating
+set "SRC_DIR=@SRC_DIR@"
+
+pushd %SRC_DIR%
+set "PKG_NAME_SHORT=%PKG_NAME:*ros-@DISTRO@-=%"
 set "PKG_NAME_SHORT=%PKG_NAME_SHORT:-=_%"
 
 :: If there is a setup.cfg that contains install-scripts then use pip to install

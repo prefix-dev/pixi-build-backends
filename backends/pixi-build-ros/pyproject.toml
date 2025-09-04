@@ -5,7 +5,7 @@ dependencies = [
   "pytest",
   "toml",
   "pyyaml",
-  "py-pixi-build-backend",
+  # "py-pixi-build-backend",
 ]
 name = "pixi-build-ros"
 version = "0.1.1"

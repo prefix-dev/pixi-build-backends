@@ -2,6 +2,9 @@
 :: DO NOT EDIT!
 setlocal EnableDelayedExpansion
 
+:: Rattler-build will not set the SRC_DIR anymore so we set it through templating
+set "SRC_DIR=@SRC_DIR@"
+
 set "PYTHONPATH=%LIBRARY_PREFIX%\lib\site-packages;%SP_DIR%"
 
 :: MSVC is preferred.
@@ -43,8 +46,7 @@ cmake ^
     -DCMAKE_OBJECT_PATH_MAX=255 ^
     --compile-no-warning-as-error ^
     -DPYTHON_INSTALL_DIR=%PYTHON_INSTALL_DIR% ^
-    @(additional_cmake_args) ^
-    %SRC_DIR%\%PKG_NAME%\src\work\@(additional_folder)
+    %SRC_DIR%
 if errorlevel 1 exit 1
 
 :: We explicitly pass %CPU_COUNT% to cmake --build as we are not using Ninja,

@@ -46,11 +46,11 @@ class BuildScriptContext:
         """Get the build script from the template directory based on the package type."""
         # TODO: deal with other script languages, e.g. for Windows
         if pkg.get_build_type() in ["ament_cmake"]:
-            template_name = "build_ament_cmake.sh.in"
+            template_name = "build_ament_cmake.sh" if platform == BuildPlatform.UNIX else "bld_ament_cmake.bat"
         elif pkg.get_build_type() in ["ament_python"]:
-            template_name = "build_ament_python.sh.in"
+            template_name = "build_ament_python.sh" if platform == BuildPlatform.UNIX else "bld_ament_python.bat"
         elif pkg.get_build_type() in ["cmake", "catkin"]:
-            template_name = "build_catkin.sh.in"
+            template_name = "build_catkin.sh" if platform == BuildPlatform.UNIX else "bld_catkin.bat"
         else:
             raise ValueError(f"Unsupported build type: {pkg.get_build_type()}")
         

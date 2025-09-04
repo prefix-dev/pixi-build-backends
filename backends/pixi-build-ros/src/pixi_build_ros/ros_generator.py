@@ -144,7 +144,12 @@ class ROSGenerator(GenerateRecipeProtocol):
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 
-
+    def default_variants(self, host_platform: Platform ) -> Dict[str, Any]:
+        """Get the default variants for the generator."""
+        variants = {}
+        if host_platform.is_windows:
+            variants["cxx_compiler"] = ["vs2019"]
+        return variants
 
 def merge_requirements(model_requirements: ConditionalRequirements, package_requirements: ConditionalRequirements) -> ConditionalRequirements:
     """Merge two sets of requirements."""

@@ -271,7 +271,7 @@ where
         // Determine the variant configuration to use. This is a combination of defaults
         // from the generator and the user supplied parameters. The parameters
         // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(host_platform);
+        let recipe_variants = self.generate_recipe.default_variants(host_platform)?;
         let mut param_variant_configuration = params
             .variant_configuration
             .unwrap_or_default()
@@ -581,7 +581,7 @@ where
         // Determine the variant configuration to use. This is a combination of defaults
         // from the generator and the user supplied parameters. The parameters
         // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(host_platform);
+        let recipe_variants = self.generate_recipe.default_variants(host_platform)?;
         let param_variants =
             convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
         let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
@@ -841,7 +841,9 @@ where
         // Determine the variant configuration to use. This is a combination of defaults
         // from the generator and the user supplied parameters. The parameters
         // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(params.host_platform);
+        let recipe_variants = self
+            .generate_recipe
+            .default_variants(params.host_platform)?;
         let param_variants =
             convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
         let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));

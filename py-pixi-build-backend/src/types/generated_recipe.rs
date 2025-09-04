@@ -1,18 +1,5 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::Path;
-
-use miette::IntoDiagnostic;
-use pixi_build_backend::generated_recipe::{
-    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
-};
-use pixi_build_backend::variants::NormalizedKey;
-use pyo3::{
-    Py, PyErr, PyObject, PyResult, Python,
-    exceptions::PyValueError,
-    pyclass, pymethods,
-    types::{PyAnyMethods, PyString},
-};
-use recipe_stage0::recipe::IntermediateRecipe;
 
 use crate::{
     create_py_wrap,
@@ -20,6 +7,20 @@ use crate::{
     types::metadata_provider::get_input_globs_from_provider,
     types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModelV1, PyPythonParams},
 };
+use miette::IntoDiagnostic;
+use pixi_build_backend::generated_recipe::{
+    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
+};
+use pyo3::{
+    Py, PyErr, PyObject, PyResult, Python,
+    exceptions::PyValueError,
+    pyclass, pymethods,
+    types::{PyAnyMethods, PyString},
+};
+use rattler_build::render::resolved_dependencies::DependencyInfo::Variant;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
+use rattler_conda_types::Platform;
+use recipe_stage0::recipe::IntermediateRecipe;
 
 create_py_wrap!(PyVecString, Vec<String>, |v: &Vec<String>,
                                            f: &mut std::fmt::Formatter<
@@ -273,6 +274,30 @@ impl GenerateRecipe for PyGenerateRecipe {
                 .into_iter()
                 .collect::<BTreeSet<String>>();
             Ok::<_, miette::Report>(input_globs)
+        })
+    }
+
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        Python::with_gil(|py| {
+            let variants_dict = self
+                .model
+                .bind(py)
+                .call_method("default_variants", (PyPlatform::from(host_platform),), None)
+                .into_diagnostic()?
+                .extract::<BTreeMap<String, Vec<String>>>()
+                .into_diagnostic()?;
+
+            let mut variants = BTreeMap::new();
+            for (key, values) in variants_dict {
+                variants.insert(
+                    NormalizedKey::from(key),
+                    values.into_iter().map(Variable::from).collect(),
+                );
+            }
+            Ok::<_, miette::Report>(variants)
         })
     }
 }

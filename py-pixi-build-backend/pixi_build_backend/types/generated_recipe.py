@@ -76,7 +76,10 @@ class GenerateRecipeProtocol(Protocol):
     def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> List[str]:
         """Extract input globs for the build."""
         ...
-
+    
+    def default_variants(self, host_platform: Platform ) -> Dict[str, Any]:
+        """Get the default variants for the generator."""
+        ...
 
 class GenerateRecipe:
     """Protocol for generating recipes."""

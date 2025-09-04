@@ -118,7 +118,10 @@ impl GenerateRecipe for CMakeGenerator {
         .collect())
     }
 
-    fn default_variants(&self, host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
         let mut variants = BTreeMap::new();
 
         if host_platform.is_windows() {
@@ -129,7 +132,7 @@ impl GenerateRecipe for CMakeGenerator {
             variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()]);
         }
 
-        variants
+        Ok(variants)
     }
 }
 

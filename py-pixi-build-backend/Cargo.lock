@@ -4747,6 +4747,7 @@ dependencies = [
  "pyo3-async-runtimes",
  "pyo3-build-config 0.25.1",
  "pythonize",
+ "rattler-build",
  "rattler_conda_types 0.39.0",
  "rattler_package_streaming 0.23.1",
  "rattler_virtual_packages 2.1.3",

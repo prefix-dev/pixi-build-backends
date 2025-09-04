@@ -126,10 +126,6 @@ impl GenerateRecipe for MojoGenerator {
             .chain(config.extra_input_globs.clone())
             .collect())
     }
-
-    fn default_variants(&self, _host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
-        BTreeMap::new()
-    }
 }
 
 impl MojoGenerator {

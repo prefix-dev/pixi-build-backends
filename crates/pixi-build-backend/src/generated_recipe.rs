@@ -80,8 +80,11 @@ pub trait GenerateRecipe {
     /// This can be useful to change the default behavior of rattler-build with
     /// regard to compilers. But it also allows setting up default build
     /// matrices.
-    fn default_variants(&self, _host_platform: Platform) -> BTreeMap<NormalizedKey, Vec<Variable>> {
-        BTreeMap::new()
+    fn default_variants(
+        &self,
+        _host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        Ok(BTreeMap::new())
     }
 }
 

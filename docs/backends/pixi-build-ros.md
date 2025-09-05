@@ -66,7 +66,9 @@ When you want to install it into your environment, you can do so by adding the f
 
 ```toml
 [dependencies]
-ros-jazzy-my-ros-package = { path = "src/my_ros_package" }
+ros-jazzy-my-ros-package = { path = "." }
+# or if the package is in a separate pixi.toml
+# ros-jazzy-my-ros-package = { path = "src/my_ros_package" }
 ```
 Note that you need to specify the `ros-jazzy-` prefix when you use a distro configuration. 
 
@@ -126,19 +128,6 @@ If set the package name will be prefixed with `ros-<distro>-` automatically, oth
 ```toml
 [package.build.config]
 distro = "jazzy"  # or "humble", "noetic", "iron", etc.
-```
-
-### `noarch`
-
-- **Type**: `Boolean`
-- **Default**: `true`
-- **Target Merge Behavior**: `Overwrite` - Platform-specific noarch setting takes precedence over base
-
-Controls whether to build a platform-independent (noarch) package or a platform-specific package.
-
-```toml
-[package.build.config]
-noarch = false  # Build platform-specific package
 ```
 
 ### `env`

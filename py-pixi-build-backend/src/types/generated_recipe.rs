@@ -11,14 +11,13 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
 };
+use pixi_build_backend::{NormalizedKey, Variable};
 use pyo3::{
     Py, PyErr, PyObject, PyResult, Python,
     exceptions::PyValueError,
     pyclass, pymethods,
     types::{PyAnyMethods, PyString},
 };
-use rattler_build::render::resolved_dependencies::DependencyInfo::Variant;
-use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::Platform;
 use recipe_stage0::recipe::IntermediateRecipe;
 

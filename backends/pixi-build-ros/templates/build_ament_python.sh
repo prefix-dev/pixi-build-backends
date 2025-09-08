@@ -8,8 +8,6 @@ export SRC_DIR="@SRC_DIR@"
 
 pushd $SRC_DIR
 
-# exit 1;
-
 # If there is a setup.cfg that contains install-scripts then we should not set it here
 if [ -f setup.cfg ] && grep -q "install[-_]scripts" setup.cfg; then
   # Remove e.g. ros-humble- from PKG_NAME

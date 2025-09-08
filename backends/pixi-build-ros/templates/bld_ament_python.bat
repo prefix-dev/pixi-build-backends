@@ -25,4 +25,9 @@ if "%errorlevel%" == "0" (
         --install-scripts=%LIBRARY_PREFIX%\bin
 )
 
+if exist *.egg-info rmdir /s /q *.egg-info 2>nul
+if exist build rmdir /s /q build 2>nul
+if exist files.txt del /q files.txt 2>nul
+
+
 if errorlevel 1 exit 1

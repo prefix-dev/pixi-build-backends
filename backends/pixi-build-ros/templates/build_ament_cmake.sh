@@ -51,12 +51,6 @@ if [[ $target_platform =~ linux.* ]]; then
 fi;
 
 
-# TODO: test the ln on macos
-touch jorik.txt
-ln -sf jorik.txt ${BUILD_PREFIX}/jorik_link.txt
-
-
-
 # PYTHON_INSTALL_DIR should be a relative path, see
 # https://github.com/ament/ament_cmake/blob/2.3.2/ament_cmake_python/README.md
 # So we compute the relative path of $SP_DIR w.r.t. to $PREFIX,

@@ -158,11 +158,7 @@ macro_rules! create_pylist_or_item {
             pub fn is_list(&self) -> bool {
                 self.inner.len() > 1
             }
-        }
-
-        // Implementing the PyList interface
-        #[pymethods]
-        impl $name {
+            
             pub fn __getitem__(&self, index: usize) -> PyResult<$py_type> {
                 Ok(Into::<$py_type>::into(
                     self.inner.0.get(index).cloned().unwrap(),

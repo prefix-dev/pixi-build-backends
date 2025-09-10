@@ -36,12 +36,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "rt"] }
-toml_edit = "0.23.0"
-toml = "0.9"
 
 rattler_conda_types = { version = "0.39.0", default-features = false }
-rattler_package_streaming = { version = "0.23.1", default-features = false }
-rattler_virtual_packages = { version = "2.0.9", default-features = false }
 
 rattler-build = "*"
 
@@ -49,19 +45,10 @@ rattler-build = "*"
 miette = "7.5.0"
 thiserror = "2.0.12"
 
-# We want to point to the latest known hash commit where rattler is not bumped yet
-# and doesn't conflict with the pixi build types.
-py-rattler = { git = "https://github.com/conda/rattler", rev = "ac1a946121f5b9d949e4b5f6229626795b00f39a" }
-
 # Utilities
 indexmap = "2.7.1"
 pythonize = "0.26"
-dict_derive = "0.6.0"
 paste = "1.0.15"
-itertools = "0.14.0"
-
-[dev-dependencies]
-tempfile = "3.16.0"
 
 [build-dependencies]
 pyo3-build-config = "0.26"

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use pixi_build_backend::generated_recipe::BackendConfig;
-use pyo3::{PyObject, Python, pyclass, pymethods};
+use pyo3::{Python, pyclass, pymethods, PyAny, Py};
 use pythonize::pythonize;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -9,7 +9,7 @@ use serde::Deserializer;
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct PyBackendConfig {
-    pub(crate) model: PyObject,
+    pub(crate) model: Py<PyAny>,
     pub(crate) debug_dir: Option<PathBuf>,
 }
 
@@ -23,7 +23,7 @@ impl<'de> Deserialize<'de> for PyBackendConfig {
 
         let mut data = TempData::deserialize(deserializer)?.0;
 
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let model = pythonize(py, &data).map_err(serde::de::Error::custom)?;
 
             let debug_dir: Option<PathBuf> = data
@@ -42,7 +42,7 @@ impl<'de> Deserialize<'de> for PyBackendConfig {
 #[pymethods]
 impl PyBackendConfig {
     #[new]
-    fn new(debug_dir: Option<PathBuf>, model: PyObject) -> Self {
+    fn new(debug_dir: Option<PathBuf>, model: Py<PyAny>) -> Self {
         PyBackendConfig { debug_dir, model }
     }
 

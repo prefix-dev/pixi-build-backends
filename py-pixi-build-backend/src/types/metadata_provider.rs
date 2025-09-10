@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use miette::Diagnostic;
 use pixi_build_backend::generated_recipe::MetadataProvider;
-use pyo3::{PyErr, PyObject, Python, pyclass, pymethods};
+use pyo3::{PyErr, Python, pyclass, pymethods, PyAny, Py};
 use rattler_conda_types::{ParseVersionError, Version};
 use std::str::FromStr;
 use thiserror::Error;
@@ -26,13 +26,13 @@ impl From<PyErr> for PyMetadataProviderError {
 #[pyclass]
 #[derive(Clone)]
 pub struct PyMetadataProvider {
-    inner: PyObject,
+    inner: Py<PyAny>,
 }
 
 #[pymethods]
 impl PyMetadataProvider {
     #[new]
-    pub fn new(provider: PyObject) -> Self {
+    pub fn new(provider: Py<PyAny>) -> Self {
         Self { inner: provider }
     }
 }
@@ -41,7 +41,7 @@ impl MetadataProvider for PyMetadataProvider {
     type Error = PyMetadataProviderError;
 
     fn name(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "name")?;
 
             if result.is_none(py) {
@@ -54,7 +54,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn version(&mut self) -> Result<Option<Version>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "version")?;
 
             if result.is_none(py) {
@@ -68,7 +68,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "homepage")?;
 
             if result.is_none(py) {
@@ -81,7 +81,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "license")?;
 
             if result.is_none(py) {
@@ -94,7 +94,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "license_file")?;
 
             if result.is_none(py) {
@@ -107,7 +107,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "summary")?;
 
             if result.is_none(py) {
@@ -120,7 +120,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn description(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "description")?;
 
             if result.is_none(py) {
@@ -133,7 +133,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "documentation")?;
 
             if result.is_none(py) {
@@ -146,7 +146,7 @@ impl MetadataProvider for PyMetadataProvider {
     }
 
     fn repository(&mut self) -> Result<Option<String>, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let result = self.inner.call_method0(py, "repository")?;
 
             if result.is_none(py) {
@@ -161,8 +161,8 @@ impl MetadataProvider for PyMetadataProvider {
 
 /// Helper function to get input globs from a Python metadata provider
 /// if it supports the input_globs method (optional)
-pub fn get_input_globs_from_provider(provider: &PyObject) -> BTreeSet<String> {
-    Python::with_gil(|py| {
+pub fn get_input_globs_from_provider(provider: &Py<PyAny>) -> BTreeSet<String> {
+    Python::attach(|py| {
         // Try to call input_globs method if it exists
         match provider.call_method0(py, "input_globs") {
             Ok(result) => {

@@ -12,12 +12,7 @@ use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
 };
 use pixi_build_backend::{NormalizedKey, Variable};
-use pyo3::{
-    Py, PyErr, PyObject, PyResult, Python,
-    exceptions::PyValueError,
-    pyclass, pymethods,
-    types::{PyAnyMethods, PyString},
-};
+use pyo3::{Py, PyErr, PyResult, Python, exceptions::PyValueError, pyclass, pymethods, types::{PyAnyMethods, PyString}, PyAny};
 use rattler_conda_types::Platform;
 use recipe_stage0::recipe::IntermediateRecipe;
 
@@ -87,7 +82,7 @@ impl PyGeneratedRecipe {
     pub fn from_model_with_provider(
         py: Python,
         model: PyProjectModelV1,
-        metadata_provider: PyObject,
+        metadata_provider: Py<PyAny>,
     ) -> PyResult<Self> {
         let mut provider = PyMetadataProvider::new(metadata_provider.clone());
         let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
@@ -149,13 +144,13 @@ impl PyGeneratedRecipe {
 #[pyclass]
 #[derive(Clone)]
 pub struct PyGenerateRecipe {
-    model: PyObject,
+    model: Py<PyAny>,
 }
 
 #[pymethods]
 impl PyGenerateRecipe {
     #[new]
-    pub fn new(model: PyObject) -> Self {
+    pub fn new(model: Py<PyAny>) -> Self {
         PyGenerateRecipe { model }
     }
 }
@@ -172,7 +167,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         python_params: Option<pixi_build_backend::generated_recipe::PythonParams>,
         _variants: &HashSet<NormalizedKey>,
     ) -> miette::Result<pixi_build_backend::generated_recipe::GeneratedRecipe> {
-        let recipe: GeneratedRecipe = Python::with_gil(|py| {
+        let recipe: GeneratedRecipe = Python::attach(|py| {
             let manifest_str = manifest_path.to_string_lossy().to_string();
 
             // we don't pass the wrapper but the python inner model directly
@@ -252,7 +247,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         workdir: impl AsRef<Path>,
         editable: bool,
     ) -> miette::Result<BTreeSet<String>> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let workdir = workdir.as_ref();
             let editable = editable;
 
@@ -280,7 +275,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         &self,
         host_platform: Platform,
     ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let variants_dict = self
                 .model
                 .bind(py)

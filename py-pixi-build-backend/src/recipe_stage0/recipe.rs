@@ -1001,7 +1001,7 @@ impl PyExtra {
 
     #[getter]
     pub fn recipe_maintainers(&self) -> PyResult<Py<PyList>> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let list = PyList::empty(py);
             for dep in &self.inner.recipe_maintainers {
                 list.append(PyItemString { inner: dep.clone() })?;

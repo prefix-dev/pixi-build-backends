@@ -3,7 +3,7 @@ import tempfile
 
 from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator
-from pixi_build_ros.utils import convert_package_xml_to_catkin_package, package_xml_to_conda_requirements
+from pixi_build_ros.utils import convert_package_xml_to_catkin_package, package_xml_to_conda_requirements, rosdep_to_conda_package_name
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
@@ -14,7 +14,7 @@ def test_package_xml_to_recipe_config(package_xmls: Path):
     package = convert_package_xml_to_catkin_package(package_content)
 
     distro = Distro("jazzy")
-    requirements = package_xml_to_conda_requirements(package, distro)
+    requirements = package_xml_to_conda_requirements(package, distro, Platform.current())
 
     # Build
     expected_build_packages = [
@@ -45,7 +45,7 @@ def test_ament_cmake_package_xml_to_recipe_config(package_xmls: Path):
     package = convert_package_xml_to_catkin_package(package_content)
 
     distro = Distro("noetic")
-    requirements = package_xml_to_conda_requirements(package, distro)
+    requirements = package_xml_to_conda_requirements(package, distro, Platform.current())
 
     assert requirements.build[0].concrete.package_name == "ros-noetic-ament-cmake"
 
@@ -109,3 +109,95 @@ def test_generate_recipe(package_xmls: Path):
         
         for expected_dep in expected_run_deps:
             assert expected_dep in run_deps, f"Expected runtime dependency {expected_dep} not found in run deps: {run_deps}"
+
+def test_robostack_target_platform_linux():
+    """Test that target platform correctly selects Linux packages from robostack.yaml."""
+    distro = Distro("jazzy")
+    
+    # Create a mock Linux platform
+    linux_platform = Platform("linux-64")
+    
+    # Test packages with platform-specific mappings
+    acl_packages = rosdep_to_conda_package_name("acl", distro, linux_platform)
+    assert acl_packages == ["libacl"], f"Expected ['libacl'] for acl on Linux, got {acl_packages}"
+
+
+def test_robostack_target_platform_osx():
+    """Test that target platform correctly selects macOS packages from robostack.yaml."""
+    distro = Distro("jazzy")
+    
+    # Create a mock macOS platform
+    osx_platform = Platform("osx-64")
+    
+    # Test packages with platform-specific mappings
+    acl_packages = rosdep_to_conda_package_name("acl", distro, osx_platform)
+    assert acl_packages == [], f"Expected [] for acl on macOS, got {acl_packages}"
+
+
+def test_robostack_target_platform_windows():
+    """Test that target platform correctly selects Windows packages from robostack.yaml."""
+    distro = Distro("jazzy")
+    
+    # Create a mock Windows platform
+    win_platform = Platform("win-64")
+    
+    # Test packages with platform-specific mappings
+    binutils_packages = rosdep_to_conda_package_name("binutils", distro, win_platform)
+    assert binutils_packages == [], f"Expected [] for binutils on Windows, got {binutils_packages}"
+
+
+
+def test_robostack_target_platform_cross_platform():
+    """Test packages that have different mappings across all platforms."""
+    distro = Distro("jazzy")
+    
+    linux_platform = Platform("linux-64")
+    osx_platform = Platform("osx-64")
+    win_platform = Platform("win-64")
+    
+    # libudev-dev has different packages for each platform
+    linux_udev = rosdep_to_conda_package_name("libudev-dev", distro, linux_platform)
+    osx_udev = rosdep_to_conda_package_name("libudev-dev", distro, osx_platform)
+    win_udev = rosdep_to_conda_package_name("libudev-dev", distro, win_platform)
+    
+    assert linux_udev == ["libusb", "libudev"], f"Expected ['libusb', 'libudev'] for libudev-dev on Linux, got {linux_udev}"
+    assert osx_udev == ["libusb"], f"Expected ['libusb'] for libudev-dev on macOS, got {osx_udev}"
+    assert win_udev == ["libusb"], f"Expected ['libusb'] for libudev-dev on Windows, got {win_udev}"
+    
+    # libomp-dev has different OpenMP implementations per platform
+    linux_omp = rosdep_to_conda_package_name("libomp-dev", distro, linux_platform)
+    osx_omp = rosdep_to_conda_package_name("libomp-dev", distro, osx_platform)
+    win_omp = rosdep_to_conda_package_name("libomp-dev", distro, win_platform)
+    
+    assert linux_omp == ["libgomp"], f"Expected ['libgomp'] for libomp-dev on Linux, got {linux_omp}"
+    assert osx_omp == ["llvm-openmp"], f"Expected ['llvm-openmp'] for libomp-dev on macOS, got {osx_omp}"
+    assert win_omp == [], f"Expected [] for libomp-dev on Windows, got {win_omp}"
+
+
+def test_robostack_require_opengl_handling():
+    """Test that REQUIRE_OPENGL is correctly handled for different platforms."""
+    distro = Distro("jazzy")
+    
+    linux_platform = Platform("linux-64")
+    osx_platform = Platform("osx-64")
+    win_platform = Platform("win-64")
+    
+    # opengl package has REQUIRE_OPENGL handling
+    linux_opengl = rosdep_to_conda_package_name("opengl", distro, linux_platform)
+    osx_opengl = rosdep_to_conda_package_name("opengl", distro, osx_platform)
+    win_opengl = rosdep_to_conda_package_name("opengl", distro, win_platform)
+    
+    # According to the code, REQUIRE_OPENGL should be replaced with actual packages on Linux
+    # and should add xorg packages for linux/osx/unix platforms
+    assert "libgl-devel" in linux_opengl, f"Expected libgl-devel in Linux opengl packages, got {linux_opengl}"
+    assert "libopengl-devel" in linux_opengl, f"Expected libopengl-devel in Linux opengl packages, got {linux_opengl}"
+    assert "xorg-libx11" in linux_opengl, f"Expected xorg-libx11 in Linux opengl packages, got {linux_opengl}"
+    assert "xorg-libxext" in linux_opengl, f"Expected xorg-libxext in Linux opengl packages, got {linux_opengl}"
+    
+    # macOS should get xorg packages but no gl-devel packages
+    assert "xorg-libx11" in osx_opengl, f"Expected xorg-libx11 in macOS opengl packages, got {osx_opengl}"
+    assert "xorg-libxext" in osx_opengl, f"Expected xorg-libxext in macOS opengl packages, got {osx_opengl}"
+    assert "libgl-devel" not in osx_opengl, f"Did not expect libgl-devel in macOS opengl packages, got {osx_opengl}"
+    
+    # Windows should have empty packages
+    assert win_opengl == [], f"Expected [] for opengl on Windows, got {win_opengl}"

@@ -11,6 +11,9 @@ pytest = "*"
 ruff = "*"
 pixi-build-ros = { path = "." }
 
+[tasks]
+test = "pytest tests"
+
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"

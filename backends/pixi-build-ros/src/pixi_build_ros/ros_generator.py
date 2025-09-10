@@ -85,7 +85,7 @@ class ROSGenerator(GenerateRecipeProtocol):
         package_xml = convert_package_xml_to_catkin_package(package_xml_str)
 
         # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(package_xml, distro)
+        package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform)
 
         # Add standard dependencies
         build_deps = ["ninja", "python", "setuptools", "git", "git-lfs", "cmake", "cpython"]

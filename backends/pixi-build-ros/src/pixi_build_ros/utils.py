@@ -10,6 +10,7 @@ from catkin_pkg.package import Package as CatkinPackage, parse_package_string
 
 from pixi_build_backend.types.intermediate_recipe import ConditionalRequirements
 from pixi_build_backend.types.item import ItemPackageDependency
+from pixi_build_backend.types.platform import Platform
 from pixi_build_ros.distro import Distro
 
 
@@ -64,11 +65,16 @@ def convert_package_xml_to_catkin_package(package_xml_content: str) -> CatkinPac
 
     return package_xml
 
-def rosdep_to_conda_package_name(dep_name: str, distro: Distro) -> List[str]:
+def rosdep_to_conda_package_name(dep_name: str, distro: Distro, host_platform: Platform) -> List[str]:
     """Convert a ROS dependency name to a conda package name."""
-    # TODO: make this configurable
-    # either `linux`, `osx` or `win64`
-    target_platform = "osx"
+    if host_platform.is_linux:
+        target_platform = "linux"
+    elif host_platform.is_windows:
+        target_platform = "win64"
+    elif host_platform.is_osx:
+        target_platform = "osx"
+    else:
+        raise RuntimeError(f"Unsupported platform: {host_platform}")
 
     # If dependency any of the following return custom name:
     if dep_name in ["ament_cmake", "ament_python", "rosidl_default_generators", "ros_workspace"]:
@@ -122,6 +128,7 @@ def rosdep_to_conda_package_name(dep_name: str, distro: Distro) -> List[str]:
 def package_xml_to_conda_requirements(
         pkg: CatkinPackage,
         distro: Distro,
+        host_platform: Platform,
 ) -> ConditionalRequirements:
     """Convert a CatkinPackage to ConditionalRequirements for conda."""
 
@@ -135,7 +142,7 @@ def package_xml_to_conda_requirements(
     # Add the ros_workspace dependency as a default build dependency for ros2 packages
     if not distro.check_ros1():
         build_deps += ["ros_workspace"]
-    conda_build_deps = [rosdep_to_conda_package_name(dep, distro) for dep in build_deps]
+    conda_build_deps = [rosdep_to_conda_package_name(dep, distro, host_platform) for dep in build_deps]
     conda_build_deps = list(dict.fromkeys(chain.from_iterable(conda_build_deps)))
 
     run_deps = pkg.run_depends
@@ -143,7 +150,7 @@ def package_xml_to_conda_requirements(
     run_deps += pkg.build_export_depends
     run_deps += pkg.buildtool_export_depends
     run_deps = [d.name for d in run_deps if d.evaluated_condition]
-    conda_run_deps = [rosdep_to_conda_package_name(dep, distro) for dep in run_deps]
+    conda_run_deps = [rosdep_to_conda_package_name(dep, distro, host_platform) for dep in run_deps]
     conda_run_deps = list(dict.fromkeys(chain.from_iterable(conda_run_deps)))
 
     build_requirements = [ItemPackageDependency(name) for name in conda_build_deps]

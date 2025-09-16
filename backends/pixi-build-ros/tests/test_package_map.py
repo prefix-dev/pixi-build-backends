@@ -54,6 +54,8 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         )
 
         # Verify the generated recipe has the expected requirements
+        assert generated_recipe.recipe.package.name.get_concrete() == "ros-noetic-custom-ros"
+
         req_string = list(str(req) for req in generated_recipe.recipe.requirements.run)
         assert "ros-noetic-ros-package" in req_string
         assert "ros-noetic-ros-package-msgs" in req_string

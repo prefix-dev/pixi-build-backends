@@ -50,7 +50,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     # Environment variables to set during the build
     env: Optional[Dict[str, str]] = None
     # Directory for debug files of this script
-    debug_dir: Optional[Path] = None
+    debug_dir: Optional[Path] = pydantic.Field(default=None, alias="debug-dir")
     # Extra input globs to include in the build hash
     extra_input_globs: Optional[List[str]] = None
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"

@@ -40,7 +40,7 @@ platforms = ["linux-64", "osx-arm64"]
 [package.build]
 backend = { name = "pixi-build-ros", version = "*" }
 
-[package.build.configuration]
+[package.build.config]
 distro = "jazzy"  # or "humble", "noetic", etc.
 ```
 

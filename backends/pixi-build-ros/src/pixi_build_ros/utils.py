@@ -116,30 +116,40 @@ def rosdep_to_conda_package_name(
             # If the dependency is not found in robostack.yaml and not in the distro, return the dependency name as is.
             return [dep_name]
 
-    # Dependency found in robostack.yaml
-    # Get the conda packages for the dependency
-    conda_packages = package_map_data[dep_name].get("robostack", [])
+    # Dependency found in package map
 
-    if isinstance(conda_packages, dict):
-        # TODO: Handle different platforms
-        conda_packages = conda_packages.get(target_platform, [])
+    # Case 1: It's a custom ROS dependency
+    if "ros" in package_map_data[dep_name]:
+        return [f"ros-{distro.name}-{dep.replace('_', '-')}" for dep in package_map_data[dep_name]["ros"]]
 
-    # Deduplicate of the code in:
-    # https://github.com/RoboStack/vinca/blob/7d3a05e01d6898201a66ba2cf6ea771250671f58/vinca/main.py#L562
-    if "REQUIRE_GL" in conda_packages:
-        conda_packages.remove("REQUIRE_GL")
-        if "linux" in target_platform:
-            conda_packages.append("libgl-devel")
-    if "REQUIRE_OPENGL" in conda_packages:
-        conda_packages.remove("REQUIRE_OPENGL")
-        if "linux" in target_platform:
-            # TODO: this should only go into the host dependencies
-            conda_packages.extend(["libgl-devel", "libopengl-devel"])
-        if target_platform in ["linux", "osx", "unix"]:
-            # TODO: force this into the run dependencies
-            conda_packages.extend(["xorg-libx11", "xorg-libxext"])
+    # Case 2: It's a custom package name
+    elif "conda" in package_map_data[dep_name]:
+        # Dependency found in robostack.yaml
+        # Get the conda packages for the dependency
+        conda_packages = package_map_data[dep_name].get("conda", [])
 
-    return conda_packages
+        if isinstance(conda_packages, dict):
+            # TODO: Handle different platforms
+            conda_packages = conda_packages.get(target_platform, [])
+
+        # Deduplicate of the code in:
+        # https://github.com/RoboStack/vinca/blob/7d3a05e01d6898201a66ba2cf6ea771250671f58/vinca/main.py#L562
+        if "REQUIRE_GL" in conda_packages:
+            conda_packages.remove("REQUIRE_GL")
+            if "linux" in target_platform:
+                conda_packages.append("libgl-devel")
+        if "REQUIRE_OPENGL" in conda_packages:
+            conda_packages.remove("REQUIRE_OPENGL")
+            if "linux" in target_platform:
+                # TODO: this should only go into the host dependencies
+                conda_packages.extend(["libgl-devel", "libopengl-devel"])
+            if target_platform in ["linux", "osx", "unix"]:
+                # TODO: force this into the run dependencies
+                conda_packages.extend(["xorg-libx11", "xorg-libxext"])
+
+        return conda_packages
+    else:
+        raise ValueError(f"Unknown package map entry: {dep_name}.")
 
 
 def package_xml_to_conda_requirements(

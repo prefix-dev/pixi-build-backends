@@ -3,6 +3,7 @@ Python generator implementation using Python bindings.
 """
 
 from pathlib import Path
+import os
 import pydantic
 from importlib.resources import files
 
@@ -38,7 +39,7 @@ def _parse_str_or_path(value: str | Path) -> Path:
     # Ensure it's an absolute path
     if not value.is_absolute():
         # Convert to absolute path relative to the current working directory
-        return Path.cwd() / value
+        return Path(os.environ.get("PIXI_PROJECT_ROOT")) or Path.cwd() / value
     return value
 
 
@@ -57,7 +58,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     distro: Optional[str] = None
 
     # Extra package mappings to use in the build
-    extra_package_mappings: List[Path] = []
+    extra_package_mappings: List[Path] = pydantic.Field(default_factory=list, alias="extra-package-mappings")
 
     def is_noarch(self) -> bool:
         """Whether to build a noarch package or a platform-specific package."""

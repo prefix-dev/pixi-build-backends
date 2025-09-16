@@ -1,4 +1,6 @@
 alsa-oss:
-  robostack: [other-alsa-oss]
+  conda: [other-alsa-oss]
 new_package:
-  robostack: [new-package]
+  conda: [new-package]
+ros_package:
+  ros: [ros_package, ros_package_msgs]

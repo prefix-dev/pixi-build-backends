@@ -1,86 +1,86 @@
 # This file is part of the RoboStack noetic project. for testing purposes.
 acl:
-  conda:
+  robostack:
     linux: [libacl]
     osx: []
     win64: []
 alsa-oss:
-  conda: [alsa-lib]
+  robostack: [alsa-lib]
 apr:
-  conda: [apr]
+  robostack: [apr]
 armadillo:
-  conda: [armadillo]
+  robostack: [armadillo]
 asio:
-  conda: [asio]
+  robostack: [asio]
 assimp:
-  conda: [assimp]
+  robostack: [assimp]
 assimp-dev:
-  conda: [assimp]
+  robostack: [assimp]
 avahi-daemon:
-  conda: [python-avahi]
+  robostack: [python-avahi]
 benchmark:
-  conda: [benchmark]
+  robostack: [benchmark]
 binutils:
-  conda:
+  robostack:
     linux: [binutils]
     osx: []
     win64: []
 bison:
-  conda: [bison]
+  robostack: [bison]
 boost:
-  conda: [libboost-devel, libboost-python-devel]
+  robostack: [libboost-devel, libboost-python-devel]
 bullet:
-  conda: [bullet]
+  robostack: [bullet]
 bzip2:
-  conda: [bzip2]
+  robostack: [bzip2]
 cartographer:
-  conda: [cartographer]
+  robostack: [cartographer]
 ca-certificates:
-  conda: [ca-certificates]
+  robostack: [ca-certificates]
 clang-format:
-  conda: [clang-format]
+  robostack: [clang-format]
 clang-tidy:
-  conda: [clang-tools]
+  robostack: [clang-tools]
 cmake:
-  conda: [cmake]
+  robostack: [cmake]
 coinor-libcbc-dev:
-  conda: [coin-or-cbc]
+  robostack: [coin-or-cbc]
 coinor-libcgl-dev:
-  conda: [coin-or-cgl]
+  robostack: [coin-or-cgl]
 coinor-libclp-dev:
-  conda: [coin-or-clp]
+  robostack: [coin-or-clp]
 coinor-libcoinutils-dev:
-  conda: [coin-or-utils]
+  robostack: [coin-or-utils]
 coinor-libipopt-dev:
-  conda: [ipopt]
+  robostack: [ipopt]
 collada-dom:
-  conda: [collada-dom]
+  robostack: [collada-dom]
 cppcheck:
-  conda: [cppcheck]
+  robostack: [cppcheck]
 cppunit:
-  conda:
+  robostack:
     linux: [cppunit]
     osx: [cppunit]
     win64: []
 cppzmq:
-  conda: [cppzmq]
+  robostack: [cppzmq]
 curl:
-  conda: [libcurl]
+  robostack: [libcurl]
 cython:
-  conda: [cython]
+  robostack: [cython]
 doxygen:
-  conda: [doxygen, graphviz]
+  robostack: [doxygen, graphviz]
 draco:
-  conda: [draco]
+  robostack: [draco]
 eigen:
-  conda: [eigen]
+  robostack: [eigen]
 emacs:
-  # Wait until https://github.com/conda-forge/gtk3-feedstock/pull/74 is resolved
+  # Wait until https://github.com/robostack-forge/gtk3-feedstock/pull/74 is resolved
   # and emacs is rebuilt for harfbuzz=10
-  #   conda: [emacs]
-  conda: []
+  #   robostack: [emacs]
+  robostack: []
 festival:
-  conda:
+  robostack:
     linux: [festival, festvox-kallpc16k]
     osx: []
     win64: []
@@ -89,67 +89,67 @@ festival:
 # but it is not actually used if libcurl is not compiled,
 # so we can just ignore it on Windows.
 file:
-  conda:
+  robostack:
     linux: [file]
     osx: [file]
     win64: []
 ffmpeg:
-  conda: [ffmpeg]
+  robostack: [ffmpeg]
 ffmpeg-dev:
-  conda: [ffmpeg]
+  robostack: [ffmpeg]
 flac:
-  conda: [libflac]
+  robostack: [libflac]
 flex:
-  conda: [flex]
+  robostack: [flex]
 fmt:
-  conda: [fmt]
+  robostack: [fmt]
 g++-static:
-  conda: []
+  robostack: []
 gawk:
-  conda: [gawk]
+  robostack: [gawk]
 gazebo:
-  conda: [gazebo, libprotobuf, libabseil]
+  robostack: [gazebo, libprotobuf, libabseil]
 gazebo11:
-  conda: [gazebo, libprotobuf, libabseil]
+  robostack: [gazebo, libprotobuf, libabseil]
 gazebo9:
-  conda: [gazebo, libprotobuf, libabseil]
+  robostack: [gazebo, libprotobuf, libabseil]
 geographiclib:
-  conda: [geographiclib-cpp]
+  robostack: [geographiclib-cpp]
 geographiclib-tools:
-  conda: [geographiclib-cpp]
+  robostack: [geographiclib-cpp]
 git:
-  conda: [git]
+  robostack: [git]
 glslang-dev:
-  conda: [glslang]
+  robostack: [glslang]
 glut:
-  conda:
+  robostack:
     linux: [freeglut]
     osx: []
     win64: [freeglut]
 google-mock:
-  conda: [gmock]
+  robostack: [gmock]
 graphicsmagick:
-  conda: [graphicsmagick]
+  robostack: [graphicsmagick]
 graphviz:
-  conda: [graphviz]
+  robostack: [graphviz]
 gstreamer1.0:
-  conda: [gstreamer]
+  robostack: [gstreamer]
 gstreamer1.0-alsa:
-  conda: [gstreamer]
+  robostack: [gstreamer]
 gstreamer1.0-plugins-base:
-  conda: [gst-plugins-base]
+  robostack: [gst-plugins-base]
 gstreamer1.0-plugins-good:
-  conda: [gst-plugins-good]
+  robostack: [gst-plugins-good]
 # only sound-play requests it, but doesn't actually need it
 # do not pull it in as migrations lack behind
 gstreamer1.0-plugins-ugly:
-  conda: []
+  robostack: []
 gtest:
-  conda: [gtest]
+  robostack: [gtest]
 gtk2:
-  conda: [gtk2]
+  robostack: [gtk2]
 gtk3:
-  conda: [
+  robostack: [
     libglib,
     glib,
     gtk3,
@@ -169,867 +169,867 @@ gtk3:
     REQUIRE_GL,
   ]
 ignition-common4:
-  conda: [libignition-common4]
+  robostack: [libignition-common4]
 ignition-cmake2:
-  conda: [libignition-cmake2]
+  robostack: [libignition-cmake2]
 ignition-gazebo3:
-  conda: [libignition-gazebo6]
+  robostack: [libignition-gazebo6]
 ignition-gazebo5:
-  conda: [libignition-gazebo6]
+  robostack: [libignition-gazebo6]
 ignition-gazebo6:
-  conda: [libignition-gazebo6]
+  robostack: [libignition-gazebo6]
 ignition-gui5:
-  conda: [libignition-gui6]
+  robostack: [libignition-gui6]
 ignition-math6:
-  conda: [libignition-math6]
+  robostack: [libignition-math6]
 ignition-msgs5:
-  conda: [libignition-msgs8]
+  robostack: [libignition-msgs8]
 ignition-msgs8:
-  conda: [libignition-msgs8]
+  robostack: [libignition-msgs8]
 ignition-msgs7:
-  conda: [libignition-msgs8]
+  robostack: [libignition-msgs8]
 ignition-rendering5:
-  conda: [libignition-rendering6]
+  robostack: [libignition-rendering6]
 ignition-transport8:
-  conda: [libignition-transport11]
+  robostack: [libignition-transport11]
 ignition-transport10:
-  conda: [libignition-transport11]
+  robostack: [libignition-transport11]
 ignition-transport11:
-  conda: [libignition-transport11]
+  robostack: [libignition-transport11]
 java:
-  conda: [openjdk]
+  robostack: [openjdk]
 jupyter-notebook:
-  conda: [notebook]
+  robostack: [notebook]
 ipython3:
-  conda: [ipython]
+  robostack: [ipython]
 kitchen:
-  conda: [kitchen]
+  robostack: [kitchen]
 lcov:
-  conda: [lcov]
+  robostack: [lcov]
 leveldb:
-  conda: [leveldb]
+  robostack: [leveldb]
 libabsl-dev:
-  conda: [libabseil]
+  robostack: [libabseil]
 libblas-dev:
-  conda: [libblas, libcblas]
+  robostack: [libblas, libcblas]
 libboost:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-chrono-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-date-time:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-date-time-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-filesystem:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-filesystem-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-iostreams-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-program-options:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-program-options-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-python:
-  conda: [libboost-python]
+  robostack: [libboost-python]
 libboost-python-dev:
-  conda: [libboost-python-devel]
+  robostack: [libboost-python-devel]
 libboost-random:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-random-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-regex-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-serialization:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-serialization-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-system:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-system-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libboost-thread:
-  conda: [libboost]
+  robostack: [libboost]
 libboost-thread-dev:
-  conda: [libboost-devel]
+  robostack: [libboost-devel]
 libcairo2-dev:
-  conda: [cairo]
+  robostack: [cairo]
 libcap-dev:
-  conda:
+  robostack:
     linux: [libcap]
     osx: []
     win64: []
 libccd-dev:
-  conda: [libccd-double]
+  robostack: [libccd-double]
 libceres-dev:
-  conda: [ceres-solver]
+  robostack: [ceres-solver]
 libclang-dev:
-  conda: [libclang]
+  robostack: [libclang]
 libconsole-bridge-dev:
-  conda: [console_bridge]
+  robostack: [console_bridge]
 libcunit-dev:
-  conda: [cunit]
+  robostack: [cunit]
 libcurl:
-  conda: [libcurl]
+  robostack: [libcurl]
 libcurl-dev:
-  conda: [libcurl]
+  robostack: [libcurl]
 libdc1394-dev:
-  conda: [libdc1394]
+  robostack: [libdc1394]
 libdw-dev:
-  conda:
+  robostack:
     linux: [elfutils]
     osx: []
     win64: []
 libfcl-dev:
-  conda: [fcl]
+  robostack: [fcl]
 libffi-dev:
-  conda: [libffi]
+  robostack: [libffi]
 libflann-dev:
-  conda: [flann]
+  robostack: [flann]
 libfltk-dev:
-  conda: [fltk]
+  robostack: [fltk]
 libfreeimage-dev:
-  conda: [freeimage]
+  robostack: [freeimage]
 libfreenect-dev:
-  conda: []
+  robostack: []
 libfreetype-dev:
-  conda: [freetype]
+  robostack: [freetype]
 libfreetype6:
-  conda: [freetype]
+  robostack: [freetype]
 libfreetype6-dev:
-  conda: [freetype]
+  robostack: [freetype]
 libftdi-dev:
-  conda: [libftdi, libusb]
+  robostack: [libftdi, libusb]
 libgazebo11-dev:
-  conda: [gazebo, libprotobuf, libabseil]
+  robostack: [gazebo, libprotobuf, libabseil]
 libgazebo9-dev:
-  conda: [gazebo, libprotobuf, libabseil]
+  robostack: [gazebo, libprotobuf, libabseil]
 libgdal-dev:
-  conda: [libgdal]
+  robostack: [libgdal]
 libgeos++-dev:
-  conda: [geos]
+  robostack: [geos]
 libgflags-dev:
-  conda: [gflags]
+  robostack: [gflags]
 libglew-dev:
-  conda: [glew]
+  robostack: [glew]
 libglfw3-dev:
-  conda: [glfw 3.*]
+  robostack: [glfw 3.*]
 libglu-dev:
-  conda:
+  robostack:
     linux: [libglu]
     osx: []
     win64: []
 libgoogle-glog-dev:
-  conda: [glog]
+  robostack: [glog]
 libgpgme-dev:
-  conda:
+  robostack:
     linux: [gpgme]
     osx: [gpgme]
     win64: []
 libgps:
-  conda: [gpsd]
+  robostack: [gpsd]
 libgsl:
-  conda: [gsl]
+  robostack: [gsl]
 libgstreamer-plugins-base1.0-dev:
-  conda: [gst-plugins-base]
+  robostack: [gst-plugins-base]
 libgstreamer1.0-dev:
-  conda: [gstreamer]
+  robostack: [gstreamer]
 libgts:
-  conda: [gts]
+  robostack: [gts]
 libhdf5-dev:
-  conda: [hdf5]
+  robostack: [hdf5]
 libi2c-dev:
-  conda: [libi2c]
+  robostack: [libi2c]
 liblttng-ust-dev:
-  conda: ["${{ \"lttng-ust\" if linux }}"]
+  robostack: ["${{ \"lttng-ust\" if linux }}"]
 libjpeg:
-  conda: [libjpeg-turbo]
+  robostack: [libjpeg-turbo]
 libjsoncpp:
-  conda: [jsoncpp]
+  robostack: [jsoncpp]
 libjsoncpp-dev:
-  conda: [jsoncpp]
+  robostack: [jsoncpp]
 liblapack-dev:
-  conda: [liblapack]
+  robostack: [liblapack]
 liblz4:
-  conda: [lz4]
+  robostack: [lz4]
 liblz4-dev:
-  conda: [lz4]
+  robostack: [lz4]
 libmicrohttpd:
-  conda: [libmicrohttpd]
+  robostack: [libmicrohttpd]
 libncurses-dev:
-  conda:
+  robostack:
     linux: [ncurses]
     osx: [ncurses]
     win64: []
 libnl-3:
-  conda: [libnl 3.*]
+  robostack: [libnl 3.*]
 libnl-3-dev:
-  conda: [libnl 3.*]
+  robostack: [libnl 3.*]
 libnlopt-cxx-dev:
-  conda: [nlopt]
+  robostack: [nlopt]
 libnlopt-dev:
-  conda: [nlopt]
+  robostack: [nlopt]
 libnlopt0:
-  conda: [nlopt]
+  robostack: [nlopt]
 libogg:
-  conda: [libogg]
+  robostack: [libogg]
 libogre:
-  conda: [ogre]
+  robostack: [ogre]
 libogre-dev:
-  conda: [ogre]
+  robostack: [ogre]
 libomp-dev:
-  conda:
+  robostack:
     linux: [libgomp]
     osx: [llvm-openmp]
     win64: []
 libopenblas-dev:
-  conda: [libblas]
+  robostack: [libblas]
 libopencv-dev:
-  conda: [py-opencv, libopencv, REQUIRE_OPENGL]
+  robostack: [py-opencv, libopencv, REQUIRE_OPENGL]
 libopencv-imgproc-dev:
-  conda: [py-opencv, libopencv, REQUIRE_OPENGL]
+  robostack: [py-opencv, libopencv, REQUIRE_OPENGL]
 libopenni-dev:
-  conda: []
+  robostack: []
 liborocos-kdl:
-  conda: [orocos-kdl]
+  robostack: [orocos-kdl]
 liborocos-kdl-dev:
-  conda: [orocos-kdl]
+  robostack: [orocos-kdl]
 libpcap:
-  conda: [libpcap]
+  robostack: [libpcap]
 libpcl-all:
-  conda: [pcl]
+  robostack: [pcl]
 libpcl-all-dev:
-  conda: [pcl, libboost-devel, vtk-base, REQUIRE_OPENGL]
+  robostack: [pcl, libboost-devel, vtk-base, REQUIRE_OPENGL]
 libpng-dev:
-  conda: [libpng]
+  robostack: [libpng]
 libpoco-dev:
-  conda: [poco]
+  robostack: [poco]
 libpqxx:
-  conda: [libpqxx]
+  robostack: [libpqxx]
 libpqxx-dev:
-  conda: [libpqxx]
+  robostack: [libpqxx]
 libqglviewer2-qt5:
-  conda: [libqglviewer]
+  robostack: [libqglviewer]
 libqglviewer-dev-qt5:
-  conda: [libqglviewer]
+  robostack: [libqglviewer]
 libqhull:
-  conda: [qhull]
+  robostack: [qhull]
 libqt5-core:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-gui:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-opengl:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-opengl-dev:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-svg:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-svg-dev:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-websockets-dev:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5-widgets:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libqt5x11extras5-dev:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 libreadline:
-  conda: [readline]
+  robostack: [readline]
 libreadline-dev:
-  conda: [readline]
+  robostack: [readline]
 libshaderc-dev:
-  conda: [shaderc]
+  robostack: [shaderc]
 libsndfile1-dev:
-  conda: [libsndfile]
+  robostack: [libsndfile]
 libspnav-dev:
-  conda: [libspnav, xorg-xorgproto]
+  robostack: [libspnav, xorg-xorgproto]
 libsqlite3-dev:
-  conda: [sqlite 3.*]
+  robostack: [sqlite 3.*]
 libssl-dev:
-  conda: [openssl]
+  robostack: [openssl]
 libtheora:
-  conda: [libtheora]
+  robostack: [libtheora]
 libtool:
-  conda: [libtool]
+  robostack: [libtool]
 libturbojpeg:
-  conda: [libjpeg-turbo]
+  robostack: [libjpeg-turbo]
 libtins-dev:
-  conda: [libtins]
+  robostack: [libtins]
 libudev-dev:
-  conda:
+  robostack:
     linux: [libusb, libudev]
     osx: [libusb]
     win64: [libusb]
 liburdfdom-dev:
-  conda: [urdfdom]
+  robostack: [urdfdom]
 liburdfdom-headers-dev:
-  conda: [urdfdom_headers]
+  robostack: [urdfdom_headers]
 liburdfdom-tools:
-  conda: [urdfdom]
+  robostack: [urdfdom]
 libusb-1.0:
-  conda:
+  robostack:
     linux: [libusb, libudev]
     osx: [libusb]
     win64: [libusb]
 libusb-1.0-dev:
-  conda:
+  robostack:
     linux: [libusb, libudev]
     osx: [libusb]
     win64: [libusb]
 libusb-dev:
-  conda:
+  robostack:
     linux: [libusb, libudev]
     osx: [libusb]
     win64: [libusb]
 libuvc-dev:
-  conda:
+  robostack:
     linux: [libusb, libudev, libuvc]
     osx: [libusb, libuvc]
     win64: [libusb, libuvc]
 libvtk:
-  conda: [vtk]
+  robostack: [vtk]
 libvtk-qt:
-  conda: [vtk]
+  robostack: [vtk]
 libvulkan-dev:
-  conda:
+  robostack:
     linux: [libvulkan-headers, libvulkan-loader]
     osx: []
     win64: [libvulkan-headers, libvulkan-loader]
 libx11:
-  conda: [xorg-libx11, xorg-xorgproto, REQUIRE_OPENGL]
+  robostack: [xorg-libx11, xorg-xorgproto, REQUIRE_OPENGL]
 libx11-dev:
-  conda: [xorg-libx11, xorg-xorgproto, REQUIRE_OPENGL]
+  robostack: [xorg-libx11, xorg-xorgproto, REQUIRE_OPENGL]
 libxaw:
-  conda:
+  robostack:
     linux: [xorg-libxaw]
     osx: [xorg-libxaw]
     win64: []
 libxext:
-  conda: [xorg-libxext]
+  robostack: [xorg-libxext]
 libxi-dev:
-  conda: [xorg-libxi]
+  robostack: [xorg-libxi]
 libxml2:
-  conda: [libxml2]
+  robostack: [libxml2]
 libxml2-utils:
-  conda: [libxml2]
+  robostack: [libxml2]
 libxmlrpc-c++:
-  conda: [xmlrpc-c]
+  robostack: [xmlrpc-c]
 libxmu-dev:
-  conda: [xorg-libxmu]
+  robostack: [xorg-libxmu]
 libxrandr:
-  conda:
+  robostack:
     linux: [xorg-libxrandr]
     osx: [xorg-libxrandr]
     win64: []
 libxt-dev:
-  conda: [xorg-libxt]
+  robostack: [xorg-libxt]
 libxxf86vm:
-  conda: [REQUIRE_OPENGL]
+  robostack: [REQUIRE_OPENGL]
 libyaml:
-  conda: [yaml]
+  robostack: [yaml]
 libyaml-dev:
-  conda: [yaml]
+  robostack: [yaml]
 libzip-dev:
-  conda: [libzip]
+  robostack: [libzip]
 libzmq3-dev:
-  conda: [zeromq, cppzmq]
+  robostack: [zeromq, cppzmq]
 libzstd-dev:
-  conda: [zstd]
+  robostack: [zstd]
 linux-kernel-headers:
-  conda: []
+  robostack: []
 log4cxx:
-  conda: [log4cxx]
+  robostack: [log4cxx]
 lua5.2-dev:
-  conda: [lua]
+  robostack: [lua]
 lz4:
-  conda: [lz4]
+  robostack: [lz4]
 maven:
-  conda: [maven]
+  robostack: [maven]
 mongodb:
-  conda: [mongodb]
+  robostack: [mongodb]
 mosquitto:
-  conda: [paho-mqtt]
+  robostack: [paho-mqtt]
 msgpack:
-  conda: [msgpack-python]
+  robostack: [msgpack-python]
 muparser:
-  conda: [muparser]
+  robostack: [muparser]
 netpbm:
-  conda:
+  robostack:
     linux-aarch64: []
     osx-arm64: []
     linux: [netpbm]
     osx: [netpbm]
     win64: []
 nlohmann-json-dev:
-  conda: [nlohmann_json]
+  robostack: [nlohmann_json]
 nlopt:
-  conda: [nlopt]
+  robostack: [nlopt]
 ocl-icd-opencl-dev:
-  conda: [ocl-icd]
+  robostack: [ocl-icd]
 opengl:
-  conda:
+  robostack:
     linux: [REQUIRE_OPENGL]
     osx: [REQUIRE_OPENGL]
     win64: []
 openssl:
-  conda: [openssl]
+  robostack: [openssl]
 pcre:
-  conda: [pcre]
+  robostack: [pcre]
 pkg-config:
-  conda: [pkg-config]
+  robostack: [pkg-config]
 portaudio19-dev:
-  conda: [portaudio]
+  robostack: [portaudio]
 postgresql:
-  conda: [postgresql]
+  robostack: [postgresql]
 proj:
-  conda: [proj]
+  robostack: [proj]
 protobuf:
-  conda: [libprotobuf, protobuf]
+  robostack: [libprotobuf, protobuf]
 protobuf-dev:
-  conda: [libprotobuf, protobuf]
+  robostack: [libprotobuf, protobuf]
 pugixml-dev:
-  conda: [pugixml]
+  robostack: [pugixml]
 pybind11-dev:
-  conda: [pybind11]
+  robostack: [pybind11]
 pycodestyle:
-  conda: [pycodestyle]
+  robostack: [pycodestyle]
 pydocstyle:
-  conda: [pydocstyle]
+  robostack: [pydocstyle]
 pydrive-pip:
-  conda: [pydrive]
+  robostack: [pydrive]
 pyflakes3:
-  conda: [pyflakes]
+  robostack: [pyflakes]
 python:
-  conda: [python]
+  robostack: [python]
 python-argparse:
-  conda: []
+  robostack: []
 python-autobahn:
-  conda: [autobahn]
+  robostack: [autobahn]
 python-bson:
-  conda: [pymongo]
+  robostack: [pymongo]
 python-cairo:
-  conda: [pycairo]
+  robostack: [pycairo]
 python-catkin-pkg:
-  conda: [catkin_pkg]
+  robostack: [catkin_pkg]
 python-catkin-pkg-modules:
-  conda: [catkin_pkg]
+  robostack: [catkin_pkg]
 python-chainer-pip:
-  conda: [chainer]
+  robostack: [chainer]
 python-coverage:
-  conda: [coverage]
+  robostack: [coverage]
 python-crypto:
-  conda: [pycrypto]
+  robostack: [pycrypto]
 python-defusedxml:
-  conda: [defusedxml]
+  robostack: [defusedxml]
 python-dev:
-  conda: [python]
+  robostack: [python]
 python-dlib:
-  conda: [dlib]
+  robostack: [dlib]
 python-empy:
-  conda: [empy]
+  robostack: [empy]
 python-enum34:
-  conda: [enum34]
+  robostack: [enum34]
 python-freezegun-pip:
-  conda: [freezegun]
+  robostack: [freezegun]
 python-gdown-pip:
-  conda: [gdown]
+  robostack: [gdown]
 python-gnupg:
-  conda: [python-gnupg]
+  robostack: [python-gnupg]
 python-imaging:
-  conda: [pillow]
+  robostack: [pillow]
 python-inject-pip:
-  conda: [inject]
+  robostack: [inject]
 python-lxml:
-  conda: [lxml]
+  robostack: [lxml]
 python-matplotlib:
-  conda: [matplotlib-base]
+  robostack: [matplotlib-base]
 python-mock:
-  conda: [mock]
+  robostack: [mock]
 python-netifaces:
-  conda: [netifaces]
+  robostack: [netifaces]
 python-nose:
-  conda: [nose]
+  robostack: [nose]
 python-numpy:
-  conda: [numpy]
+  robostack: [numpy]
 python-opencv:
-  conda: [py-opencv, libopencv]
+  robostack: [py-opencv, libopencv]
 python-opengl:
-  conda: [pyopengl, REQUIRE_OPENGL]
+  robostack: [pyopengl, REQUIRE_OPENGL]
 python-paramiko:
-  conda: [paramiko]
+  robostack: [paramiko]
 python-psutil:
-  conda: [psutil]
+  robostack: [psutil]
 python-pyassimp:
-  conda: [pyassimp]
+  robostack: [pyassimp]
 python-pycryptodome:
-  conda: [pycryptodome, pycryptodomex]
+  robostack: [pycryptodome, pycryptodomex]
 python-pydot:
-  conda: [pydot]
+  robostack: [pydot]
 python-pygithub3:
-  conda: [pygithub]
+  robostack: [pygithub]
 python-pygraphviz:
-  conda: [pygraphviz]
+  robostack: [pygraphviz]
 python-pyusb-pip:
-  conda: [pyusb]
+  robostack: [pyusb]
 python-qt5-bindings:
-  conda: [pyqt, pyqt-builder]
+  robostack: [pyqt, pyqt-builder]
 python-rosdep:
-  conda: [rosdep]
+  robostack: [rosdep]
 python-rosdep-modules:
-  conda: [rosdep]
+  robostack: [rosdep]
 python-rospkg:
-  conda: [rospkg]
+  robostack: [rospkg]
 python-rospkg-modules:
-  conda: [rospkg]
+  robostack: [rospkg]
 python-setuptools:
-  conda: [setuptools]
+  robostack: [setuptools]
 python-sip:
-  conda: [sip 6.7.*]
+  robostack: [sip 6.7.*]
 python-six:
-  conda: [six]
+  robostack: [six]
 python-slacker-cli:
-  conda: [slacker]
+  robostack: [slacker]
 python-speechrecognition-pip:
-  conda: [speechrecognition]
+  robostack: [speechrecognition]
 python-tabulate-pip:
-  conda: [tabulate]
+  robostack: [tabulate]
 python-tk:
-  conda: [tk]
+  robostack: [tk]
 python-tornado:
-  conda: [tornado]
+  robostack: [tornado]
 python-twisted-core:
-  conda: [twisted]
+  robostack: [twisted]
 python-wxtools:
-  conda: [wxpython]
+  robostack: [wxpython]
 python-yaml:
-  conda: [pyyaml]
+  robostack: [pyyaml]
 python3:
-  conda: [python]
+  robostack: [python]
 python3-argcomplete:
-  conda: [argcomplete]
+  robostack: [argcomplete]
 python3-autobahn:
-  conda: [autobahn]
+  robostack: [autobahn]
 python3-bson:
-  conda: [pymongo]
+  robostack: [pymongo]
 python3-cairo:
-  conda: [pycairo]
+  robostack: [pycairo]
 python3-catkin-pkg:
-  conda: [catkin_pkg]
+  robostack: [catkin_pkg]
 python3-catkin-pkg-modules:
-  conda: [catkin_pkg]
+  robostack: [catkin_pkg]
 python3-catkin-tools:
-  conda: [catkin_tools]
+  robostack: [catkin_tools]
 python3-cherrypy3:
-  conda: [cherrypy]
+  robostack: [cherrypy]
 python3-click:
-  conda: [click]
+  robostack: [click]
 python3-collada:
-  conda: [pycollada]
+  robostack: [pycollada]
 python3-colorama:
-  conda: [colorama]
+  robostack: [colorama]
 python3-coverage:
-  conda: [coverage]
+  robostack: [coverage]
 python3-cryptography:
-  conda: [cryptography]
+  robostack: [cryptography]
 python3-defusedxml:
-  conda: [defusedxml]
+  robostack: [defusedxml]
 python3-deprecated:
-  conda: [deprecated]
+  robostack: [deprecated]
 python3-dev:
-  conda: [python]
+  robostack: [python]
 python3-docopt:
-  conda: [docopt]
+  robostack: [docopt]
 python3-docutils:
-  conda: [docutils]
+  robostack: [docutils]
 python3-empy:
-  conda: [empy]
+  robostack: [empy]
 python3-flake8:
-  conda: [flake8]
+  robostack: [flake8]
 python3-flake8-comprehensions:
-  conda: [flake8-comprehensions]
+  robostack: [flake8-comprehensions]
 python3-flask:
-  conda: [flask]
+  robostack: [flask]
 python3-flask-cors:
-  conda: [flask-cors]
+  robostack: [flask-cors]
 python3-fiona:
-  conda: [fiona]
+  robostack: [fiona]
 python3-future:
-  conda: [future]
+  robostack: [future]
 python3-gi:
-  conda: [pygobject]
+  robostack: [pygobject]
 python3-git:
-  conda: [gitpython]
+  robostack: [gitpython]
 python3-github:
-  conda: [pygithub]
+  robostack: [pygithub]
 python3-github3:
-  conda: [pygithub]
+  robostack: [pygithub]
 python3-gnupg:
-  conda: [python-gnupg]
+  robostack: [python-gnupg]
 python3-grpc-tools:
-  conda: [grpcio-tools]
+  robostack: [grpcio-tools]
 python3-grpcio:
-  conda: [grpcio]
+  robostack: [grpcio]
 python3-h5py:
-  conda: [h5py]
+  robostack: [h5py]
 python3-ifcfg:
-  conda: [ifcfg]
+  robostack: [ifcfg]
 python3-imageio:
-  conda: [imageio]
+  robostack: [imageio]
 python3-importlib-metadata:
-  conda: [importlib-metadata]
+  robostack: [importlib-metadata]
 python3-importlib-resources:
-  conda: [importlib_resources]
+  robostack: [importlib_resources]
 python3-jinja2:
-  conda: [jinja2]
+  robostack: [jinja2]
 python3-kitchen:
-  conda: [kitchen]
+  robostack: [kitchen]
 python3-lark-parser:
-  conda: [lark-parser]
+  robostack: [lark-parser]
 python3-lxml:
-  conda: [lxml]
+  robostack: [lxml]
 python3-matplotlib:
-  conda: [matplotlib-base]
+  robostack: [matplotlib-base]
 python3-mechanize:
-  conda: [mechanize]
+  robostack: [mechanize]
 python3-mock:
-  conda: [mock]
+  robostack: [mock]
 python3-msgpack:
-  conda: [msgpack-python]
+  robostack: [msgpack-python]
 python3-mypy:
-  conda: [mypy]
+  robostack: [mypy]
 python3-netifaces:
-  conda: [netifaces]
+  robostack: [netifaces]
 python3-nose:
-  conda: [nose]
+  robostack: [nose]
 python3-numpy:
-  conda: [numpy]
+  robostack: [numpy]
 python3-opencv:
-  conda: [py-opencv, libopencv]
+  robostack: [py-opencv, libopencv]
 python3-opengl:
-  conda: [pyopengl, REQUIRE_OPENGL]
+  robostack: [pyopengl, REQUIRE_OPENGL]
 python3-packaging:
-  conda: [packaging]
+  robostack: [packaging]
 python3-pandas:
-  conda: [pandas]
+  robostack: [pandas]
 python3-paramiko:
-  conda: [paramiko]
+  robostack: [paramiko]
 python3-pep8:
-  conda: [pep8]
+  robostack: [pep8]
 python3-pil:
-  conda: [pillow]
+  robostack: [pillow]
 python3-pip:
-  conda: [pip]
+  robostack: [pip]
 python3-pkg-resources:
-  conda: []
+  robostack: []
 python3-protobuf:
-  conda: [protobuf]
+  robostack: [protobuf]
 python3-psutil:
-  conda: [psutil]
+  robostack: [psutil]
 python3-pyassimp:
-  conda: [pyassimp]
+  robostack: [pyassimp]
 python3-pycodestyle:
-  conda: [pycodestyle]
+  robostack: [pycodestyle]
 python3-pycryptodome:
-  conda: [pycryptodome, pycryptodomex]
+  robostack: [pycryptodome, pycryptodomex]
 python3-pydot:
-  conda: [pydot]
+  robostack: [pydot]
 python3-pygraphviz:
-  conda: [pygraphviz]
+  robostack: [pygraphviz]
 python3-pykdl:
-  conda: [python-orocos-kdl]
+  robostack: [python-orocos-kdl]
 python3-pymongo:
-  conda: [pymongo]
+  robostack: [pymongo]
 python3-pyproj:
-  conda: [pyproj]
+  robostack: [pyproj]
 python3-pysnmp:
-  conda: [pysnmp]
+  robostack: [pysnmp]
 python3-pytest:
-  conda: [pytest]
+  robostack: [pytest]
 python3-pytest-cov:
-  conda: [pytest-cov]
+  robostack: [pytest-cov]
 python3-pytest-mock:
-  conda: [pytest-mock]
+  robostack: [pytest-mock]
 python3-pytest-timeout:
-  conda: [pytest-timeout]
+  robostack: [pytest-timeout]
 python3-qt5-bindings:
-  conda: [pyqt, pyqt-builder]
+  robostack: [pyqt, pyqt-builder]
 python3-qt5-bindings-gl:
-  conda: [pyqt, pyqt-builder]
+  robostack: [pyqt, pyqt-builder]
 python3-qt5-bindings-webkit:
-  conda: [pyqtwebengine]
+  robostack: [pyqtwebengine]
 python3-requests:
-  conda: [requests]
+  robostack: [requests]
 python3-requests-oauthlib:
-  conda: [requests-oauthlib]
+  robostack: [requests-oauthlib]
 python3-rtree:
-  conda: [rtree]
+  robostack: [rtree]
 python3-rosdep:
-  conda: [rosdep]
+  robostack: [rosdep]
 python3-rosdep-modules:
-  conda: [rosdep]
+  robostack: [rosdep]
 python3-rosdistro-modules:
-  conda: [rosdistro]
+  robostack: [rosdistro]
 python3-rospkg:
-  conda: [rospkg]
+  robostack: [rospkg]
 python3-rospkg-modules:
-  conda: [rospkg]
+  robostack: [rospkg]
 python3-ruamel.yaml:
-  conda: [ruamel.yaml]
+  robostack: [ruamel.yaml]
 python3-ruff:
-  conda: [ruff]
+  robostack: [ruff]
 python3-scipy:
-  conda: [scipy]
+  robostack: [scipy]
 python3-serial:
-  conda: [pyserial]
+  robostack: [pyserial]
 python3-setuptools:
-  conda: [setuptools]
+  robostack: [setuptools]
 python3-simplejson:
-  conda: [simplejson]
+  robostack: [simplejson]
 python3-six:
-  conda: [six]
+  robostack: [six]
 python3-shapely:
-  conda: [shapely]
+  robostack: [shapely]
 python3-skimage:
-  conda: [scikit-image]
+  robostack: [scikit-image]
 python3-sklearn:
-  conda: [scikit-learn]
+  robostack: [scikit-learn]
 python3-sphinx:
-  conda: [sphinx]
+  robostack: [sphinx]
 python3-termcolor:
-  conda: [termcolor]
+  robostack: [termcolor]
 python3-texttable:
-  conda: [texttable]
+  robostack: [texttable]
 python3-tk:
-  conda: [tk]
+  robostack: [tk]
 python3-tornado:
-  conda: [tornado]
+  robostack: [tornado]
 python3-twisted:
-  conda: [twisted]
+  robostack: [twisted]
 python3-typeguard:
-  conda: [typeguard]
+  robostack: [typeguard]
 python3-unidiff:
-  conda: [unidiff]
+  robostack: [unidiff]
 python3-usb:
-  conda: [pyusb]
+  robostack: [pyusb]
 python3-vcstool:
-  conda: [vcstool]
+  robostack: [vcstool]
 python3-flake8-docstrings:
-  conda: [flake8-docstrings]
+  robostack: [flake8-docstrings]
 python3-flake8-import-order:
-  conda: [flake8-import-order]
+  robostack: [flake8-import-order]
 python3-flake8-builtins:
-  conda: [flake8-builtins]
+  robostack: [flake8-builtins]
 python3-flake8-quotes:
-  conda: [flake8-quotes]
+  robostack: [flake8-quotes]
 python3-venv:
-  conda: [virtualenv, pip, pip-tools, setuptools]
+  robostack: [virtualenv, pip, pip-tools, setuptools]
 python3-websocket:
-  conda: [websocket-client]
+  robostack: [websocket-client]
 python3-yaml:
-  conda: [pyyaml]
+  robostack: [pyyaml]
 python3-zmq:
-  conda: [pyzmq]
+  robostack: [pyzmq]
 qt5-image-formats-plugins:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 qt5-qmake:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 qtbase5-dev:
-  conda: [qt-main, REQUIRE_OPENGL]
+  robostack: [qt-main, REQUIRE_OPENGL]
 rapidjson-dev:
-  conda: [rapidjson]
+  robostack: [rapidjson]
 roboticstoolbox-python:
-  conda: [roboticstoolbox-python]
+  robostack: [roboticstoolbox-python]
 rsync:
-  conda: [rsync]
+  robostack: [rsync]
 rti-connext-dds-5.3.1:
-  conda: []
+  robostack: []
 ruby:
-  conda: [ruby]
+  robostack: [ruby]
 sbcl:
-  conda:
+  robostack:
     linux: [sbcl]
     osx: [sbcl]
     win64: []
 screen:
-  conda: [screen]
+  robostack: [screen]
 sdformat:
-  conda: [libsdformat]
+  robostack: [libsdformat]
 sdformat12:
-  conda: [libsdformat12]
+  robostack: [libsdformat12]
 sdl:
-  conda: [sdl]
+  robostack: [sdl]
 sdl-image:
-  conda: [sdl_image]
+  robostack: [sdl_image]
 sdl2:
-  conda: [sdl2]
+  robostack: [sdl2]
 socat:
-  conda: [socat]
+  robostack: [socat]
 spacenavd:
-  conda: [libspnav]
+  robostack: [libspnav]
 spdlog:
-  conda: [spdlog]
+  robostack: [spdlog]
 sshpass:
-  conda: [sshpass]
+  robostack: [sshpass]
 subversion:
-  conda: [subversion]
+  robostack: [subversion]
 suitesparse:
-  conda: [suitesparse]
+  robostack: [suitesparse]
 sqlite3:
-  conda: [sqlite 3.*]
+  robostack: [sqlite 3.*]
 swig:
-  conda: [swig]
+  robostack: [swig]
 sysstat:
-  conda: [sysstat]
+  robostack: [sysstat]
 tango-icon-theme:
-  conda: []
+  robostack: []
 tbb:
-  conda: [tbb, tbb-devel]
+  robostack: [tbb, tbb-devel]
 time:
-  conda: [time]
+  robostack: [time]
 tinyxml:
-  conda: [tinyxml]
+  robostack: [tinyxml]
 tinyxml2:
-  conda: [tinyxml2]
+  robostack: [tinyxml2]
 udev:
-  conda:
+  robostack:
     linux: [libusb, libudev]
     osx: [libusb]
     win64: [libusb]
 uncrustify:
-  conda: [uncrustify]
+  robostack: [uncrustify]
 unzip:
-  conda: [unzip]
+  robostack: [unzip]
 uuid:
-  conda:
+  robostack:
     linux: [libuuid]
     osx: []
     win64: []
 virtualenv:
-  conda: [virtualenv]
+  robostack: [virtualenv]
 libwebsocketpp-dev:
-  conda: [websocketpp]
+  robostack: [websocketpp]
 wget:
-  conda: [wget]
+  robostack: [wget]
 xsimd:
-  conda: [xsimd]
+  robostack: [xsimd]
 xtensor:
-  conda: [xtensor ==0.24.7]
+  robostack: [xtensor ==0.24.7]
 wx-common:
-  conda: [wxpython]
+  robostack: [wxpython]
 wxpython:
-  conda: [wxpython]
+  robostack: [wxpython]
 wxwidgets:
-  conda: [wxpython]
+  robostack: [wxpython]
 x11-dev:
-  conda: [xorg-libx11, REQUIRE_OPENGL]
+  robostack: [xorg-libx11, REQUIRE_OPENGL]
 yaml:
-  conda: [yaml, yaml-cpp]
+  robostack: [yaml, yaml-cpp]
 yaml-cpp:
-  conda: [yaml-cpp]
+  robostack: [yaml-cpp]
 zbar:
-  conda: [zbar]
+  robostack: [zbar]
 zlib:
-  conda: [zlib]
+  robostack: [zlib]
 zziplib:
-  conda: [zziplib]
+  robostack: [zziplib]

@@ -123,10 +123,12 @@ def rosdep_to_conda_package_name(
         return [f"ros-{distro.name}-{dep.replace('_', '-')}" for dep in package_map_data[dep_name]["ros"]]
 
     # Case 2: It's a custom package name
-    elif "conda" in package_map_data[dep_name]:
-        # Dependency found in robostack.yaml
+    elif "conda" in package_map_data[dep_name] or "robostack" in package_map_data[dep_name]:
+        # determine key
+        key = "robostack" if "robostack" in package_map_data[dep_name] else "conda"
+
         # Get the conda packages for the dependency
-        conda_packages = package_map_data[dep_name].get("conda", [])
+        conda_packages = package_map_data[dep_name].get(key, [])
 
         if isinstance(conda_packages, dict):
             # TODO: Handle different platforms

@@ -1,0 +1,4 @@
+alsa-oss:
+  robostack: [other-alsa-oss]
+new_package:
+  robostack: [new-package]

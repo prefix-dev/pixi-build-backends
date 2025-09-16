@@ -5,6 +5,7 @@ from rosdistro.manifest_provider import get_release_tag
 
 from pixi_build_ros.distro import Distro
 
+
 def test_rosdistro():
     """Testing rosdistro tools to access ROS distributions."""
     index = get_index(get_index_url())
@@ -26,6 +27,7 @@ def test_rosdistro():
     repo = distro.repositories[pkg.repository_name].release_repository
     print(f"Release Tag: {get_release_tag(repo, pkg_name)}")
 
+
 def test_distro_class():
     """Testing the Distro class."""
     distro_name = "jazzy"
@@ -39,4 +41,6 @@ def test_distro_class():
     print(f"Packages in {distro_name}: {package_names}")
 
     assert distro.has_package("rclcpp"), f"Package rclcpp should exist in {distro_name} distribution."
-    assert not distro.has_package("non_existent_package"), f"Package non_existent_package should not exist in {distro_name} distribution."
+    assert not distro.has_package("non_existent_package"), (
+        f"Package non_existent_package should not exist in {distro_name} distribution."
+    )

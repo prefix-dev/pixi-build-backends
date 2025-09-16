@@ -2,8 +2,10 @@
 Python generator implementation using Python bindings.
 """
 
-from dataclasses import dataclass
 from pathlib import Path
+import pydantic
+from importlib.resources import files
+
 from typing import Dict, Optional, List, Any
 from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
@@ -19,12 +21,28 @@ from pixi_build_backend.types.python_params import PythonParams
 
 from .build_script import BuildScriptContext, BuildPlatform
 from .distro import Distro
-from .utils import get_build_input_globs, package_xml_to_conda_requirements, convert_package_xml_to_catkin_package, \
-    get_package_xml_content
+from .utils import (
+    get_build_input_globs,
+    package_xml_to_conda_requirements,
+    convert_package_xml_to_catkin_package,
+    get_package_xml_content,
+    load_package_map_data,
+)
 
 
-@dataclass
-class ROSBackendConfig:
+def _parse_str_or_path(value: str | Path) -> Path:
+    """Parse a string as a Path."""
+    # Ensure the debug directory is a Path object
+    if isinstance(value, str):
+        value = Path(value)
+    # Ensure it's an absolute path
+    if not value.is_absolute():
+        # Convert to absolute path relative to the current working directory
+        return Path.cwd() / value
+    return value
+
+
+class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     """ROS backend configuration."""
 
     noarch: Optional[bool] = None
@@ -38,21 +56,32 @@ class ROSBackendConfig:
     # TODO: This should be figured out in some other way, not from the config.
     distro: Optional[str] = None
 
+    # Extra package mappings to use in the build
+    extra_package_mappings: List[Path] = []
+
     def is_noarch(self) -> bool:
         """Whether to build a noarch package or a platform-specific package."""
         return self.noarch is None or self.noarch
 
-    def get_debug_dir(self) -> Optional[Path]:
-        """Get debug directory if set."""
-        if self.debug_dir is not None:
-            # Ensure the debug directory is a Path object
-            if isinstance(self.debug_dir, str):
-                self.debug_dir = Path(self.debug_dir)
-            # Ensure it's an absolute path
-            if not self.debug_dir.is_absolute():
-                # Convert to absolute path relative to the current working directory
-                self.debug_dir = Path.cwd() / self.debug_dir
-        return self.debug_dir
+    @pydantic.field_validator("debug_dir", mode="before")
+    @classmethod
+    def _parse_debug_dir(cls, value) -> Optional[Path]:
+        """Parse debug directory if set."""
+        if value is not None:
+            return _parse_str_or_path(value)
+        return None
+
+    @pydantic.field_validator("extra_package_mappings", mode="before")
+    @classmethod
+    def _parse_package_mappings(cls, input_value) -> Optional[List[Path]]:
+        """Parse additional package mappings if set."""
+        if input_value is not None:
+            res = []
+            for path_value in input_value:
+                res.append(_parse_str_or_path(path_value))
+            return res
+        return []
+
 
 class ROSGenerator(GenerateRecipeProtocol):
     """ROS recipe generator using Python bindings."""
@@ -65,14 +94,14 @@ class ROSGenerator(GenerateRecipeProtocol):
         host_platform: Platform,
         _python_params: Optional[PythonParams] = None,
     ) -> GeneratedRecipe:
-        """Generate a recipe for a Python package."""        
-        backend_config: ROSBackendConfig = ROSBackendConfig(**config)
+        """Generate a recipe for a Python package."""
+        backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(config)
 
         manifest_root = Path(manifest_path)
 
         # Setup ROS distro first
         distro = Distro(backend_config.distro)
-        
+
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
         metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro)
@@ -84,11 +113,30 @@ class ROSGenerator(GenerateRecipeProtocol):
         package_xml_str = get_package_xml_content(manifest_root)
         package_xml = convert_package_xml_to_catkin_package(package_xml_str)
 
+        # load package map
+
+        # TODO: Currently hardcoded and not able to override, this should be configurable
+        package_files = files("pixi_build_ros")
+        robostack_file = package_files / "robostack.yaml"
+        # workaround for from source install
+        if not robostack_file.is_file():
+            robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
+
+        package_map_data = load_package_map_data([robostack_file] + backend_config.extra_package_mappings)
+
         # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform)
+        package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform, package_map_data)
 
         # Add standard dependencies
-        build_deps = ["ninja", "python", "setuptools", "git", "git-lfs", "cmake", "cpython"]
+        build_deps = [
+            "ninja",
+            "python",
+            "setuptools",
+            "git",
+            "git-lfs",
+            "cmake",
+            "cpython",
+        ]
         if host_platform.is_unix:
             build_deps.extend(["patch", "make", "coreutils"])
         if host_platform.is_windows:
@@ -112,7 +160,6 @@ class ROSGenerator(GenerateRecipeProtocol):
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
         generated_recipe.recipe.requirements = requirements
 
-
         # Determine build platform
         build_platform = BuildPlatform.current()
 
@@ -120,18 +167,17 @@ class ROSGenerator(GenerateRecipeProtocol):
         build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root, distro)
         build_script_lines = build_script_context.render()
 
-        generated_recipe.recipe.build.script =  Script(
+        generated_recipe.recipe.build.script = Script(
             content=build_script_lines,
             env=backend_config.env,
         )
 
-        debug_dir = backend_config.get_debug_dir()
-        if debug_dir:
+        if backend_config.debug_dir:
             recipe = generated_recipe.recipe.to_yaml()
             package = generated_recipe.recipe.package
-            debug_file_path = debug_dir / f"{package.name.get_concrete()}-{package.version}-recipe.yaml"
+            debug_file_path = backend_config.debug_dir / f"{package.name.get_concrete()}-{package.version}-recipe.yaml"
             debug_file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(debug_file_path, 'w') as debug_file:
+            with open(debug_file_path, "w") as debug_file:
                 debug_file.write(recipe)
 
         # Test the build script before running to early out.
@@ -144,22 +190,26 @@ class ROSGenerator(GenerateRecipeProtocol):
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 
-    def default_variants(self, host_platform: Platform ) -> Dict[str, Any]:
+    def default_variants(self, host_platform: Platform) -> Dict[str, Any]:
         """Get the default variants for the generator."""
         variants = {}
         if host_platform.is_windows:
             variants["cxx_compiler"] = ["vs2019"]
         return variants
 
-def merge_requirements(model_requirements: ConditionalRequirements, package_requirements: ConditionalRequirements) -> ConditionalRequirements:
+
+def merge_requirements(
+    model_requirements: ConditionalRequirements,
+    package_requirements: ConditionalRequirements,
+) -> ConditionalRequirements:
     """Merge two sets of requirements."""
     merged = ConditionalRequirements()
 
     # The model requirements are the base, coming from the pixi manifest
     # We need to only add the names for non-existing dependencies
     def merge_unique_items(
-            model: List[ItemPackageDependency],
-            package: List[ItemPackageDependency],
+        model: List[ItemPackageDependency],
+        package: List[ItemPackageDependency],
     ) -> List[ItemPackageDependency]:
         """Merge unique items from source into target."""
         result = model
@@ -179,5 +229,3 @@ def merge_requirements(model_requirements: ConditionalRequirements, package_requ
 
     # If the dependency is of type Source in one of the requirements, we need to set them to Source for all variants
     return merged
-
-

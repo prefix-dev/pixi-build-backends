@@ -5,6 +5,7 @@ dependencies = [
   "pytest",
   "toml",
   "pyyaml",
+  "pydantic",
   "py-pixi-build-backend",
 ]
 name = "pixi-build-ros"

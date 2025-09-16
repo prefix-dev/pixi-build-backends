@@ -7,12 +7,21 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 preview = ["pixi-build"]
 
 [dependencies]
-pytest = "*"
+pydantic = ">=2.8.2,<3"
 ruff = "*"
 pixi-build-ros = { path = "." }
 
-[tasks]
+[environments]
+default = {features = [], solve-group = "default"}
+test = {features = ["test"], solve-group = "default"}
+
+[feature.test.tasks]
 test = "pytest tests"
+
+[feature.test.dependencies]
+pixi-pycharm = ">=0.0.8,<0.1"
+pytest = "*"
+py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
 
 [package.build.backend]
 name = "pixi-build-python"
@@ -27,6 +36,7 @@ hatchling = "*"
 
 [package.run-dependencies]
 rosdistro = "*"
+pydantic = ">=2.8.2,<3"
 catkin_pkg = "*"
 pyyaml = "*"
 pixi-build-api-version = ">=2,<3"

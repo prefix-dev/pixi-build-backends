@@ -57,7 +57,7 @@ scripts = ["scripts/activate.sh"]
 
 [feature.schema.dependencies]
 pydantic = ">=2.8.2,<3"
-ruff = ">=0.12.9,<0.13"
+ruff = ">=0.13,<0.14"
 
 [feature.build.dependencies]
 rattler-build = ">=0.46.0,<1"

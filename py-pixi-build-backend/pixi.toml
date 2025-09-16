@@ -49,7 +49,7 @@ toml = "*"
 types-toml = "*"
 
 # Formatting and linting
-ruff = ">=0.12.3,<0.13"
+ruff = ">=0.13,<0.14"
 
 [feature.dev.dependencies]
 # Development tools (IDE support)

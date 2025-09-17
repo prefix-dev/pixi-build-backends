@@ -31,7 +31,7 @@ from .utils import (
 )
 
 
-def _parse_str_or_path(value: str | Path, manifest_root: Path) -> Path:
+def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
     """Parse a string as a Path."""
     # Ensure the debug directory is a Path object
     if isinstance(value, str):
@@ -39,7 +39,7 @@ def _parse_str_or_path(value: str | Path, manifest_root: Path) -> Path:
     # Ensure it's an absolute path
     if not value.is_absolute():
         # Convert to absolute path relative to manifest root
-        return manifest_root / value
+        return (manifest_root / value).resolve()
     return value
 
 
@@ -52,7 +52,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     # Directory for debug files of this script
     debug_dir: Optional[Path] = pydantic.Field(default=None, alias="debug-dir")
     # Extra input globs to include in the build hash
-    extra_input_globs: Optional[List[str]] = None
+    extra_input_globs: Optional[List[str]] = pydantic.Field(default=None, alias="extra-input-globs")
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # TODO: This should be figured out in some other way, not from the config.
     distro: Optional[str] = None
@@ -68,12 +68,12 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     @classmethod
     def _parse_debug_dir(cls, value, info: pydantic.ValidationInfo) -> Optional[Path]:
         """Parse debug directory if set."""
+        if value is None:
+            return None
         base_path = Path(os.getcwd())
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
-        if value is not None:
-            return _parse_str_or_path(value, base_path)
-        return None
+        return _parse_str_as_abs_path(value, base_path)
 
     @pydantic.field_validator("extra_package_mappings", mode="before")
     @classmethod
@@ -85,12 +85,10 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
 
-        if input_value is not None:
-            res = []
-            for path_value in input_value:
-                res.append(_parse_str_or_path(path_value, base_path))
-            return res
-        return []
+        res = []
+        for path_value in input_value:
+            res.append(_parse_str_as_abs_path(path_value, base_path))
+        return res
 
 
 class ROSGenerator(GenerateRecipeProtocol):

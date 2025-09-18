@@ -70,7 +70,7 @@ if [[ $target_platform =~ linux.* ]]; then
     # I am too scared to turn this on for now ...
     # export LDFLAGS="$LDFLAGS -lrt";
     # Some qt stuff uses g++ directly - fix these use cases
-    ln -s $GXX $BUILD_PREFIX/bin/g++
+    ln --symbolic --force $GXX $BUILD_PREFIX/bin/g++
 fi
 
 if [[ $target_platform =~ emscripten.* ]]; then

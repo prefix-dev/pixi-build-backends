@@ -1,5 +1,6 @@
 from pathlib import Path
 import tempfile
+import pytest
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
@@ -59,3 +60,40 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         req_string = list(str(req) for req in generated_recipe.recipe.requirements.run)
         assert "ros-noetic-ros-package" in req_string
         assert "ros-noetic-ros-package-msgs" in req_string
+
+
+def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path):
+    """Test the generate_recipe function of ROSGenerator."""
+    # Create a temporary directory to simulate the package directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Copy the test package.xml to the temp directory
+        package_xml_source = package_xmls / "custom_ros.xml"
+        package_xml_dest = temp_path / "package.xml"
+        package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
+
+        # Create a minimal ProjectModelV1 instance
+        model = ProjectModelV1()
+
+        # Create config for ROS backend
+        config = {
+            "distro": "noetic",
+            "noarch": False,
+            "extra-package-mappings": [("does-not-exist.yaml")],
+        }
+
+        # Create host platform
+        host_platform = Platform.current()
+
+        # Create ROSGenerator instance
+        generator = ROSGenerator()
+
+        with pytest.raises(ValueError) as excinfo:
+            generator.generate_recipe(
+                model=model,
+                config=config,
+                manifest_path=str(temp_path),
+                host_platform=host_platform,
+            )
+        assert "Additional package map path" in str(excinfo.value)

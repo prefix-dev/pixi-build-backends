@@ -75,7 +75,7 @@ def load_package_map_data(package_map_path: List[Path]) -> Dict[str, PackageMapE
     result = {}
     for path in package_map_path:
         if not path.exists():
-            continue
+            raise ValueError(f"Additional package map path '{path}' not found.")
         # this blindly overwrites the data, but that's ok for now'
         with open(path, "r") as f:
             result.update(yaml.safe_load(f))

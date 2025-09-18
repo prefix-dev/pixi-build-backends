@@ -31,6 +31,7 @@ py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
 [feature.lint.dependencies]
 ruff = "*"
 pyupgrade = ">=3.20.0,<4"
+syrupy = ">=4.9.1,<5"
 
 [feature.lint.tasks]
 lint-ruff = "ruff check ."

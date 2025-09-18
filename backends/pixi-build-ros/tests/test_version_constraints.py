@@ -6,9 +6,7 @@ from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_ros.ros_generator import ROSGenerator
 
 
-def test_generate_recipe_with_versions(
-    package_xmls: Path, test_data_dir: Path, snapshot
-):
+def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, snapshot):
     """Test the generate_recipe function of ROSGenerator with versions."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:

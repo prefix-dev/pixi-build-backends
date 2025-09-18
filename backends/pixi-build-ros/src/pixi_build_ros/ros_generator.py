@@ -46,7 +46,6 @@ def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
 
 class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allowed=True):
     """ROS backend configuration."""
-
     # TODO: This should be figured out in some other way, not from the config.
     distro: str
 
@@ -58,7 +57,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     # Extra input globs to include in the build hash
     extra_input_globs: list[str] | None = pydantic.Field(default=None, alias="extra-input-globs")
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
-    mutex_version: Optional[str] = pydantic.Field(default=None, alias="mutex-version")
+    mutex_version: str | None = pydantic.Field(default=None, alias="mutex-version")
     # Extra package mappings to use in the build
     extra_package_mappings: list[PackageMappingSource] = pydantic.Field(
         default_factory=list, alias="extra-package-mappings"
@@ -228,7 +227,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         # assert generated_recipe.recipe.build.script.content == build_script_lines, f"Script content {generated_recipe.recipe.build.script.content}, build script lines {build_script_lines}"
         return generated_recipe
 
-    def extract_input_globs_from_build(self, config: Dict[str, Any], workdir: Path, editable: bool) -> list[str]:
+    def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 

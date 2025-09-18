@@ -8,6 +8,7 @@ preview = ["pixi-build"]
 
 [dependencies]
 pydantic = ">=2.8.2,<3"
+py_rattler = ">=0.15.0,<0.16"
 pixi-build-ros = { path = "." }
 
 [environments]
@@ -56,6 +57,7 @@ python = ">=3.10"
 python = ">=3.10"
 rosdistro = "*"
 pydantic = ">=2.8.2,<3"
+py_rattler = ">=0.15.0,<0.16"
 catkin_pkg = "*"
 pyyaml = "*"
 pixi-build-api-version = ">=2,<3"

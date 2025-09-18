@@ -103,6 +103,11 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
         host_deps = ["python", "numpy", "pip", "pkg-config"]
 
+        mutex_string = distro.ros_distro_mutex_name
+        if backend_config.mutex_version:
+            mutex_string += f" {backend_config.mutex_version}"
+        host_deps.append(mutex_string)
+
         for dep in host_deps:
             package_requirements.host.append(ItemPackageDependency(name=dep))
 

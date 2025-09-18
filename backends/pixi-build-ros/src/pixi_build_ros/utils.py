@@ -41,8 +41,10 @@ def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]
     python_globs = [] if editable else ["**/*.py", "**/*.pyx"]
 
     all_globs = base_globs + python_globs
-    if config.extra_input_globs is not None:
-        if not isinstance(config.extra_input_globs, list):
+    extra_globs = config.get("extra-input-globs")
+    config.get("extra-input-globs")
+    if extra_globs is not None:
+        if not isinstance(extra_globs, list):
             raise ValueError("Expected a list for the extra-input-globs.")
         all_globs.extend(config.extra_input_globs)
 

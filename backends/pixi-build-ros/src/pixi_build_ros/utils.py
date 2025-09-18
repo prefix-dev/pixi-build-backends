@@ -85,7 +85,7 @@ def rosdep_to_conda_package_name(
     distro: Distro,
     host_platform: Platform,
     package_map_data: dict[str, PackageMapEntry],
-    spec_str: str = ""
+    spec_str: str = "",
 ) -> list[str]:
     """Convert a ROS dependency name to a conda package name."""
     if host_platform.is_linux:
@@ -154,9 +154,11 @@ def rosdep_to_conda_package_name(
             if len(conda_packages) == 1:
                 conda_packages = [f"{conda_packages[0]}{spec_str}"]
             else:
-                raise ValueError(f"Version specifier can only be used for one package, "
-                                 f"but found {len(conda_packages)} packages for {dep_name} "
-                                 f"in the package map.")
+                raise ValueError(
+                    f"Version specifier can only be used for one package, "
+                    f"but found {len(conda_packages)} packages for {dep_name} "
+                    f"in the package map."
+                )
 
         return conda_packages + additional_packages
     else:
@@ -184,11 +186,10 @@ def _format_version_constraints_to_string(dependency: Dependency) -> str:
         except TypeError as e:
             raise ValueError(
                 f"Incorrect version specification in package.xml: '{dependency.name}' at version '{version}' "
-                f"(Versions should start with a digit, not '{version[0]}')"
             ) from e
 
     if dependency.version_eq:
-        return f"=={dependency.version_eq}"
+        return f" =={dependency.version_eq}"
 
     version_string_list = []
     if dependency.version_gte:
@@ -222,7 +223,11 @@ def package_xml_to_conda_requirements(
     build_deps += pkg.build_export_depends
     # Also add test dependencies, because they might be needed during build (i.e. for pytest/catch2 etc in CMake macros)
     build_deps += pkg.test_depends
-    build_deps = [PackageNameWithSpec(name=d.name, spec=_format_version_constraints_to_string(d)) for d in build_deps if d.evaluated_condition]
+    build_deps = [
+        PackageNameWithSpec(name=d.name, spec=_format_version_constraints_to_string(d))
+        for d in build_deps
+        if d.evaluated_condition
+    ]
     # Add the ros_workspace dependency as a default build dependency for ros2 packages
     if not distro.check_ros1():
         build_deps += [PackageNameWithSpec(name="ros_workspace")]
@@ -235,7 +240,11 @@ def package_xml_to_conda_requirements(
     run_deps += pkg.exec_depends
     run_deps += pkg.build_export_depends
     run_deps += pkg.buildtool_export_depends
-    run_deps = [PackageNameWithSpec(d.name, spec=_format_version_constraints_to_string(d)) for d in run_deps if d.evaluated_condition]
+    run_deps = [
+        PackageNameWithSpec(d.name, spec=_format_version_constraints_to_string(d))
+        for d in run_deps
+        if d.evaluated_condition
+    ]
     conda_run_deps_chain = [
         rosdep_to_conda_package_name(dep.name, distro, host_platform, package_map_data, dep.spec) for dep in run_deps
     ]
@@ -247,7 +256,6 @@ def package_xml_to_conda_requirements(
     cond = ConditionalRequirements()
     # TODO: should we add all build dependencies to the host requirements?
     cond.host = build_requirements
-    # assert False, "HERE I FAIL before CONDA.BUILD"
     cond.build = build_requirements
     cond.run = run_requirements
 

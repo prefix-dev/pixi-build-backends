@@ -3,7 +3,6 @@ ROS-specific metadata provider that extracts metadata from package.xml files.
 """
 
 from pixi_build_backend.types import MetadataProvider
-from pixi_build_ros.distro import Distro
 
 
 class MaintainerInfo:
@@ -94,7 +93,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
                 url_type = url.get("type", "")
                 if url_type == "repository" and not repository:
                     repository = url.text.strip() if url.text else None
-                if url_type == 'website' or not homepage:
+                if url_type == "website" or not homepage:
                     homepage = url.text.strip() if url.text else None
 
             self._package_data = PackageData(
@@ -173,7 +172,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     as 'ros-<distro>-<package_name>' according to ROS conda packaging conventions.
     """
 
-    def __init__(self, package_xml_path: str, distro_name: Optional[str] = None):
+    def __init__(self, package_xml_path: str, distro_name: str | None = None):
         """
         Initialize the ROS metadata provider.
 
@@ -182,7 +181,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
             distro: ROS distro. If None, will use the base package name without distro prefix.
         """
         super().__init__(package_xml_path)
-        self._distro_name: Optional[str] = distro_name
+        self._distro_name: str | None = distro_name
 
     def name(self) -> str | None:
         """Return the ROS-formatted package name (ros-<distro>-<name>)."""

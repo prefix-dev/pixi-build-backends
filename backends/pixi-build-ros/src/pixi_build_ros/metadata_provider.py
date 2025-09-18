@@ -190,7 +190,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
         if base_name is None:
             return None
 
-        if self._distro_name is not None:
+        if self._distro_name:
             # Convert underscores to hyphens per ROS conda naming conventions
             formatted_name = base_name.replace("_", "-")
             return f"ros-{self._distro_name}-{formatted_name}"

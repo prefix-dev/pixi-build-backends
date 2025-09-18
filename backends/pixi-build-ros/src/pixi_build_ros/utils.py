@@ -42,12 +42,10 @@ def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]
 
     all_globs = base_globs + python_globs
     extra_globs = config.get("extra-input-globs")
-    config.get("extra-input-globs")
-    if extra_globs is not None:
-        if not isinstance(extra_globs, list):
-            raise ValueError("Expected a list for the extra-input-globs.")
-        all_globs.extend(config.extra_input_globs)
+    if extra_globs and not isinstance(extra_globs, list):
+        raise ValueError("Expected a list for the extra-input-globs.")
 
+    all_globs.extend(config.extra_input_globs)
     return all_globs
 
 
@@ -202,7 +200,7 @@ def _format_version_constraints_to_string(dependency: Dependency) -> str:
     if dependency.version_lt:
         version_string_list.append(f"<{dependency.version_lt}")
 
-    if len(version_string_list) == 0:
+    if not version_string_list:
         return ""
 
     return " " + ",".join(version_string_list)

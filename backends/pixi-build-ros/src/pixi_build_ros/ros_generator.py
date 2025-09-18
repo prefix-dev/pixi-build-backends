@@ -228,7 +228,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         # assert generated_recipe.recipe.build.script.content == build_script_lines, f"Script content {generated_recipe.recipe.build.script.content}, build script lines {build_script_lines}"
         return generated_recipe
 
-    def extract_input_globs_from_build(self, config: ROSBackendConfig, workdir: Path, editable: bool) -> list[str]:
+    def extract_input_globs_from_build(self, config: Dict[str, Any], workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 

@@ -56,7 +56,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # TODO: This should be figured out in some other way, not from the config.
     distro: Optional[str] = None
-
+    mutex_version: Optional[str] = pydantic.Field(default=None, alias="mutex-version")
     # Extra package mappings to use in the build
     extra_package_mappings: List[Path] = pydantic.Field(default_factory=list, alias="extra-package-mappings")
 
@@ -113,7 +113,7 @@ class ROSGenerator(GenerateRecipeProtocol):
 
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
-        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro)
+        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro.name)
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
@@ -162,6 +162,11 @@ class ROSGenerator(GenerateRecipeProtocol):
 
         host_deps = ["python", "numpy", "pip", "pkg-config"]
 
+        mutex_string = distro.ros_distro_mutex_name
+        if backend_config.mutex_version:
+            mutex_string += f" {backend_config.mutex_version}"
+        host_deps.append(mutex_string)
+
         for dep in host_deps:
             package_requirements.host.append(ItemPackageDependency(name=dep))
 
@@ -195,7 +200,7 @@ class ROSGenerator(GenerateRecipeProtocol):
         # assert generated_recipe.recipe.build.script.content == build_script_lines, f"Script content {generated_recipe.recipe.build.script.content}, build script lines {build_script_lines}"
         return generated_recipe
 
-    def extract_input_globs_from_build(self, config: ROSBackendConfig, workdir: Path, editable: bool) -> List[str]:
+    def extract_input_globs_from_build(self, config: Dict[str, Any], workdir: Path, editable: bool) -> List[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 

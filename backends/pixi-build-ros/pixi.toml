@@ -12,8 +12,8 @@ ruff = "*"
 pixi-build-ros = { path = "." }
 
 [environments]
-default = {features = [], solve-group = "default"}
-test = {features = ["test"], solve-group = "default"}
+default = { features = [], solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
 
 [feature.test.tasks]
 test = "pytest tests"

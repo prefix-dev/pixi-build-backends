@@ -41,7 +41,9 @@ def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]
     python_globs = [] if editable else ["**/*.py", "**/*.pyx"]
 
     all_globs = base_globs + python_globs
-    if hasattr(config, "extra_input_globs") and config.extra_input_globs is not None:
+    if config.extra_input_globs is not None:
+        if not isinstance(config.extra_input_globs, list):
+            raise ValueError("Expected a list for the extra-input-globs.")
         all_globs.extend(config.extra_input_globs)
 
     return all_globs
@@ -83,7 +85,7 @@ def rosdep_to_conda_package_name(
     distro: Distro,
     host_platform: Platform,
     package_map_data: dict[str, PackageMapEntry],
-    spec: str | None = None
+    spec_str: str = ""
 ) -> list[str]:
     """Convert a ROS dependency name to a conda package name."""
     if host_platform.is_linux:
@@ -108,16 +110,16 @@ def rosdep_to_conda_package_name(
         # If the dependency is not found in robostack.yaml, check the actual distro whether it exists
         if distro.has_package(dep_name):
             # This means that it is a ROS package, so we are going to assume has the `ros-<distro>-<dep_name>` format.
-            return [f"ros-{distro.name}-{dep_name.replace('_', '-')}{spec if spec else ''}"]
+            return [f"ros-{distro.name}-{dep_name.replace('_', '-')}{spec_str}"]
         else:
             # If the dependency is not found in robostack.yaml and not in the distro, return the dependency name as is.
-            return [f"{dep_name}{spec if spec else ''}"]
+            return [f"{dep_name}{spec_str}"]
 
     # Dependency found in package map
 
     # Case 1: It's a custom ROS dependency
     if "ros" in package_map_data[dep_name]:
-        return [f"ros-{distro.name}-{dep.replace('_', '-')}{spec if spec else ''}" for dep in package_map_data[dep_name]["ros"]]
+        return [f"ros-{distro.name}-{dep.replace('_', '-')}{spec_str}" for dep in package_map_data[dep_name]["ros"]]
 
     # Case 2: It's a custom package name
     elif "conda" in package_map_data[dep_name] or "robostack" in package_map_data[dep_name]:
@@ -148,9 +150,9 @@ def rosdep_to_conda_package_name(
                 additional_packages.extend(["xorg-libx11", "xorg-libxext"])
 
         # Add the version specifier if it exists and it is only one package defined
-        if spec is not None:
+        if spec_str:
             if len(conda_packages) == 1:
-                conda_packages = [f"{conda_packages[0]} {spec}"]
+                conda_packages = [f"{conda_packages[0]}{spec_str}"]
             else:
                 raise ValueError(f"Version specifier can only be used for one package, "
                                  f"but found {len(conda_packages)} packages for {dep_name} "
@@ -161,7 +163,7 @@ def rosdep_to_conda_package_name(
         raise ValueError(f"Unknown package map entry: {dep_name}.")
 
 
-def _format_version_constraints(dependency: Dependency) -> str | None:
+def _format_version_constraints_to_string(dependency: Dependency) -> str:
     """Format the version constraints from a ros package.xml to a string"""
     for version in [
         dependency.version_eq,
@@ -176,11 +178,14 @@ def _format_version_constraints(dependency: Dependency) -> str | None:
             raise ValueError(
                 f"Incorrect version specification in package.xml: '{dependency.name}': version is empty string (\"\")"
             )
-        elif not version[0].isdigit():
+        try:
+            # check if we can parse the version
+            Version(version)
+        except TypeError as e:
             raise ValueError(
                 f"Incorrect version specification in package.xml: '{dependency.name}' at version '{version}' "
                 f"(Versions should start with a digit, not '{version[0]}')"
-            )
+            ) from e
 
     if dependency.version_eq:
         return f"=={dependency.version_eq}"
@@ -196,9 +201,9 @@ def _format_version_constraints(dependency: Dependency) -> str | None:
         version_string_list.append(f"<{dependency.version_lt}")
 
     if len(version_string_list) == 0:
-        return None
+        return ""
 
-    return ",".join(version_string_list)
+    return " " + ",".join(version_string_list)
 
 
 def package_xml_to_conda_requirements(
@@ -217,7 +222,7 @@ def package_xml_to_conda_requirements(
     build_deps += pkg.build_export_depends
     # Also add test dependencies, because they might be needed during build (i.e. for pytest/catch2 etc in CMake macros)
     build_deps += pkg.test_depends
-    build_deps = [PackageNameWithSpec(name=d.name, spec=_format_version_constraints(d)) for d in build_deps if d.evaluated_condition]
+    build_deps = [PackageNameWithSpec(name=d.name, spec=_format_version_constraints_to_string(d)) for d in build_deps if d.evaluated_condition]
     # Add the ros_workspace dependency as a default build dependency for ros2 packages
     if not distro.check_ros1():
         build_deps += [PackageNameWithSpec(name="ros_workspace")]
@@ -230,7 +235,7 @@ def package_xml_to_conda_requirements(
     run_deps += pkg.exec_depends
     run_deps += pkg.build_export_depends
     run_deps += pkg.buildtool_export_depends
-    run_deps = [PackageNameWithSpec(d.name, spec=_format_version_constraints(d)) for d in run_deps if d.evaluated_condition]
+    run_deps = [PackageNameWithSpec(d.name, spec=_format_version_constraints_to_string(d)) for d in run_deps if d.evaluated_condition]
     conda_run_deps_chain = [
         rosdep_to_conda_package_name(dep.name, distro, host_platform, package_map_data, dep.spec) for dep in run_deps
     ]

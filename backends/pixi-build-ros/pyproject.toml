@@ -6,6 +6,7 @@ dependencies = [
   "toml",
   "pyyaml",
   "pydantic",
+  "py_rattler",
   "py-pixi-build-backend",
 ]
 name = "pixi-build-ros"

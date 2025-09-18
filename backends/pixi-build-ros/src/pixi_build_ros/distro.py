@@ -22,6 +22,10 @@ class Distro:
     def check_ros1(self) -> bool:
         return self._distribution_type == "ros1"
 
+    @property
+    def ros_distro_mutex_name(self) -> str:
+        return f"ros{'' if self.check_ros1() else '2'}-distro-mutex"
+
     def get_python_version(self) -> str:
         return self._python_version
 

@@ -52,7 +52,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
-        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro)
+        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro.name)
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)

@@ -30,6 +30,7 @@ class PackageData:
         self.name = name
         self.version = version
         self.description = description
+        # TODO: this is currently unused
         self.maintainers = maintainers or []
         self.licenses = licenses or []
         self.homepage = homepage
@@ -91,10 +92,10 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
             repository = None
             for url in root.findall("url"):
                 url_type = url.get("type", "")
-                if url_type == "website" and not homepage:
-                    homepage = url.text.strip() if url.text else None
-                elif url_type == "repository" and not repository:
+                if url_type == "repository" and not repository:
                     repository = url.text.strip() if url.text else None
+                if url_type == 'website' or not homepage:
+                    homepage = url.text.strip() if url.text else None
 
             self._package_data = PackageData(
                 name=name_elem.text.strip() if name_elem is not None and name_elem.text else None,
@@ -128,13 +129,16 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
     def license(self) -> str | None:
         """Return the license from package.xml."""
-        # TODO: Handle License parsing to conform to SPDX standards,
         # ROS package.xml does not enforce SPDX as strictly as rattler-build
+        # So use LicenseRef for now
+        if len(self._package_xml_data.licenses) == 1:
+            return f"LicenseRef-{self._package_xml_data.licenses[0]}"
+        # TODO: Handle License parsing to conform to SPDX standards,
         return None
 
     def license_file(self) -> str | None:
-        """Return None as package.xml doesn't typically specify license files."""
-        return None
+        """Return package.xml as the license files."""
+        return "package.xml"
 
     def summary(self) -> str | None:
         """Return the description as summary from package.xml."""
@@ -169,7 +173,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     as 'ros-<distro>-<package_name>' according to ROS conda packaging conventions.
     """
 
-    def __init__(self, package_xml_path: str, distro: Distro | None = None):
+    def __init__(self, package_xml_path: str, distro_name: Optional[str] = None):
         """
         Initialize the ROS metadata provider.
 
@@ -178,10 +182,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
             distro: ROS distro. If None, will use the base package name without distro prefix.
         """
         super().__init__(package_xml_path)
-        self._distro: Distro | None = distro
-
-    def _get_distro(self) -> Distro | None:
-        return self._distro
+        self._distro_name: Optional[str] = distro_name
 
     def name(self) -> str | None:
         """Return the ROS-formatted package name (ros-<distro>-<name>)."""
@@ -189,9 +190,8 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
         if base_name is None:
             return None
 
-        distro = self._get_distro()
-        if distro:
+        if self._distro_name is not None:
             # Convert underscores to hyphens per ROS conda naming conventions
             formatted_name = base_name.replace("_", "-")
-            return f"ros-{distro.name}-{formatted_name}"
+            return f"ros-{self._distro_name}-{formatted_name}"
         return base_name

@@ -6,6 +6,8 @@
     <description>
         Demo
     </description>
+    <url>https://test.io/custom_ros</url>
+    <url type="repository">https://github.com/test/custom_ros</url>
 
     <maintainer email="test@test.io">Tester the Tester</maintainer>
 

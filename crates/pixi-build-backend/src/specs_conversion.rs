@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use ordermap::OrderMap;
 use pixi_build_types::{
-    BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetV1, TargetsV1,
+    BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetSelectorV1, TargetV1, TargetsV1,
     procedures::conda_build_v1::{
         CondaBuildV1Dependency, CondaBuildV1DependencySource, CondaBuildV1Prefix,
         CondaBuildV1RunExports,
@@ -34,6 +34,33 @@ pub fn from_source_matchspec_into_package_spec(
 ) -> miette::Result<SourcePackageSpecV1> {
     from_source_url_to_source_package(source_matchspec.location)
         .ok_or_else(|| miette::miette!("Only file, http/https and git are supported for now"))
+}
+
+#[derive(Debug, Clone)]
+pub enum PlatformKind {
+    Build,
+    Host,
+    Target,
+}
+
+impl std::fmt::Display for PlatformKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PlatformKind::Build => write!(f, "build"),
+            PlatformKind::Host => write!(f, "host"),
+            PlatformKind::Target => write!(f, "target"),
+        }
+    }
+}
+
+pub fn to_rattler_build_selector(
+    selector: &TargetSelectorV1,
+    platform_kind: PlatformKind,
+) -> String {
+    match selector {
+        TargetSelectorV1::Platform(p) => format!("{platform_kind}_platform == '{p}'"),
+        _ => selector.to_string(),
+    }
 }
 
 pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
@@ -86,7 +113,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
                     .map(|spec| spec.1)
                     .map(|spec| {
                         Conditional {
-                            condition: selector.to_string(),
+                            condition: to_rattler_build_selector(selector, PlatformKind::Build),
                             then: ListOrItem(vec![spec]),
                             else_value: ListOrItem::default(),
                         }
@@ -100,7 +127,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
                     .map(|spec| spec.1)
                     .map(|spec| {
                         Conditional {
-                            condition: selector.to_string(),
+                            condition: to_rattler_build_selector(selector, PlatformKind::Host),
                             then: ListOrItem(vec![spec]),
                             else_value: ListOrItem::default(),
                         }
@@ -114,7 +141,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
                     .map(|spec| spec.1)
                     .map(|spec| {
                         Conditional {
-                            condition: selector.to_string(),
+                            condition: to_rattler_build_selector(selector, PlatformKind::Target),
                             then: ListOrItem(vec![spec]),
                             else_value: ListOrItem::default(),
                         }

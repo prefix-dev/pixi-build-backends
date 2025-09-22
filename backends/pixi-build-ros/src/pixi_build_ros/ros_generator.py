@@ -44,7 +44,7 @@ def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
     return value
 
 
-class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
+class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allowed=True):
     """ROS backend configuration."""
 
     noarch: Optional[bool] = None
@@ -100,26 +100,18 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid"):
             elif isinstance(raw_entry, dict):
                 if "file" in raw_entry:
                     file_value = raw_entry["file"]
-                    if file_value is None:
-                        raise ValueError("'file' entry in extra-package-mappings cannot be null.")
-                    entry = PackageMappingSource(
-                        file=_parse_str_as_abs_path(file_value, base_path)
-                    )
+                    entry = PackageMappingSource.from_file(_parse_str_as_abs_path(file_value, base_path))
                 elif "mapping" in raw_entry:
                     mapping_value = raw_entry["mapping"]
-                    if mapping_value is None:
-                        raise ValueError("'mapping' entry in extra-package-mappings cannot be null.")
-                    if not isinstance(mapping_value, dict):
-                        raise TypeError("Expected 'mapping' entry to be a dictionary.")
-                    entry = PackageMappingSource(mapping=mapping_value)
+                    entry = PackageMappingSource.from_mapping(mapping_value)
                 else:
-                    entry = PackageMappingSource(mapping=raw_entry)
+                    entry = PackageMappingSource.from_mapping(raw_entry)
             elif isinstance(raw_entry, str | Path):
-                entry = PackageMappingSource(
-                    file=_parse_str_as_abs_path(raw_entry, base_path)
-                )
+                entry = PackageMappingSource.from_file(_parse_str_as_abs_path(raw_entry, base_path))
             else:
-                raise ValueError(f"Unrecognized entry for extra-package-mappings: {raw_entry} of type {type(raw_entry)}.")
+                raise ValueError(
+                    f"Unrecognized entry for extra-package-mappings: {raw_entry} of type {type(raw_entry)}."
+                )
             result.append(entry)
         return result
 
@@ -164,7 +156,9 @@ class ROSGenerator(GenerateRecipeProtocol):
         if not robostack_file.is_file():
             robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
 
-        package_map_data = load_package_map_data([PackageMappingSource(file=robostack_file)] + backend_config.extra_package_mappings)
+        package_map_data = load_package_map_data(
+            [PackageMappingSource.from_file(robostack_file)] + backend_config.extra_package_mappings
+        )
 
         # Get requirements from package.xml
         package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform, package_map_data)

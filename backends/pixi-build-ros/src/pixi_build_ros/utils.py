@@ -1,5 +1,4 @@
 import os
-from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -16,29 +15,36 @@ from pixi_build_ros.distro import Distro
 PackageMapEntry = Dict[str, List[str] | Dict[str, List[str]]]
 
 
-@dataclass(frozen=True)
 class PackageMappingSource:
     """Describes where additional package mapping data comes from."""
 
-    file: Optional[Path] = None
-    mapping: Optional[Dict[str, PackageMapEntry]] = None
+    def __init__(self, mapping: Dict[str, PackageMapEntry]):
+        if mapping is None:
+            raise ValueError("PackageMappingSource mapping cannot be null.")
+        if not isinstance(mapping, dict):
+            raise TypeError("PackageMappingSource mapping must be a dictionary.")
+        # Copy to keep the source immutable for callers.
+        self.mapping: Dict[str, PackageMapEntry] = dict(mapping)
 
-    def __post_init__(self) -> None:
-        if (self.file is None) == (self.mapping is None):
-            raise ValueError("PackageMappingSource requires exactly one of 'file' or 'mapping'.")
-        return None
+    @classmethod
+    def from_mapping(cls, mapping: Dict[str, PackageMapEntry]) -> "PackageMappingSource":
+        """Create a source directly from a mapping dictionary."""
+        return cls(mapping)
+
+    @classmethod
+    def from_file(cls, file_path: Union[str, Path]) -> "PackageMappingSource":
+        """Create a source from a mapping file."""
+        path = Path(file_path)
+        if not path.exists():
+            raise ValueError(f"Additional package map file '{path}' not found.")
+        with open(path, "r") as f:
+            data = yaml.safe_load(f) or {}
+        if not isinstance(data, dict):
+            raise TypeError("Expected package map file to contain a dictionary.")
+        return cls(data)
 
     def get_package_mapping(self) -> Dict[str, PackageMapEntry]:
-        if self.file is not None:
-            if not self.file.exists():
-                raise ValueError(
-                    f"Additional package map path '{self.file}' not found."
-                )
-            with open(self.file, "r") as f:
-                data = yaml.safe_load(f) or {}
-        else:
-            data = self.mapping or {}
-        return data
+        return dict(self.mapping)
 
 
 def get_build_input_globs(config: Any, editable: bool) -> List[str]:

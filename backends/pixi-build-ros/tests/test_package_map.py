@@ -12,7 +12,12 @@ def test_package_loading(test_data_dir: Path):
     """Load the package map with overwrites."""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
     other_package_map = test_data_dir / "other_package_map.yaml"
-    result = load_package_map_data([PackageMappingSource(file=other_package_map), PackageMappingSource(file=robostack_file)])
+    result = load_package_map_data(
+        [
+            PackageMappingSource.from_file(other_package_map),
+            PackageMappingSource.from_file(robostack_file),
+        ]
+    )
     assert "new_package" in result
     assert result["new_package"]["conda"] == ["new-package"], "Should be added"
     assert result["alsa-oss"]["conda"] == ["other-alsa-oss"], "Should be overwritten"
@@ -31,10 +36,11 @@ def test_package_loading_with_inline_mappings(test_data_dir: Path):
     config = {
         "distro": "noetic",
         "noarch": False,
-        "extra-package-mappings":
-            [{"file": str(test_data_dir / "other_package_map.yaml")},
-              {"mapping": inline_entries},
-             robostack_file],
+        "extra-package-mappings": [
+            {"file": str(test_data_dir / "other_package_map.yaml")},
+            {"mapping": inline_entries},
+            robostack_file,
+        ],
     }
     parsed_config = ROSBackendConfig.model_validate(config, context={"manifest_root": test_data_dir})
     result = load_package_map_data(parsed_config.extra_package_mappings)
@@ -162,4 +168,4 @@ def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path):
                 manifest_path=str(temp_path),
                 host_platform=host_platform,
             )
-        assert "Additional package map path" in str(excinfo.value)
+        assert "Additional package map file" in str(excinfo.value)

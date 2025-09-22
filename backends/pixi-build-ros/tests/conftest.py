@@ -3,7 +3,11 @@ from typing import Dict
 
 import pytest
 
-from pixi_build_ros.utils import PackageMapEntry, load_package_map_data
+from pixi_build_ros.utils import (
+    PackageMapEntry,
+    load_package_map_data,
+    PackageMappingSource,
+)
 
 
 @pytest.fixture
@@ -22,4 +26,4 @@ def package_xmls(test_data_dir) -> Path:
 def package_map() -> Dict[str, PackageMapEntry]:
     """Load the package map"""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
-    return load_package_map_data([robostack_file])
+    return load_package_map_data([PackageMappingSource(file=robostack_file)])

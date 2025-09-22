@@ -4,19 +4,44 @@ import pytest
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
-from pixi_build_ros.ros_generator import ROSGenerator
-from pixi_build_ros.utils import load_package_map_data
+from pixi_build_ros.ros_generator import ROSGenerator, ROSBackendConfig
+from pixi_build_ros.utils import load_package_map_data, PackageMappingSource
 
 
 def test_package_loading(test_data_dir: Path):
     """Load the package map with overwrites."""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
     other_package_map = test_data_dir / "other_package_map.yaml"
-    result = load_package_map_data([robostack_file, other_package_map])
+    result = load_package_map_data([PackageMappingSource(file=other_package_map), PackageMappingSource(file=robostack_file)])
     assert "new_package" in result
     assert result["new_package"]["conda"] == ["new-package"], "Should be added"
     assert result["alsa-oss"]["conda"] == ["other-alsa-oss"], "Should be overwritten"
+    assert "robostack" not in result["alsa-oss"], "Should be overwritten due to priority of package maps"
     assert "zlib" in result, "Should still be present"
+
+
+def test_package_loading_with_inline_mappings(test_data_dir: Path):
+    """Load package map data from a mix of files and inline entries."""
+    robostack_file = Path(__file__).parent.parent / "robostack.yaml"
+    inline_entries = {
+        "inline-package": {"conda": ["inline-conda"]},
+        "inline-ros": {"ros": ["inline-ros"]},
+    }
+    # Create config for ROS backend
+    config = {
+        "distro": "noetic",
+        "noarch": False,
+        "extra-package-mappings":
+            [{"file": str(test_data_dir / "other_package_map.yaml")},
+              {"mapping": inline_entries},
+             robostack_file],
+    }
+    parsed_config = ROSBackendConfig.model_validate(config, context={"manifest_root": test_data_dir})
+    result = load_package_map_data(parsed_config.extra_package_mappings)
+
+    assert result["inline-package"]["conda"] == ["inline-conda"]
+    assert result["inline-ros"]["ros"] == ["inline-ros"]
+    assert "zlib" in result, "Should still contain base entries"
 
 
 def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path):
@@ -60,6 +85,47 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         req_string = list(str(req) for req in generated_recipe.recipe.requirements.run)
         assert "ros-noetic-ros-package" in req_string
         assert "ros-noetic-ros-package-msgs" in req_string
+
+
+def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_data_dir: Path):
+    """Inline entries should be merged into the package map."""
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        package_xml_source = package_xmls / "custom_ros.xml"
+        package_xml_dest = temp_path / "package.xml"
+        package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
+
+        model = ProjectModelV1()
+
+        config = {
+            "distro": "noetic",
+            "noarch": False,
+            "extra-package-mappings": [
+                {
+                    "mapping": {
+                        "ros_package": {"ros": ["ros-custom2", "ros-custom2-msgs"]},
+                    }
+                },
+                {"file": str(test_data_dir / "other_package_map.yaml")},
+            ],
+        }
+
+        host_platform = Platform.current()
+
+        generator = ROSGenerator()
+
+        generated_recipe = generator.generate_recipe(
+            model=model,
+            config=config,
+            manifest_path=str(temp_path),
+            host_platform=host_platform,
+        )
+
+        req_string = list(str(req) for req in generated_recipe.recipe.requirements.run)
+        assert "ros-noetic-ros-custom2" in req_string
+        assert "ros-noetic-ros-custom2-msgs" in req_string
 
 
 def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path):

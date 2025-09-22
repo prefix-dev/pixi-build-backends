@@ -1,7 +1,8 @@
 import os
+from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import yaml
 from catkin_pkg.package import Package as CatkinPackage, parse_package_string
@@ -13,6 +14,31 @@ from pixi_build_ros.distro import Distro
 
 
 PackageMapEntry = Dict[str, List[str] | Dict[str, List[str]]]
+
+
+@dataclass(frozen=True)
+class PackageMappingSource:
+    """Describes where additional package mapping data comes from."""
+
+    file: Optional[Path] = None
+    mapping: Optional[Dict[str, PackageMapEntry]] = None
+
+    def __post_init__(self) -> None:
+        if (self.file is None) == (self.mapping is None):
+            raise ValueError("PackageMappingSource requires exactly one of 'file' or 'mapping'.")
+        return None
+
+    def get_package_mapping(self) -> Dict[str, PackageMapEntry]:
+        if self.file is not None:
+            if not self.file.exists():
+                raise ValueError(
+                    f"Additional package map path '{self.file}' not found."
+                )
+            with open(self.file, "r") as f:
+                data = yaml.safe_load(f) or {}
+        else:
+            data = self.mapping or {}
+        return data
 
 
 def get_build_input_globs(config: Any, editable: bool) -> List[str]:
@@ -70,15 +96,12 @@ def convert_package_xml_to_catkin_package(package_xml_content: str) -> CatkinPac
     return package_xml
 
 
-def load_package_map_data(package_map_path: List[Path]) -> Dict[str, PackageMapEntry]:
-    """Load the package map data from the given path."""
-    result = {}
-    for path in package_map_path:
-        if not path.exists():
-            raise ValueError(f"Additional package map path '{path}' not found.")
-        # this blindly overwrites the data, but that's ok for now'
-        with open(path, "r") as f:
-            result.update(yaml.safe_load(f))
+def load_package_map_data(package_map_sources: List[PackageMappingSource]) -> Dict[str, PackageMapEntry]:
+    """Load and merge package map data from files and inline mappings."""
+
+    result: Dict[str, PackageMapEntry] = {}
+    for source in reversed(package_map_sources):
+        result.update(source.get_package_mapping())
     return result
 
 

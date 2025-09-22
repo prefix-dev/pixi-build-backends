@@ -1,8 +1,12 @@
-use std::str::FromStr;
+use std::{
+    fs,
+    str::FromStr,
+};
 
-use pixi_build_types::ProjectModelV1;
-use pyo3::prelude::*;
-use rattler_conda_types::Version;
+use pixi_build_types::{ProjectModelV1};
+use pyo3::{exceptions::PyValueError, prelude::*};
+use rattler_conda_types::{Version};
+use serde_json::from_str;
 
 #[pyclass]
 #[derive(Clone)]
@@ -35,6 +39,28 @@ impl PyProjectModelV1 {
         }
     }
 
+    #[staticmethod]
+    pub fn from_json(json: &str) -> PyResult<Self> {
+        let project: ProjectModelV1 = from_str(json).map_err(|err| {
+            PyErr::new::<PyValueError, _>(format!(
+                "Failed to parse ProjectModelV1 from JSON: {err}"
+            ))
+        })?;
+
+        Ok(PyProjectModelV1 { inner: project })
+    }
+
+    #[staticmethod]
+    pub fn from_json_file(path: &str) -> PyResult<Self> {
+        let content = fs::read_to_string(path).map_err(|err| {
+            PyErr::new::<PyValueError, _>(format!(
+                "Failed to read ProjectModelV1 JSON file '{path}': {err}"
+            ))
+        })?;
+
+        Self::from_json(&content)
+    }
+    
     #[getter]
     pub fn name(&self) -> Option<&String> {
         self.inner.name.as_ref()
@@ -115,3 +141,4 @@ impl From<PyProjectModelV1> for ProjectModelV1 {
         py_model.inner
     }
 }
+

@@ -1,4 +1,5 @@
 from typing import Optional, List
+from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
     PyProjectModelV1,
 )
@@ -33,6 +34,20 @@ class ProjectModelV1:
         """Create a ProjectModelV1 from a FFI PyProjectModelV1."""
         instance = cls.__new__(cls)
         instance._inner = model
+        return instance
+
+    @classmethod
+    def from_json(cls, json: str) -> "ProjectModelV1":
+        """Create a ProjectModelV1 from a JSON document."""
+        instance = cls.__new__(cls)
+        instance._inner = PyProjectModelV1.from_json(json)
+        return instance
+
+    @classmethod
+    def from_json_file(cls, path: Path | str) -> "ProjectModelV1":
+        """Create a ProjectModelV1 from a JSON file."""
+        instance = cls.__new__(cls)
+        instance._inner = PyProjectModelV1.from_json_file(str(path))
         return instance
 
     @property

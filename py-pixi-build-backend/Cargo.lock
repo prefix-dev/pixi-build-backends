@@ -4590,6 +4590,7 @@ dependencies = [
  "serde_yaml",
  "thiserror 2.0.16",
  "tokio",
+ "url",
 ]
 
 [[package]]

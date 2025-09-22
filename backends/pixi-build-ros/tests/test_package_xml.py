@@ -1,5 +1,8 @@
-from pathlib import Path
+import json
+import shutil
 import tempfile
+import tomllib
+from pathlib import Path
 from typing import Dict
 
 from pixi_build_ros.distro import Distro
@@ -142,6 +145,71 @@ def test_generate_recipe(package_xmls: Path):
             assert expected_dep in run_deps, (
                 f"Expected runtime dependency {expected_dep} not found in run deps: {run_deps}"
             )
+
+
+def test_recipe_includes_pixi_run_dependency(package_xmls: Path, test_data_dir: Path):
+    """Ensure dependencies declared in pixi manifest merge into run requirements."""
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        package_xml_source = package_xmls / "custom_ros.xml"
+        package_xml_dest = temp_path / "package.xml"
+        package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
+
+        pixi_manifest_src = test_data_dir / "pixi_test" / "pixi.toml"
+        pixi_manifest_dest = temp_path / "pixi.toml"
+        shutil.copy2(pixi_manifest_src, pixi_manifest_dest)
+
+        with pixi_manifest_dest.open("rb") as handle:
+            pixi_config = tomllib.load(handle)
+
+        run_dependencies = pixi_config.get("package", {}).get("run-dependencies", {})
+        assert run_dependencies, "pixi manifest should define run dependencies for the test"
+
+        model_payload = {
+            "name": "custom_ros",
+            "version": "0.0.1",
+            "description": "Demo",
+            "authors": ["Tester the Tester"],
+            "targets": {
+                "defaultTarget": {
+                    "hostDependencies": {},
+                    "buildDependencies": {},
+                    "runDependencies": {
+                        dep: {"binary": {"version": str(spec)}}
+                        for dep, spec in run_dependencies.items()
+                    },
+                },
+                "targets": {},
+            },
+        }
+        model = ProjectModelV1.from_json(json.dumps(model_payload))
+
+        config = {"distro": "noetic", "noarch": False}
+        host_platform = Platform.current()
+        generator = ROSGenerator()
+
+        generated_recipe = generator.generate_recipe(
+            model=model,
+            config=config,
+            manifest_path=str(temp_path),
+            host_platform=host_platform,
+        )
+
+        run_requirements = [str(dep) for dep in generated_recipe.recipe.requirements.run]
+
+        for dependency_name in run_dependencies.keys():
+            assert any(dependency_name in dep for dep in run_requirements), (
+                f"Expected pixi run dependency '{dependency_name}' missing from recipe run requirements"
+            )
+
+        # The dependency should not be present in the ROS package.xml and therefore must
+        # originate from the pixi manifest data we injected into the project model.
+        for dependency_name in run_dependencies.keys():
+            assert not any(
+                dependency_name in line for line in package_xml_dest.read_text(encoding="utf-8").splitlines()
+            ), f"Test package.xml unexpectedly contains the custom runtime dependency '{dependency_name}'"
 
 
 def test_robostack_target_platform_linux(package_map: Dict[str, PackageMapEntry]):

@@ -789,9 +789,9 @@ fn build_relative_glob(base: &std::path::Path, input: &std::path::Path) -> miett
         // This means the base is the same as the input
         // just use `**` in that case that matches everything
         if joined.is_empty() {
-            return Ok("**".to_string());
+            Ok("**".to_string())
         } else {
-            return Ok(format!("{joined}/**"));
+            Ok(format!("{joined}/**"))
         }
     } else {
         // This is a file so lets just use that

@@ -157,7 +157,7 @@ class ROSGenerator(GenerateRecipeProtocol):
             robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
 
         package_map_data = load_package_map_data(
-            [PackageMappingSource.from_file(robostack_file)] + backend_config.extra_package_mappings
+            backend_config.extra_package_mappings + [PackageMappingSource.from_file(robostack_file)]
         )
 
         # Get requirements from package.xml

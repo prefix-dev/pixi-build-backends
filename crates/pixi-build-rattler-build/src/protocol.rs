@@ -769,6 +769,7 @@ fn extract_mutable_package_sources(output: &Output) -> Option<Vec<PathBuf>> {
 
 /// Returns the relative path from `base` to `input`, joined by "/".
 fn build_relative_glob(base: &std::path::Path, input: &std::path::Path) -> miette::Result<String> {
+    // Get the difference between paths
     let rel = pathdiff::diff_paths(input, base).ok_or_else(|| {
         miette::miette!(
             "could not compute relative path from '{:?}' to '{:?}'",
@@ -776,6 +777,8 @@ fn build_relative_glob(base: &std::path::Path, input: &std::path::Path) -> miett
             base
         )
     })?;
+
+    // Normalize the path
     let joined = rel
         .components()
         .map(|c| c.as_os_str().to_string_lossy())
@@ -783,13 +786,15 @@ fn build_relative_glob(base: &std::path::Path, input: &std::path::Path) -> miett
         .join("/");
 
     if input.is_dir() {
-        let dir_glob = if joined.is_empty() {
-            "*".to_string()
+        // This means the base is the same as the input
+        // just use `**` in that case that matches everything
+        if joined.is_empty() {
+            Ok("**".to_string())
         } else {
-            joined
-        };
-        Ok(format!("{}/**", dir_glob))
+            Ok(format!("{joined}/**"))
+        }
     } else {
+        // This is a file so lets just use that
         Ok(joined)
     }
 }
@@ -801,7 +806,7 @@ fn build_input_globs(
     extra_globs: Vec<String>,
 ) -> miette::Result<BTreeSet<String>> {
     // Get parent directory path
-    let parent = if source.is_file() {
+    let src_parent = if source.is_file() {
         // use the parent path as glob
         source.parent().unwrap_or(source).to_path_buf()
     } else {
@@ -810,7 +815,7 @@ fn build_input_globs(
     };
 
     // Always add the current directory of the package to the globs
-    let mut input_globs = BTreeSet::from([build_relative_glob(manifest_root, &parent)?]);
+    let mut input_globs = BTreeSet::from([build_relative_glob(manifest_root, &src_parent)?]);
 
     // If there are sources add them to the globs as well
     if let Some(package_sources) = package_sources {
@@ -818,7 +823,7 @@ fn build_input_globs(
             let source = if source.is_absolute() {
                 source
             } else {
-                parent.join(source)
+                src_parent.join(source)
             };
             input_globs.insert(build_relative_glob(manifest_root, &source)?);
         }
@@ -1229,7 +1234,7 @@ mod tests {
         let recipe_path = base_path.join("recipe.yaml");
         fs::write(&recipe_path, "fake").unwrap();
         let globs = super::build_input_globs(base_path, &recipe_path, None, Vec::new()).unwrap();
-        assert_eq!(globs, BTreeSet::from([String::from("*/**")]));
+        assert_eq!(globs, BTreeSet::from([String::from("**")]));
 
         // Case 2: source is a directory, with a file and a dir as package sources
         let pkg_dir = base_path.join("pkg");
@@ -1247,7 +1252,7 @@ mod tests {
         assert_eq!(
             globs,
             BTreeSet::from([
-                String::from("*/**"),
+                String::from("**"),
                 String::from("pkg/file.txt"),
                 String::from("pkg/dir/**")
             ])
@@ -1312,11 +1317,7 @@ mod tests {
         // The relative path from base_path to rel_dir should be "rel_folder/**"
         assert_eq!(
             globs,
-            BTreeSet::from_iter(
-                ["*/**", "rel_folder/**"]
-                    .into_iter()
-                    .map(ToString::to_string)
-            )
+            BTreeSet::from_iter(["**", "rel_folder/**"].into_iter().map(ToString::to_string))
         );
     }
 
@@ -1332,7 +1333,7 @@ mod tests {
         let manifest_root = PathBuf::from("/");
         let path = PathBuf::from("/");
         let globs = super::get_metadata_input_globs(&manifest_root, &path).unwrap();
-        assert_eq!(globs, BTreeSet::from([String::from("*/**")]));
+        assert_eq!(globs, BTreeSet::from([String::from("**")]));
         // Case: file with .yml extension
         let manifest_root = PathBuf::from("/foo/bar");
         let path = PathBuf::from("/foo/bar/recipe.yml");
@@ -1374,6 +1375,6 @@ mod tests {
         }
 
         // Verify that the basic manifest glob is still present
-        assert!(globs.contains("*/**"));
+        assert!(globs.contains("**"));
     }
 }

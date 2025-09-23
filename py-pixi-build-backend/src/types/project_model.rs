@@ -7,6 +7,7 @@ use pixi_build_types::{ProjectModelV1};
 use pyo3::{exceptions::PyValueError, prelude::*};
 use rattler_conda_types::{Version};
 use serde_json::from_str;
+use pythonize::depythonize;
 
 #[pyclass]
 #[derive(Clone)]
@@ -47,6 +48,12 @@ impl PyProjectModelV1 {
             ))
         })?;
 
+        Ok(PyProjectModelV1 { inner: project })
+    }
+
+    #[staticmethod]
+    pub fn from_dict(value: &Bound<PyAny>) -> PyResult<Self> {
+        let project: ProjectModelV1 = depythonize(value)?;
         Ok(PyProjectModelV1 { inner: project })
     }
 
@@ -141,4 +148,3 @@ impl From<PyProjectModelV1> for ProjectModelV1 {
         py_model.inner
     }
 }
-

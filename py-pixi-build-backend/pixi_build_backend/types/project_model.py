@@ -1,4 +1,4 @@
-from typing import Optional, List, Mapping, Any
+from typing import Optional, List, Mapping, Dict, Any
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
     PyProjectModelV1,
@@ -44,7 +44,7 @@ class ProjectModelV1:
         return instance
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any] | dict[str, Any]) -> "ProjectModelV1":
+    def from_dict(cls, data: Mapping[str, Any] | Dict[str, Any]) -> "ProjectModelV1":
         """Create a ProjectModelV1 from a Python mapping."""
         instance = cls.__new__(cls)
         instance._inner = PyProjectModelV1.from_dict(dict(data))

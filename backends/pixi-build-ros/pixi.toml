@@ -21,9 +21,9 @@ test = "pytest tests"
 [feature.test.dependencies]
 pixi-pycharm = ">=0.0.8,<0.1"
 pytest = "*"
-py-pixi-build-backend = "*"
-# Skipping as it's a long build, uncomment this when developing from source
-# py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
+# You can skip this as it's a long build, uncomment this when developing only in this package
+#py-pixi-build-backend = "*"
+py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
 
 [package.build.backend]
 name = "pixi-build-python"
@@ -44,4 +44,6 @@ pyyaml = "*"
 pixi-build-api-version = ">=2,<3"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
-py-pixi-build-backend = "*"
+# this depends has to match the test dependency, so switch comments if needed
+# py-pixi-build-backend = "*"
+py-pixi-build-backend = { path = "../../py-pixi-build-backend" }

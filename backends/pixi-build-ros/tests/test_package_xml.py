@@ -2,6 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 
+import pytest
 from pixi_build_backend.types.intermediate_recipe import Script
 
 from pixi_build_ros.distro import Distro
@@ -273,3 +274,17 @@ def test_robostack_require_opengl_handling(package_map: dict[str, PackageMapEntr
 
     # Windows should have empty packages
     assert win_opengl == [], f"Expected [] for opengl on Windows, got {win_opengl}"
+
+
+def test_spec_with_entry_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
+    """Test using a specifier string with a package which has already defined one in the package map"""
+    with pytest.raises(ValueError) as excinfo:
+        rosdep_to_conda_package_name("xtensor", distro, Platform.current(), package_map, spec_str="==2.0")
+    assert "Version specifier can only be used for a package without constraint already present" in str(excinfo)
+
+
+def test_spec_with_multiple_entries_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
+    """Test using a specifier string with a package which has multiple packages defined one in the package map"""
+    with pytest.raises(ValueError) as excinfo:
+        rosdep_to_conda_package_name("boost", distro, Platform.current(), package_map, spec_str="==2.0")
+    assert "Version specifier can only be used for one package" in str(excinfo)

@@ -46,13 +46,9 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(
             config, context={"manifest_root": manifest_root}
         )
-
-        # Setup ROS distro first
-        distro = Distro(backend_config.distro)
-
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
-        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro.name)
+        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), backend_config.distro.name)
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
@@ -75,7 +71,9 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         )
 
         # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform, package_map_data)
+        package_requirements = package_xml_to_conda_requirements(
+            package_xml, backend_config.distro, host_platform, package_map_data
+        )
 
         # Add standard dependencies
         build_deps = [
@@ -107,8 +105,8 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
             package_requirements.host.append(ItemPackageDependency(name=dep))
 
         # add a simple default host and run dependency on the ros{2}-distro-mutex
-        package_requirements.host.append(ItemPackageDependency(name=distro.ros_distro_mutex_name))
-        package_requirements.run.append(ItemPackageDependency(name=distro.ros_distro_mutex_name))
+        package_requirements.host.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
+        package_requirements.run.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
 
         # Merge package requirements into the model requirements
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
@@ -118,7 +116,9 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         build_platform = BuildPlatform.current()
 
         # Generate build script
-        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root, distro)
+        build_script_context = BuildScriptContext.load_from_template(
+            package_xml, build_platform, manifest_root, backend_config.distro
+        )
         build_script_lines = build_script_context.render()
 
         generated_recipe.recipe.build.script = Script(

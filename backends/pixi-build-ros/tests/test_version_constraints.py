@@ -5,10 +5,12 @@ import tempfile
 from pixi_build_backend.types.intermediate_recipe import Script
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
+
+from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator
 
 
-def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, snapshot):
+def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro, snapshot):
     """Test the generate_recipe function of ROSGenerator with versions."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -24,7 +26,7 @@ def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, 
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
         }
@@ -49,7 +51,7 @@ def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, 
         assert generated_recipe.recipe.to_yaml() == snapshot
 
 
-def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: Path, snapshot):
+def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro, snapshot):
     """Test the generate_recipe function of ROSGenerator with versions."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -62,7 +64,7 @@ def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: P
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
         }
@@ -103,7 +105,9 @@ def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: P
         assert generated_recipe.recipe.to_yaml() == snapshot
 
 
-def test_generate_recipe_with_versions_in_model_and_package(package_xmls: Path, test_data_dir: Path, snapshot):
+def test_generate_recipe_with_versions_in_model_and_package(
+    package_xmls: Path, test_data_dir: Path, distro_noetic: Distro, snapshot
+):
     """Test the generate_recipe function of ROSGenerator with versions."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -116,7 +120,7 @@ def test_generate_recipe_with_versions_in_model_and_package(package_xmls: Path, 
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
         }
@@ -157,7 +161,9 @@ def test_generate_recipe_with_versions_in_model_and_package(package_xmls: Path, 
         assert generated_recipe.recipe.to_yaml() == snapshot
 
 
-def test_version_constraints_for_package_with_multiple_keys(package_xmls: Path, test_data_dir: Path):
+def test_version_constraints_for_package_with_multiple_keys(
+    package_xmls: Path, test_data_dir: Path, distro_noetic: Distro
+):
     """Test that generate recipe for packages with multiple keys fails."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -173,7 +179,7 @@ def test_version_constraints_for_package_with_multiple_keys(package_xmls: Path, 
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
         }

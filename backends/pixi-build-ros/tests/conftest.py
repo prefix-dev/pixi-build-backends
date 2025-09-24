@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from pixi_build_ros.distro import Distro
 from pixi_build_ros.utils import (
     PackageMapEntry,
     load_package_map_data,
@@ -26,3 +27,15 @@ def package_map() -> dict[str, PackageMapEntry]:
     """Load the package map"""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
     return load_package_map_data([PackageMappingSource.from_file(robostack_file)])
+
+
+@pytest.fixture(scope="session")
+def distro():
+    """Reusable default distro  fixture."""
+    return Distro("jazzy")
+
+
+@pytest.fixture(scope="session")
+def distro_noetic():
+    """Reusable distro noetic fixture."""
+    return Distro("noetic")

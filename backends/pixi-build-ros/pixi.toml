@@ -17,6 +17,7 @@ lint = { features = ["lint"], no-default-feature = true }
 
 [feature.test.tasks]
 test = "pytest tests"
+lint-mypy = "mypy"
 
 [feature.test.dependencies]
 pixi-pycharm = ">=0.0.8,<0.1"
@@ -33,8 +34,6 @@ pyupgrade = ">=3.20.0,<4"
 
 [feature.lint.tasks]
 lint-ruff = "ruff check ."
-lint-mypy = "mypy"
-lint = { depends-on = ["lint-ruff", "lint-mypy"] }
 fmt-pyupgrade = "pyupgrade --py310-plus **/**/*.py"
 fmt-ruff = "ruff format src tests"
 fmt = { depends-on = ["fmt-pyupgrade", "fmt-ruff"] }

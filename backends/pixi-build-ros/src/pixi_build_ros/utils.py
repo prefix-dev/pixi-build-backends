@@ -1,7 +1,7 @@
 import os
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any
 
 import yaml
 from catkin_pkg.package import Package as CatkinPackage, parse_package_string
@@ -12,42 +12,42 @@ from pixi_build_backend.types.platform import Platform
 from pixi_build_ros.distro import Distro
 
 
-PackageMapEntry = Dict[str, List[str] | Dict[str, List[str]]]
+PackageMapEntry = dict[str, list[str] | dict[str, list[str]]]
 
 
 class PackageMappingSource:
     """Describes where additional package mapping data comes from."""
 
-    def __init__(self, mapping: Dict[str, PackageMapEntry]):
+    def __init__(self, mapping: dict[str, PackageMapEntry]):
         if mapping is None:
             raise ValueError("PackageMappingSource mapping cannot be null.")
         if not isinstance(mapping, dict):
             raise TypeError("PackageMappingSource mapping must be a dictionary.")
         # Copy to keep the source immutable for callers.
-        self.mapping: Dict[str, PackageMapEntry] = dict(mapping)
+        self.mapping: dict[str, PackageMapEntry] = dict(mapping)
 
     @classmethod
-    def from_mapping(cls, mapping: Dict[str, PackageMapEntry]) -> "PackageMappingSource":
+    def from_mapping(cls, mapping: dict[str, PackageMapEntry]) -> "PackageMappingSource":
         """Create a source directly from a mapping dictionary."""
         return cls(mapping)
 
     @classmethod
-    def from_file(cls, file_path: Union[str, Path]) -> "PackageMappingSource":
+    def from_file(cls, file_path: str | Path) -> "PackageMappingSource":
         """Create a source from a mapping file."""
         path = Path(file_path)
         if not path.exists():
             raise ValueError(f"Additional package map file '{path}' not found.")
-        with open(path, "r") as f:
+        with open(path) as f:
             data = yaml.safe_load(f) or {}
         if not isinstance(data, dict):
             raise TypeError("Expected package map file to contain a dictionary.")
         return cls(data)
 
-    def get_package_mapping(self) -> Dict[str, PackageMapEntry]:
+    def get_package_mapping(self) -> dict[str, PackageMapEntry]:
         return dict(self.mapping)
 
 
-def get_build_input_globs(config: Any, editable: bool) -> List[str]:
+def get_build_input_globs(config: Any, editable: bool) -> list[str]:
     """Get build input globs for ROS package."""
     base_globs = [
         # Source files
@@ -86,7 +86,7 @@ def get_package_xml_content(manifest_root: Path) -> str:
     if not package_xml_path.exists():
         raise FileNotFoundError(f"package.xml not found at {package_xml_path}")
 
-    with open(package_xml_path, "r") as f:
+    with open(package_xml_path) as f:
         return f.read()
 
 
@@ -102,10 +102,10 @@ def convert_package_xml_to_catkin_package(package_xml_content: str) -> CatkinPac
     return package_xml
 
 
-def load_package_map_data(package_map_sources: List[PackageMappingSource]) -> Dict[str, PackageMapEntry]:
+def load_package_map_data(package_map_sources: list[PackageMappingSource]) -> dict[str, PackageMapEntry]:
     """Load and merge package map data from files and inline mappings."""
 
-    result: Dict[str, PackageMapEntry] = {}
+    result: dict[str, PackageMapEntry] = {}
     for source in reversed(package_map_sources):
         result.update(source.get_package_mapping())
     return result
@@ -115,8 +115,8 @@ def rosdep_to_conda_package_name(
     dep_name: str,
     distro: Distro,
     host_platform: Platform,
-    package_map_data: Dict[str, PackageMapEntry],
-) -> List[str]:
+    package_map_data: dict[str, PackageMapEntry],
+) -> list[str]:
     """Convert a ROS dependency name to a conda package name."""
     if host_platform.is_linux:
         target_platform = "linux"
@@ -203,18 +203,20 @@ def package_xml_to_conda_requirements(
     # Add the ros_workspace dependency as a default build dependency for ros2 packages
     if not distro.check_ros1():
         build_deps += ["ros_workspace"]
-    conda_build_deps = [
+    conda_build_deps_chain = [
         rosdep_to_conda_package_name(dep, distro, host_platform, package_map_data) for dep in build_deps
     ]
-    conda_build_deps = list(dict.fromkeys(chain.from_iterable(conda_build_deps)))
+    conda_build_deps = list(chain.from_iterable(conda_build_deps_chain))
 
     run_deps = pkg.run_depends
     run_deps += pkg.exec_depends
     run_deps += pkg.build_export_depends
     run_deps += pkg.buildtool_export_depends
     run_deps = [d.name for d in run_deps if d.evaluated_condition]
-    conda_run_deps = [rosdep_to_conda_package_name(dep, distro, host_platform, package_map_data) for dep in run_deps]
-    conda_run_deps = list(dict.fromkeys(chain.from_iterable(conda_run_deps)))
+    conda_run_deps_chain = [
+        rosdep_to_conda_package_name(dep, distro, host_platform, package_map_data) for dep in run_deps
+    ]
+    conda_run_deps = list(chain.from_iterable(conda_run_deps_chain))
 
     build_requirements = [ItemPackageDependency(name) for name in conda_build_deps]
     run_requirements = [ItemPackageDependency(name) for name in conda_run_deps]

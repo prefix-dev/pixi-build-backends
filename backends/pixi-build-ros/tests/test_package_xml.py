@@ -1,9 +1,6 @@
 import json
-import shutil
 import tempfile
-import tomllib
 from pathlib import Path
-from typing import Dict
 
 from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator
@@ -17,7 +14,7 @@ from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
 
-def test_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str, PackageMapEntry]):
+def test_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str, PackageMapEntry]):
     # Read content from the file in the test data directory
     package_xml_path = package_xmls / "demo_nodes_cpp.xml"
     package_content = package_xml_path.read_text(encoding="utf-8")
@@ -64,7 +61,7 @@ def test_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str,
         assert f"ros-{distro.name}-{pkg}" in run_names
 
 
-def test_ament_cmake_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str, PackageMapEntry]):
+def test_ament_cmake_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str, PackageMapEntry]):
     # Read content from the file in the test data directory
     package_xml_path = package_xmls / "demos_action_tutorials_interfaces.xml"
     package_content = package_xml_path.read_text(encoding="utf-8")
@@ -166,13 +163,7 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path):
                 "defaultTarget": {
                     "hostDependencies": {},
                     "buildDependencies": {},
-                    "runDependencies": {
-                        "rich": {
-                            "binary": {
-                                "version": ">=10.0"
-                            }
-                        }
-                    },
+                    "runDependencies": {"rich": {"binary": {"version": ">=10.0"}}},
                 },
                 "targets": {},
             },
@@ -193,11 +184,11 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path):
         run_requirements = [str(dep) for dep in generated_recipe.recipe.requirements.run]
 
         assert any("rich" in dep for dep in run_requirements), (
-            f"Expected pixi run dependency 'rich' missing from recipe run requirements"
+            "Expected pixi run dependency 'rich' missing from recipe run requirements"
         )
 
 
-def test_robostack_target_platform_linux(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_linux(package_map: dict[str, PackageMapEntry]):
     """Test that target platform correctly selects Linux packages from robostack.yaml."""
     distro = Distro("jazzy")
 
@@ -209,7 +200,7 @@ def test_robostack_target_platform_linux(package_map: Dict[str, PackageMapEntry]
     assert acl_packages == ["libacl"], f"Expected ['libacl'] for acl on Linux, got {acl_packages}"
 
 
-def test_robostack_target_platform_osx(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_osx(package_map: dict[str, PackageMapEntry]):
     """Test that target platform correctly selects macOS packages from robostack.yaml."""
     distro = Distro("jazzy")
 
@@ -221,7 +212,7 @@ def test_robostack_target_platform_osx(package_map: Dict[str, PackageMapEntry]):
     assert acl_packages == [], f"Expected [] for acl on macOS, got {acl_packages}"
 
 
-def test_robostack_target_platform_windows(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_windows(package_map: dict[str, PackageMapEntry]):
     """Test that target platform correctly selects Windows packages from robostack.yaml."""
     distro = Distro("jazzy")
 
@@ -234,7 +225,7 @@ def test_robostack_target_platform_windows(package_map: Dict[str, PackageMapEntr
 
 
 def test_robostack_target_platform_cross_platform(
-    package_map: Dict[str, PackageMapEntry],
+    package_map: dict[str, PackageMapEntry],
 ):
     """Test packages that have different mappings across all platforms."""
     distro = Distro("jazzy")
@@ -265,7 +256,7 @@ def test_robostack_target_platform_cross_platform(
     assert win_omp == [], f"Expected [] for libomp-dev on Windows, got {win_omp}"
 
 
-def test_robostack_require_opengl_handling(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_require_opengl_handling(package_map: dict[str, PackageMapEntry]):
     """Test that REQUIRE_OPENGL is correctly handled for different platforms."""
     distro = Distro("jazzy")
 

@@ -4,7 +4,6 @@ Build script generation for Python backend.
 
 from enum import Enum
 from pathlib import Path
-from typing import List
 import platform
 from catkin_pkg.package import Package as CatkinPackage
 from importlib.resources import files
@@ -37,12 +36,14 @@ class BuildScriptContext:
         self.build_platform = build_platform
         self.source_dir = source_dir
 
-    def render(self) -> List[str]:
+    def render(self) -> list[str]:
         """Render the build script content into a list of lines."""
         return self.script_content.splitlines()
 
     @classmethod
-    def load_from_template(cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path, distro: Distro) -> "BuildScriptContext":
+    def load_from_template(
+        cls, pkg: CatkinPackage, platform: BuildPlatform, source_dir: Path, distro: Distro
+    ) -> "BuildScriptContext":
         """Get the build script from the template directory based on the package type."""
         # TODO: deal with other script languages, e.g. for Windows
         if pkg.get_build_type() in ["ament_cmake"]:
@@ -53,7 +54,7 @@ class BuildScriptContext:
             template_name = "build_catkin.sh" if platform == BuildPlatform.UNIX else "bld_catkin.bat"
         else:
             raise ValueError(f"Unsupported build type: {pkg.get_build_type()}")
-        
+
         try:
             # Try to load from installed package data first
             templates_pkg = files("pixi_build_ros") / "templates"
@@ -63,7 +64,7 @@ class BuildScriptContext:
             # Fallback to development path
             templates_pkg = Path(__file__).parent.parent.parent / "templates"
             script_path = templates_pkg / template_name
-            with open(script_path, 'r') as f:
+            with open(script_path) as f:
                 script_content = f.read()
 
         script_content = script_content.replace("@SRC_DIR@", str(source_dir)).replace("@DISTRO@", distro.name)

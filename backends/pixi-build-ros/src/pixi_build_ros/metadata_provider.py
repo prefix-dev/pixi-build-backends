@@ -2,15 +2,13 @@
 ROS-specific metadata provider that extracts metadata from package.xml files.
 """
 
-from typing import Optional, List
-
 from pixi_build_backend.types import MetadataProvider
 from pixi_build_ros.distro import Distro
 
 
 class MaintainerInfo:
     """Container for maintainer information from package.xml."""
-    
+
     def __init__(self, name: str, email: str):
         self.name = name
         self.email = email
@@ -18,16 +16,16 @@ class MaintainerInfo:
 
 class PackageData:
     """Container for parsed package.xml data."""
-    
+
     def __init__(
         self,
-        name: Optional[str] = None,
-        version: Optional[str] = None,
-        description: Optional[str] = None,
-        maintainers: Optional[List[MaintainerInfo]] = None,
-        licenses: Optional[List[str]] = None,
-        homepage: Optional[str] = None,
-        repository: Optional[str] = None,
+        name: str | None = None,
+        version: str | None = None,
+        description: str | None = None,
+        maintainers: list[MaintainerInfo] | None = None,
+        licenses: list[str] | None = None,
+        homepage: str | None = None,
+        repository: str | None = None,
     ):
         self.name = name
         self.version = version
@@ -37,7 +35,8 @@ class PackageData:
         self.homepage = homepage
         self.repository = repository
 
-class PackageXmlMetadataProvider(MetadataProvider):
+
+class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # MetadatProvider is not typed
     """
     Metadata provider that extracts metadata from ROS package.xml files.
 
@@ -45,7 +44,7 @@ class PackageXmlMetadataProvider(MetadataProvider):
     like name, version, description, maintainers, etc.
     """
 
-    def __init__(self, package_xml_path: str, *args, **kwargs):
+    def __init__(self, package_xml_path: str, *args, **kwargs):  # type: ignore[no-untyped-def]  # no typing for args and kwargs
         """
         Initialize the metadata provider with a package.xml file path.
 
@@ -54,7 +53,7 @@ class PackageXmlMetadataProvider(MetadataProvider):
         """
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
-        self._package_data: Optional[PackageData] = None
+        self._package_data: PackageData | None = None
 
     @property
     def _package_xml_data(self) -> PackageData:
@@ -69,39 +68,40 @@ class PackageXmlMetadataProvider(MetadataProvider):
             root = tree.getroot()
 
             # Extract basic package information
-            name_elem = root.find('name')
-            version_elem = root.find('version')
-            description_elem = root.find('description')
+            name_elem = root.find("name")
+            version_elem = root.find("version")
+            description_elem = root.find("description")
 
             # Extract maintainer and author information
-            maintainers: List[MaintainerInfo] = []
-            for maintainer in root.findall('maintainer'):
+            maintainers: list[MaintainerInfo] = []
+            for maintainer in root.findall("maintainer"):
                 maintainer_info = MaintainerInfo(
-                    name=maintainer.text.strip() if maintainer.text else '',
-                    email=maintainer.get('email', '')
+                    name=maintainer.text.strip() if maintainer.text else "", email=maintainer.get("email", "")
                 )
                 maintainers.append(maintainer_info)
 
             # Extract license information
             licenses = []
-            for license_elem in root.findall('license'):
+            for license_elem in root.findall("license"):
                 if license_elem.text:
                     licenses.append(license_elem.text.strip())
 
             # Extract URL information
             homepage = None
             repository = None
-            for url in root.findall('url'):
-                url_type = url.get('type', '')
-                if url_type == 'website' and not homepage:
+            for url in root.findall("url"):
+                url_type = url.get("type", "")
+                if url_type == "website" and not homepage:
                     homepage = url.text.strip() if url.text else None
-                elif url_type == 'repository' and not repository:
+                elif url_type == "repository" and not repository:
                     repository = url.text.strip() if url.text else None
 
             self._package_data = PackageData(
                 name=name_elem.text.strip() if name_elem is not None and name_elem.text else None,
                 version=version_elem.text.strip() if version_elem is not None and version_elem.text else None,
-                description=description_elem.text.strip() if description_elem is not None and description_elem.text else None,
+                description=description_elem.text.strip()
+                if description_elem is not None and description_elem.text
+                else None,
                 maintainers=maintainers,
                 licenses=licenses,
                 homepage=homepage,
@@ -114,29 +114,29 @@ class PackageXmlMetadataProvider(MetadataProvider):
 
         return self._package_data
 
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Return the package name from package.xml."""
         return self._package_xml_data.name
 
-    def version(self) -> Optional[str]:
+    def version(self) -> str | None:
         """Return the package version from package.xml."""
         return self._package_xml_data.version
 
-    def homepage(self) -> Optional[str]:
+    def homepage(self) -> str | None:
         """Return the homepage URL from package.xml."""
         return self._package_xml_data.homepage
 
-    def license(self) -> Optional[str]:
+    def license(self) -> str | None:
         """Return the license from package.xml."""
         # TODO: Handle License parsing to conform to SPDX standards,
         # ROS package.xml does not enforce SPDX as strictly as rattler-build
         return None
 
-    def license_file(self) -> Optional[str]:
+    def license_file(self) -> str | None:
         """Return None as package.xml doesn't typically specify license files."""
         return None
 
-    def summary(self) -> Optional[str]:
+    def summary(self) -> str | None:
         """Return the description as summary from package.xml."""
         description = self._package_xml_data.description
         if description and len(description) > 100:
@@ -144,26 +144,21 @@ class PackageXmlMetadataProvider(MetadataProvider):
             return description[:97] + "..."
         return description
 
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """Return the full description from package.xml."""
         return self._package_xml_data.description
 
-    def documentation(self) -> Optional[str]:
+    def documentation(self) -> str | None:
         """Return None as package.xml doesn't typically specify documentation URLs separately."""
         return None
 
-    def repository(self) -> Optional[str]:
+    def repository(self) -> str | None:
         """Return the repository URL from package.xml."""
         return self._package_xml_data.repository
 
-    def input_globs(self) -> List[str]:
+    def input_globs(self) -> list[str]:
         """Return input globs that affect this metadata provider."""
-        return [
-            "package.xml",
-            "CMakeLists.txt", 
-            "setup.py",
-            "setup.cfg"
-        ]
+        return ["package.xml", "CMakeLists.txt", "setup.py", "setup.cfg"]
 
 
 class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
@@ -174,7 +169,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     as 'ros-<distro>-<package_name>' according to ROS conda packaging conventions.
     """
 
-    def __init__(self, package_xml_path: str, distro: Optional[Distro] = None):
+    def __init__(self, package_xml_path: str, distro: Distro | None = None):
         """
         Initialize the ROS metadata provider.
 
@@ -183,12 +178,12 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
             distro: ROS distro. If None, will use the base package name without distro prefix.
         """
         super().__init__(package_xml_path)
-        self._distro: Optional[Distro] = distro
+        self._distro: Distro | None = distro
 
-    def _get_distro(self) -> Optional[Distro]:
+    def _get_distro(self) -> Distro | None:
         return self._distro
 
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Return the ROS-formatted package name (ros-<distro>-<name>)."""
         base_name = super().name()
         if base_name is None:
@@ -197,6 +192,6 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
         distro = self._get_distro()
         if distro:
             # Convert underscores to hyphens per ROS conda naming conventions
-            formatted_name = base_name.replace('_', '-')
+            formatted_name = base_name.replace("_", "-")
             return f"ros-{distro.name}-{formatted_name}"
         return base_name

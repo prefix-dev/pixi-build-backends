@@ -7,7 +7,7 @@ import os
 import pydantic
 from importlib.resources import files
 
-from typing import Dict, Optional, List, Any
+from typing import Any
 from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
@@ -47,19 +47,20 @@ def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
 class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allowed=True):
     """ROS backend configuration."""
 
-    noarch: Optional[bool] = None
-    # Environment variables to set during the build
-    env: Optional[Dict[str, str]] = None
-    # Directory for debug files of this script
-    debug_dir: Optional[Path] = pydantic.Field(default=None, alias="debug-dir")
-    # Extra input globs to include in the build hash
-    extra_input_globs: Optional[List[str]] = pydantic.Field(default=None, alias="extra-input-globs")
-    # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # TODO: This should be figured out in some other way, not from the config.
-    distro: Optional[str] = None
+    distro: str
+
+    noarch: bool | None = None
+    # Environment variables to set during the build
+    env: dict[str, str] | None = None
+    # Directory for debug files of this script
+    debug_dir: Path | None = pydantic.Field(default=None, alias="debug-dir")
+    # Extra input globs to include in the build hash
+    extra_input_globs: list[str] | None = pydantic.Field(default=None, alias="extra-input-globs")
+    # ROS distribution to use, e.g., "foxy", "galactic", "humble"
 
     # Extra package mappings to use in the build
-    extra_package_mappings: List[PackageMappingSource] = pydantic.Field(
+    extra_package_mappings: list[PackageMappingSource] = pydantic.Field(
         default_factory=list, alias="extra-package-mappings"
     )
 
@@ -69,7 +70,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
 
     @pydantic.field_validator("debug_dir", mode="before")
     @classmethod
-    def _parse_debug_dir(cls, value, info: pydantic.ValidationInfo) -> Optional[Path]:
+    def _parse_debug_dir(cls, value: Any, info: pydantic.ValidationInfo) -> Path | None:
         """Parse debug directory if set."""
         if value is None:
             return None
@@ -81,8 +82,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     @pydantic.field_validator("extra_package_mappings", mode="before")
     @classmethod
     def _parse_package_mappings(
-        cls, input_value, info: pydantic.ValidationInfo
-    ) -> Optional[List[PackageMappingSource]]:
+        cls, input_value: Any, info: pydantic.ValidationInfo
+    ) -> list[PackageMappingSource] | None:
         """Parse additional package mappings if set."""
         if input_value is None:
             return []
@@ -91,7 +92,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
 
-        result: List[PackageMappingSource] = []
+        result: list[PackageMappingSource] = []
         for raw_entry in input_value:
             # match for cases
             # it's already a package mapping source (usually for testing)
@@ -116,16 +117,16 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         return result
 
 
-class ROSGenerator(GenerateRecipeProtocol):
+class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProvider is not typed
     """ROS recipe generator using Python bindings."""
 
     def generate_recipe(
         self,
         model: ProjectModelV1,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         manifest_path: str,
         host_platform: Platform,
-        _python_params: Optional[PythonParams] = None,
+        _python_params: PythonParams | None = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
         manifest_root = Path(manifest_path)
@@ -151,7 +152,7 @@ class ROSGenerator(GenerateRecipeProtocol):
 
         # TODO: Currently hardcoded and not able to override, this should be configurable
         package_files = files("pixi_build_ros")
-        robostack_file = package_files / "robostack.yaml"
+        robostack_file = Path(str(package_files)) / "robostack.yaml"
         # workaround for from source install
         if not robostack_file.is_file():
             robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
@@ -222,11 +223,11 @@ class ROSGenerator(GenerateRecipeProtocol):
         # assert generated_recipe.recipe.build.script.content == build_script_lines, f"Script content {generated_recipe.recipe.build.script.content}, build script lines {build_script_lines}"
         return generated_recipe
 
-    def extract_input_globs_from_build(self, config: ROSBackendConfig, workdir: Path, editable: bool) -> List[str]:
+    def extract_input_globs_from_build(self, config: ROSBackendConfig, workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 
-    def default_variants(self, host_platform: Platform) -> Dict[str, Any]:
+    def default_variants(self, host_platform: Platform) -> dict[str, Any]:
         """Get the default variants for the generator."""
         variants = {}
         if host_platform.is_windows:
@@ -244,9 +245,9 @@ def merge_requirements(
     # The model requirements are the base, coming from the pixi manifest
     # We need to only add the names for non-existing dependencies
     def merge_unique_items(
-        model: List[ItemPackageDependency],
-        package: List[ItemPackageDependency],
-    ) -> List[ItemPackageDependency]:
+        model: list[ItemPackageDependency],
+        package: list[ItemPackageDependency],
+    ) -> list[ItemPackageDependency]:
         """Merge unique items from source into target."""
         result = model
 

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict
 
 import pytest
 
@@ -23,7 +22,7 @@ def package_xmls(test_data_dir) -> Path:
 
 
 @pytest.fixture
-def package_map() -> Dict[str, PackageMapEntry]:
+def package_map() -> dict[str, PackageMapEntry]:
     """Load the package map"""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
     return load_package_map_data([PackageMappingSource.from_file(robostack_file)])

@@ -4,6 +4,7 @@ import pytest
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
+from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator, ROSBackendConfig
 from pixi_build_ros.utils import load_package_map_data, PackageMappingSource
 
@@ -25,7 +26,7 @@ def test_package_loading(test_data_dir: Path):
     assert "zlib" in result, "Should still be present"
 
 
-def test_package_loading_with_inline_mappings(test_data_dir: Path):
+def test_package_loading_with_inline_mappings(test_data_dir: Path, distro_noetic: Distro):
     """Load package map data from a mix of files and inline entries."""
     robostack_file = Path(__file__).parent.parent / "robostack.yaml"
     inline_entries = {
@@ -34,7 +35,7 @@ def test_package_loading_with_inline_mappings(test_data_dir: Path):
     }
     # Create config for ROS backend
     config = {
-        "distro": "noetic",
+        "distro": distro_noetic,
         "noarch": False,
         "extra-package-mappings": [
             {"file": str(test_data_dir / "other_package_map.yaml")},
@@ -50,7 +51,7 @@ def test_package_loading_with_inline_mappings(test_data_dir: Path):
     assert "zlib" in result, "Should still contain base entries"
 
 
-def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path):
+def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro):
     """Test the generate_recipe function of ROSGenerator."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -66,7 +67,7 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
         }
@@ -93,7 +94,7 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         assert "ros-noetic-ros-package-msgs" in req_string
 
 
-def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_data_dir: Path):
+def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro):
     """Inline entries should be merged into the package map."""
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -106,7 +107,7 @@ def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_d
         model = ProjectModelV1()
 
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [
                 {
@@ -134,7 +135,7 @@ def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_d
         assert "ros-noetic-ros-custom2-msgs" in req_string
 
 
-def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path):
+def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro):
     """Test the generate_recipe function of ROSGenerator."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -150,7 +151,7 @@ def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path):
 
         # Create config for ROS backend
         config = {
-            "distro": "noetic",
+            "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [("does-not-exist.yaml")],
         }

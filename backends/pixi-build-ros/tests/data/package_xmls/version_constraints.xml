@@ -15,6 +15,7 @@
     <depend version_lt="2.0.0a0">ros_package2</depend>
     <depend version_gte="5.15.0" version_lt="5.16.0">libqt5-core</depend>
     <depend version_eq="10.0.0">tinyxml2</depend>
+    <depend version_lt="10.0.0">asio</depend>
 
     <export>
     </export>

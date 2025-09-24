@@ -13,7 +13,7 @@ from pixi_build_backend.types.generated_recipe import (
 from .metadata_provider import ROSPackageXmlMetadataProvider
 from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements
 
-from pixi_build_backend.types.item import ItemPackageDependency
+from pixi_build_backend.types.item import ItemPackageDependency, VecItemPackageDependency
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
@@ -103,13 +103,12 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
         host_deps = ["python", "numpy", "pip", "pkg-config"]
 
-        mutex_string = distro.ros_distro_mutex_name
-        if backend_config.mutex_version:
-            mutex_string += f" {backend_config.mutex_version}"
-        host_deps.append(mutex_string)
-
         for dep in host_deps:
             package_requirements.host.append(ItemPackageDependency(name=dep))
+
+        # add a simple default host and run dependency on the ros{2}-distro-mutex
+        package_requirements.host.append(ItemPackageDependency(name=distro.ros_distro_mutex_name))
+        package_requirements.run.append(ItemPackageDependency(name=distro.ros_distro_mutex_name))
 
         # Merge package requirements into the model requirements
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
@@ -161,27 +160,60 @@ def merge_requirements(
     """Merge two sets of requirements."""
     merged = ConditionalRequirements()
 
-    # The model requirements are the base, coming from the pixi manifest
-    # We need to only add the names for non-existing dependencies
-    def merge_unique_items(
-        model: list[ItemPackageDependency],
-        package: list[ItemPackageDependency],
-    ) -> list[ItemPackageDependency]:
-        """Merge unique items from source into target."""
-        result = model
-
-        for item in package:
-            package_names = [i.concrete.package_name for i in model if i.concrete]
-
-            if item.concrete is not None and item.concrete.package_name not in package_names:
-                result.append(item)
-            if str(item.template) not in [str(i.template) for i in model]:
-                result.append(item)
-        return result
-
     merged.host = merge_unique_items(model_requirements.host, package_requirements.host)
     merged.build = merge_unique_items(model_requirements.build, package_requirements.build)
     merged.run = merge_unique_items(model_requirements.run, package_requirements.run)
 
     # If the dependency is of type Source in one of the requirements, we need to set them to Source for all variants
     return merged
+
+
+def merge_unique_items(
+    model: list[ItemPackageDependency] | VecItemPackageDependency,
+    package: list[ItemPackageDependency] | VecItemPackageDependency,
+) -> list[ItemPackageDependency]:
+    """Merge unique items from source into target."""
+
+    def _find_matching(list_to_find: list[ItemPackageDependency], name: str) -> ItemPackageDependency | None:
+        for dep in list_to_find:
+            if dep.concrete.package_name == name:
+                return dep
+        else:
+            return None
+
+    def _merge_specs(spec1: str, spec2: str, package_name: str) -> str:
+        # remove the package name
+        version_spec1 = spec1.removeprefix(package_name).strip()
+        version_spec2 = spec2.removeprefix(package_name).strip()
+
+        if " " in version_spec1 or " " in version_spec2:
+            raise ValueError(f"{version_spec1}, or {version_spec2} contains spaces, cannot merge specifiers.")
+
+        # early out with *, empty or ==
+        if version_spec1 in ["*", ""] or "==" in version_spec2 or version_spec1 == version_spec2:
+            return spec2
+        if version_spec2 in ["*", ""] or "==" in version_spec1:
+            return spec1
+        return package_name + " " + ",".join([version_spec1, version_spec2])
+
+    result: list[ItemPackageDependency] = []
+    templates_in_model = [str(i.template) for i in model]
+    for item in list(model) + list(package):
+        # It's concrete (i.e. no template)
+        if item.concrete is not None:
+            # It does not exist yet in model
+            item_in_result = _find_matching(result, item.concrete.package_name)
+            if not item_in_result:
+                result.append(item)
+            else:
+                new_dep = ItemPackageDependency(
+                    name=_merge_specs(
+                        item_in_result.concrete.binary_spec, item.concrete.binary_spec, item.concrete.package_name
+                    )
+                )
+                result.remove(item_in_result)
+                result.append(new_dep)
+
+        elif str(item.template) not in templates_in_model:
+            result.append(item)
+    return result

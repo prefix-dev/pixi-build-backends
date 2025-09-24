@@ -36,9 +36,9 @@ pre-commit:
       group:
         jobs:
           - name: format-py-build-backend
-            run: pixi {run-ros-build} fmt
+            run: pixi {run-py-build-backend} fmt
           - name: lint-py-build-backend
-            run: pixi {run-ros-build} lint
+            run: pixi {run-py-build-backend} lint
     - name: cargo-fmt
       stage_fixed: true
       glob: "*.rs"

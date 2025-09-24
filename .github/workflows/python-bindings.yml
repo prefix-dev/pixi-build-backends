@@ -35,6 +35,10 @@ jobs:
         with:
           manifest-path: py-pixi-build-backend/pixi.toml
           environments: ci
+      - name: Run clippy
+        run: |
+          cd py-pixi-build-backend
+          pixi run -e ci lint-rust
       - name: Run tests
         run: |
           cd py-pixi-build-backend

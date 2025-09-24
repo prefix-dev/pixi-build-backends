@@ -1,13 +1,10 @@
-use std::{
-    fs,
-    str::FromStr,
-};
+use std::{fs, str::FromStr};
 
-use pixi_build_types::{ProjectModelV1};
+use pixi_build_types::ProjectModelV1;
 use pyo3::{exceptions::PyValueError, prelude::*};
-use rattler_conda_types::{Version};
-use serde_json::from_str;
 use pythonize::depythonize;
+use rattler_conda_types::Version;
+use serde_json::from_str;
 
 #[pyclass]
 #[derive(Clone)]
@@ -67,7 +64,7 @@ impl PyProjectModelV1 {
 
         Self::from_json(&content)
     }
-    
+
     #[getter]
     pub fn name(&self) -> Option<&String> {
         self.inner.name.as_ref()

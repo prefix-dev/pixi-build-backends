@@ -21,14 +21,14 @@ test = "pytest tests"
 [feature.test.dependencies]
 pixi-pycharm = ">=0.0.8,<0.1"
 pytest = "*"
+mypy = ">=1.18.2,<2"
+types-pyyaml = "*"
 # You can skip this as it's a long build, uncomment this when developing only in this package
 #py-pixi-build-backend = "*"
 py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
 
 [feature.lint.dependencies]
 ruff = "*"
-mypy = ">=1.18.2,<2"
-types-pyyaml = "*"
 pyupgrade = ">=3.20.0,<4"
 
 [feature.lint.tasks]

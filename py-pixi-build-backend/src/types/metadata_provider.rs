@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use miette::Diagnostic;
 use pixi_build_backend::generated_recipe::MetadataProvider;
-use pyo3::{PyErr, Python, pyclass, pymethods, PyAny, Py};
+use pyo3::{Py, PyAny, PyErr, Python, pyclass, pymethods};
 use rattler_conda_types::{ParseVersionError, Version};
 use std::str::FromStr;
 use thiserror::Error;

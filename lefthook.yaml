@@ -30,7 +30,7 @@ pre-commit:
           - name: format-ros-build
             run: pixi {run-ros-build} fmt
           - name: lint-ros-build
-            run: pixi {run-ros-build} lint
+            run: pixi {run-ros-build} lint-ruff
     - name: py-build-backend
       glob: "py-pixi-build-backend/**/*.{py,rs}"
       group:
@@ -38,7 +38,7 @@ pre-commit:
           - name: format-py-build-backend
             run: pixi {run-py-build-backend} fmt
           - name: lint-py-build-backend
-            run: pixi {run-py-build-backend} lint
+            run: pixi {run-py-build-backend} lint-python
     - name: cargo-fmt
       stage_fixed: true
       glob: "*.rs"

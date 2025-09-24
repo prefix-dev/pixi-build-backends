@@ -2,6 +2,8 @@ from typing import cast
 
 from rosdistro import get_cached_distribution, get_index, get_index_url
 
+# This modifies the file
+
 
 class Distro:
     def __init__(self, distro_name: str):

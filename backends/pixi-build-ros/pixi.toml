@@ -8,7 +8,6 @@ preview = ["pixi-build"]
 
 [dependencies]
 pydantic = ">=2.8.2,<3"
-ruff = "*"
 pixi-build-ros = { path = "." }
 
 [environments]
@@ -18,12 +17,24 @@ test = { features = ["test"], solve-group = "default" }
 [feature.test.tasks]
 test = "pytest tests"
 
+fmt-pyupgrade = "pyupgrade --py310-plus **/**/*.py"
+fmt-ruff = "ruff format src tests"
+fmt = { depends-on = ["fmt-pyupgrade", "fmt-ruff"] }
+
+lint-ruff = "ruff check ."
+lint-mypy = "mypy"
+lint = { depends-on = ["lint-ruff", "lint-mypy"] }
+
 [feature.test.dependencies]
 pixi-pycharm = ">=0.0.8,<0.1"
 pytest = "*"
+ruff = "*"
+mypy = ">=1.18.2,<2"
+types-pyyaml = "*"
 # You can skip this as it's a long build, uncomment this when developing only in this package
 #py-pixi-build-backend = "*"
 py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
+pyupgrade = ">=3.20.0,<4"
 
 [package.build.backend]
 name = "pixi-build-python"
@@ -35,8 +46,10 @@ version = "0.1.3"
 
 [package.host-dependencies]
 hatchling = "*"
+python = ">=3.10"
 
 [package.run-dependencies]
+python = ">=3.10"
 rosdistro = "*"
 pydantic = ">=2.8.2,<3"
 catkin_pkg = "*"

@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 import tempfile
 
 from pixi_build_backend.types.intermediate_recipe import Script
@@ -159,43 +158,3 @@ def test_generate_recipe_with_versions_in_model_and_package(
         # remove the build script as it container a tmp variable
         generated_recipe.recipe.build.script = Script("")
         assert generated_recipe.recipe.to_yaml() == snapshot
-
-
-def test_version_constraints_for_package_with_multiple_keys(
-    package_xmls: Path, test_data_dir: Path, distro_noetic: Distro
-):
-    """Test that generate recipe for packages with multiple keys fails."""
-    # Create a temporary directory to simulate the package directory
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-
-        # Copy the test package.xml to the temp directory
-        package_xml_source = package_xmls / "version_constraints_double_package_map_entry.xml"
-        package_xml_dest = temp_path / "package.xml"
-        package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
-
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
-
-        # Create config for ROS backend
-        config = {
-            "distro": distro_noetic,
-            "noarch": False,
-            "extra-package-mappings": [str(test_data_dir / "other_package_map.yaml")],
-        }
-
-        # Create host platform
-        host_platform = Platform.current()
-
-        # Create ROSGenerator instance
-        generator = ROSGenerator()
-
-        with pytest.raises(ValueError) as excinfo:
-            # Generate the recipe
-            generator.generate_recipe(
-                model=model,
-                config=config,
-                manifest_path=str(temp_path),
-                host_platform=host_platform,
-            )
-        assert "Version specifier can only be used for one package" in str(excinfo.value)

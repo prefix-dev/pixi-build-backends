@@ -152,7 +152,14 @@ def rosdep_to_conda_package_name(
         # Add the version specifier if it exists and it is only one package defined
         if spec_str:
             if len(conda_packages) == 1:
-                conda_packages = [f"{conda_packages[0]}{spec_str}"]
+                if " " not in conda_packages[0]:
+                    conda_packages = [f"{conda_packages[0]}{spec_str}"]
+                else:
+                    raise ValueError(
+                        f"Version specifier can only be used for a package without constraint already present, "
+                        f"but found {conda_packages[0]} for {dep_name} "
+                        f"in the package map."
+                    )
             else:
                 raise ValueError(
                     f"Version specifier can only be used for one package, "

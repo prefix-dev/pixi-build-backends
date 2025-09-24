@@ -28,6 +28,6 @@ def test_project_model_initialization_from_dict(snapshot: Any) -> None:
 
 
 def test_project_model_initialization_from_json_file(snapshot: Any) -> None:
-    json_file =  Path(__file__).parent.parent / "data" / "project_model_example.json"
+    json_file = Path(__file__).parent.parent / "data" / "project_model_example.json"
     model = ProjectModelV1.from_json_file(json_file)
     assert model._debug_str() == snapshot

@@ -1,9 +1,9 @@
 import json
-import shutil
 import tempfile
-import tomllib
 from pathlib import Path
-from typing import Dict
+
+import pytest
+from pixi_build_backend.types.intermediate_recipe import Script
 
 from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator
@@ -17,13 +17,12 @@ from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 
 
-def test_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str, PackageMapEntry]):
+def test_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str, PackageMapEntry], distro: Distro):
     # Read content from the file in the test data directory
     package_xml_path = package_xmls / "demo_nodes_cpp.xml"
     package_content = package_xml_path.read_text(encoding="utf-8")
     package = convert_package_xml_to_catkin_package(package_content)
 
-    distro = Distro("jazzy")
     requirements = package_xml_to_conda_requirements(package, distro, Platform.current(), package_map)
 
     # Build
@@ -64,19 +63,20 @@ def test_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str,
         assert f"ros-{distro.name}-{pkg}" in run_names
 
 
-def test_ament_cmake_package_xml_to_recipe_config(package_xmls: Path, package_map: Dict[str, PackageMapEntry]):
+def test_ament_cmake_package_xml_to_recipe_config(
+    package_xmls: Path, package_map: dict[str, PackageMapEntry], distro: Distro
+):
     # Read content from the file in the test data directory
     package_xml_path = package_xmls / "demos_action_tutorials_interfaces.xml"
     package_content = package_xml_path.read_text(encoding="utf-8")
     package = convert_package_xml_to_catkin_package(package_content)
 
-    distro = Distro("noetic")
     requirements = package_xml_to_conda_requirements(package, distro, Platform.current(), package_map)
 
-    assert requirements.build[0].concrete.package_name == "ros-noetic-ament-cmake"
+    assert requirements.build[0].concrete.package_name == "ros-jazzy-ament-cmake"
 
 
-def test_generate_recipe(package_xmls: Path):
+def test_generate_recipe(package_xmls: Path, distro: Distro):
     """Test the generate_recipe function of ROSGenerator."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -91,7 +91,7 @@ def test_generate_recipe(package_xmls: Path):
         model = ProjectModelV1()
 
         # Create config for ROS backend
-        config = {"distro": "jazzy", "noarch": False}
+        config = {"distro": distro, "noarch": False}
 
         # Create host platform
         host_platform = Platform.current()
@@ -147,7 +147,7 @@ def test_generate_recipe(package_xmls: Path):
             )
 
 
-def test_recipe_includes_project_run_dependency(package_xmls: Path):
+def test_recipe_includes_project_run_dependency(package_xmls: Path, distro: Distro, snapshot):
     """Ensure dependencies declared in project manifest merge into run requirements."""
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -166,13 +166,7 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path):
                 "defaultTarget": {
                     "hostDependencies": {},
                     "buildDependencies": {},
-                    "runDependencies": {
-                        "rich": {
-                            "binary": {
-                                "version": ">=10.0"
-                            }
-                        }
-                    },
+                    "runDependencies": {"rich": {"binary": {"version": ">=10.0"}}},
                 },
                 "targets": {},
             },
@@ -190,16 +184,14 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path):
             host_platform=host_platform,
         )
 
-        run_requirements = [str(dep) for dep in generated_recipe.recipe.requirements.run]
+        # Verify the generated recipe has the mutex requirements
+        # remove the build script as it container a tmp variable
+        generated_recipe.recipe.build.script = Script("")
+        assert generated_recipe.recipe.to_yaml() == snapshot
 
-        assert any("rich" in dep for dep in run_requirements), (
-            f"Expected pixi run dependency 'rich' missing from recipe run requirements"
-        )
 
-
-def test_robostack_target_platform_linux(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_linux(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test that target platform correctly selects Linux packages from robostack.yaml."""
-    distro = Distro("jazzy")
 
     # Create a mock Linux platform
     linux_platform = Platform("linux-64")
@@ -209,10 +201,8 @@ def test_robostack_target_platform_linux(package_map: Dict[str, PackageMapEntry]
     assert acl_packages == ["libacl"], f"Expected ['libacl'] for acl on Linux, got {acl_packages}"
 
 
-def test_robostack_target_platform_osx(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_osx(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test that target platform correctly selects macOS packages from robostack.yaml."""
-    distro = Distro("jazzy")
-
     # Create a mock macOS platform
     osx_platform = Platform("osx-64")
 
@@ -221,10 +211,8 @@ def test_robostack_target_platform_osx(package_map: Dict[str, PackageMapEntry]):
     assert acl_packages == [], f"Expected [] for acl on macOS, got {acl_packages}"
 
 
-def test_robostack_target_platform_windows(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_target_platform_windows(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test that target platform correctly selects Windows packages from robostack.yaml."""
-    distro = Distro("jazzy")
-
     # Create a mock Windows platform
     win_platform = Platform("win-64")
 
@@ -233,12 +221,8 @@ def test_robostack_target_platform_windows(package_map: Dict[str, PackageMapEntr
     assert binutils_packages == [], f"Expected [] for binutils on Windows, got {binutils_packages}"
 
 
-def test_robostack_target_platform_cross_platform(
-    package_map: Dict[str, PackageMapEntry],
-):
+def test_robostack_target_platform_cross_platform(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test packages that have different mappings across all platforms."""
-    distro = Distro("jazzy")
-
     linux_platform = Platform("linux-64")
     osx_platform = Platform("osx-64")
     win_platform = Platform("win-64")
@@ -265,10 +249,8 @@ def test_robostack_target_platform_cross_platform(
     assert win_omp == [], f"Expected [] for libomp-dev on Windows, got {win_omp}"
 
 
-def test_robostack_require_opengl_handling(package_map: Dict[str, PackageMapEntry]):
+def test_robostack_require_opengl_handling(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test that REQUIRE_OPENGL is correctly handled for different platforms."""
-    distro = Distro("jazzy")
-
     linux_platform = Platform("linux-64")
     osx_platform = Platform("osx-64")
     win_platform = Platform("win-64")
@@ -292,3 +274,17 @@ def test_robostack_require_opengl_handling(package_map: Dict[str, PackageMapEntr
 
     # Windows should have empty packages
     assert win_opengl == [], f"Expected [] for opengl on Windows, got {win_opengl}"
+
+
+def test_spec_with_entry_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
+    """Test using a specifier string with a package which has already defined one in the package map"""
+    with pytest.raises(ValueError) as excinfo:
+        rosdep_to_conda_package_name("xtensor", distro, Platform.current(), package_map, spec_str="==2.0")
+    assert "Version specifier can only be used for a package without constraint already present" in str(excinfo)
+
+
+def test_spec_with_multiple_entries_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
+    """Test using a specifier string with a package which has multiple packages defined one in the package map"""
+    with pytest.raises(ValueError) as excinfo:
+        rosdep_to_conda_package_name("boost", distro, Platform.current(), package_map, spec_str="==2.0")
+    assert "Version specifier can only be used for one package" in str(excinfo)

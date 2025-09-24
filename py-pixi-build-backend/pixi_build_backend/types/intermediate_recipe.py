@@ -239,7 +239,7 @@ class Build:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
     def __str__(self) -> str:
         """
         Get the string representation of the Build configuration.
@@ -260,7 +260,7 @@ class Script:
     def __init__(self, content: Union[str, List[str]], env: Optional[Dict[str, str]] = None):
         # Convert to string for internal storage
         if isinstance(content, list):
-            content_str = '\n'.join(content)
+            content_str = "\n".join(content)
         else:
             content_str = content if content else ""
         self._inner = PyScript(content_str, env, None)
@@ -272,7 +272,7 @@ class Script:
         content_str = self._inner.content
         if not content_str:
             return []
-        return content_str.split('\n')
+        return content_str.split("\n")
 
     @content.setter
     def content(self, value: Union[str, List[str]]) -> None:
@@ -280,7 +280,7 @@ class Script:
         if isinstance(value, str):
             self._inner.content = value
         else:
-            self._inner.content = '\n'.join(value)
+            self._inner.content = "\n".join(value)
 
     @property
     def env(self) -> Dict[str, str]:
@@ -430,7 +430,7 @@ class NoArchKind:
         instance = cls.__new__(cls)
         instance._inner = inner
         return instance
-    
+
     def __str__(self) -> str:
         """
         Get the string representation of the NoArch kind.

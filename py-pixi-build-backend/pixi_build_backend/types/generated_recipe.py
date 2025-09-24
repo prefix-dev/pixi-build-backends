@@ -17,7 +17,9 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(cls, model: ProjectModelV1, metadata_provider: Optional[MetadataProvider] = None) -> "GeneratedRecipe":
+    def from_model(
+        cls, model: ProjectModelV1, metadata_provider: Optional[MetadataProvider] = None
+    ) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModelV1."""
         instance = cls()
         if metadata_provider is not None:
@@ -76,10 +78,11 @@ class GenerateRecipeProtocol(Protocol):
     def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> List[str]:
         """Extract input globs for the build."""
         ...
-    
-    def default_variants(self, host_platform: Platform ) -> Dict[str, Any]:
+
+    def default_variants(self, host_platform: Platform) -> Dict[str, Any]:
         """Get the default variants for the generator."""
         ...
+
 
 class GenerateRecipe:
     """Protocol for generating recipes."""

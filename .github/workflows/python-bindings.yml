@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   format_lint_test:
-    name: Format, Lint and Test the Python bindings
+    name: Test the Python bindings
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -35,11 +35,10 @@ jobs:
         with:
           manifest-path: py-pixi-build-backend/pixi.toml
           environments: ci
-      - name: Format and Lint
+      - name: Run clippy
         run: |
           cd py-pixi-build-backend
-          pixi run -e ci fmt
-          pixi run -e ci lint
+          pixi run -e ci lint-rust
       - name: Run tests
         run: |
           cd py-pixi-build-backend

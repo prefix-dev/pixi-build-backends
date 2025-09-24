@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use pixi_build_backend::generated_recipe::BackendConfig;
-use pyo3::{Python, pyclass, pymethods, PyAny, Py};
+use pyo3::{Py, PyAny, Python, pyclass, pymethods};
 use pythonize::pythonize;
 use serde::Deserialize;
 use serde::Deserializer;

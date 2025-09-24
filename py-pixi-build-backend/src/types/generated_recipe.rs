@@ -12,7 +12,12 @@ use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
 };
 use pixi_build_backend::{NormalizedKey, Variable};
-use pyo3::{Py, PyErr, PyResult, Python, exceptions::PyValueError, pyclass, pymethods, types::{PyAnyMethods, PyString}, PyAny};
+use pyo3::{
+    Py, PyAny, PyErr, PyResult, Python,
+    exceptions::PyValueError,
+    pyclass, pymethods,
+    types::{PyAnyMethods, PyString},
+};
 use rattler_conda_types::Platform;
 use recipe_stage0::recipe::IntermediateRecipe;
 

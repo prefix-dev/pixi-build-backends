@@ -6,10 +6,15 @@ dependencies = [
   "toml",
   "pyyaml",
   "pydantic",
+  "py_rattler",
   "py-pixi-build-backend",
 ]
 name = "pixi-build-ros"
 version = "0.1.3"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
 
 [project.scripts]
 pixi-build-ros = "pixi_build_ros.main:main"
@@ -28,6 +33,15 @@ packages = ["src/pixi_build_ros"]
 "templates" = "site-packages/pixi_build_ros/templates"
 "robostack.yaml" = "site-packages/pixi_build_ros/robostack.yaml"
 
-[build-system]
-build-backend = "hatchling.build"
-requires = ["hatchling"]
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+fix = true
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/pixi_build_ros"]
+strict = true
+ignore_missing_imports = true
+enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
+disable_error_code = ["empty-body", "no-untyped-call"]

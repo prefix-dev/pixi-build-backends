@@ -28,10 +28,9 @@ def test_rosdistro():
     print(f"Release Tag: {get_release_tag(repo, pkg_name)}")
 
 
-def test_distro_class():
+def test_distro_class(distro: Distro):
     """Testing the Distro class."""
     distro_name = "jazzy"
-    distro = Distro(distro_name)
 
     print(f"Distro Name: {distro.name}")
     print(f"Is ROS1: {distro.check_ros1()}")

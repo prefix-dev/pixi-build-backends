@@ -1,0 +1,56 @@
+# serializer version: 1
+# name: test_recipe_includes_project_run_dependency
+  '''
+  context: {}
+  package:
+    name: custom_ros
+    version: 0.0.1
+  source: []
+  build:
+    number: null
+    script:
+      content: ''
+      env: {}
+      secrets: []
+  requirements:
+    build:
+    - ros-noetic-catkin
+    - ros_package
+    - ninja
+    - python
+    - setuptools
+    - git
+    - git-lfs
+    - cmake
+    - cpython
+    - patch
+    - make
+    - coreutils
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    host:
+    - ros-noetic-catkin
+    - ros_package
+    - python
+    - numpy
+    - pip
+    - pkg-config
+    - ros-distro-mutex
+    run:
+    - rich >=10.0
+    - ros_package
+    - ros-distro-mutex
+    run_constraints: []
+  tests: []
+  about:
+    homepage: https://test.io/custom_ros
+    license: LicenseRef-Apache License 2.0
+    license_file: package.xml
+    summary: Demo
+    description: Demo
+    documentation: null
+    repository: https://github.com/test/custom_ros
+  extra: null
+  
+  '''
+# ---

@@ -7,7 +7,7 @@ import os
 import pydantic
 from importlib.resources import files
 
-from typing import Dict, Optional, List, Any
+from typing import Any
 from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
@@ -15,7 +15,7 @@ from pixi_build_backend.types.generated_recipe import (
 from .metadata_provider import ROSPackageXmlMetadataProvider
 from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements
 
-from pixi_build_backend.types.item import ItemPackageDependency
+from pixi_build_backend.types.item import ItemPackageDependency, VecItemPackageDependency
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
@@ -47,19 +47,18 @@ def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
 class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allowed=True):
     """ROS backend configuration."""
 
-    noarch: Optional[bool] = None
-    # Environment variables to set during the build
-    env: Optional[Dict[str, str]] = None
-    # Directory for debug files of this script
-    debug_dir: Optional[Path] = pydantic.Field(default=None, alias="debug-dir")
-    # Extra input globs to include in the build hash
-    extra_input_globs: Optional[List[str]] = pydantic.Field(default=None, alias="extra-input-globs")
-    # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # TODO: This should be figured out in some other way, not from the config.
-    distro: Optional[str] = None
+    distro: Distro
 
+    noarch: bool | None = None
+    # Environment variables to set during the build
+    env: dict[str, str] | None = None
+    # Directory for debug files of this script
+    debug_dir: Path | None = pydantic.Field(default=None, alias="debug-dir")
+    # Extra input globs to include in the build hash
+    extra_input_globs: list[str] | None = pydantic.Field(default=None, alias="extra-input-globs")
     # Extra package mappings to use in the build
-    extra_package_mappings: List[PackageMappingSource] = pydantic.Field(
+    extra_package_mappings: list[PackageMappingSource] = pydantic.Field(
         default_factory=list, alias="extra-package-mappings"
     )
 
@@ -67,9 +66,17 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         """Whether to build a noarch package or a platform-specific package."""
         return self.noarch is None or self.noarch
 
+    @pydantic.field_validator("distro", mode="before")
+    @classmethod
+    def _parse_distro(cls, value: str | Distro) -> Distro:
+        """Parse a distro string."""
+        if isinstance(value, str):
+            return Distro(value)
+        return value
+
     @pydantic.field_validator("debug_dir", mode="before")
     @classmethod
-    def _parse_debug_dir(cls, value, info: pydantic.ValidationInfo) -> Optional[Path]:
+    def _parse_debug_dir(cls, value: Any, info: pydantic.ValidationInfo) -> Path | None:
         """Parse debug directory if set."""
         if value is None:
             return None
@@ -81,8 +88,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     @pydantic.field_validator("extra_package_mappings", mode="before")
     @classmethod
     def _parse_package_mappings(
-        cls, input_value, info: pydantic.ValidationInfo
-    ) -> Optional[List[PackageMappingSource]]:
+        cls, input_value: Any, info: pydantic.ValidationInfo
+    ) -> list[PackageMappingSource] | None:
         """Parse additional package mappings if set."""
         if input_value is None:
             return []
@@ -91,7 +98,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
 
-        result: List[PackageMappingSource] = []
+        result: list[PackageMappingSource] = []
         for raw_entry in input_value:
             # match for cases
             # it's already a package mapping source (usually for testing)
@@ -116,29 +123,25 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         return result
 
 
-class ROSGenerator(GenerateRecipeProtocol):
+class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProvider is not typed
     """ROS recipe generator using Python bindings."""
 
     def generate_recipe(
         self,
         model: ProjectModelV1,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         manifest_path: str,
         host_platform: Platform,
-        _python_params: Optional[PythonParams] = None,
+        _python_params: PythonParams | None = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
         manifest_root = Path(manifest_path)
         backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(
             config, context={"manifest_root": manifest_root}
         )
-
-        # Setup ROS distro first
-        distro = Distro(backend_config.distro)
-
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
-        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), distro)
+        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), backend_config.distro.name)
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
@@ -151,7 +154,7 @@ class ROSGenerator(GenerateRecipeProtocol):
 
         # TODO: Currently hardcoded and not able to override, this should be configurable
         package_files = files("pixi_build_ros")
-        robostack_file = package_files / "robostack.yaml"
+        robostack_file = Path(str(package_files)) / "robostack.yaml"
         # workaround for from source install
         if not robostack_file.is_file():
             robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
@@ -161,7 +164,9 @@ class ROSGenerator(GenerateRecipeProtocol):
         )
 
         # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(package_xml, distro, host_platform, package_map_data)
+        package_requirements = package_xml_to_conda_requirements(
+            package_xml, backend_config.distro, host_platform, package_map_data
+        )
 
         # Add standard dependencies
         build_deps = [
@@ -192,6 +197,10 @@ class ROSGenerator(GenerateRecipeProtocol):
         for dep in host_deps:
             package_requirements.host.append(ItemPackageDependency(name=dep))
 
+        # add a simple default host and run dependency on the ros{2}-distro-mutex
+        package_requirements.host.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
+        package_requirements.run.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
+
         # Merge package requirements into the model requirements
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
         generated_recipe.recipe.requirements = requirements
@@ -200,7 +209,9 @@ class ROSGenerator(GenerateRecipeProtocol):
         build_platform = BuildPlatform.current()
 
         # Generate build script
-        build_script_context = BuildScriptContext.load_from_template(package_xml, build_platform, manifest_root, distro)
+        build_script_context = BuildScriptContext.load_from_template(
+            package_xml, build_platform, manifest_root, backend_config.distro
+        )
         build_script_lines = build_script_context.render()
 
         generated_recipe.recipe.build.script = Script(
@@ -222,11 +233,11 @@ class ROSGenerator(GenerateRecipeProtocol):
         # assert generated_recipe.recipe.build.script.content == build_script_lines, f"Script content {generated_recipe.recipe.build.script.content}, build script lines {build_script_lines}"
         return generated_recipe
 
-    def extract_input_globs_from_build(self, config: ROSBackendConfig, workdir: Path, editable: bool) -> List[str]:
+    def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
         return get_build_input_globs(config, editable)
 
-    def default_variants(self, host_platform: Platform) -> Dict[str, Any]:
+    def default_variants(self, host_platform: Platform) -> dict[str, Any]:
         """Get the default variants for the generator."""
         variants = {}
         if host_platform.is_windows:
@@ -241,27 +252,60 @@ def merge_requirements(
     """Merge two sets of requirements."""
     merged = ConditionalRequirements()
 
-    # The model requirements are the base, coming from the pixi manifest
-    # We need to only add the names for non-existing dependencies
-    def merge_unique_items(
-        model: List[ItemPackageDependency],
-        package: List[ItemPackageDependency],
-    ) -> List[ItemPackageDependency]:
-        """Merge unique items from source into target."""
-        result = model
-
-        for item in package:
-            package_names = [i.concrete.package_name for i in model if i.concrete]
-
-            if item.concrete is not None and item.concrete.package_name not in package_names:
-                result.append(item)
-            if str(item.template) not in [str(i.template) for i in model]:
-                result.append(item)
-        return result
-
     merged.host = merge_unique_items(model_requirements.host, package_requirements.host)
     merged.build = merge_unique_items(model_requirements.build, package_requirements.build)
     merged.run = merge_unique_items(model_requirements.run, package_requirements.run)
 
     # If the dependency is of type Source in one of the requirements, we need to set them to Source for all variants
     return merged
+
+
+def merge_unique_items(
+    model: list[ItemPackageDependency] | VecItemPackageDependency,
+    package: list[ItemPackageDependency] | VecItemPackageDependency,
+) -> list[ItemPackageDependency]:
+    """Merge unique items from source into target."""
+
+    def _find_matching(list_to_find: list[ItemPackageDependency], name: str) -> ItemPackageDependency | None:
+        for dep in list_to_find:
+            if dep.concrete.package_name == name:
+                return dep
+        else:
+            return None
+
+    def _merge_specs(spec1: str, spec2: str, package_name: str) -> str:
+        # remove the package name
+        version_spec1 = spec1.removeprefix(package_name).strip()
+        version_spec2 = spec2.removeprefix(package_name).strip()
+
+        if " " in version_spec1 or " " in version_spec2:
+            raise ValueError(f"{version_spec1}, or {version_spec2} contains spaces, cannot merge specifiers.")
+
+        # early out with *, empty or ==
+        if version_spec1 in ["*", ""] or "==" in version_spec2 or version_spec1 == version_spec2:
+            return spec2
+        if version_spec2 in ["*", ""] or "==" in version_spec1:
+            return spec1
+        return package_name + " " + ",".join([version_spec1, version_spec2])
+
+    result: list[ItemPackageDependency] = []
+    templates_in_model = [str(i.template) for i in model]
+    for item in list(model) + list(package):
+        # It's concrete (i.e. no template)
+        if item.concrete is not None:
+            # It does not exist yet in model
+            item_in_result = _find_matching(result, item.concrete.package_name)
+            if not item_in_result:
+                result.append(item)
+            else:
+                new_dep = ItemPackageDependency(
+                    name=_merge_specs(
+                        item_in_result.concrete.binary_spec, item.concrete.binary_spec, item.concrete.package_name
+                    )
+                )
+                result.remove(item_in_result)
+                result.append(new_dep)
+
+        elif str(item.template) not in templates_in_model:
+            result.append(item)
+    return result

@@ -36,6 +36,10 @@ jobs:
         with:
           manifest-path: backends/pixi-build-ros/pixi.toml
           environments: test
+      - name: Run mypy
+        run: |
+          cd backends/pixi-build-ros
+          pixi run -e test lint-mypy
       - name: Run tests
         run: |
           cd backends/pixi-build-ros

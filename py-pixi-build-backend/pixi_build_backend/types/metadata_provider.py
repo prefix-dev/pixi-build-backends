@@ -8,7 +8,7 @@ from typing import Optional, Protocol
 class MetadataProvider(Protocol):
     """
     Protocol for providing package metadata.
-    
+
     This protocol defines the interface that metadata providers must implement
     to supply package metadata like name, version, description, etc.
     """

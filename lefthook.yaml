@@ -2,6 +2,8 @@ lefthook: pixi run --no-progress lefthook
 
 templates:
   run: run --quiet --no-progress --environment=lint
+  run-ros-build: run --manifest-path backends/pixi-build-ros --quiet --no-progress --environment=lint
+  run-py-build-backend: run --manifest-path py-pixi-build-backend --quiet --no-progress --environment=ci
 
 colors: true
 
@@ -21,6 +23,22 @@ pre-commit:
   jobs:
     - name: actionlint
       run: pixi {run} actionlint
+    - name: ros-build
+      glob: "backends/pixi-build-ros/**/*.py"
+      group:
+        jobs:
+          - name: format-ros-build
+            run: pixi {run-ros-build} fmt
+          - name: lint-ros-build
+            run: pixi {run-ros-build} lint-ruff
+    - name: py-build-backend
+      glob: "py-pixi-build-backend/**/*.{py,rs}"
+      group:
+        jobs:
+          - name: format-py-build-backend
+            run: pixi {run-py-build-backend} fmt
+          - name: lint-py-build-backend
+            run: pixi {run-py-build-backend} lint-python
     - name: cargo-fmt
       stage_fixed: true
       glob: "*.rs"

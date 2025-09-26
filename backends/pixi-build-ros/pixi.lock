@@ -903,7 +903,7 @@ packages:
   timestamp: 1756725992228
 - conda: .
   name: pixi-build-ros
-  version: 0.1.3
+  version: 0.2.0
   build: pyh4616a5c_0
   subdir: noarch
   depends:
@@ -917,7 +917,7 @@ packages:
   - typing-extensions
   - py-pixi-build-backend
   input:
-    hash: 50c843312ad3b785fff67d52a8892946a9e0e64d9f953b5eb73eccc659d48535
+    hash: 87b6cc87cab58dadb320a53de3141eaefb14f8e03c01d975b58e1ba6eba4e91a
     globs:
     - pyproject.toml
   sources:

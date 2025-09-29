@@ -4,6 +4,8 @@ import yaml
 from pathlib import Path
 from typing import Any
 
+from pixi_build_ros.distro import Distro
+
 
 def _parse_str_as_abs_path(value: str | Path, manifest_root: Path) -> Path:
     """Parse a string as a Path."""
@@ -57,7 +59,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
 
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # TODO: This should be figured out in some other way, not from the config.
-    distro: str
+    distro: Distro
 
     noarch: bool | None = None
     # Environment variables to set during the build
@@ -75,6 +77,14 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     def is_noarch(self) -> bool:
         """Whether to build a noarch package or a platform-specific package."""
         return self.noarch is None or self.noarch
+
+    @pydantic.field_validator("distro", mode="before")
+    @classmethod
+    def _parse_distro(cls, value: str | Distro) -> Distro:
+        """Parse a distro string."""
+        if isinstance(value, str):
+            return Distro(value)
+        return value
 
     @pydantic.field_validator("debug_dir", mode="before")
     @classmethod

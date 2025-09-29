@@ -9,8 +9,16 @@ from pixi_build_backend.types.intermediate_recipe import ConditionalRequirements
 from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.platform import Platform
 from pixi_build_ros.distro import Distro
-
+from rattler import Version
 from .config import PackageMapEntry, PackageMappingSource, ROSBackendConfig
+
+
+@dataclasses.dataclass
+class PackageNameWithSpec:
+    """Package name with spec."""
+
+    name: str
+    spec: str | None = None
 
 
 # Any in here means ROSBackendConfig
@@ -41,11 +49,8 @@ def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]
     python_globs = [] if editable else ["**/*.py", "**/*.pyx"]
 
     all_globs = base_globs + python_globs
-    extra_globs = config.get("extra-input-globs")
-    if extra_globs and not isinstance(extra_globs, list):
-        raise ValueError("Expected a list for the extra-input-globs.")
-
-    all_globs.extend(config.extra_input_globs)
+    if config.extra_input_globs:
+        all_globs.extend(config.extra_input_globs)
     return all_globs
 
 

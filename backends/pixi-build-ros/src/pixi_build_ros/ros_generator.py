@@ -19,7 +19,6 @@ from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
 
 from .build_script import BuildScriptContext, BuildPlatform
-from .distro import Distro
 from .utils import (
     get_build_input_globs,
     package_xml_to_conda_requirements,

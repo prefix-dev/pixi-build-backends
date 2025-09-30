@@ -129,8 +129,8 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
     def license(self) -> str | None:
         """Return the license from package.xml."""
         # ROS package.xml does not enforce SPDX as strictly as rattler-build
-        # So use LicenseRef for now
-        if len(self._package_xml_data.licenses) == 1:
+        # So use LicenseRef for now if there's a single license specified
+        if len(self._package_xml_data.licenses) == 1 and "TODO" not in self._package_xml_data.licenses[0]:
             return f"LicenseRef-{self._package_xml_data.licenses[0]}"
         # TODO: Handle License parsing to conform to SPDX standards,
         return None

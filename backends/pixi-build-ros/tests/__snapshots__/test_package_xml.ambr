@@ -16,6 +16,7 @@
     build:
     - ros-noetic-catkin
     - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - ninja
     - python
     - setuptools
@@ -31,6 +32,7 @@
     host:
     - ros-noetic-catkin
     - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - python
     - numpy
     - pip
@@ -39,6 +41,7 @@
     run:
     - rich >=10.0
     - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - ros-distro-mutex
     run_constraints: []
   tests: []

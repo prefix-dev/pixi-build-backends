@@ -174,7 +174,7 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path, distro: Dist
         model = ProjectModelV1.from_json(json.dumps(model_payload))
 
         config = {"distro": "noetic", "noarch": False}
-        host_platform = Platform.current()
+        host_platform = Platform("linux-64")
         generator = ROSGenerator()
 
         generated_recipe = generator.generate_recipe(

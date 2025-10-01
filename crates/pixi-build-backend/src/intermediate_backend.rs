@@ -873,7 +873,7 @@ where
         // all the different variant combinations.
         //
         // TODO(baszalmstra): The selector config we pass in here doesnt have all values
-        // filled in. This is on prupose because at this point we dont yet know all
+        // filled in. This is on purpose because at this point we dont yet know all
         // values like the variant. We should introduce a new type of selector config
         // for this particular case.
         let selector_config_for_variants = SelectorConfig {

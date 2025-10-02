@@ -85,6 +85,15 @@ def generate_matrix(filter_package_name=None):
             "type": "python"
         })
     
+    # Add pixi-build-ros manually since it's a Python package in backends/
+    with open("backends/pixi-build-ros/pyproject.toml", "rb") as f:
+        pyproject_toml = tomllib.load(f)
+        all_packages.append({
+            "name": "pixi-build-ros",
+            "version": pyproject_toml["project"]["version"],
+            "type": "python"
+        })
+    
     # Filter packages by name if specified
     if filter_package_name:
         available_packages = [pkg["name"] for pkg in all_packages]
@@ -104,6 +113,13 @@ def generate_matrix(filter_package_name=None):
         {"target": "osx-64", "os": "macos-14"},
         {"target": "osx-arm64", "os": "macos-14"},
     ]
+
+    def get_targets_for_package(package_name, all_targets):
+        """Get the appropriate targets for a package. Noarch packages only build on linux-64."""
+        if package_name == "pixi-build-ros":
+            return [t for t in all_targets if t["target"] == "linux-64"]
+        else:
+            return all_targets
 
     git_tags = get_git_tags()
     is_untagged_build = len(git_tags) == 0
@@ -128,12 +144,14 @@ def generate_matrix(filter_package_name=None):
             auto_version = f"{package['version']}.{date_suffix}.{git_hash}"
             
             # Generate environment variable name
-            if package["type"] == "python":
+            if package["name"] == "py-pixi-build-backend":
                 env_name = "PY_PIXI_BUILD_BACKEND_VERSION"
+            elif package["name"] == "pixi-build-ros":
+                env_name = "PIXI_BUILD_ROS_VERSION"
             else:
                 env_name = f"{package['name'].replace('-', '_').upper()}_VERSION"
             
-            for target in targets:
+            for target in get_targets_for_package(package["name"], targets):
                 matrix.append(
                     {
                         "bin": package["name"],
@@ -175,12 +193,14 @@ def generate_matrix(filter_package_name=None):
                 continue
 
             # Generate environment variable name
-            if package["type"] == "python":
+            if package["name"] == "py-pixi-build-backend":
                 env_name = "PY_PIXI_BUILD_BACKEND_VERSION"
+            elif package["name"] == "pixi-build-ros":
+                env_name = "PIXI_BUILD_ROS_VERSION"
             else:
                 env_name = f"{package['name'].replace('-', '_').upper()}_VERSION"
 
-            for target in targets:
+            for target in get_targets_for_package(package["name"], targets):
                 matrix.append(
                     {
                         "bin": package["name"],

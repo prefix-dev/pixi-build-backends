@@ -48,9 +48,12 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
+          echo "Package name input: '${{ github.event.inputs.package_name }}'"
           if [ -n "${{ github.event.inputs.package_name }}" ]; then
+            echo "Building specific package: ${{ github.event.inputs.package_name }}"
             MATRIX_JSON=$(pixi run generate-matrix --package "${{ github.event.inputs.package_name }}")
           else
+            echo "Building all packages"
             MATRIX_JSON=$(pixi run generate-matrix)
           fi
 

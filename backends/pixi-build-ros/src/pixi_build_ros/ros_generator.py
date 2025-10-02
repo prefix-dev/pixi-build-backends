@@ -141,8 +141,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
     def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
-        ros_config = ROSBackendConfig.model_validate(config)
-        return get_build_input_globs(ros_config, editable)
+        return get_build_input_globs(config, editable)
 
     def default_variants(self, host_platform: Platform) -> dict[str, Any]:
         """Get the default variants for the generator."""

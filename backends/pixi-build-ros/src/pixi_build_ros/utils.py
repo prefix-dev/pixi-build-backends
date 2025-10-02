@@ -23,7 +23,7 @@ class PackageNameWithSpec:
 
 
 # Any in here means ROSBackendConfig
-def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]:
+def get_build_input_globs(config: dict[str, Any], editable: bool) -> list[str]:
     """Get build input globs for ROS package."""
     base_globs = [
         # Source files
@@ -50,8 +50,8 @@ def get_build_input_globs(config: ROSBackendConfig, editable: bool) -> list[str]
     python_globs = [] if editable else ["**/*.py", "**/*.pyx"]
 
     all_globs = base_globs + python_globs
-    if config.extra_input_globs:
-        all_globs.extend(config.extra_input_globs)
+    if config.get("extra_input_globs"):
+        all_globs.extend(config["extra_input_globs"])
     return all_globs
 
 

@@ -54,6 +54,8 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
         self._package_data: PackageData | None = None
+        # Early load the package.xml data to ensure it's valid
+        _ = self._package_xml_data
 
     @property
     def _package_xml_data(self) -> PackageData:
@@ -109,8 +111,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
             )
 
         except Exception as e:
-            print(f"Warning: Failed to parse package.xml at {self.package_xml_path}: {e}")
-            self._package_data = PackageData()
+            raise RuntimeError(f"Failed to parse package.xml at: '{self.package_xml_path}'. Error: {e}\n")
 
         return self._package_data
 

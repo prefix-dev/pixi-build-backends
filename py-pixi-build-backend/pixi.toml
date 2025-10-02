@@ -68,7 +68,7 @@ fmt-rust = "cargo fmt --all"
 
 lint = { depends-on = ["lint-python", "lint-rust"] }
 lint-python = "ruff check ."
-lint-rust = "cargo clippy --all"
+lint-rust = "cargo clippy --all -- -D warnings"
 
 [environments]
 # Development environment with all tools (including rust-src for IDE support)  

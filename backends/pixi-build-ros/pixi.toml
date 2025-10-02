@@ -6,6 +6,17 @@ channels = [
 platforms = ["osx-arm64", "win-64", "linux-64"]
 preview = ["pixi-build"]
 
+[activation.env]
+CARGO_TARGET_DIR = "target/pixi"
+
+[target.linux-64.dependencies]
+clang = ">=21.1,<21.2"
+mold = ">=2.33.0,<3.0"
+patchelf = "==0.18.0"
+
+[target.linux-64.activation]
+scripts = ["../../scripts/activate.sh"]
+
 [dependencies]
 pydantic = ">=2.8.2,<3"
 py_rattler = ">=0.15.0,<0.16"

@@ -92,6 +92,8 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         req_string = list(str(req) for req in generated_recipe.recipe.requirements.run)
         assert "ros-noetic-ros-package" in req_string
         assert "ros-noetic-ros-package-msgs" in req_string
+        assert "multi-package-a" in req_string
+        assert "multi-package-b" in req_string
 
 
 def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro):

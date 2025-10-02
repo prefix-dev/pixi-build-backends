@@ -15,7 +15,8 @@
   requirements:
     build:
     - ros-noetic-catkin
-    - ros_package
+    - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - ninja
     - python
     - setuptools
@@ -30,7 +31,8 @@
     - ${{ compiler('cxx') }}
     host:
     - ros-noetic-catkin
-    - ros_package
+    - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - python
     - numpy
     - pip
@@ -38,7 +40,8 @@
     - ros-distro-mutex
     run:
     - rich >=10.0
-    - ros_package
+    - ros-noetic-ros-package
+    - ros-noetic-multi-package
     - ros-distro-mutex
     run_constraints: []
   tests: []

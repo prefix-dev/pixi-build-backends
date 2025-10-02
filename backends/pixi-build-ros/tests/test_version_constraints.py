@@ -31,7 +31,7 @@ def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, 
         }
 
         # Create host platform
-        host_platform = Platform.current()
+        host_platform = Platform("linux-64")
 
         # Create ROSGenerator instance
         generator = ROSGenerator()
@@ -85,7 +85,7 @@ def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: P
         model = ProjectModelV1.from_dict(model_payload)
 
         # Create host platform
-        host_platform = Platform.current()
+        host_platform = Platform("linux-64")
 
         # Create ROSGenerator instance
         generator = ROSGenerator()
@@ -141,7 +141,7 @@ def test_generate_recipe_with_versions_in_model_and_package(
         model = ProjectModelV1.from_dict(model_payload)
 
         # Create host platform
-        host_platform = Platform.current()
+        host_platform = Platform("linux-64")
 
         # Create ROSGenerator instance
         generator = ROSGenerator()

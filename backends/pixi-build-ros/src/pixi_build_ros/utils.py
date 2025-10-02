@@ -102,23 +102,9 @@ def rosdep_to_conda_package_name(
     else:
         raise RuntimeError(f"Unsupported platform: {host_platform}")
 
-    # If dependency any of the following return custom name:
-    if dep_name in [
-        "ament_cmake",
-        "ament_python",
-        "rosidl_default_generators",
-        "ros_workspace",
-    ]:
-        return [f"ros-{distro.name}-{dep_name.replace('_', '-')}"]
-
     if dep_name not in package_map_data:
-        # If the dependency is not found in robostack.yaml, check the actual distro whether it exists
-        if distro.has_package(dep_name):
-            # This means that it is a ROS package, so we are going to assume has the `ros-<distro>-<dep_name>` format.
-            return [f"ros-{distro.name}-{dep_name.replace('_', '-')}{spec_str}"]
-        else:
-            # If the dependency is not found in robostack.yaml and not in the distro, return the dependency name as is.
-            return [f"{dep_name}{spec_str}"]
+        # Package name isn't found in the package map, so we are going to assume it is a ROS package.
+        return [f"ros-{distro.name}-{dep_name.replace('_', '-')}{spec_str or ''}"]
 
     # Dependency found in package map
 
@@ -226,7 +212,6 @@ def package_xml_to_conda_requirements(
     package_map_data: dict[str, PackageMapEntry],
 ) -> ConditionalRequirements:
     """Convert a CatkinPackage to ConditionalRequirements for conda."""
-
     # All build related dependencies go into the build requirements
     build_deps = pkg.buildtool_depends
     # TODO: should the export dependencies be included here?
@@ -270,5 +255,7 @@ def package_xml_to_conda_requirements(
     cond.host = build_requirements
     cond.build = build_requirements
     cond.run = run_requirements
+    if "navigator" == pkg.name:
+        raise Exception(cond)
 
     return cond

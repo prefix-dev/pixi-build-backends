@@ -21,7 +21,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -45,7 +45,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -58,7 +58,7 @@
     - rich >=10.0
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -99,7 +99,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -123,7 +123,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -135,7 +135,7 @@
     run:
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -176,7 +176,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -200,7 +200,7 @@
     - xorg-libxext
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio <10.0.0
@@ -212,7 +212,7 @@
     run:
     - ros-noetic-ros-package <=2.0.0
     - ros-noetic-ros-package-msgs <=2.0.0
-    - ros_package2 <2.0.0a0
+    - ros-noetic-ros-package2 <2.0.0a0
     - qt-main >=5.15.0,<5.16.0
     - tinyxml2 ==10.0.0
     - asio >=9.0,<10.0.0,<10.0.0,<10.0.0

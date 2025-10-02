@@ -11,7 +11,7 @@ from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.platform import Platform
 from pixi_build_ros.distro import Distro
 from rattler import Version
-from .config import PackageMapEntry, PackageMappingSource, ROSBackendConfig
+from .config import PackageMapEntry, PackageMappingSource
 
 
 @dataclasses.dataclass
@@ -260,7 +260,5 @@ def package_xml_to_conda_requirements(
     cond.host = build_requirements
     cond.build = build_requirements
     cond.run = run_requirements
-    if "navigator" == pkg.name:
-        raise Exception(cond)
 
     return cond

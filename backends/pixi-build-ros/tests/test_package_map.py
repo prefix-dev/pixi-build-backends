@@ -20,7 +20,7 @@ def test_package_loading(test_data_dir: Path):
         ]
     )
     assert "new_package" in result
-    assert result["new_package"]["conda"] == ["new-package"], "Should be added"
+    assert result["new_package"]["conda"] == "new-package", "Should be added"
     assert result["alsa-oss"]["conda"] == ["other-alsa-oss"], "Should be overwritten"
     assert "robostack" not in result["alsa-oss"], "Should be overwritten due to priority of package maps"
     assert "zlib" in result, "Should still be present"

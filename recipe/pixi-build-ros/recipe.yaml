@@ -19,6 +19,7 @@ requirements:
     - python >=3.9
     - rosdistro
     - catkin_pkg
+    - pydantic
     - pyyaml
     - py-rattler
     - typing-extensions

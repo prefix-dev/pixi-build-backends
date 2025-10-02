@@ -38,8 +38,8 @@ def test_package_loading_with_inline_mappings(test_data_dir: Path, distro_noetic
         "distro": distro_noetic,
         "noarch": False,
         "extra-package-mappings": [
-            {"file": str(test_data_dir / "other_package_map.yaml")},
-            {"mapping": inline_entries},
+            "other_package_map.yaml",
+            inline_entries,
             robostack_file,
         ],
     }
@@ -112,12 +112,8 @@ def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_d
             "distro": distro_noetic,
             "noarch": False,
             "extra-package-mappings": [
-                {
-                    "mapping": {
-                        "ros_package": {"ros": ["ros-custom2", "ros-custom2-msgs"]},
-                    }
-                },
-                {"file": str(test_data_dir / "other_package_map.yaml")},
+                {"ros_package": {"ros": ["ros-custom2", "ros-custom2-msgs"]}},
+                str(test_data_dir / "other_package_map.yaml"),
             ],
         }
 

@@ -200,9 +200,16 @@ These mappings are used to extend the usage of the dependencies in the `package.
 ```toml title="pixi.toml"
 [package.build.config]
 extra-package-mappings = [
-    { "mapping" = { "ros-custom" = { ros =  ["ros-custom-msgs"] }}},
-    { "file" = "mapping.yml" }
+    {"ros-custom" = { ros =  ["ros-custom-msgs"] }},
+    "mapping.yml"
 ]
+```
+
+Or using a toml array of tables:
+
+```toml title="pixi.toml"
+[[package.build.config.extra-package-mappings]]
+custom_msgs = { ros = ["custom-messages"] }
 ```
 
 Or you can use a file directly in the list:
@@ -220,7 +227,7 @@ package_name:  # The name of the package in the package.xml
 package_name2: # The name of the package in the package.xml
   conda: [package1, package2] # Maps to a list of conda packages
 ros_package:   # The name of the package in the package.xml
-  ros: ros_package # Maps to a ros style package name, e.g. `ros-<distro>-ros-package` 
+  ros: ros_package # Maps to a RoboStack style package name, e.g. `ros-<distro>-ros-package` 
 ```
 
 

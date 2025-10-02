@@ -41,10 +41,6 @@ fmt-ruff = "ruff format src tests"
 fmt = { depends-on = ["fmt-pyupgrade", "fmt-ruff"] }
 
 ## Package section
-[package]
-name = "pixi-build-ros"
-version = "0.2.0"
-
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"

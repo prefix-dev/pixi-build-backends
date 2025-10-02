@@ -1,4 +1,5 @@
 from pathlib import Path
+import pytest
 
 from pixi_build_ros.metadata_provider import (
     PackageXmlMetadataProvider,
@@ -28,3 +29,15 @@ def test_ros_metadata_provider(package_xmls: Path):
     assert metadata_provider.description() == "Demo"
     assert metadata_provider.homepage() == "https://test.io/custom_ros"
     assert metadata_provider.repository() == "https://github.com/test/custom_ros"
+
+
+def test_metadata_provider_raises_on_broken_xml(package_xmls: Path):
+    """Test that metadata provider raises an error when parsing broken XML."""
+    broken_xml_path = package_xmls / "broken.xml"
+
+    with pytest.raises(RuntimeError) as exc_info:
+        ROSPackageXmlMetadataProvider(str(broken_xml_path), distro_name="noetic")
+
+    # Verify the exception contains location information
+    error = exc_info.value
+    assert "Failed to parse package.xml" in str(error)

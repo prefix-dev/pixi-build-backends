@@ -219,11 +219,14 @@ For ROS1 packages using catkin build system:
 
 ## Dependency Mapping
 
-The backend automatically maps ROS dependencies to conda packages using the RoboStack project mappings. Dependencies in `package.xml` are converted as follows:
+The backend automatically maps ROS dependencies to conda packages using the RoboStack project mappings.
+Dependencies in `package.xml` are converted as follows:
 
-- **ROS packages**: Mapped to `ros-<distro>-<package-name>` format
-- **Known dependencies**: Mapped using the `robostack.yaml` configuration file.
-- **Unknown dependencies**: Passed through as-is.
+- **Known dependencies**: Mapped using the [`robostack.yaml`](https://github.com/prefix-dev/pixi-build-backends/blob/a1a568d6c1e028f1b141517eea30ba5aa9aa8206/backends/pixi-build-ros/robostack.yaml) or custom configuration file.
+  - `liborocos-kdl` is mapped to `orocos-kdl`
+  - `python3-flask` is mapped to `flask`
+- **Other packages**: Mapped to `ros-<distro>-<package-name>` format
+
 
 Example dependency mapping:
 

@@ -254,7 +254,6 @@ impl GenerateRecipe for PyGenerateRecipe {
     ) -> miette::Result<BTreeSet<String>> {
         Python::attach(|py| {
             let workdir = workdir.as_ref();
-            let editable = editable;
 
             // we don't pass the wrapper but the python inner model directly
             let py_object = config.model.clone();

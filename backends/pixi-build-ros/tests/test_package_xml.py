@@ -2,6 +2,8 @@ import json
 import tempfile
 from pathlib import Path
 
+from catkin_pkg.package import Dependency
+
 import pytest
 from pixi_build_backend.types.intermediate_recipe import Script
 
@@ -10,7 +12,7 @@ from pixi_build_ros.ros_generator import ROSGenerator
 from pixi_build_ros.utils import (
     convert_package_xml_to_catkin_package,
     package_xml_to_conda_requirements,
-    rosdep_to_conda_package_name,
+    rosdep_to_conda_package_spec,
     PackageMapEntry,
 )
 from pixi_build_backend.types.platform import Platform
@@ -197,7 +199,7 @@ def test_robostack_target_platform_linux(package_map: dict[str, PackageMapEntry]
     linux_platform = Platform("linux-64")
 
     # Test packages with platform-specific mappings
-    acl_packages = rosdep_to_conda_package_name("acl", distro, linux_platform, package_map)
+    acl_packages = rosdep_to_conda_package_spec(Dependency(name="acl"), distro, linux_platform, package_map)
     assert acl_packages == ["libacl"], f"Expected ['libacl'] for acl on Linux, got {acl_packages}"
 
 
@@ -207,7 +209,7 @@ def test_robostack_target_platform_osx(package_map: dict[str, PackageMapEntry], 
     osx_platform = Platform("osx-64")
 
     # Test packages with platform-specific mappings
-    acl_packages = rosdep_to_conda_package_name("acl", distro, osx_platform, package_map)
+    acl_packages = rosdep_to_conda_package_spec(Dependency(name="acl"), distro, osx_platform, package_map)
     assert acl_packages == [], f"Expected [] for acl on macOS, got {acl_packages}"
 
 
@@ -217,7 +219,7 @@ def test_robostack_target_platform_windows(package_map: dict[str, PackageMapEntr
     win_platform = Platform("win-64")
 
     # Test packages with platform-specific mappings
-    binutils_packages = rosdep_to_conda_package_name("binutils", distro, win_platform, package_map)
+    binutils_packages = rosdep_to_conda_package_spec(Dependency(name="binutils"), distro, win_platform, package_map)
     assert binutils_packages == [], f"Expected [] for binutils on Windows, got {binutils_packages}"
 
 
@@ -228,9 +230,9 @@ def test_robostack_target_platform_cross_platform(package_map: dict[str, Package
     win_platform = Platform("win-64")
 
     # libudev-dev has different packages for each platform
-    linux_udev = rosdep_to_conda_package_name("libudev-dev", distro, linux_platform, package_map)
-    osx_udev = rosdep_to_conda_package_name("libudev-dev", distro, osx_platform, package_map)
-    win_udev = rosdep_to_conda_package_name("libudev-dev", distro, win_platform, package_map)
+    linux_udev = rosdep_to_conda_package_spec(Dependency(name="libudev-dev"), distro, linux_platform, package_map)
+    osx_udev = rosdep_to_conda_package_spec(Dependency(name="libudev-dev"), distro, osx_platform, package_map)
+    win_udev = rosdep_to_conda_package_spec(Dependency(name="libudev-dev"), distro, win_platform, package_map)
 
     assert linux_udev == [
         "libusb",
@@ -240,9 +242,9 @@ def test_robostack_target_platform_cross_platform(package_map: dict[str, Package
     assert win_udev == ["libusb"], f"Expected ['libusb'] for libudev-dev on Windows, got {win_udev}"
 
     # libomp-dev has different OpenMP implementations per platform
-    linux_omp = rosdep_to_conda_package_name("libomp-dev", distro, linux_platform, package_map)
-    osx_omp = rosdep_to_conda_package_name("libomp-dev", distro, osx_platform, package_map)
-    win_omp = rosdep_to_conda_package_name("libomp-dev", distro, win_platform, package_map)
+    linux_omp = rosdep_to_conda_package_spec(Dependency(name="libomp-dev"), distro, linux_platform, package_map)
+    osx_omp = rosdep_to_conda_package_spec(Dependency(name="libomp-dev"), distro, osx_platform, package_map)
+    win_omp = rosdep_to_conda_package_spec(Dependency(name="libomp-dev"), distro, win_platform, package_map)
 
     assert linux_omp == ["libgomp"], f"Expected ['libgomp'] for libomp-dev on Linux, got {linux_omp}"
     assert osx_omp == ["llvm-openmp"], f"Expected ['llvm-openmp'] for libomp-dev on macOS, got {osx_omp}"
@@ -256,9 +258,9 @@ def test_robostack_require_opengl_handling(package_map: dict[str, PackageMapEntr
     win_platform = Platform("win-64")
 
     # opengl package has REQUIRE_OPENGL handling
-    linux_opengl = rosdep_to_conda_package_name("opengl", distro, linux_platform, package_map)
-    osx_opengl = rosdep_to_conda_package_name("opengl", distro, osx_platform, package_map)
-    win_opengl = rosdep_to_conda_package_name("opengl", distro, win_platform, package_map)
+    linux_opengl = rosdep_to_conda_package_spec(Dependency(name="opengl"), distro, linux_platform, package_map)
+    osx_opengl = rosdep_to_conda_package_spec(Dependency(name="opengl"), distro, osx_platform, package_map)
+    win_opengl = rosdep_to_conda_package_spec(Dependency(name="opengl"), distro, win_platform, package_map)
 
     # According to the code, REQUIRE_OPENGL should be replaced with actual packages on Linux
     # and should add xorg packages for linux/osx/unix platforms
@@ -279,12 +281,66 @@ def test_robostack_require_opengl_handling(package_map: dict[str, PackageMapEntr
 def test_spec_with_entry_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test using a specifier string with a package which has already defined one in the package map"""
     with pytest.raises(ValueError) as excinfo:
-        rosdep_to_conda_package_name("xtensor", distro, Platform.current(), package_map, spec_str="==2.0")
+        rosdep_to_conda_package_spec(
+            Dependency(name="xtensor", version_eq="2.0"), distro, Platform.current(), package_map
+        )
     assert "Version specifier can only be used for a package without constraint already present" in str(excinfo)
 
 
 def test_spec_with_multiple_entries_in_map(package_map: dict[str, PackageMapEntry], distro: Distro):
     """Test using a specifier string with a package which has multiple packages defined one in the package map"""
     with pytest.raises(ValueError) as excinfo:
-        rosdep_to_conda_package_name("boost", distro, Platform.current(), package_map, spec_str="==2.0")
+        rosdep_to_conda_package_spec(
+            Dependency(name="boost", version_eq="2.0"), distro, Platform.current(), package_map
+        )
     assert "Version specifier can only be used for one package" in str(excinfo)
+
+
+def test_rosdep_to_conda_package_spec_doesnt_add_matchspec_for_special_rosdeps():
+    distro = Distro("jazzy")
+    host_platform = Platform("linux-64")
+    dep = Dependency(name="ament_cmake", version_eq="1.2.3")
+
+    packages = rosdep_to_conda_package_spec(dep, distro, host_platform, {})
+
+    assert packages == ["ros-jazzy-ament-cmake==1.2.3"]
+
+
+def test_rosdep_to_conda_package_spec_adds_matchspec_for_distro_packages():
+    distro = Distro("jazzy")
+    host_platform = Platform("linux-64")
+    dep = Dependency(name="rclcpp", version_gte="18.0.0", version_lt="20.0.0")
+
+    packages = rosdep_to_conda_package_spec(dep, distro, host_platform, {})
+
+    assert packages == ["ros-jazzy-rclcpp >=18.0.0,<20.0.0"]
+
+
+def test_rosdep_to_conda_package_spec_adds_matchspec_for_ros_package_map_entries():
+    distro = Distro("jazzy")
+    host_platform = Platform("linux-64")
+    package_map: dict[str, PackageMapEntry] = {"custom_ros_dep": {"ros": ["foo_util"]}}
+    dep = Dependency(name="custom_ros_dep", version_gte="3.1")
+
+    packages = rosdep_to_conda_package_spec(dep, distro, host_platform, package_map)
+
+    assert packages == ["ros-jazzy-foo-util >=3.1"]
+
+
+def test_rosdep_to_conda_package_spec_adds_matchspec_for_unknown_dependencies():
+    distro = Distro("jazzy")
+    host_platform = Platform("linux-64")
+    dep = Dependency(name="customlib", version_gt="1.0.0")
+
+    packages = rosdep_to_conda_package_spec(dep, distro, host_platform, {})
+
+    assert packages == ["ros-jazzy-customlib >1.0.0"]
+
+
+def test_rosdep_to_conda_package_spec_exception():
+    distro = Distro("jazzy")
+    host_platform = Platform("linux-64")
+    dep = Dependency(name="rclcpp", version_gt="18.0.0", version_gte="20.0.0")
+
+    with pytest.raises(ValueError, match=".* `>` and `>=`"):
+        rosdep_to_conda_package_spec(dep, distro, host_platform, {})

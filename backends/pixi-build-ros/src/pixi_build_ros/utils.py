@@ -2,6 +2,7 @@ import dataclasses
 import os
 from itertools import chain
 from pathlib import Path
+from typing import Any
 
 from catkin_pkg.package import Package as CatkinPackage, parse_package_string, Dependency
 
@@ -85,14 +86,13 @@ def load_package_map_data(package_map_sources: list[PackageMappingSource]) -> di
     return result
 
 
-def rosdep_to_conda_package_name(
-    dep_name: str,
+def rosdep_to_conda_package_spec(
+    dep: Dependency,
     distro: Distro,
     host_platform: Platform,
     package_map_data: dict[str, PackageMapEntry],
-    spec_str: str = "",
 ) -> list[str]:
-    """Convert a ROS dependency name to a conda package name."""
+    """Convert a ROS dependency name to a conda package spec."""
     if host_platform.is_linux:
         target_platform = "linux"
     elif host_platform.is_windows:
@@ -102,23 +102,25 @@ def rosdep_to_conda_package_name(
     else:
         raise RuntimeError(f"Unsupported platform: {host_platform}")
 
-    if dep_name not in package_map_data:
+    spec_str = rosdep_nameless_matchspec(dep)
+
+    if dep.name not in package_map_data:
         # Package name isn't found in the package map, so we are going to assume it is a ROS package.
-        return [f"ros-{distro.name}-{dep_name.replace('_', '-')}{spec_str or ''}"]
+        return [f"ros-{distro.name}-{dep.name.replace('_', '-')}{spec_str or ''}"]
 
     # Dependency found in package map
 
     # Case 1: It's a custom ROS dependency
-    if "ros" in package_map_data[dep_name]:
-        return [f"ros-{distro.name}-{dep.replace('_', '-')}{spec_str}" for dep in package_map_data[dep_name]["ros"]]
+    if "ros" in package_map_data[dep.name]:
+        return [f"ros-{distro.name}-{dep.replace('_', '-')}{spec_str}" for dep in package_map_data[dep.name]["ros"]]
 
     # Case 2: It's a custom package name
-    elif "conda" in package_map_data[dep_name] or "robostack" in package_map_data[dep_name]:
+    elif "conda" in package_map_data[dep.name] or "robostack" in package_map_data[dep.name]:
         # determine key
-        key = "robostack" if "robostack" in package_map_data[dep_name] else "conda"
+        key = "robostack" if "robostack" in package_map_data[dep.name] else "conda"
 
         # Get the conda packages for the dependency
-        conda_packages = package_map_data[dep_name].get(key, [])
+        conda_packages = package_map_data[dep.name].get(key, [])
 
         if isinstance(conda_packages, dict):
             # TODO: Handle different platforms
@@ -148,61 +150,72 @@ def rosdep_to_conda_package_name(
                 else:
                     raise ValueError(
                         f"Version specifier can only be used for a package without constraint already present, "
-                        f"but found {conda_packages[0]} for {dep_name} "
+                        f"but found {conda_packages[0]} for {dep.name} "
                         f"in the package map."
                     )
             else:
                 raise ValueError(
                     f"Version specifier can only be used for one package, "
-                    f"but found {len(conda_packages)} packages for {dep_name} "
+                    f"but found {len(conda_packages)} packages for {dep.name} "
                     f"in the package map."
                 )
 
         return conda_packages + additional_packages
     else:
-        raise ValueError(f"Unknown package map entry: {dep_name}.")
+        raise ValueError(f"Unknown package map entry: {dep.name}.")
 
 
-def _format_version_constraints_to_string(dependency: Dependency) -> str:
-    """Format the version constraints from a ros package.xml to a string"""
-    for version in [
-        dependency.version_eq,
-        dependency.version_gte,
-        dependency.version_gt,
-        dependency.version_lte,
-        dependency.version_lt,
-    ]:
+def rosdep_nameless_matchspec(dep: Dependency) -> str:
+    """Format the version constraints from a ros package.xml to a nameless matchspec"""
+    right_ineq = [dep.version_lt, dep.version_lte]
+    left_ineq = [dep.version_gt, dep.version_gte]
+    eq = dep.version_eq
+
+    for version in left_ineq + right_ineq + [eq]:
         if version is None:
             continue
         elif version == "":
             raise ValueError(
-                f"Incorrect version specification in package.xml: '{dependency.name}': version is empty string (\"\")"
+                f"Incorrect version specification in package.xml: '{dep.name}': version is empty string (\"\")"
             )
         try:
             # check if we can parse the version
             Version(version)
         except TypeError as e:
             raise ValueError(
-                f"Incorrect version specification in package.xml: '{dependency.name}' at version '{version}' "
+                f"Incorrect version specification in package.xml: '{dep.name}' at version '{version}' "
             ) from e
 
-    if dependency.version_eq:
-        return f" =={dependency.version_eq}"
+    def not_none(p: Any) -> bool:
+        return p is not None
 
-    version_string_list = []
-    if dependency.version_gte:
-        version_string_list.append(f">={dependency.version_gte}")
-    if dependency.version_gt:
-        version_string_list.append(f">{dependency.version_gt}")
-    if dependency.version_lte:
-        version_string_list.append(f"<={dependency.version_lte}")
-    if dependency.version_lt:
-        version_string_list.append(f"<{dependency.version_lt}")
+    if all(map(not_none, right_ineq)):
+        raise ValueError(f"Dependency {dep.name} cannot be specified by both `<` and `<=`")
+    if all(map(not_none, left_ineq)):
+        raise ValueError(f"Dependency {dep.name} cannot be specified by both `>` and `>=`")
 
-    if not version_string_list:
-        return ""
+    some_inequality = any(map(lambda p: p is not None, right_ineq + left_ineq))
+    if eq and some_inequality:
+        raise ValueError(f"Dependency {dep.name} cannot be specified by both `=` and some inequality")
 
-    return " " + ",".join(version_string_list)
+    if eq:
+        return f"=={eq}"
+
+    pair = []
+
+    if dep.version_gt:
+        pair.append(f">{dep.version_gt}")
+    if dep.version_gte:
+        pair.append(f">={dep.version_gte}")
+
+    if dep.version_lt:
+        pair.append(f"<{dep.version_lt}")
+    if dep.version_lte:
+        pair.append(f"<={dep.version_lte}")
+
+    res = ",".join(pair)
+
+    return " " + res if len(pair) > 0 else res
 
 
 def package_xml_to_conda_requirements(
@@ -220,16 +233,12 @@ def package_xml_to_conda_requirements(
     build_deps += pkg.build_export_depends
     # Also add test dependencies, because they might be needed during build (i.e. for pytest/catch2 etc in CMake macros)
     build_deps += pkg.test_depends
-    build_deps = [
-        PackageNameWithSpec(name=d.name, spec=_format_version_constraints_to_string(d))
-        for d in build_deps
-        if d.evaluated_condition
-    ]
+    build_deps = [d for d in build_deps if d.evaluated_condition]
     # Add the ros_workspace dependency as a default build dependency for ros2 packages
     if not distro.check_ros1():
-        build_deps += [PackageNameWithSpec(name="ros_workspace")]
+        build_deps += [Dependency(name="ros_workspace")]
     conda_build_deps_chain = [
-        rosdep_to_conda_package_name(dep.name, distro, host_platform, package_map_data, dep.spec) for dep in build_deps
+        rosdep_to_conda_package_spec(dep, distro, host_platform, package_map_data) for dep in build_deps
     ]
     conda_build_deps = list(chain.from_iterable(conda_build_deps_chain))
 
@@ -237,13 +246,9 @@ def package_xml_to_conda_requirements(
     run_deps += pkg.exec_depends
     run_deps += pkg.build_export_depends
     run_deps += pkg.buildtool_export_depends
-    run_deps = [
-        PackageNameWithSpec(d.name, spec=_format_version_constraints_to_string(d))
-        for d in run_deps
-        if d.evaluated_condition
-    ]
+    run_deps = [d for d in run_deps if d.evaluated_condition]
     conda_run_deps_chain = [
-        rosdep_to_conda_package_name(dep.name, distro, host_platform, package_map_data, dep.spec) for dep in run_deps
+        rosdep_to_conda_package_spec(dep, distro, host_platform, package_map_data) for dep in run_deps
     ]
     conda_run_deps = list(chain.from_iterable(conda_run_deps_chain))
 

@@ -990,7 +990,7 @@ packages:
   - typing-extensions
   - py-pixi-build-backend
   input:
-    hash: d3c5eecbf1fad1894b7efc02f5a041f0417a76c9058714433ad4a6ce15d17d3e
+    hash: 81b7d37ad00b13a306c34f570023ece255d0814ba98ab6e4473961d09bf631df
     globs:
     - pyproject.toml
   sources:

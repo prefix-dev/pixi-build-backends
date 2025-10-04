@@ -34,6 +34,9 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Build backends
         run: pixi run build-ci
+      - name: Build pixi-build-ros conda package
+        run: |
+          pixi build --manifest-path backends/pixi-build-ros/pixi.toml --output-dir "${{ env.TARGET_DIR }}/pixi-build-ros-channel"
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -41,6 +44,7 @@ jobs:
           path: |
             ${{ env.TARGET_DIR }}/pixi-build-*
             !${{ env.TARGET_DIR }}/pixi-build-*.d
+            ${{ env.TARGET_DIR }}/pixi-build-ros-channel/**
           if-no-files-found: error
           retention-days: 60
 
@@ -67,6 +71,11 @@ jobs:
       - name: Build backends
         run: pixi run build-ci
         working-directory: ${{ env.PIXI_WORKSPACE }}
+      - name: Build pixi-build-ros conda package
+        shell: pwsh
+        run: |
+          pixi build --manifest-path backends/pixi-build-ros/pixi.toml --output-dir "${{ env.TARGET_DIR }}/pixi-build-ros-channel"
+        working-directory: ${{ env.PIXI_WORKSPACE }}
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -74,6 +83,7 @@ jobs:
           path: |
             ${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*
             !${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*.d
+            ${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-ros-channel/**
           if-no-files-found: error
           retention-days: 60
 
@@ -93,6 +103,9 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Build backends
         run: pixi run build-ci
+      - name: Build pixi-build-ros conda package
+        run: |
+          pixi build --manifest-path backends/pixi-build-ros/pixi.toml --output-dir "${{ env.TARGET_DIR }}/pixi-build-ros-channel"
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -100,6 +113,7 @@ jobs:
           path: |
             ${{ env.TARGET_DIR }}/pixi-build-*
             !${{ env.TARGET_DIR }}/pixi-build-*.d
+            ${{ env.TARGET_DIR }}/pixi-build-ros-channel/**
           if-no-files-found: error
           retention-days: 60
 

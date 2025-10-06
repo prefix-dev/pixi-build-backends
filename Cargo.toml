@@ -96,8 +96,8 @@ pixi_build_type_conversions = { path = "../pixi-1/crates/pixi_build_type_convers
 #rattler_repodata_gateway = { path = "../rattler/crates/rattler_repodata_gateway" }
 #simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
 
-[patch."https://github.com/prefix-dev/rattler-build"]
-rattler-build = { path = "../rattler-build/" }
+# [patch."https://github.com/prefix-dev/rattler-build"]
+# rattler-build = { path = "../rattler-build/" }
 
 [profile.dev.package]
 insta.opt-level = 3

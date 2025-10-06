@@ -40,7 +40,9 @@ pixi-build-python-output/
 __pycache__/
 *.pyc
 
+# Agents
 *.local*
+AGENTS.md
 
 # Python
 *.pyc

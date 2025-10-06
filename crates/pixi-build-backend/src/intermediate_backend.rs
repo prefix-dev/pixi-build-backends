@@ -38,7 +38,7 @@ use rattler_build::{
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::DependencyInfo,
+    render::resolved_dependencies::{DependencyInfo, RunExportsDownload},
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
@@ -463,7 +463,7 @@ where
             let output = temp_recipe
                 .within_context_async(move || async move {
                     output
-                        .resolve_dependencies(&tool_config)
+                        .resolve_dependencies(&tool_config, RunExportsDownload::DownloadMissing)
                         .await
                         .into_diagnostic()
                 })

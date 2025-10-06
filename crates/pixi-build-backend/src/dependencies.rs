@@ -397,7 +397,7 @@ pub fn apply_variant(
                     let name = &pin.pin_value().name;
                     let subpackage = subpackages
                         .get(name)
-                        .ok_or(ResolveError::SubpackageNotFound(name.to_owned()))?;
+                        .ok_or(ResolveError::PinSubpackageNotFound(name.to_owned()))?;
                     let pinned = pin
                         .pin_value()
                         .apply(&subpackage.version, &subpackage.build_string)?;
@@ -412,7 +412,7 @@ pub fn apply_variant(
                     let name = &pin.pin_value().name;
                     let pin_package = compatibility_specs
                         .get(name)
-                        .ok_or(ResolveError::SubpackageNotFound(name.to_owned()))?;
+                        .ok_or(ResolveError::PinCompatibleNotFound(name.to_owned()))?;
 
                     let pinned = pin
                         .pin_value()

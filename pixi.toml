@@ -23,6 +23,7 @@ test = [
 ]
 generate-matrix = "python scripts/generate-matrix.py"
 
+install-pixi-build-pixi = { cmd = "cargo install --path crates/pixi-build-pixi --locked --force" }
 install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }
 install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build-cmake  --locked --force" }
 install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build-rattler-build --locked --force" }

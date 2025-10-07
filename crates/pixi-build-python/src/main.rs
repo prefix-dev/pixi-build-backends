@@ -219,16 +219,6 @@ impl GenerateRecipe for PythonGenerator {
         editable: bool,
     ) -> miette::Result<BTreeSet<String>> {
         let base_globs = Vec::from([
-            // Source files
-            "**/*.c",
-            "**/*.cpp",
-            "**/*.rs",
-            "**/*.sh",
-            // Common data files
-            "**/*.json",
-            "**/*.yaml",
-            "**/*.yml",
-            "**/*.txt",
             // Project configuration
             "setup.py",
             "setup.cfg",
@@ -238,15 +228,6 @@ impl GenerateRecipe for PythonGenerator {
             "Pipfile.lock",
             "poetry.lock",
             "tox.ini",
-            // Build configuration
-            "Makefile",
-            "MANIFEST.in",
-            "tests/**/*.py",
-            "docs/**/*.rst",
-            "docs/**/*.md",
-            // Versioning
-            "VERSION",
-            "version.py",
         ]);
 
         let python_globs = if editable {

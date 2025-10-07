@@ -40,3 +40,10 @@ def test_specs_with_spaces():
     with pytest.raises(ValueError) as exc:
         merge_unique_items(list1, list2)
     assert "contains spaces" in str(exc)
+
+
+def test_specs_with_none():
+    list1 = [ItemPackageDependency("ros-noetic")]
+    list2 = [ItemPackageDependency("ros-noetic <=2.0,<3.0")]
+    result = merge_unique_items(list1, list2)
+    assert result[0].concrete.binary_spec == list2[0].concrete.binary_spec

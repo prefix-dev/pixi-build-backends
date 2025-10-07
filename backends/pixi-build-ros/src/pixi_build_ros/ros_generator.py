@@ -108,6 +108,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         package_requirements.run.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
 
         # Merge package requirements into the model requirements
+        # raise ValueError(f"model: {generated_recipe.recipe.requirements}, package_requirements: {package_requirements}")
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
         generated_recipe.recipe.requirements = requirements
 
@@ -172,6 +173,8 @@ def merge_unique_items(
 ) -> list[ItemPackageDependency]:
     """Merge unique items from source into target."""
 
+    # raise ValueError(f"model: {model}, package: {package}")
+
     def _find_matching(list_to_find: list[ItemPackageDependency], name: str) -> ItemPackageDependency | None:
         for dep in list_to_find:
             if dep.concrete.package_name == name:
@@ -179,10 +182,16 @@ def merge_unique_items(
         else:
             return None
 
-    def _merge_specs(spec1: str, spec2: str, package_name: str) -> str:
+    def _normalize_spec(spec: str | None, package_name: str) -> str:
+        """Normalize a spec by removing package name and handling None."""
+        if not spec:
+            return ""
+        return spec.removeprefix(package_name).strip()
+
+    def _merge_specs(spec1: str | None, spec2: str | None, package_name: str) -> str:
         # remove the package name
-        version_spec1 = spec1.removeprefix(package_name).strip()
-        version_spec2 = spec2.removeprefix(package_name).strip()
+        version_spec1 = _normalize_spec(spec1, package_name)
+        version_spec2 = _normalize_spec(spec2, package_name)
 
         if " " in version_spec1 or " " in version_spec2:
             raise ValueError(f"{version_spec1}, or {version_spec2} contains spaces, cannot merge specifiers.")
@@ -202,6 +211,13 @@ def merge_unique_items(
             # It does not exist yet in model
             item_in_result = _find_matching(result, item.concrete.package_name)
             if not item_in_result:
+                result.append(item)
+            elif item_in_result.concrete.is_source:
+                # If existing dependency is source, don't merge - keep the source one
+                continue
+            elif item.concrete.is_source:
+                # If new item is source, replace the existing one
+                result = [dep for dep in result if dep.concrete.package_name != item.concrete.package_name]
                 result.append(item)
             else:
                 new_dep = ItemPackageDependency(

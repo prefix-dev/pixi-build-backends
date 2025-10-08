@@ -198,9 +198,9 @@ def merge_unique_items(
 
         # early out with *, empty or ==
         if version_spec1 in ["*", ""] or "==" in version_spec2 or version_spec1 == version_spec2:
-            return spec2
+            return spec2 or ""
         if version_spec2 in ["*", ""] or "==" in version_spec1:
-            return spec1
+            return spec1 or ""
         return package_name + " " + ",".join([version_spec1, version_spec2])
 
     result: list[ItemPackageDependency] = []

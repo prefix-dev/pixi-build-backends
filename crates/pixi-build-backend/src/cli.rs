@@ -287,7 +287,7 @@ async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> mie
         eprintln!("Successfully build '{}'", package.output_file.display());
         eprintln!("Use following globs to revalidate: ");
         for glob in package.input_globs {
-            eprintln!("  - {}", glob);
+            eprintln!("  - {glob}");
         }
     }
 

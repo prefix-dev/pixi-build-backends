@@ -27,7 +27,7 @@ impl Display for Language<'_> {
             Language::Cxx => write!(f, "cxx"),
             Language::Fortran => write!(f, "fortran"),
             Language::Rust => write!(f, "rust"),
-            Language::Other(name) => write!(f, "{}", name),
+            Language::Other(name) => write!(f, "{name}"),
         }
     }
 }
@@ -116,7 +116,7 @@ pub fn add_compilers_to_requirements(
 
         if !resolved_build_requirements.contains_key(&PackageName::new_unchecked(language_compiler))
         {
-            let template = format!("${{{{ compiler('{}') }}}}", compiler_str);
+            let template = format!("${{{{ compiler('{compiler_str}') }}}}");
             requirements.push(Item::Value(Value::Template(template)));
         }
     }
@@ -151,7 +151,7 @@ pub fn add_stdlib_to_requirements(
         }
 
         // If the stdlib key exists, add it to the requirements
-        let template = format!("${{{{ stdlib('{}') }}}}", stdlib);
+        let template = format!("${{{{ stdlib('{stdlib}') }}}}");
         requirements.push(Item::Value(Value::Template(template)));
     }
 }

@@ -5,15 +5,18 @@ setlocal EnableDelayedExpansion
 :: Rattler-build will not set the SRC_DIR anymore so we set it through templating
 set "SRC_DIR=@SRC_DIR@"
 
+set "BUILD_DIR=@BUILD_DIR@"
+set "BUILD_TYPE=@BUILD_TYPE@"
+
 set "PYTHONPATH=%LIBRARY_PREFIX%\lib\site-packages;%SP_DIR%"
 
 :: MSVC is preferred.
 set CC=cl.exe
 set CXX=cl.exe
 
-rd /s /q build
-mkdir build
-pushd build
+:: Create build directory when not available
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+pushd %BUILD_DIR%
 
 :: set "CMAKE_GENERATOR=Ninja"
 :: We use the Visual Studio generator as a workaround for
@@ -35,7 +38,7 @@ FOR /F "tokens=* USEBACKQ" %%i IN (`python -c "import os;print(os.path.relpath(o
 cmake ^
     -G "%CMAKE_GENERATOR%" ^
     -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
-    -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
     -DCMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP=True ^
     -DPYTHON_EXECUTABLE=%PYTHON% ^
     -DPython_EXECUTABLE=%PYTHON% ^

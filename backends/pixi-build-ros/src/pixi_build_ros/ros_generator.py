@@ -47,7 +47,11 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         )
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
-        metadata_provider = ROSPackageXmlMetadataProvider(str(package_xml_path), backend_config.distro.name)
+        metadata_provider = ROSPackageXmlMetadataProvider(
+            str(package_xml_path),
+            backend_config.distro.name,
+            extra_input_globs=list(backend_config.extra_input_globs or []),
+        )
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
@@ -141,8 +145,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
     def extract_input_globs_from_build(self, config: dict[str, Any], workdir: Path, editable: bool) -> list[str]:
         """Extract input globs for the build."""
-        ros_config = ROSBackendConfig.model_validate(config)
-        return get_build_input_globs(ros_config, editable)
+        return get_build_input_globs(config, editable)
 
     def default_variants(self, host_platform: Platform) -> dict[str, Any]:
         """Get the default variants for the generator."""

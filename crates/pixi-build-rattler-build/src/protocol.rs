@@ -1558,8 +1558,7 @@ mod tests {
         for extra_glob in &extra_globs {
             assert!(
                 globs.contains(extra_glob),
-                "Result should contain extra glob: {}",
-                extra_glob
+                "Result should contain extra glob: {extra_glob}"
             );
         }
 

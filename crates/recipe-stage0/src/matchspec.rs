@@ -134,7 +134,7 @@ impl PackageDependency {
 impl Display for PackageDependency {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PackageDependency::Binary(spec) => write!(f, "{}", spec),
+            PackageDependency::Binary(spec) => write!(f, "{spec}"),
             PackageDependency::Source(source_spec) => {
                 let matchspec = SerializableMatchSpec::from(source_spec.spec.clone());
                 write!(f, "Source(spec: {}, {})", matchspec, source_spec.location)

@@ -19,13 +19,15 @@ requirements:
     - python >=3.9
     - rosdistro
     - catkin_pkg
+    - pydantic
     - pyyaml
+    - py-rattler
     - typing-extensions
     - py-pixi-build-backend
     - pixi-build-api-version >=2,<3
 
 build:
-  number: 1
+  number: 0
   script:
     - pip install . -vv --no-build-isolation
   noarch: python

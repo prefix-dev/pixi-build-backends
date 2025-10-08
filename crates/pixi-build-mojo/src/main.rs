@@ -439,7 +439,7 @@ mod tests {
         // Check for mojo-compiler package (should be present)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(has_mojo_compiler, "Should have mojo-compiler package");
 
         // Check for additional compiler templates
@@ -517,7 +517,7 @@ mod tests {
         // Check for mojo-compiler package (should be present by default)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(
             has_mojo_compiler,
             "Should have mojo-compiler package by default"
@@ -582,7 +582,7 @@ mod tests {
         // Check for mojo-compiler package (should NOT be present)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(
             !has_mojo_compiler,
             "Should NOT have mojo-compiler package when user opts out"

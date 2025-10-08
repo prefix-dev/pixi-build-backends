@@ -38,7 +38,7 @@ jobs:
       - name: Run clippy
         run: |
           cd py-pixi-build-backend
-          pixi run -e ci lint-rust
+          pixi run -e ci lint
       - name: Run tests
         run: |
           cd py-pixi-build-backend

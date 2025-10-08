@@ -105,8 +105,6 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         """Parse additional package mappings if set."""
         if input_value is None:
             return []
-
-        base_path = Path(os.getcwd())
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
 

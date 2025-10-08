@@ -24,8 +24,8 @@ pub enum Value<T> {
 impl<T: Display> Display for Value<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Concrete(val) => write!(f, "{}", val),
-            Value::Template(template) => write!(f, "{}", template),
+            Value::Concrete(val) => write!(f, "{val}"),
+            Value::Template(template) => write!(f, "{template}"),
         }
     }
 }
@@ -83,8 +83,8 @@ impl<T> Item<T> {
 impl<T: Display> Display for Item<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Item::Value(value) => write!(f, "{}", value),
-            Item::Conditional(cond) => write!(f, "{}", cond),
+            Item::Value(value) => write!(f, "{value}"),
+            Item::Conditional(cond) => write!(f, "{cond}"),
         }
     }
 }
@@ -104,8 +104,8 @@ impl<T: PartialEq> PartialEq for Item<T> {
 impl<T: Debug> Debug for Item<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Item::Value(value) => write!(f, "Value({:?})", value),
-            Item::Conditional(cond) => write!(f, "Conditional({:?})", cond),
+            Item::Value(value) => write!(f, "Value({value:?})"),
+            Item::Conditional(cond) => write!(f, "Conditional({cond:?})"),
         }
     }
 }
@@ -525,7 +525,7 @@ impl Python {
 impl Display for Python {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for entry_point in &self.entry_points {
-            write!(f, "{}, ", entry_point)?;
+            write!(f, "{entry_point}, ")?;
         }
         Ok(())
     }

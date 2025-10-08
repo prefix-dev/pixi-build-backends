@@ -395,10 +395,7 @@ mod tests {
                 // This is expected when workspace inheritance fails due to
                 // missing workspace
             }
-            _ => panic!(
-                "Expected MissingInheritedValue or CargoTomlError, got: {:?}",
-                error
-            ),
+            _ => panic!("Expected MissingInheritedValue or CargoTomlError, got: {error:?}"),
         }
     }
 
@@ -417,10 +414,7 @@ mod tests {
                 // This is expected when workspace inheritance fails due to
                 // missing workspace
             }
-            _ => panic!(
-                "Expected MissingInheritedValue or CargoTomlError, got: {:?}",
-                error
-            ),
+            _ => panic!("Expected MissingInheritedValue or CargoTomlError, got: {error:?}"),
         }
     }
 
@@ -672,8 +666,7 @@ version.workspace = true
         assert_eq!(
             globs.len(),
             1,
-            "Expected only Cargo.toml glob when workspace is in same file, got: {:?}",
-            globs
+            "Expected only Cargo.toml glob when workspace is in same file, got: {globs:?}"
         );
     }
 
@@ -723,8 +716,7 @@ description.workspace = true
         // is detected
         assert!(
             globs.len() >= 2,
-            "Expected at least 2 globs when workspace is in separate file, got: {:?}",
-            globs
+            "Expected at least 2 globs when workspace is in separate file, got: {globs:?}"
         );
 
         // Check that a workspace-related glob pattern is included
@@ -733,8 +725,7 @@ description.workspace = true
             .any(|glob| glob.contains("../Cargo.toml") && glob != "Cargo.toml");
         assert!(
             has_workspace_glob,
-            "Expected workspace glob pattern, got: {:?}",
-            globs
+            "Expected workspace glob pattern, got: {globs:?}"
         );
     }
 
@@ -756,8 +747,7 @@ version = "1.0.0"
         assert_eq!(
             globs.len(),
             1,
-            "Expected exactly 1 glob when no workspace is present, got: {:?}",
-            globs
+            "Expected exactly 1 glob when no workspace is present, got: {globs:?}"
         );
         assert!(globs.contains("Cargo.toml"));
 
@@ -767,8 +757,7 @@ version = "1.0.0"
             .any(|glob| glob.contains("**/Cargo.toml") && glob != "Cargo.toml");
         assert!(
             !has_workspace_glob,
-            "No workspace globs should be present when no workspace inheritance occurs, got: {:?}",
-            globs
+            "No workspace globs should be present when no workspace inheritance occurs, got: {globs:?}"
         );
     }
 
@@ -804,8 +793,7 @@ description = "Direct package values"
         assert_eq!(
             globs.len(),
             1,
-            "Expected exactly 1 glob when workspace exists but no inheritance is used, got: {:?}",
-            globs
+            "Expected exactly 1 glob when workspace exists but no inheritance is used, got: {globs:?}"
         );
         assert!(globs.contains("Cargo.toml"));
     }
@@ -857,7 +845,7 @@ version = "not.a.valid.version.at.all"
             Err(MetadataError::ParseVersionError(_)) => {
                 // This is the expected error case
             }
-            other => panic!("Unexpected result: {:?}", other),
+            other => panic!("Unexpected result: {other:?}"),
         }
     }
 
@@ -876,7 +864,7 @@ version = "1.0.0"
         assert!(result.is_err());
         match result.unwrap_err() {
             MetadataError::CargoTomlError(_) => {}
-            err => panic!("Expected CargoTomlError, got: {:?}", err),
+            err => panic!("Expected CargoTomlError, got: {err:?}"),
         }
     }
 }

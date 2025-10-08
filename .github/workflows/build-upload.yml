@@ -7,6 +7,8 @@ on:
       - "pixi-build-rattler-build-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-rust-v[0-9]+.[0-9]+.[0-9]+"
       - "pixi-build-mojo-v[0-9]+.[0-9]+.[0-9]+"
+      - "pixi-build-ros-v[0-9]+.[0-9]+.[0-9]+"
+      - "py-pixi-build-backend-v[0-9]+.[0-9]+.[0-9]+"
   pull_request:
     paths:
       - .github/workflows/build-upload.yml
@@ -46,9 +48,12 @@ jobs:
         run: |
           # extract names and versions from cargo metadata
           # and generate a matrix entries for the build job
+          echo "Package name input: '${{ github.event.inputs.package_name }}'"
           if [ -n "${{ github.event.inputs.package_name }}" ]; then
+            echo "Building specific package: ${{ github.event.inputs.package_name }}"
             MATRIX_JSON=$(pixi run generate-matrix --package "${{ github.event.inputs.package_name }}")
           else
+            echo "Building all packages"
             MATRIX_JSON=$(pixi run generate-matrix)
           fi
 

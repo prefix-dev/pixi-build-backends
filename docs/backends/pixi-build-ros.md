@@ -104,13 +104,23 @@ It would be equivalent to the following `pixi.toml`:
 name = "my_ros_package"
 version = "1.0.0"
 description = "A useful ROS package for navigation"
-maintainers = ["John Doe <developer@@example.com"]
+maintainers = ["John Doe <developer@example.com"]
 homepage = "https://github.com/user/my_ros_package"
 repository = "https://github.com/user/my_ros_package"
 ```
 
 The backend will automatically use the metadata from `package.xml` to generate a complete conda package named `ros-jazzy-my-ros-package`.
 The fields in the `pixi.toml` will override the values from `package.xml` if they are explicitly set.
+
+### Automatic Dependency Resolution
+
+Because the definition of a dependency in a `package.xml` file is not similar to a conda package name, the backend needs to map ROS dependencies to conda packages.
+
+- **Known dependencies**: Mapped using the [`robostack.yaml`](https://github.com/prefix-dev/pixi-build-backends/blob/main/backends/pixi-build-ros/robostack.yaml).
+- **Custom mappings**: You can provide additional mappings in your `pixi.toml` under [`[package.build.config.extra-package-mappings]`](#extra-package-mappings)
+- **Other packages**: Mapped to `ros-<distro>-<package-name>` format.
+
+The `<distro>` part of the package name is automatically generated based on the `distro` configuration.
 
 ## Configuration Options
 
@@ -151,7 +161,7 @@ env = { ROS_VERSION = "2", AMENT_CMAKE_ENVIRONMENT_HOOKS_ENABLED = "1" }
 
 If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
 
-```toml
+```toml title="pixi.toml"
 [package.build.config]
 debug-dir = ".build-debug"
 ```
@@ -164,7 +174,7 @@ debug-dir = ".build-debug"
 
 Additional glob patterns to include as input files for the build process. These patterns are added to the default input globs that include ROS-specific files.
 
-```toml
+```toml title="pixi.toml"
 [package.build.config]
 extra-input-globs = [
     "launch/**/*.py",
@@ -178,6 +188,48 @@ Default input globs include:
 - Source files: `**/*.{c,cpp,h,hpp,rs,sh,py,pyx}`
 - ROS configuration: `package.xml`, `setup.py`, `setup.cfg`, `pyproject.toml`
 - Build files: `CMakeLists.txt`
+
+### `extra-package-mappings`
+
+- **Type**: `List<Map<String, Map<String, List<String> | RelativeFileName>>>`
+- **Default**: `[]`
+
+Additional dependency mappings to apply to the dependency mapping process.
+These mappings are used to extend the usage of the dependencies in the `package.xml` file.
+
+```toml title="pixi.toml"
+[package.build.config]
+extra-package-mappings = [
+    {"ros-custom" = { ros =  ["ros-custom-msgs"] }},
+    "mapping.yml"
+]
+```
+
+Or using a toml array of tables:
+
+```toml title="pixi.toml"
+[[package.build.config.extra-package-mappings]]
+custom_msgs = { ros = ["custom-messages"] }
+```
+
+Or you can use a file directly in the list:
+
+```toml title="pixi.toml"
+[package.build.config]
+extra-package-mappings = ["mapping.yml"]
+```
+
+The mapping file can contain the following:
+
+```yaml title="mapping.yml"
+package_name:  # The name of the package in the package.xml
+  conda: conda-package-name # Maps to a conda package, e.g. from `conda-forge`
+package_name2: # The name of the package in the package.xml
+  conda: [package1, package2] # Maps to a list of conda packages
+ros_package:   # The name of the package in the package.xml
+  ros: ros_package # Maps to a RoboStack style package name, e.g. `ros-<distro>-ros-package` 
+```
+
 
 ## Build Process
 
@@ -216,20 +268,6 @@ For ROS1 packages using catkin build system:
   <build_type>catkin</build_type>
 </export>
 ```
-
-## Dependency Mapping
-
-The backend automatically maps ROS dependencies to conda packages using the RoboStack project mappings. Dependencies in `package.xml` are converted as follows:
-
-- **ROS packages**: Mapped to `ros-<distro>-<package-name>` format
-- **Known dependencies**: Mapped using the `robostack.yaml` configuration file.
-- **Unknown dependencies**: Passed through as-is.
-
-Example dependency mapping:
-
-- `ament_cmake` → `ros-jazzy-ament-cmake`
-- `std_msgs` → `ros-jazzy-std-msgs`
-- `opencv2` → `libopencv` (via `robostack.yaml` mapping)
 
 ## Limitations
 

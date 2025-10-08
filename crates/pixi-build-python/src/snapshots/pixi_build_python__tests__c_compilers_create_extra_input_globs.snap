@@ -6,9 +6,9 @@ Ok(
     {
         "**/*.py",
         "**/*.pyx",
+        "**/*.{c,h}",
         "Pipfile",
         "Pipfile.lock",
-        "custom/*.py",
         "poetry.lock",
         "pyproject.toml",
         "requirements*.txt",

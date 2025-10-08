@@ -444,10 +444,7 @@ version = "not.a.valid.version.at.all"
             Err(MetadataError::PyProjectToml(_)) => {
                 // This is expected - invalid version in pyproject.toml
             }
-            other => panic!(
-                "Expected PyProjectTomlError for invalid version, got: {:?}",
-                other
-            ),
+            other => panic!("Expected PyProjectTomlError for invalid version, got: {other:?}"),
         }
     }
 
@@ -466,7 +463,7 @@ version = "1.0.0"
         assert!(result.is_err());
         match result.unwrap_err() {
             MetadataError::PyProjectToml(_) => {}
-            err => panic!("Expected PyProjectToml, got: {:?}", err),
+            err => panic!("Expected PyProjectToml, got: {err:?}"),
         }
     }
 
@@ -626,13 +623,11 @@ requires-python = ">=3.13"
 
         assert!(
             has_python_constraint_host,
-            "Host requirements should include 'python >=3.13', found: {:?}",
-            host_requirements
+            "Host requirements should include 'python >=3.13', found: {host_requirements:?}"
         );
         assert!(
             has_python_constraint_run,
-            "Run requirements should include 'python >=3.13', found: {:?}",
-            run_requirements
+            "Run requirements should include 'python >=3.13', found: {run_requirements:?}"
         );
     }
 }

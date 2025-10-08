@@ -105,6 +105,7 @@ async fn test_conda_get_metadata() {
         channel_base_urls: Some(channel_base_urls),
         channel_configuration,
         variant_configuration: None,
+        variant_files: None,
         work_directory: build_dir,
     };
 
@@ -167,6 +168,7 @@ async fn test_conda_build() {
         channel_configuration,
         outputs: None,
         variant_configuration: None,
+        variant_files: None,
         work_directory: build_dir.clone(),
         editable: false,
     };

@@ -372,6 +372,7 @@ mod tests {
                 host_platform: Platform::Win64,
                 build_platform: Platform::Win64,
                 variant_configuration: None,
+                variant_files: None,
                 work_directory: current_dir,
             })
             .await

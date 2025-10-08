@@ -229,6 +229,17 @@ impl GenerateRecipe for PythonGenerator {
             "poetry.lock",
             "tox.ini",
         ]);
+        let compiler_based_globs: Vec<&str> = config
+            .compilers
+            .iter()
+            .flatten()
+            .flat_map(|c| match c.as_str() {
+                "rust" => vec!["**/*.rs", "**/Cargo.toml"],
+                "cxx" => vec!["**/*.{cc,cxx,cpp,hpp,hxx}"],
+                "c" => vec!["**/*.{c,h}"],
+                _ => vec![],
+            })
+            .collect();
 
         let python_globs = if editable {
             Vec::new()
@@ -239,6 +250,7 @@ impl GenerateRecipe for PythonGenerator {
         Ok(base_globs
             .iter()
             .chain(python_globs.iter())
+            .chain(compiler_based_globs.iter())
             .map(|s| s.to_string())
             .chain(config.extra_input_globs.clone())
             .collect())
@@ -621,5 +633,41 @@ mod tests {
             recipe.recipe.build.noarch.is_none(),
             "explicit noarch=false should override absence of compilers"
         );
+    }
+
+    #[test]
+    fn test_c_compilers_create_extra_input_globs() {
+        let config = PythonBackendConfig {
+            compilers: Some(vec!["c".to_string()]),
+            ignore_pyproject_manifest: Some(true),
+            ..Default::default()
+        };
+        let generator = PythonGenerator::default();
+        let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_cxx_compilers_create_extra_input_globs() {
+        let config = PythonBackendConfig {
+            compilers: Some(vec!["cxx".to_string()]),
+            ignore_pyproject_manifest: Some(true),
+            ..Default::default()
+        };
+        let generator = PythonGenerator::default();
+        let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_rust_compilers_create_extra_input_globs() {
+        let config = PythonBackendConfig {
+            compilers: Some(vec!["rust".to_string()]),
+            ignore_pyproject_manifest: Some(true),
+            ..Default::default()
+        };
+        let generator = PythonGenerator::default();
+        let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
+        insta::assert_debug_snapshot!(result);
     }
 }

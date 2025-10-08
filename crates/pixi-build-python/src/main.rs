@@ -105,7 +105,7 @@ impl GenerateRecipe for PythonGenerator {
         // Helper function to get Python requirement spec
         let get_python_requirement = || -> miette::Result<recipe::Item<PackageDependency>> {
             let python_requirement_str = match pyproject_metadata_provider.requires_python() {
-                Ok(Some(requires_python)) => format!("python {}", requires_python),
+                Ok(Some(requires_python)) => format!("python {requires_python}"),
                 _ => "python".to_string(),
             };
             python_requirement_str.parse().into_diagnostic()

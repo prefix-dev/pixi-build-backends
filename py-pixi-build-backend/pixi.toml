@@ -32,7 +32,7 @@ PIP_REQUIRE_VIRTUALENV = "false"
 python = "*"
 maturin = "~=1.9.3"
 pip = "~=25.2.0"
-rust = "~=1.87.0"
+rust = "~=1.88.0"
 
 [feature.build.target.linux-64.dependencies]
 patchelf = "~=0.18.0"
@@ -53,7 +53,7 @@ ruff = ">=0.13,<0.14"
 
 [feature.dev.dependencies]
 # Development tools (IDE support)
-rust-src = "~=1.87.0"
+rust-src = "~=1.88.0"
 
 [tasks]
 build = "maturin develop"

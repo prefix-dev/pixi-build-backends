@@ -88,7 +88,7 @@ impl PyPackageDependency {
     #[new]
     pub fn new(matchspec: String) -> pyo3::PyResult<Self> {
         let spec = matchspec.parse::<PackageDependency>().map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {}", e))
+            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {e}"))
         })?;
         Ok(PyPackageDependency { inner: spec })
     }
@@ -152,11 +152,11 @@ impl PySourceMatchSpec {
     #[new]
     pub fn new(spec: String, location: String) -> pyo3::PyResult<Self> {
         let matchspec = spec.parse::<MatchSpec>().map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {}", e))
+            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {e}"))
         })?;
         let url = location
             .parse()
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid URL: {}", e)))?;
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid URL: {e}")))?;
 
         Ok(PySourceMatchSpec {
             inner: SourceMatchSpec {
@@ -188,7 +188,7 @@ impl PySerializableMatchSpec {
     #[new]
     pub fn new(spec: String) -> pyo3::PyResult<Self> {
         let matchspec = spec.parse::<MatchSpec>().map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {}", e))
+            pyo3::exceptions::PyValueError::new_err(format!("Invalid matchspec: {e}"))
         })?;
         Ok(PySerializableMatchSpec {
             inner: SerializableMatchSpec::from(matchspec),

@@ -14,7 +14,7 @@ impl PyPlatform {
     #[new]
     pub fn new(platform_str: &str) -> PyResult<Self> {
         let platform = platform_str.parse::<Platform>().map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Invalid platform: {}", e))
+            pyo3::exceptions::PyValueError::new_err(format!("Invalid platform: {e}"))
         })?;
         Ok(PyPlatform { inner: platform })
     }

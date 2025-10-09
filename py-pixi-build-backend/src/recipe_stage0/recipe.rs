@@ -28,7 +28,7 @@ use std::{collections::HashMap, ops::Deref};
 create_py_wrap!(PyHashMapValueString, HashMap<String, PyValueString>, |map: &HashMap<String, PyValueString>, f: &mut Formatter<'_>| {
     write!(f, "{{")?;
     for (k, v) in map {
-        write!(f, "{}: {}, ", k, v)?;
+        write!(f, "{k}: {v}, ")?;
     }
     write!(f, "}}")
 });
@@ -41,7 +41,7 @@ create_py_wrap!(PyVecItemSource, Vec<PyItemSource>, |vec: &Vec<
 >| {
     write!(f, "[")?;
     for item in vec {
-        write!(f, "{}, ", item)?;
+        write!(f, "{item}, ")?;
     }
     write!(f, "]")
 });
@@ -52,7 +52,7 @@ create_py_wrap!(
     |vec: &Vec<PyTest>, f: &mut Formatter<'_>| {
         write!(f, "[")?;
         for item in vec {
-            write!(f, "{}, ", item)?;
+            write!(f, "{item}, ")?;
         }
         write!(f, "]")
     }
@@ -63,7 +63,7 @@ create_py_wrap!(
     Option<PyAbout>,
     |opt: &Option<PyAbout>, f: &mut Formatter<'_>| {
         match opt {
-            Some(about) => write!(f, "{}", about),
+            Some(about) => write!(f, "{about}"),
             None => write!(f, "None"),
         }
     }
@@ -73,7 +73,7 @@ create_py_wrap!(
     Option<PyExtra>,
     |opt: &Option<PyExtra>, f: &mut Formatter<'_>| {
         match opt {
-            Some(extra) => write!(f, "{}", extra),
+            Some(extra) => write!(f, "{extra}"),
             None => write!(f, "None"),
         }
     }
@@ -458,7 +458,7 @@ create_py_wrap!(PyOptionValueU64, Option<PyValueU64>, |opt: &Option<
     '_,
 >| {
     match opt {
-        Some(value) => write!(f, "{}", value),
+        Some(value) => write!(f, "{value}"),
         None => write!(f, "None"),
     }
 });
@@ -468,7 +468,7 @@ create_py_wrap!(
     Option<PyNoArchKind>,
     |opt: &Option<PyNoArchKind>, f: &mut Formatter<'_>| {
         match opt {
-            Some(value) => write!(f, "{}", value),
+            Some(value) => write!(f, "{value}"),
             None => write!(f, "None"),
         }
     }
@@ -548,7 +548,7 @@ impl Display for PyBuild {
 create_py_wrap!(PyHashMap, HashMap<String, String>, |map: &HashMap<String, String>, f: &mut Formatter<'_>| {
     write!(f, "{{")?;
     for (k, v) in map {
-        write!(f, "{}: {}, ", k, v)?;
+        write!(f, "{k}: {v}, ")?;
     }
     write!(f, "}}")
 });

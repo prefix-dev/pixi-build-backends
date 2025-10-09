@@ -24,7 +24,8 @@ from .utils import (
     package_xml_to_conda_requirements,
     convert_package_xml_to_catkin_package,
     get_package_xml_content,
-    load_package_map_data, merge_requirements,
+    load_package_map_data,
+    merge_requirements,
 )
 from .config import ROSBackendConfig, PackageMappingSource
 
@@ -149,8 +150,3 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         if host_platform.is_windows:
             variants["cxx_compiler"] = ["vs2019"]
         return variants
-
-
-
-
-

@@ -271,11 +271,13 @@ def find_matching(list_to_find: list[ItemPackageDependency], name: str) -> ItemP
     else:
         return None
 
+
 def normalize_spec(spec: str | None, package_name: str) -> str:
     """Normalize a spec by removing package name and handling None."""
     if not spec:
         return ""
     return spec.removeprefix(package_name).strip()
+
 
 def merge_specs(spec1: str | None, spec2: str | None, package_name: str) -> str:
     # remove the package name
@@ -292,12 +294,12 @@ def merge_specs(spec1: str | None, spec2: str | None, package_name: str) -> str:
         return spec1 or ""
     return package_name + " " + ",".join([version_spec1, version_spec2])
 
+
 def merge_unique_items(
-        model: list[ItemPackageDependency] | VecItemPackageDependency,
-        package: list[ItemPackageDependency] | VecItemPackageDependency,
+    model: list[ItemPackageDependency] | VecItemPackageDependency,
+    package: list[ItemPackageDependency] | VecItemPackageDependency,
 ) -> list[ItemPackageDependency]:
     """Merge unique items from source into target."""
-
 
     result: list[ItemPackageDependency] = []
     templates_in_model = [str(i.template) for i in model]
@@ -330,8 +332,8 @@ def merge_unique_items(
 
 
 def merge_requirements(
-        model_requirements: ConditionalRequirements,
-        package_requirements: ConditionalRequirements,
+    model_requirements: ConditionalRequirements,
+    package_requirements: ConditionalRequirements,
 ) -> ConditionalRequirements:
     """Merge two sets of requirements."""
     merged = ConditionalRequirements()

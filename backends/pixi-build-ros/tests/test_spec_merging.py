@@ -48,8 +48,9 @@ def test_specs_with_none():
     result = merge_unique_items(list1, list2)
     assert result[0].concrete.binary_spec == list2[0].concrete.binary_spec
 
+
 def test_specs_with_source():
-    list1 = [ItemPackageDependency("ros-noetic[url=\"https://blabla\"]")]
+    list1 = [ItemPackageDependency('ros-noetic[url="https://blabla"]')]
     list2 = [ItemPackageDependency("ros-noetic <=2.0,<3.0")]
     result = merge_unique_items(list1, list2)
     assert str(result[0].concrete.source_spec.spec) == str(list1[0].concrete.source_spec.spec)

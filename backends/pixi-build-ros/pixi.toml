@@ -20,7 +20,10 @@ scripts = ["../../scripts/activate.sh"]
 [dependencies]
 pydantic = ">=2.8.2,<3"
 py_rattler = ">=0.15.0,<0.16"
-pixi-build-ros = { path = "." }
+py-pixi-build-backend = "*"
+
+[pypi-dependencies]
+pixi-build-ros = { path = ".", editable = true }
 
 [environments]
 default = { features = ["test", "lint"], solve-group = "default" }

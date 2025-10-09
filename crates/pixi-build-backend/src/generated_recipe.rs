@@ -89,7 +89,7 @@ pub trait GenerateRecipe {
 }
 
 pub trait BackendConfig: DeserializeOwned + Clone {
-    /// At least debug dir should be provided by the backend config
+    /// Debug dir provided by the backend config
     fn debug_dir(&self) -> Option<&Path>;
 
     /// Merge this configuration with a target-specific configuration.

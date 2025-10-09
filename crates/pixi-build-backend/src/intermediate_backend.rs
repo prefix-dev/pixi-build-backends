@@ -65,6 +65,8 @@ use crate::{
     utils::TemporaryRenderedRecipe,
 };
 
+use fs_err::tokio as tokio_fs;
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct IntermediateBackendConfig {
@@ -394,6 +396,27 @@ where
                     build_string: discovered_output.build_string.clone(),
                 },
             );
+
+            let directories = output_directory(
+                if number_of_outputs == 1 {
+                    OneOrMultipleOutputs::Single(discovered_output.name.clone())
+                } else {
+                    OneOrMultipleOutputs::OneOfMany(discovered_output.name.clone())
+                },
+                params.work_directory.clone(),
+                &named_source.path,
+            );
+            // Save intermediate recipe in the debug dir
+            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            tokio_fs::create_dir_all(&directories.work_dir)
+                .await
+                .into_diagnostic()?;
+            tokio_fs::write(
+                &debug_path,
+                generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+            )
+            .await
+            .into_diagnostic()?;
 
             let mut output = Output {
                 recipe,
@@ -727,6 +750,28 @@ where
                 },
             );
 
+            let directories = output_directory(
+                if number_of_outputs == 1 {
+                    OneOrMultipleOutputs::Single(discovered_output.name.clone())
+                } else {
+                    OneOrMultipleOutputs::OneOfMany(discovered_output.name.clone())
+                },
+                params.work_directory.clone(),
+                &named_source.path,
+            );
+
+            // Save intermediate recipe in the debug dir
+            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            tokio_fs::create_dir_all(&directories.work_dir)
+                .await
+                .into_diagnostic()?;
+            tokio_fs::write(
+                &debug_path,
+                generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+            )
+            .await
+            .into_diagnostic()?;
+
             let mut output = Output {
                 recipe,
                 build_configuration: BuildConfiguration {
@@ -849,7 +894,7 @@ where
         let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
 
         // Construct the intermediate recipe
-        let recipe = self.generate_recipe.generate_recipe(
+        let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
             self.source_dir.clone(),
@@ -865,7 +910,13 @@ where
         let recipe_path = self.source_dir.join(&self.manifest_rel_path);
         let named_source = Source {
             name: self.manifest_rel_path.display().to_string(),
-            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
+            code: Arc::from(
+                generated_recipe
+                    .recipe
+                    .to_yaml_pretty()
+                    .into_diagnostic()?
+                    .as_str(),
+            ),
             path: recipe_path.clone(),
         };
 
@@ -914,6 +965,8 @@ where
 
         let mut subpackages = HashMap::new();
         let mut outputs = Vec::new();
+
+        let num_of_outputs = discovered_outputs.len();
         for discovered_output in discovered_outputs {
             let variant = discovered_output.used_vars;
             let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
@@ -944,6 +997,28 @@ where
             }
 
             let build_number = recipe.build().number;
+
+            let directories = output_directory(
+                if num_of_outputs == 1 {
+                    OneOrMultipleOutputs::Single(discovered_output.name.clone())
+                } else {
+                    OneOrMultipleOutputs::OneOfMany(discovered_output.name.clone())
+                },
+                params.work_directory.clone(),
+                &named_source.path,
+            );
+
+            // Save intermediate recipe in the debug dir
+            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            tokio_fs::create_dir_all(&directories.work_dir)
+                .await
+                .into_diagnostic()?;
+            tokio_fs::write(
+                &debug_path,
+                generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+            )
+            .await
+            .into_diagnostic()?;
 
             subpackages.insert(
                 recipe.package().name().clone(),
@@ -1055,7 +1130,7 @@ where
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: recipe.metadata_input_globs,
+            input_globs: generated_recipe.metadata_input_globs,
         })
     }
 
@@ -1101,18 +1176,6 @@ where
             &variants.keys().cloned().collect(),
         )?;
 
-        // Save intermediate recipe in the debug dir
-        if let Some(debug_dir) = self.debug_dir() {
-            let debug_path = debug_dir.join("intermediate_recipe.yaml");
-            std::fs::create_dir_all(debug_dir).into_diagnostic()?;
-            std::fs::write(
-                &debug_path,
-                recipe.recipe.to_yaml_pretty().into_diagnostic()?,
-            )
-            .into_diagnostic()
-            .wrap_err_with(|| format!("failed to write intermediate recipe to {debug_path:?}"))?;
-        }
-
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
@@ -1157,6 +1220,18 @@ where
             params.output_directory.as_deref(),
             recipe_path,
         );
+
+        // Save intermediate recipe in the debug dir
+        let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+        tokio_fs::create_dir_all(&directories.work_dir)
+            .await
+            .into_diagnostic()?;
+        tokio_fs::write(
+            &debug_path,
+            recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+        )
+        .await
+        .into_diagnostic()?;
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())

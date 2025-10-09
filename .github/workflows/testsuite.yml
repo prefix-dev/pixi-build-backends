@@ -16,6 +16,7 @@ env:
   RUSTFLAGS: "-D warnings"
   CARGO_TERM_COLOR: always
   TARGET_DIR: target/pixi/ci
+  PYTHONIOENCODING: utf-8
 
 jobs:
   build-binary-linux-x86_64:

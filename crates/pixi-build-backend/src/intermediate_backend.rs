@@ -1101,6 +1101,18 @@ where
             &variants.keys().cloned().collect(),
         )?;
 
+        // Save intermediate recipe in the debug dir
+        if let Some(debug_dir) = self.debug_dir() {
+            let debug_path = debug_dir.join("intermediate_recipe.yaml");
+            std::fs::create_dir_all(debug_dir).into_diagnostic()?;
+            std::fs::write(
+                &debug_path,
+                recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+            )
+            .into_diagnostic()
+            .wrap_err_with(|| format!("failed to write intermediate recipe to {debug_path:?}"))?;
+        }
+
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build

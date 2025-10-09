@@ -1356,7 +1356,7 @@ packages:
 - pypi: ./
   name: pixi-build-ros
   version: 0.3.0
-  sha256: c24e6ecabff7ecf0aef2054378ba6f924048f20c4337d3eaa198e5dff1732874
+  sha256: e4c435000de73c9dc65ff1d75cb45fa637250abe63b958cd63cffd98cd1be465
   requires_dist:
   - rosdistro
   - catkin-pkg

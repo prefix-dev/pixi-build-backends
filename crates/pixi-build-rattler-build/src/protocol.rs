@@ -258,9 +258,6 @@ impl Protocol for RattlerBuildBackend {
     ) -> miette::Result<CondaOutputsResult> {
         let build_platform = params.host_platform;
 
-        let variant_files = params.variant_files.clone().unwrap_or_default();
-        let variant_configuration = params.variant_configuration.clone().unwrap_or_default();
-
         // Determine the variant configuration to use. This loads the variant
         // configuration from disk as well as including the variants from the input
         // parameters.
@@ -278,10 +275,10 @@ impl Protocol for RattlerBuildBackend {
             &self.source_dir,
             &self.recipe_source.path,
             &selector_config_for_variants,
-            &variant_files,
+            params.variant_files.iter().flatten().map(PathBuf::as_path),
         )
         .into_diagnostic()?
-        .extend_with_input_variants(&variant_configuration);
+        .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;

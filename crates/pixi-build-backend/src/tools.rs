@@ -62,11 +62,11 @@ impl LoadedVariantConfig {
     /// Load variant configuration from a recipe path. This checks if there is a
     /// `variants.yaml` and loads it alongside the recipe.
     #[allow(clippy::result_large_err)]
-    pub fn from_recipe_path(
+    pub fn from_recipe_path<'a>(
         source_dir: &Path,
         recipe_path: &Path,
         selector_config: &SelectorConfig,
-        additional_variant_files: &[PathBuf],
+        additional_variant_files: impl Iterator<Item = &'a Path>,
     ) -> Result<Self, VariantConfigError<Arc<str>>> {
         let mut variant_files = Vec::new();
         let mut input_globs = BTreeSet::new();
@@ -92,7 +92,7 @@ impl LoadedVariantConfig {
         };
 
         // Add additional variant files
-        variant_files.extend(additional_variant_files.iter().cloned());
+        variant_files.extend(additional_variant_files.map(|p| p.to_path_buf()));
 
         Ok(Self {
             variant_config: VariantConfig::from_files(&variant_files, selector_config)?,

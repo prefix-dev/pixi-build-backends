@@ -45,3 +45,5 @@ __pycache__/
 # Python
 *.pyc
 __pycache__/
+
+artifacts-channel

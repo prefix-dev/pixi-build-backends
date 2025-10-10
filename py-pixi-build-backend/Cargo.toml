@@ -52,6 +52,13 @@ paste = "1.0.15"
 [build-dependencies]
 pyo3-build-config = "0.26"
 
+[profile.ci]
+codegen-units = 16
+inherits = "release"
+lto = false
+opt-level = 0
+strip = false
+
 # Prevent package from thinking it's in the workspace
 [workspace]
 

@@ -11,12 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUST_LOG: info
-  RUST_BACKTRACE: 1
-  RUSTFLAGS: "-D warnings"
-  CARGO_TERM_COLOR: always
-  TARGET_DIR: target/pixi/ci
   PYTHONIOENCODING: utf-8
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 jobs:
   build-binary-linux-x86_64:
@@ -33,15 +30,15 @@ jobs:
           workspaces: ". -> target/pixi"
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@4097539ece2ebbb6fd759bb45e5f0321071ac87d # v0.0.9
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-linux-x86_64
-          path: |
-            ${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: artifacts-channel
           if-no-files-found: error
           retention-days: 60
 
@@ -65,16 +62,18 @@ jobs:
           workspaces: ". -> ${{ env.PIXI_WORKSPACE }}/target/pixi"
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@4097539ece2ebbb6fd759bb45e5f0321071ac87d # v0.0.9
+      - name: Enable long paths (Windows)
+        run: git config --global core.longpaths true
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
         working-directory: ${{ env.PIXI_WORKSPACE }}
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-windows-x86_64
-          path: |
-            ${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: ${{ env.PIXI_WORKSPACE }}/artifacts-channel
           if-no-files-found: error
           retention-days: 60
 
@@ -92,15 +91,15 @@ jobs:
           workspaces: ". -> target/pixi"
           key: ${{ hashFiles('pixi.lock') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@4097539ece2ebbb6fd759bb45e5f0321071ac87d # v0.0.9
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-macos-aarch64
-          path: |
-            ${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: artifacts-channel
           if-no-files-found: error
           retention-days: 60
 

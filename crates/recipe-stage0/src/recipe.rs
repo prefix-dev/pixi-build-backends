@@ -293,7 +293,7 @@ impl<T> ListOrItem<T> {
         self.0.len()
     }
 
-    pub fn iter(&self) -> std::slice::Iter<T> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.0.iter()
     }
 }
@@ -659,13 +659,13 @@ impl Display for ConditionalRequirements {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Requirements {
-    pub build: Vec<SerializableMatchSpec>,
-    pub host: Vec<SerializableMatchSpec>,
-    pub run: Vec<SerializableMatchSpec>,
-    pub run_constraints: Vec<SerializableMatchSpec>,
-}
+// #[derive(Debug, Serialize, Deserialize)]
+// pub(crate) struct Requirements {
+//     pub build: Vec<SerializableMatchSpec>,
+//     pub host: Vec<SerializableMatchSpec>,
+//     pub run: Vec<SerializableMatchSpec>,
+//     pub run_constraints: Vec<SerializableMatchSpec>,
+// }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Test {

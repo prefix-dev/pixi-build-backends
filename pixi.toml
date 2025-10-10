@@ -23,6 +23,7 @@ test = [
 ]
 generate-matrix = "python scripts/generate-matrix.py"
 
+
 install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }
 install-pixi-build-cmake = { cmd = "cargo install --path crates/pixi-build-cmake  --locked --force" }
 install-pixi-build-rattler-build = { cmd = "cargo install --path crates/pixi-build-rattler-build --locked --force" }
@@ -67,6 +68,8 @@ ruff = ">=0.13,<0.14"
 
 [feature.build.dependencies]
 rattler-build = ">=0.46.0,<1"
+rattler-index = ">=0.25.2,<0.26"
+python = "*"
 
 [feature.build.tasks.build-recipe-ci]
 cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --variant-config recipe/variants.yaml --output-dir={{ output_dir }} --recipe {{ recipe }}{% if target_platform is defined and target_platform %} --target-platform {{ target_platform }}{% endif %}"
@@ -82,6 +85,43 @@ depends-on = [
 ]
 args = ["recipe", { arg = "target_platform", default = "" }]
 
+[feature.build.tasks.build-testsuite-backends]
+cmd = "rattler-build build --experimental -r recipe/testsuite-backends --variant-config recipe/variants.yaml --output-dir {{ output_dir }} -vvv"
+args = [{ arg = "output_dir", default = "artifacts-channel" }]
+inputs = ["recipe/testsuite-backends/recipe.yaml"]
+outputs = ["{{output_dir}}"]
+
+[feature.build.tasks.clean-backends-build-outputs]
+depends-on = [
+  { task = "build-testsuite-backends", args = [
+    "{{ output_dir }}",
+  ] },
+]
+args = [{ arg = "output_dir", default = "artifacts-channel" }]
+cmd = "python scripts/clean-outputs.py {{ output_dir }}"
+inputs = ["{{ output_dir }}"]
+
+[feature.build.tasks.index-testsuite-channel]
+depends-on = [
+  { task = "clean-backends-build-outputs", args = [
+    "{{ channel_dir }}",
+  ] },
+]
+args = [{ arg = "channel_dir", default = "artifacts-channel" }]
+cmd = "rattler-index fs --write-shards false --write-zst false {{ channel_dir }}"
+inputs = ["{{ channel_dir }}"]
+outputs = ["{{ channel_dir }}/**/repodata.json"]
+
+# Do not forget remove previous channel if you're working locally!
+# Otherwise source dir will include previous channel which WILL cause
+# problems!
+[feature.build.tasks.create-testsuite-channel]
+depends-on = [
+  { task = "index-testsuite-channel", args = [
+    "{{ channel_dir }}",
+  ] },
+]
+args = [{ arg = "channel_dir", default = "artifacts-channel" }]
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"

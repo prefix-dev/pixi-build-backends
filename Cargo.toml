@@ -43,10 +43,9 @@ tokio = "1.43.0"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 url = "2.5.4"
-pyproject-toml = "0.13.4"
+pyproject-toml = "0.13.5"
 dirs = "6.0.0"
 pathdiff = "0.2.3"
-file_url = "0.2.5"
 thiserror = "2.0.12"
 strum = "0.27.2"
 temp-env = "0.3.6"
@@ -59,7 +58,8 @@ rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = 
   "rustls-tls",
 ] }
 
-rattler_conda_types = { version = "0.39.0", default-features = false }
+file_url = "0.2.5"
+rattler_conda_types = { version = "0.40.0", default-features = false }
 rattler_digest = { version = "1.1.5", default-features = false }
 rattler_package_streaming = { version = "0.23.1", default-features = false }
 rattler_virtual_packages = { version = "2.1.3", default-features = false }
@@ -77,11 +77,11 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 
 
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_types = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
+pixi_consts = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
+pixi_manifest = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
+pixi_spec = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
+pixi_build_type_conversions = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
 
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
 #pixi_consts = { path = "../pixi/crates/pixi_consts" }
@@ -96,8 +96,8 @@ pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", bran
 #rattler_repodata_gateway = { path = "../rattler/crates/rattler_repodata_gateway" }
 #simple_spawn_blocking = { path = "../rattler/crates/simple_spawn_blocking" }
 
-#[patch."https://github.com/prefix-dev/rattler-build"]
-#rattler-build = { path = "../rattler-build/" }
+# [patch."https://github.com/prefix-dev/rattler-build"]
+# rattler-build = { path = "../rattler-build/" }
 
 [profile.dev.package]
 insta.opt-level = 3

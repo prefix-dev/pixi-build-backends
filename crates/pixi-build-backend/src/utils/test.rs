@@ -51,6 +51,7 @@ pub fn intermediate_conda_outputs_snapshot<T>(
     source_dir: Option<PathBuf>,
     host_platform: Platform,
     variant_configuration: Option<BTreeMap<String, Vec<String>>>,
+    variant_files: Option<Vec<PathBuf>>,
 ) -> String
 where
     T: GenerateRecipe + Default + Clone + Send + Sync + 'static,
@@ -87,6 +88,7 @@ where
                 host_platform,
                 build_platform: host_platform,
                 variant_configuration,
+                variant_files,
                 work_directory: current_dir,
             })
             .await

@@ -5,13 +5,14 @@
 This repository contains backend implementations designed to facilitate the building of pixi projects directly from their source code. These backends aim to enhance the functionality of Pixi, a cross-platform, multi-language package manager and workflow tool built on the foundation of the conda ecosystem.
 
 ## Available Build Backends
-The idea is that a backend should be able to build a certain type of so
+The idea is that a backend should be able to build a certain type of project.
 The repository provides the following build backends:
 
 1. **pixi-build-python**: A backend tailored for building Python-based projects.
 2. **pixi-build-cmake**: A backend designed for projects utilizing CMake as their build system.
 3. **pixi-build-rattler-build**: A backend for building [`recipe.yaml`](https://rattler.build/latest/) directly
 4. **pixi-build-rust**: A backend for building Rust projects.
+5. **pixi-build-zig**: A backend for building Zig projects.
 
 
 These backends are located in the `crates/*` directory of the repository.

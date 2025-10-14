@@ -3,15 +3,14 @@ use std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc};
 use miette::IntoDiagnostic;
 use rattler_build::{
     NormalizedKey,
-    metadata::{
-        BuildConfiguration, Debug, Directories, Output, PackageIdentifier, PackagingSettings,
-        PlatformWithVirtualPackages,
-    },
+    metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
     recipe::parser::find_outputs_from_src,
+    render::resolved_dependencies::RunExportsDownload,
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
     tool_configuration,
+    types::{Directories, PackageIdentifier, PackagingSettings},
     variant_config::VariantConfig,
 };
 use rattler_conda_types::compression_level::CompressionLevel;
@@ -172,7 +171,7 @@ pub async fn get_build_output(
         let output = temp_recipe
             .within_context_async(move || async move {
                 output
-                    .resolve_dependencies(&tool_config)
+                    .resolve_dependencies(&tool_config, RunExportsDownload::SkipDownload)
                     .await
                     .into_diagnostic()
             })

@@ -56,7 +56,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-unix_hf108a03_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/psutil-7.1.0-py314h5bd0f2a_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/linux-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hab8a21e_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/py-rattler-0.15.0-py310h045cca9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.1-pyh3cfb1c2_0.conda
@@ -81,6 +80,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/zstd-1.5.7-hb8e6e7a_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: linux-64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -119,7 +120,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-unix_hf108a03_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/psutil-7.1.0-py314h0612a62_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/osx-arm64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-h10e0fbc_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/py-rattler-0.15.0-py310h96aa460_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.0-pyh3cfb1c2_0.conda
@@ -142,6 +142,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-h6491c7d_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: osx-arm64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -178,7 +180,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-win_hba80fca_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/psutil-7.1.0-py314h5a2d7ad_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/win-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hb141c79_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/py-rattler-0.15.0-py310hb39080a_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.0-pyh3cfb1c2_0.conda
@@ -204,6 +205,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/vcomp14-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: win-64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -343,7 +346,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-unix_hf108a03_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/psutil-7.1.0-py314h5bd0f2a_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/linux-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hab8a21e_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/py-rattler-0.15.0-py310h045cca9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.1-pyh3cfb1c2_0.conda
@@ -365,6 +367,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/zstd-1.5.7-hb8e6e7a_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: linux-64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -403,7 +407,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-unix_hf108a03_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/psutil-7.1.0-py314h0612a62_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/osx-arm64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-h10e0fbc_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/py-rattler-0.15.0-py310h96aa460_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.0-pyh3cfb1c2_0.conda
@@ -423,6 +426,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-h6491c7d_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: osx-arm64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -459,7 +464,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pixi-pycharm-0.0.9-win_hba80fca_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/psutil-7.1.0-py314h5a2d7ad_0.conda
-      - conda: https://prefix.dev/pixi-build-backends/win-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hb141c79_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/py-rattler-0.15.0-py310hb39080a_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/py_rattler-0.15.0-h88c55c7_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/pydantic-2.12.0-pyh3cfb1c2_0.conda
@@ -482,6 +486,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/vcomp14-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
+      - conda: ../../py-pixi-build-backend
+        subdir: win-64
       - pypi: https://files.pythonhosted.org/packages/99/1b/50316bd6f95c50686b35799abebb6168d90ee18b7c03e3065f587f010f7c/catkin_pkg-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/66/dd/f95350e853a4468ec37478414fc04ae2d61dad7a947b3015c3dcc51a09b9/docutils-0.22.2-py3-none-any.whl
@@ -1414,43 +1420,55 @@ packages:
   - pkg:pypi/psutil?source=hash-mapping
   size: 503792
   timestamp: 1758169642572
-- conda: https://prefix.dev/pixi-build-backends/linux-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hab8a21e_0.conda
-  noarch: python
-  sha256: 0ed44e9ee5a612b7a0b3dfe7aa3ae27d5d37e415d6bad50a55ec73a7006c5a87
+- conda: ../../py-pixi-build-backend
+  name: py-pixi-build-backend
+  version: 0.1.2
+  build: hbf21a9e_0
+  subdir: linux-64
   depends:
-  - python >=3.8
+  - typing-extensions
   - pixi-build-api-version >=2,<3
-  - _python_abi3_support 1.*
-  - cpython >=3.13
+  - python >=3.8
+  - python_abi 3.14.* *_cp314
   constrains:
   - __glibc >=2.17
   license: BSD-3-Clause
-  size: 11939176
-  timestamp: 1757422283903
-- conda: https://prefix.dev/pixi-build-backends/osx-arm64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-h10e0fbc_0.conda
-  noarch: python
-  sha256: 487f77b3131bb6c97c2fee6c410b154385360a7263b80f5b2045ec273f8700ad
+  input:
+    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    globs:
+    - pyproject.toml
+- conda: ../../py-pixi-build-backend
+  name: py-pixi-build-backend
+  version: 0.1.2
+  build: hbf21a9e_0
+  subdir: osx-arm64
   depends:
-  - python >=3.8
+  - typing-extensions
   - pixi-build-api-version >=2,<3
-  - _python_abi3_support 1.*
-  - cpython >=3.13
+  - python >=3.8
+  - python_abi 3.14.* *_cp314
   constrains:
   - __osx >=11.0
   license: BSD-3-Clause
-  size: 10636665
-  timestamp: 1757422291985
-- conda: https://prefix.dev/pixi-build-backends/win-64/py-pixi-build-backend-0.2.0.20250909.8ccd6ea-hb141c79_0.conda
-  noarch: python
-  sha256: 6ae4a7536e09ea4c0bfd0ecf3061ba2862c55dffb4099817deaa6b01fd5490bc
+  input:
+    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    globs:
+    - pyproject.toml
+- conda: ../../py-pixi-build-backend
+  name: py-pixi-build-backend
+  version: 0.1.2
+  build: hbf21a9e_0
+  subdir: win-64
   depends:
-  - python >=3.8
+  - typing-extensions
   - pixi-build-api-version >=2,<3
-  - _python_abi3_support 1.*
-  - cpython >=3.13
+  - python >=3.8
+  - python_abi 3.14.* *_cp314
   license: BSD-3-Clause
-  size: 10447026
-  timestamp: 1757422294209
+  input:
+    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    globs:
+    - pyproject.toml
 - conda: https://prefix.dev/conda-forge/linux-64/py-rattler-0.15.0-py310h045cca9_1.conda
   noarch: python
   sha256: b253c2816af3a31e867d997cf81bd47273b761995f9b8d564a8edf6c249c3e15

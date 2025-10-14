@@ -183,7 +183,33 @@ mod tests {
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script" => "[ ... script ... ]",
-        });
+        }, @r#"
+        context: {}
+        package:
+          name: foobar
+          version: 0.1.0
+        source: []
+        build:
+          number: ~
+          script: "[ ... script ... ]"
+        requirements:
+          build:
+            - zig
+          host: []
+          run:
+            - boltons
+          run_constraints: []
+        tests: []
+        about:
+          homepage: ~
+          license: ~
+          license_file: ~
+          summary: ~
+          description: ~
+          documentation: ~
+          repository: ~
+        extra: ~
+        "#);
     }
 
     #[test]
@@ -225,7 +251,33 @@ mod tests {
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
         ".source[0].path" => "[ ... path ... ]",
         ".build.script" => "[ ... script ... ]",
-        });
+        }, @r#"
+        context: {}
+        package:
+          name: foobar
+          version: 0.1.0
+        source: []
+        build:
+          number: ~
+          script: "[ ... script ... ]"
+        requirements:
+          build:
+            - zig
+          host: []
+          run:
+            - boltons
+          run_constraints: []
+        tests: []
+        about:
+          homepage: ~
+          license: ~
+          license_file: ~
+          summary: ~
+          description: ~
+          documentation: ~
+          repository: ~
+        extra: ~
+        "#);
     }
 
     #[test]
@@ -265,6 +317,11 @@ mod tests {
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
         {
             ".content" => "[ ... script ... ]",
-        });
+        }, @r#"
+        content: "[ ... script ... ]"
+        env:
+          foo: bar
+        secrets: []
+        "#);
     }
 }

@@ -384,7 +384,7 @@ pub fn output_directory(
             [0..placeholder_length - build_dir.join("host_env").as_os_str().len()]
             .to_string();
 
-        build_dir.join(format!("host_env{}", placeholder))
+        build_dir.join(format!("host_env{placeholder}"))
     };
 
     Directories {

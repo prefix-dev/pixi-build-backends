@@ -37,6 +37,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
       - conda: https://prefix.dev/conda-forge/linux-64/c-compiler-1.11.0-h4d9bdce_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-64/cargo-insta-1.43.2-hb17b654_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/cargo-nextest-0.9.97-hb23c6cf_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/clang-21-21.1.0-default_hddf928d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/clang-21.1.0-default_hfa515fb_0.conda
@@ -86,8 +87,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/python-3.13.3-hf636f53_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/linux-64/readline-8.2-h8c095d6_2.conda
-      - conda: https://prefix.dev/conda-forge/linux-64/rust-1.87.0-h1a8d7c4_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.87.0-h2c6d0dc_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-64/rust-1.88.0-h1a8d7c4_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.88.0-h2c6d0dc_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/sysroot_linux-64-2.17-h0157908_18.conda
       - conda: https://prefix.dev/conda-forge/linux-64/tbb-2022.1.0-h4ce085d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/tk-8.6.13-noxft_hd72426e_102.conda
@@ -97,6 +98,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-64/bzip2-1.0.8-hfdf4475_7.conda
       - conda: https://prefix.dev/conda-forge/osx-64/c-compiler-1.11.0-h7a00415_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-64/cargo-insta-1.43.2-h3c2ae71_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cargo-nextest-0.9.97-h20e96b3_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cctools-1021.4-h67a6458_1.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cctools_osx-64-1021.4-haa85c18_1.conda
@@ -146,8 +148,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-64/python-3.13.3-h534c281_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/osx-64/readline-8.2-h7cca4af_2.conda
-      - conda: https://prefix.dev/conda-forge/osx-64/rust-1.87.0-h34a2095_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.87.0-h38e4360_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-64/rust-1.88.0-h34a2095_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.88.0-h38e4360_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
       - conda: https://prefix.dev/conda-forge/osx-64/tapi-1300.6.5-h390ca13_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/tk-8.6.13-hf689a15_2.conda
@@ -158,6 +160,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/bzip2-1.0.8-h99b78c6_7.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/c-compiler-1.11.0-h61f9b84_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-arm64/cargo-insta-1.43.2-h8d80559_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cargo-nextest-0.9.97-hf783435_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cctools-1021.4-hd01ab73_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cctools_osx-arm64-1021.4-haeb51d2_1.conda
@@ -209,8 +212,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/python-3.13.3-h81fe080_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/readline-8.2-h1d1bf99_2.conda
-      - conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.87.0-h4ff7c5d_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.87.0-hf6ec828_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.88.0-h4ff7c5d_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.88.0-hf6ec828_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/sigtool-0.1.3-h44b9a77_0.tar.bz2
       - conda: https://prefix.dev/conda-forge/osx-arm64/tapi-1300.6.5-h03f4b80_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/tk-8.6.13-h892fb3f_2.conda
@@ -221,6 +224,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/bzip2-1.0.8-h2466b09_7.conda
       - conda: https://prefix.dev/conda-forge/win-64/c-compiler-1.11.0-h528c1b4_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-h4c7d964_0.conda
+      - conda: https://prefix.dev/conda-forge/win-64/cargo-insta-1.43.2-h18a1a76_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/cargo-nextest-0.9.97-h63977a8_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/clang-19-19.1.7-default_hec7ea82_3.conda
       - conda: https://prefix.dev/conda-forge/win-64/clang-19.1.7-default_hec7ea82_3.conda
@@ -251,13 +255,14 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/pkg-config-0.29.2-h88c491f_1009.conda
       - conda: https://prefix.dev/conda-forge/win-64/python-3.13.3-h261c0b1_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
-      - conda: https://prefix.dev/conda-forge/win-64/rust-1.87.0-hf8d6059_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.87.0-h17fc481_0.conda
+      - conda: https://prefix.dev/conda-forge/win-64/rust-1.88.0-hf8d6059_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.88.0-h17fc481_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/tk-8.6.13-h2c6b04d_2.conda
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/ucrt-10.0.22621.0-h57928b3_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/vc-14.3-h2b53caa_26.conda
-      - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.42.34438-hfd919c2_26.conda
+      - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.44.35208-h818238b_31.conda
+      - conda: https://prefix.dev/conda-forge/win-64/vcomp14-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/vs2022_win-64-19.44.35207-ha74f236_31.conda
       - conda: https://prefix.dev/conda-forge/noarch/vswhere-3.1.7-h40126e0_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
@@ -683,6 +688,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
       - conda: https://prefix.dev/conda-forge/linux-64/c-compiler-1.11.0-h4d9bdce_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-64/cargo-insta-1.43.2-hb17b654_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/cargo-nextest-0.9.97-hb23c6cf_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/clang-21-21.1.0-default_hddf928d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/clang-21.1.0-default_hfa515fb_0.conda
@@ -734,8 +740,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/python-3.13.3-hf636f53_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/linux-64/readline-8.2-h8c095d6_2.conda
-      - conda: https://prefix.dev/conda-forge/linux-64/rust-1.87.0-h1a8d7c4_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.87.0-h2c6d0dc_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-64/rust-1.88.0-h1a8d7c4_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.88.0-h2c6d0dc_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/shellcheck-0.10.0-ha770c72_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/sysroot_linux-64-2.17-h0157908_18.conda
       - conda: https://prefix.dev/conda-forge/linux-64/taplo-0.10.0-h2d22210_1.conda
@@ -749,6 +755,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-64/bzip2-1.0.8-hfdf4475_7.conda
       - conda: https://prefix.dev/conda-forge/osx-64/c-compiler-1.11.0-h7a00415_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-64/cargo-insta-1.43.2-h3c2ae71_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cargo-nextest-0.9.97-h20e96b3_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cctools-1021.4-h67a6458_1.conda
       - conda: https://prefix.dev/conda-forge/osx-64/cctools_osx-64-1021.4-haa85c18_1.conda
@@ -800,8 +807,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-64/python-3.13.3-h534c281_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/osx-64/readline-8.2-h7cca4af_2.conda
-      - conda: https://prefix.dev/conda-forge/osx-64/rust-1.87.0-h34a2095_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.87.0-h38e4360_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-64/rust-1.88.0-h34a2095_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.88.0-h38e4360_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/shellcheck-0.10.0-h7dd6a17_0.conda
       - conda: https://prefix.dev/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
       - conda: https://prefix.dev/conda-forge/osx-64/tapi-1300.6.5-h390ca13_0.conda
@@ -816,6 +823,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/bzip2-1.0.8-h99b78c6_7.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/c-compiler-1.11.0-h61f9b84_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-arm64/cargo-insta-1.43.2-h8d80559_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cargo-nextest-0.9.97-hf783435_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cctools-1021.4-hd01ab73_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/cctools_osx-arm64-1021.4-haeb51d2_1.conda
@@ -869,8 +877,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/python-3.13.3-h81fe080_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/readline-8.2-h1d1bf99_2.conda
-      - conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.87.0-h4ff7c5d_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.87.0-hf6ec828_0.conda
+      - conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.88.0-h4ff7c5d_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.88.0-hf6ec828_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/shellcheck-0.10.0-hecfb573_0.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/sigtool-0.1.3-h44b9a77_0.tar.bz2
       - conda: https://prefix.dev/conda-forge/osx-arm64/tapi-1300.6.5-h03f4b80_0.conda
@@ -885,6 +893,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/bzip2-1.0.8-h2466b09_7.conda
       - conda: https://prefix.dev/conda-forge/win-64/c-compiler-1.11.0-h528c1b4_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/ca-certificates-2025.4.26-h4c7d964_0.conda
+      - conda: https://prefix.dev/conda-forge/win-64/cargo-insta-1.43.2-h18a1a76_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/cargo-nextest-0.9.97-h63977a8_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/clang-19-19.1.7-default_hec7ea82_3.conda
       - conda: https://prefix.dev/conda-forge/win-64/clang-19.1.7-default_hec7ea82_3.conda
@@ -917,8 +926,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/pkg-config-0.29.2-h88c491f_1009.conda
       - conda: https://prefix.dev/conda-forge/win-64/python-3.13.3-h261c0b1_101_cp313.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.13-7_cp313.conda
-      - conda: https://prefix.dev/conda-forge/win-64/rust-1.87.0-hf8d6059_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.87.0-h17fc481_0.conda
+      - conda: https://prefix.dev/conda-forge/win-64/rust-1.88.0-hf8d6059_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.88.0-h17fc481_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/shellcheck-0.10.0-h57928b3_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/taplo-0.10.0-h63977a8_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/tk-8.6.13-h2c6b04d_2.conda
@@ -926,7 +935,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025b-h78e105d_0.conda
       - conda: https://prefix.dev/conda-forge/win-64/ucrt-10.0.22621.0-h57928b3_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/vc-14.3-h2b53caa_26.conda
-      - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.42.34438-hfd919c2_26.conda
+      - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.44.35208-h818238b_31.conda
+      - conda: https://prefix.dev/conda-forge/win-64/vcomp14-14.44.35208-h818238b_31.conda
       - conda: https://prefix.dev/conda-forge/win-64/vs2022_win-64-19.44.35207-ha74f236_31.conda
       - conda: https://prefix.dev/conda-forge/noarch/vswhere-3.1.7-h40126e0_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
@@ -1450,6 +1460,53 @@ packages:
   license_family: LGPL
   size: 44459
   timestamp: 1747337159019
+- conda: https://prefix.dev/conda-forge/linux-64/cargo-insta-1.43.2-hb17b654_0.conda
+  sha256: 51f97cd9898e941ed29399f704e710db1be67534cae7fc9432a704f02a798526
+  md5: 8dc58665085a8f3b650c216544d127ed
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  constrains:
+  - __glibc >=2.17
+  license: Apache-2.0
+  license_family: APACHE
+  size: 1755616
+  timestamp: 1757053563013
+- conda: https://prefix.dev/conda-forge/osx-64/cargo-insta-1.43.2-h3c2ae71_0.conda
+  sha256: 35131bc9e10c8069a2771434f20c3afa84fa63c38259bcae62394deb77747b18
+  md5: e219005a3b539d2faa8944f7fa9b1f59
+  depends:
+  - __osx >=10.13
+  constrains:
+  - __osx >=10.13
+  license: Apache-2.0
+  size: 1725571
+  timestamp: 1757053616373
+- conda: https://prefix.dev/conda-forge/osx-arm64/cargo-insta-1.43.2-h8d80559_0.conda
+  sha256: b0788c3a6ca72516a563b48b047979204e56fc4db55e2ffce9a45e212bdea0ab
+  md5: 818640c87f3ad51f5774ef8093a81cbe
+  depends:
+  - __osx >=11.0
+  constrains:
+  - __osx >=11.0
+  license: Apache-2.0
+  license_family: APACHE
+  size: 1587020
+  timestamp: 1757053576018
+- conda: https://prefix.dev/conda-forge/win-64/cargo-insta-1.43.2-h18a1a76_0.conda
+  sha256: d659b1221d673a891827990dbf8c674a703db45cdbc743890dcedbe0f1c4d1c0
+  md5: 1626429b953f16c2d495e151bfa95cdf
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: Apache-2.0
+  license_family: APACHE
+  size: 1893847
+  timestamp: 1757053579226
 - conda: https://prefix.dev/conda-forge/linux-64/cargo-nextest-0.9.97-hb23c6cf_0.conda
   sha256: 986dcbc834daa29bbf73aeb4934bfb6eab7930ff79bec843e674a903f0f5a0a0
   md5: 92b4b31e3aadff7a6af7ae55655dfb17
@@ -5519,91 +5576,91 @@ packages:
   license: MIT
   size: 11132323
   timestamp: 1757556599278
-- conda: https://prefix.dev/conda-forge/linux-64/rust-1.87.0-h1a8d7c4_0.conda
-  sha256: b1b3309f0855dd06f40ff4a16722a6be0a1747526da4da1d80af422fe2c20fee
-  md5: c158d0c5b3e731e564477ebdcdc1dcd4
+- conda: https://prefix.dev/conda-forge/linux-64/rust-1.88.0-h1a8d7c4_0.conda
+  sha256: dd68c0e4788660826421548adeb855f8c9c3b559303ad356c56892bb4fa2f455
+  md5: c77dfd18f5f3f7648bc1c8aa600e3ff7
   depends:
   - __glibc >=2.17,<3.0.a0
   - gcc_impl_linux-64
   - libgcc >=13
   - libzlib >=1.3.1,<2.0a0
-  - rust-std-x86_64-unknown-linux-gnu 1.87.0 h2c6d0dc_0
+  - rust-std-x86_64-unknown-linux-gnu 1.88.0 h2c6d0dc_0
   - sysroot_linux-64 >=2.17
   license: MIT
   license_family: MIT
-  size: 223997953
-  timestamp: 1747383350751
-- conda: https://prefix.dev/conda-forge/osx-64/rust-1.87.0-h34a2095_0.conda
-  sha256: 7b87cc21468678e12f57c9d1686913a4712d5ecea589fd2f537a843de87dd5af
-  md5: 57f777639bd0b4fc74d0c679b53615fb
+  size: 221696092
+  timestamp: 1751057661538
+- conda: https://prefix.dev/conda-forge/osx-64/rust-1.88.0-h34a2095_0.conda
+  sha256: bd50de07239b3c7b34253da9b09a2827eed6d6557d6be6b2a29d39271bcc2acb
+  md5: 7216d553f88ca62877a0488ac1500d3c
   depends:
-  - rust-std-x86_64-apple-darwin 1.87.0 h38e4360_0
+  - rust-std-x86_64-apple-darwin 1.88.0 h38e4360_0
   license: MIT
   license_family: MIT
-  size: 241323195
-  timestamp: 1747382547358
-- conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.87.0-h4ff7c5d_0.conda
-  sha256: db7cdc20393b1a502b11fb6c1e544de4c19a1680ed7192e5795546ec669960ef
-  md5: 1a81ee84cd698e1bae4529f335361c70
+  size: 239937318
+  timestamp: 1751057225609
+- conda: https://prefix.dev/conda-forge/osx-arm64/rust-1.88.0-h4ff7c5d_0.conda
+  sha256: 3eddfe3559b541b16fbdf75573c846c7ff0c7e01eb9f6df0a1fd9a1feaa3a9a0
+  md5: 20efa2b160429d07d9dea21e902ebfff
   depends:
-  - rust-std-aarch64-apple-darwin 1.87.0 hf6ec828_0
+  - rust-std-aarch64-apple-darwin 1.88.0 hf6ec828_0
   license: MIT
   license_family: MIT
-  size: 231190136
-  timestamp: 1747382484253
-- conda: https://prefix.dev/conda-forge/win-64/rust-1.87.0-hf8d6059_0.conda
-  sha256: 50bcd7d2f95547da7cea3fa0dd1e19103127915209b4994e4ed2495d62f51f90
-  md5: 7aaabd5800247687e34fab3694bd90f4
+  size: 231619939
+  timestamp: 1751057438846
+- conda: https://prefix.dev/conda-forge/win-64/rust-1.88.0-hf8d6059_0.conda
+  sha256: 4207e2e17294f445de3bcf4b3f245dfbf20bd66e83fa5f8f44d6760a9d642027
+  md5: 6f46023abb727f149616747fc88a9f7a
   depends:
-  - rust-std-x86_64-pc-windows-msvc 1.87.0 h17fc481_0
+  - rust-std-x86_64-pc-windows-msvc 1.88.0 h17fc481_0
   license: MIT
   license_family: MIT
-  size: 248189351
-  timestamp: 1747385951560
-- conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.87.0-hf6ec828_0.conda
-  sha256: da8519d811eea491154bb28034d8a7405d640595ce08300b92a7851a157bb8f2
-  md5: 6370965a42381e5173d98c5a25861da5
-  depends:
-  - __unix
-  constrains:
-  - rust >=1.87.0,<1.87.1.0a0
-  license: MIT
-  license_family: MIT
-  size: 33567727
-  timestamp: 1747382333320
-- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.87.0-h38e4360_0.conda
-  sha256: 8b679f7e8f26d5225e6c246caff985a4de919f2117f96c1fa87fe51e2f41c9fa
-  md5: aef79235aa36894ff6117acc34f91050
+  size: 250835268
+  timestamp: 1751059235898
+- conda: https://prefix.dev/conda-forge/noarch/rust-std-aarch64-apple-darwin-1.88.0-hf6ec828_0.conda
+  sha256: b14253e50bcafef9a61a289371b018d2664da23ae925b8fe2d52432fef187212
+  md5: 90ec3b7a075f493fd5a4782eb00b45c1
   depends:
   - __unix
   constrains:
-  - rust >=1.87.0,<1.87.1.0a0
+  - rust >=1.88.0,<1.88.1.0a0
   license: MIT
   license_family: MIT
-  size: 35028683
-  timestamp: 1747382367632
-- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.87.0-h17fc481_0.conda
-  sha256: eabe598e244d9a083c261f6be20c89fbb4d052bc09641267db4a6c4867ffce5f
-  md5: be68986ec79a1d50ada2e5af3795d4ae
+  size: 33374075
+  timestamp: 1751057161230
+- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-apple-darwin-1.88.0-h38e4360_0.conda
+  sha256: 9fb1f9b52c0e683896bcb8a7400a9863cd1a030ea5b02e6ae121d79b10931563
+  md5: d69594a22bc7791ba06dfbc88eb7dda2
+  depends:
+  - __unix
+  constrains:
+  - rust >=1.88.0,<1.88.1.0a0
+  license: MIT
+  license_family: MIT
+  size: 35048915
+  timestamp: 1751056987131
+- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.88.0-h17fc481_0.conda
+  sha256: 93526e9ecd738500907c53c2360505c6f00aafe44b65090853346c0f604b5781
+  md5: bf0ce8fdd5b7dd1ee308b9fda630f877
   depends:
   - __win
   constrains:
-  - rust >=1.87.0,<1.87.1.0a0
+  - rust >=1.88.0,<1.88.1.0a0
   license: MIT
   license_family: MIT
-  size: 27954158
-  timestamp: 1747385592636
-- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.87.0-h2c6d0dc_0.conda
-  sha256: 7dfa89025dc6dc19da5455d9d9a57eb8b584aa2d208b964de093b1fe74effe7d
-  md5: 64c88c10adc2a260ff356e42747311a4
+  size: 28047137
+  timestamp: 1751059035565
+- conda: https://prefix.dev/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.88.0-h2c6d0dc_0.conda
+  sha256: a89f522fb261ab744ea1e4e8a8929a66d7c28e58b4b7e02462dcb644887c9dce
+  md5: d62b829141d3fa542a312e2760b8abd4
   depends:
   - __unix
   constrains:
-  - rust >=1.87.0,<1.87.1.0a0
+  - rust >=1.88.0,<1.88.1.0a0
   license: MIT
   license_family: MIT
-  size: 37879016
-  timestamp: 1747383157657
+  size: 37041309
+  timestamp: 1751057508252
 - conda: https://prefix.dev/conda-forge/linux-64/shellcheck-0.10.0-ha770c72_0.conda
   sha256: 6809031184c07280dcbaed58e15020317226a3ed234b99cb1bd98384ea5be813
   md5: 61b19e9e334ddcdf8bb2422ee576549e
@@ -5933,17 +5990,6 @@ packages:
   license_family: BSD
   size: 17914
   timestamp: 1750371462857
-- conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.42.34438-hfd919c2_26.conda
-  sha256: 30dcb71bb166e351aadbdc18f1718757c32cdaa0e1e5d9368469ee44f6bf4709
-  md5: 91651a36d31aa20c7ba36299fb7068f4
-  depends:
-  - ucrt >=10.0.20348.0
-  constrains:
-  - vs2015_runtime 14.42.34438.* *_26
-  license: LicenseRef-MicrosoftVisualCpp2015-2022Runtime
-  license_family: Proprietary
-  size: 750733
-  timestamp: 1743195092905
 - conda: https://prefix.dev/conda-forge/win-64/vc14_runtime-14.44.35208-h818238b_26.conda
   sha256: 7bad6e25a7c836d99011aee59dcf600b7f849a6fa5caa05a406255527e80a703
   md5: 14d65350d3f5c8ff163dc4f76d6e2830

@@ -88,10 +88,10 @@ pub(crate) fn load_project_model_from_json(filename: &str) -> TestProjectModel {
         .join(filename);
 
     let json_content = std::fs::read_to_string(&fixture_path)
-        .unwrap_or_else(|e| panic!("Failed to read JSON fixture '{}': {}", filename, e));
+        .unwrap_or_else(|e| panic!("Failed to read JSON fixture '{filename}': {e}"));
 
     serde_json::from_str(&json_content)
-        .unwrap_or_else(|e| panic!("Failed to parse JSON fixture '{}': {}", filename, e))
+        .unwrap_or_else(|e| panic!("Failed to parse JSON fixture '{filename}': {e}"))
 }
 
 /// Converts a TestProjectModel into a ProjectModelV1

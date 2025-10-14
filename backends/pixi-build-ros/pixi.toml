@@ -41,8 +41,8 @@ mypy = ">=1.18.2,<2"
 syrupy = ">=5,<6"
 types-pyyaml = "*"
 # You can skip this as it's a long build, uncomment this when developing only in this package
-#py-pixi-build-backend = "*"
-py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
+py-pixi-build-backend = "*"
+#py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
 
 [feature.lint.dependencies]
 ruff = "*"
@@ -77,5 +77,5 @@ pixi-build-api-version = ">=2,<3"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
 # this depends has to match the test dependency, so switch comments if needed
-# py-pixi-build-backend = "*"
-py-pixi-build-backend = { path = "../../py-pixi-build-backend" }
+py-pixi-build-backend = "*"
+#py-pixi-build-backend = { path = "../../py-pixi-build-backend" }

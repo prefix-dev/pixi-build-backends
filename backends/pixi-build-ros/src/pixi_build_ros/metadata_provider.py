@@ -44,7 +44,13 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
     like name, version, description, maintainers, etc.
     """
 
-    def __init__(self, package_xml_path: str, *args, **kwargs):  # type: ignore[no-untyped-def]  # no typing for args and kwargs
+    def __init__(  # type: ignore[no-untyped-def]  # no typing for args and kwargs
+        self,
+        package_xml_path: str,
+        *args,
+        extra_input_globs: list[str] | None = None,
+        **kwargs,
+    ):
         """
         Initialize the metadata provider with a package.xml file path.
 
@@ -54,6 +60,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
         self._package_data: PackageData | None = None
+        self._extra_input_globs = list(extra_input_globs or [])
         # Early load the package.xml data to ensure it's valid
         _ = self._package_xml_data
 
@@ -162,7 +169,8 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
     def input_globs(self) -> list[str]:
         """Return input globs that affect this metadata provider."""
-        return ["package.xml", "CMakeLists.txt", "setup.py", "setup.cfg"]
+        base_globs = ["package.xml", "CMakeLists.txt", "setup.py", "setup.cfg"]
+        return list(set(base_globs + self._extra_input_globs))
 
 
 class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
@@ -173,7 +181,13 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     as 'ros-<distro>-<package_name>' according to ROS conda packaging conventions.
     """
 
-    def __init__(self, package_xml_path: str, distro_name: str | None = None):
+    def __init__(
+        self,
+        package_xml_path: str,
+        distro_name: str | None = None,
+        *,
+        extra_input_globs: list[str] | None = None,
+    ):
         """
         Initialize the ROS metadata provider.
 
@@ -181,7 +195,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
             package_xml_path: Path to the package.xml file
             distro: ROS distro. If None, will use the base package name without distro prefix.
         """
-        super().__init__(package_xml_path)
+        super().__init__(package_xml_path, extra_input_globs=extra_input_globs)
         self._distro_name: str | None = distro_name
 
     def name(self) -> str | None:

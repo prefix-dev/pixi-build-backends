@@ -215,8 +215,7 @@ mod tests {
         for extra_glob in &config.extra_input_globs {
             assert!(
                 result.contains(extra_glob),
-                "Result should contain extra glob: {}",
-                extra_glob
+                "Result should contain extra glob: {extra_glob}"
             );
         }
 

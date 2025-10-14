@@ -273,20 +273,16 @@ impl Protocol for RattlerBuildBackend {
             &self.source_dir,
             &self.recipe_source.path,
             &selector_config_for_variants,
-        )
-        .into_diagnostic()?
+        )?
         .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
-        let discovered_outputs = variant_config
-            .variant_config
-            .find_variants(
-                &output_nodes,
-                self.recipe_source.clone(),
-                &selector_config_for_variants,
-            )
-            .into_diagnostic()?;
+        let discovered_outputs = variant_config.variant_config.find_variants(
+            &output_nodes,
+            self.recipe_source.clone(),
+            &selector_config_for_variants,
+        )?;
 
         // Construct a mapping that for packages that we want from source.
         //

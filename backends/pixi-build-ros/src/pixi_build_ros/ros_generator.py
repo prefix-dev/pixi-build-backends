@@ -48,10 +48,13 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         )
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
+        # Get package mapping file paths to include in input globs
+        package_mapping_files = [str(path) for path in backend_config.get_package_mapping_file_paths()]
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
             backend_config.distro.name,
             extra_input_globs=list(backend_config.extra_input_globs or []),
+            package_mapping_files=package_mapping_files,
         )
 
         # Create base recipe from model with metadata provider

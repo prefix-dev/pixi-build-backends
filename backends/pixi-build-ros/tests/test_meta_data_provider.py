@@ -66,11 +66,7 @@ def test_metadata_provider_includes_package_mapping_files_in_input_globs():
         package_xml_path.write_text(package_xml_content)
 
         # Create a mapping file inline
-        mapping_content = {
-            "custom_package": {
-                "conda": ["custom-conda-package"]
-            }
-        }
+        mapping_content = {"custom_package": {"conda": ["custom-conda-package"]}}
         mapping_file_path = temp_path / "custom_mapping.yaml"
         with open(mapping_file_path, "w") as f:
             yaml.dump(mapping_content, f)

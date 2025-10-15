@@ -62,10 +62,11 @@ impl LoadedVariantConfig {
     /// Load variant configuration from a recipe path. This checks if there is a
     /// `variants.yaml` and loads it alongside the recipe.
     #[allow(clippy::result_large_err)]
-    pub fn from_recipe_path(
+    pub fn from_recipe_path<'a>(
         source_dir: &Path,
         recipe_path: &Path,
         selector_config: &SelectorConfig,
+        additional_variant_files: impl Iterator<Item = &'a Path>,
     ) -> Result<Self, VariantConfigError<Arc<str>>> {
         let mut variant_files = Vec::new();
         let mut input_globs = BTreeSet::new();
@@ -89,6 +90,9 @@ impl LoadedVariantConfig {
                 variant_files.push(variant_path);
             }
         };
+
+        // Add additional variant files
+        variant_files.extend(additional_variant_files.map(|p| p.to_path_buf()));
 
         Ok(Self {
             variant_config: VariantConfig::from_files(&variant_files, selector_config)?,
@@ -154,6 +158,7 @@ impl RattlerBuild {
     /// Discover the outputs from the recipe.
     pub fn discover_outputs(
         &self,
+        variant_files: &[PathBuf],
         variant_config_input: &Option<BTreeMap<String, Vec<String>>>,
     ) -> miette::Result<IndexSet<DiscoveredOutput>> {
         // First find all outputs from the recipe
@@ -161,7 +166,7 @@ impl RattlerBuild {
 
         // Check if there is a `variants.yaml` file next to the recipe that we should
         // potentially use.
-        let mut variant_configs = None;
+        let mut variant_config_paths = Vec::new();
         if let Some(variant_path) = self
             .recipe_source
             .path
@@ -169,14 +174,14 @@ impl RattlerBuild {
             .map(|parent| parent.join(VARIANTS_CONFIG_FILE))
         {
             if variant_path.is_file() {
-                variant_configs = Some(vec![variant_path]);
+                variant_config_paths.push(variant_path);
             }
         };
 
-        let variant_configs = variant_configs.unwrap_or_default();
+        variant_config_paths.extend(variant_files.iter().cloned());
 
         let mut variant_config =
-            VariantConfig::from_files(&variant_configs, &self.selector_config)?;
+            VariantConfig::from_files(&variant_config_paths, &self.selector_config)?;
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {

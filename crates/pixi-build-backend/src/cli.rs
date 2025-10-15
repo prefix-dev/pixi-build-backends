@@ -238,6 +238,7 @@ async fn conda_get_metadata<T: ProtocolInstantiator>(
             },
             work_directory: tempdir.path().to_path_buf(),
             variant_configuration: None,
+            variant_files: None,
         })
         .await
 }
@@ -275,8 +276,9 @@ async fn build<T: ProtocolInstantiator>(factory: T, manifest_path: &Path) -> mie
                 base_url: channel_config.channel_alias,
             },
             outputs: None,
-            work_directory: work_dir.path().to_path_buf(),
             variant_configuration: None,
+            variant_files: None,
+            work_directory: work_dir.path().to_path_buf(),
             editable: false,
         })
         .await?;

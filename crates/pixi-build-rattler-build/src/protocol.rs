@@ -46,7 +46,7 @@ use rattler_build::{
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::DependencyInfo,
+    render::resolved_dependencies::{DependencyInfo, RunExportsDownload},
     selectors::SelectorConfig,
     tool_configuration::{BaseClient, Configuration},
     variant_config::{ParseErrors, VariantConfig},
@@ -120,8 +120,10 @@ impl Protocol for RattlerBuildBackend {
             .channel_base_urls
             .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
 
+        let variant_files = params.variant_files.clone().unwrap_or_default();
+
         let discovered_outputs =
-            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
+            rattler_build_tool.discover_outputs(&variant_files, &params.variant_configuration)?;
 
         let host_vpkgs = params
             .host_platform
@@ -169,7 +171,7 @@ impl Protocol for RattlerBuildBackend {
                 .within_context_async(move || async move {
                     output
                         .clone()
-                        .resolve_dependencies(tool_config)
+                        .resolve_dependencies(tool_config, RunExportsDownload::DownloadMissing)
                         .await
                         .into_diagnostic()
                 })
@@ -273,6 +275,7 @@ impl Protocol for RattlerBuildBackend {
             &self.source_dir,
             &self.recipe_source.path,
             &selector_config_for_variants,
+            params.variant_files.iter().flatten().map(PathBuf::as_path),
         )?
         .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
@@ -523,9 +526,11 @@ impl Protocol for RattlerBuildBackend {
             params.work_directory.clone(),
         );
 
+        let variant_files = params.variant_files.clone().unwrap_or_default();
+
         // Discover and filter the outputs.
         let mut discovered_outputs =
-            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
+            rattler_build_tool.discover_outputs(&variant_files, &params.variant_configuration)?;
         if let Some(outputs) = &params.outputs {
             discovered_outputs.retain(|output| {
                 let name = PackageName::from_str(&output.name)
@@ -953,9 +958,12 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
 #[cfg(test)]
 mod tests {
     use std::{
+        collections::BTreeMap,
         path::{Path, PathBuf},
         str::FromStr,
     };
+
+    use fs_err as fs;
 
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
     use pixi_build_types::{
@@ -1001,8 +1009,9 @@ mod tests {
                     base_url: Url::from_str("https://prefix.dev").unwrap(),
                 },
                 channel_base_urls: None,
-                work_directory: current_dir,
                 variant_configuration: None,
+                variant_files: None,
+                work_directory: current_dir,
             })
             .await
             .unwrap();
@@ -1039,6 +1048,7 @@ mod tests {
                         host_platform: Platform::Linux64,
                         build_platform: Platform::Linux64,
                         variant_configuration: None,
+                        variant_files: None,
                         work_directory: current_dir,
                     })
                     .await
@@ -1080,8 +1090,9 @@ mod tests {
                     base_url: Url::from_str("https://prefix.dev").unwrap(),
                 },
                 outputs: None,
-                work_directory: current_dir.keep(),
                 variant_configuration: None,
+                variant_files: None,
+                work_directory: current_dir.keep(),
                 editable: false,
             })
             .await
@@ -1090,6 +1101,181 @@ mod tests {
         assert_eq!(
             result.packages[0].name.as_normalized(),
             "boltons-with-extra"
+        );
+    }
+
+    const VARIANT_RECIPE: &str = r#"
+    package:
+      name: variant-test
+      version: 0.1.0
+
+    build:
+      number: 0
+
+    requirements:
+      host:
+        - python
+        - numpy
+    "#;
+
+    #[tokio::test]
+    async fn test_variant_files_are_applied() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let variant_file = temp_dir.path().join("global-variants.yaml");
+        fs::write(&variant_file, "python:\n  - \"3.9\"\n").unwrap();
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.9");
+    }
+
+    #[tokio::test]
+    async fn test_variant_configuration_overrides_variant_files() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let variant_file = temp_dir.path().join("shared-variants.yaml");
+        fs::write(
+            &variant_file,
+            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+        )
+        .unwrap();
+
+        let mut variant_configuration = BTreeMap::new();
+        variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: Some(variant_configuration),
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.10");
+        assert_eq!(
+            result.outputs[0]
+                .metadata
+                .variant
+                .get("numpy")
+                .expect("numpy variant present from variant file"),
+            "1.22"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_override_auto_discovered_variant() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let auto_discovered_variant = temp_dir.path().join("variants.yaml");
+        fs::write(
+            &auto_discovered_variant,
+            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+        )
+        .unwrap();
+
+        let variant_file = temp_dir.path().join("override-variants.yaml");
+        fs::write(&variant_file, "python:\n  - \"3.10\"\n").unwrap();
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let variant = &result.outputs[0].metadata.variant;
+        assert_eq!(
+            variant
+                .get("python")
+                .expect("python variant present after override"),
+            "3.10"
+        );
+        assert_eq!(
+            variant
+                .get("numpy")
+                .expect("numpy variant present from auto-discovered file"),
+            "1.22"
         );
     }
 

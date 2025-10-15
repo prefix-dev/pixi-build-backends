@@ -276,7 +276,7 @@ impl Protocol for RattlerBuildBackend {
             &self.recipe_source.path,
             &selector_config_for_variants,
             params.variant_files.iter().flatten().map(PathBuf::as_path),
-        )
+        )?
         .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe

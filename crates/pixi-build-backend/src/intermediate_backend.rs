@@ -407,7 +407,7 @@ where
                 &named_source.path,
             );
             // Save intermediate recipe in the debug dir
-            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            let debug_path = directories.work_dir.join("recipe.yaml");
             tokio_fs::create_dir_all(&directories.work_dir)
                 .await
                 .into_diagnostic()?;
@@ -761,7 +761,7 @@ where
             );
 
             // Save intermediate recipe in the debug dir
-            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            let debug_path = directories.work_dir.join("recipe.yaml");
             tokio_fs::create_dir_all(&directories.work_dir)
                 .await
                 .into_diagnostic()?;
@@ -1009,7 +1009,7 @@ where
             );
 
             // Save intermediate recipe in the debug dir
-            let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+            let debug_path = directories.work_dir.join("recipe.yaml");
             tokio_fs::create_dir_all(&directories.work_dir)
                 .await
                 .into_diagnostic()?;
@@ -1222,7 +1222,7 @@ where
         );
 
         // Save intermediate recipe in the debug dir
-        let debug_path = directories.work_dir.join("intermediate_recipe.yaml");
+        let debug_path = directories.work_dir.join("recipe.yaml");
         tokio_fs::create_dir_all(&directories.work_dir)
             .await
             .into_diagnostic()?;

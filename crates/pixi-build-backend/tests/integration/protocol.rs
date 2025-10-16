@@ -1,14 +1,21 @@
 use std::sync::Arc;
 
 use crate::common::model::{convert_test_model_to_project_model_v1, load_project_model_from_json};
+use dirs::preference_dir;
 use imp::TestGenerateRecipe;
 use pixi_build_backend::{intermediate_backend::IntermediateBackend, protocol::Protocol};
 use pixi_build_types::{
     ChannelConfiguration, PlatformAndVirtualPackages,
-    procedures::{conda_build_v0::CondaBuildParams, conda_metadata::CondaMetadataParams},
+    procedures::{
+        conda_build_v0::CondaBuildParams,
+        conda_build_v1::{CondaBuildV1Output, CondaBuildV1Params},
+        conda_metadata::CondaMetadataParams,
+    },
 };
 use rattler_build::console_utils::LoggingOutputHandler;
-use rattler_conda_types::Platform;
+use rattler_conda_types::{
+    ChannelUrl, Platform, utils::url_with_trailing_slash::UrlWithTrailingSlash,
+};
 use serde_json::json;
 use tempfile::TempDir;
 use url::Url;
@@ -198,4 +205,89 @@ async fn test_conda_build() {
         ".packages[0].output_file" => "[redacted]",
         ".packages[0].subdir" => "[redacted]",
     });
+}
+
+#[tokio::test]
+async fn test_conda_build_v1() {
+    let tmp_dir = TempDir::new().unwrap();
+    let tmp_dir_path = tmp_dir.path().to_path_buf();
+
+    let pixi_manifest = tmp_dir_path.join("pixi.toml");
+    let build_dir = tmp_dir_path.join("build");
+
+    // Load a model from JSON
+    let original_model = load_project_model_from_json("minimal_project_model_for_build.json");
+
+    // Serialize it back to JSON
+    let project_model_v1 = convert_test_model_to_project_model_v1(original_model);
+
+    // save the pixi.toml file to a temporary location
+    fs_err::write(&pixi_manifest, toml::to_string(&project_model_v1).unwrap()).unwrap();
+
+    let channel_url = Url::parse("https://prefix.dev/conda-forge").unwrap();
+
+    let channel_url = ChannelUrl::from(channel_url);
+
+    let build_params = CondaBuildV1Params {
+        channels: vec![channel_url],
+
+        build_prefix: None,
+        host_prefix: None,
+        run_constraints: None,
+        run_dependencies: None,
+        run_exports: None,
+        output: CondaBuildV1Output {
+            name: "minimal-package".parse().unwrap(),
+            version: None,
+            build: None,
+            subdir: Platform::current(),
+            variant: Default::default(),
+        },
+        work_directory: build_dir.clone(),
+        output_directory: None,
+        editable: None,
+    };
+
+    let some_config = json!({
+        "debug-dir": "some_debug_dir",
+    });
+
+    let target_config = Default::default();
+
+    let intermediate_backend: IntermediateBackend<TestGenerateRecipe> = IntermediateBackend::new(
+        pixi_manifest.clone(),
+        Some(tmp_dir_path.clone()),
+        project_model_v1,
+        Arc::default(),
+        some_config,
+        target_config,
+        LoggingOutputHandler::default(),
+        None,
+    )
+    .unwrap();
+
+    let conda_build_result = intermediate_backend
+        .conda_build_v1(build_params)
+        .await
+        .unwrap();
+
+    dbg!(&build_dir);
+
+    // list all dirs inside build_dir
+    let entries = fs_err::read_dir(&build_dir.join("work")).unwrap();
+    for entry in entries {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        dbg!(path);
+    }
+
+    insta::assert_yaml_snapshot!(conda_build_result, {
+        ".output_file" => "[redacted]",
+        ".build" => "[redacted]",
+        ".subdir" => "[redacted]",
+    });
+
+    // we also want to assert that we put intermediate_recipe.yaml in the debug dir
+
+    assert!(build_dir.join("work").join("recipe.yaml").exists());
 }

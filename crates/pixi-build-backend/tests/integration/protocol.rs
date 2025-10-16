@@ -13,9 +13,7 @@ use pixi_build_types::{
     },
 };
 use rattler_build::console_utils::LoggingOutputHandler;
-use rattler_conda_types::{
-    ChannelUrl, Platform, utils::url_with_trailing_slash::UrlWithTrailingSlash,
-};
+use rattler_conda_types::{ChannelUrl, Platform};
 use serde_json::json;
 use tempfile::TempDir;
 use url::Url;
@@ -270,16 +268,6 @@ async fn test_conda_build_v1() {
         .conda_build_v1(build_params)
         .await
         .unwrap();
-
-    dbg!(&build_dir);
-
-    // list all dirs inside build_dir
-    let entries = fs_err::read_dir(&build_dir.join("work")).unwrap();
-    for entry in entries {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        dbg!(path);
-    }
 
     insta::assert_yaml_snapshot!(conda_build_result, {
         ".output_file" => "[redacted]",

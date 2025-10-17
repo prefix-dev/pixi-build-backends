@@ -24,10 +24,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{
-        ParsingError, Recipe,
-        parser::find_outputs_from_src,
-    },
+    recipe::{ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
     selectors::SelectorConfig,
     source_code::Source,
     tool_configuration::Configuration,
@@ -35,6 +32,7 @@ use rattler_build::{
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
 use rattler_conda_types::{Platform, compression_level::CompressionLevel, package::ArchiveType};
+
 use serde::Deserialize;
 
 use crate::{
@@ -45,7 +43,10 @@ use crate::{
     generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
     specs_conversion::from_build_v1_args_to_finalized_dependencies,
+    tools::{OneOrMultipleOutputs, output_directory},
 };
+
+use fs_err::tokio as tokio_fs;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -229,50 +230,6 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct a `VariantConfig` based on the input parameters.
-        //
-        // rattler-build recipes would also load variant.yaml (or
-        // conda-build-config.yaml) files here, but we only respect the variant
-        // configuration passed in.
-        //
-        // Determine the variant configuration to use. This is a combination of defaults
-        // from the generator and the user supplied parameters. The parameters
-        // from the user take precedence over the default variants.
-        let recipe_variants = self
-            .generate_recipe
-            .default_variants(params.host_platform)?;
-        let param_variants =
-            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
-        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
-
-        // Construct the intermediate recipe
-        let recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            params.host_platform,
-            Some(PythonParams { editable: false }),
-            &variants.keys().cloned().collect(),
-        )?;
-
-        // Convert the recipe to source code.
-        // TODO(baszalmstra): In the future it would be great if we could just
-        // immediately use the intermediate recipe for some of this rattler-build
-        // functions.
-        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
-        let named_source = Source {
-            name: self.manifest_rel_path.display().to_string(),
-            code: Arc::from(recipe.recipe.to_yaml_pretty().into_diagnostic()?.as_str()),
-            path: recipe_path.clone(),
-        };
-
-        // Determine the different outputs that are supported by the recipe by expanding
-        // all the different variant combinations.
-        //
-        // TODO(baszalmstra): The selector config we pass in here doesnt have all values
-        // filled in. This is on purpose because at this point we dont yet know all
-        // values like the variant. We should introduce a new type of selector config
-        // for this particular case.
         let selector_config_for_variants = SelectorConfig {
             target_platform: params.host_platform,
             host_platform: params.host_platform,
@@ -283,12 +240,73 @@ where
             allow_undefined: false,
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
-        let outputs = find_outputs_from_src(named_source.clone())?;
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
+
+        let mut variants = self
+            .generate_recipe
+            .default_variants(params.host_platform)?;
+
+        // Construct a `VariantConfig` based on the input parameters. This is a
+        // combination of defaults provided by the generator (lowest priority),
+        // variants loaded from external files, and finally the user supplied
+        // variants (highest priority).
+        let mut variant_config = if let Some(variant_files) = params
+            .variant_files
+            .as_ref()
+            .filter(|files| !files.is_empty())
+        {
+            let mut variant_config =
+                VariantConfig::from_files(variant_files, &selector_config_for_variants)?;
+            variants.append(&mut variant_config.variants);
+            variant_config.variants = variants;
+            variant_config
+        } else {
+            VariantConfig {
+                variants,
+                pin_run_as_build: None,
+                zip_keys: None,
+            }
         };
+
+        let mut param_variants =
+            convert_input_variant_configuration(params.variant_configuration.clone())
+                .unwrap_or_default();
+        variant_config.variants.append(&mut param_variants);
+
+        // Construct the intermediate recipe
+        let generated_recipe = self.generate_recipe.generate_recipe(
+            &self.project_model,
+            &config,
+            self.source_dir.clone(),
+            params.host_platform,
+            Some(PythonParams { editable: false }),
+            &variant_config.variants.keys().cloned().collect(),
+        )?;
+
+        // Convert the recipe to source code.
+        // TODO(baszalmstra): In the future it would be great if we could just
+        // immediately use the intermediate recipe for some of this rattler-build
+        // functions.
+        let recipe_path = self.source_dir.join(&self.manifest_rel_path);
+        let named_source = Source {
+            name: self.manifest_rel_path.display().to_string(),
+            code: Arc::from(
+                generated_recipe
+                    .recipe
+                    .to_yaml_pretty()
+                    .into_diagnostic()?
+                    .as_str(),
+            ),
+            path: recipe_path.clone(),
+        };
+
+        // Determine the different outputs that are supported by the recipe by expanding
+        // all the different variant combinations.
+        //
+        // TODO(baszalmstra): The selector config we pass in here doesnt have all values
+        // filled in. This is on purpose because at this point we dont yet know all
+        // values like the variant. We should introduce a new type of selector config
+        // for this particular case.
+        let outputs = find_outputs_from_src(named_source.clone())?;
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -311,6 +329,8 @@ where
 
         let mut subpackages = HashMap::new();
         let mut outputs = Vec::new();
+
+        let num_of_outputs = discovered_outputs.len();
         for discovered_output in discovered_outputs {
             let variant = discovered_output.used_vars;
             let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
@@ -341,6 +361,28 @@ where
             }
 
             let build_number = recipe.build().number;
+
+            let directories = output_directory(
+                if num_of_outputs == 1 {
+                    OneOrMultipleOutputs::Single(discovered_output.name.clone())
+                } else {
+                    OneOrMultipleOutputs::OneOfMany(discovered_output.name.clone())
+                },
+                params.work_directory.clone(),
+                &named_source.path,
+            );
+
+            // Save intermediate recipe in the debug dir
+            let debug_path = directories.work_dir.join("recipe.yaml");
+            tokio_fs::create_dir_all(&directories.work_dir)
+                .await
+                .into_diagnostic()?;
+            tokio_fs::write(
+                &debug_path,
+                generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+            )
+            .await
+            .into_diagnostic()?;
 
             subpackages.insert(
                 recipe.package().name().clone(),
@@ -452,7 +494,7 @@ where
 
         Ok(CondaOutputsResult {
             outputs,
-            input_globs: recipe.metadata_input_globs,
+            input_globs: generated_recipe.metadata_input_globs,
         })
     }
 
@@ -483,7 +525,7 @@ where
             .output
             .variant
             .iter()
-            .map(|(k, v)| (k.as_str().into(), vec![v.clone().into()]))
+            .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
             .collect();
 
         // Construct the intermediate recipe
@@ -542,6 +584,18 @@ where
             params.output_directory.as_deref(),
             recipe_path,
         );
+
+        // Save intermediate recipe in the debug dir
+        let debug_path = directories.work_dir.join("recipe.yaml");
+        tokio_fs::create_dir_all(&directories.work_dir)
+            .await
+            .into_diagnostic()?;
+        tokio_fs::write(
+            &debug_path,
+            recipe.recipe.to_yaml_pretty().into_diagnostic()?,
+        )
+        .await
+        .into_diagnostic()?;
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())

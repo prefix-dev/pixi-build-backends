@@ -30,10 +30,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{
-        Jinja, ParsingError, Recipe,
-        parser::find_outputs_from_src,
-    },
+    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
     selectors::SelectorConfig,
     tool_configuration::Configuration,
     types::{PackageIdentifier, PackagingSettings},
@@ -83,20 +80,17 @@ impl Protocol for RattlerBuildBackend {
             &self.source_dir,
             &self.recipe_source.path,
             &selector_config_for_variants,
-        )
-        .into_diagnostic()?
+            params.variant_files.iter().flatten().map(PathBuf::as_path),
+        )?
         .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
-        let discovered_outputs = variant_config
-            .variant_config
-            .find_variants(
-                &output_nodes,
-                self.recipe_source.clone(),
-                &selector_config_for_variants,
-            )
-            .into_diagnostic()?;
+        let discovered_outputs = variant_config.variant_config.find_variants(
+            &output_nodes,
+            self.recipe_source.clone(),
+            &selector_config_for_variants,
+        )?;
 
         // Construct a mapping that for packages that we want from source.
         //
@@ -293,7 +287,7 @@ impl Protocol for RattlerBuildBackend {
                 .output
                 .variant
                 .iter()
-                .map(|(k, v)| (k.as_str().into(), vec![v.clone().into()]))
+                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
                 .collect(),
             pin_run_as_build: None,
             zip_keys: None,
@@ -491,7 +485,8 @@ fn build_input_globs(
     Ok(input_globs)
 }
 
-/// Returns the input globs for metadata operations.
+/// Returns the input globs for conda_get_metadata, as used in the
+/// CondaMetadataResult.
 fn get_metadata_input_globs(
     manifest_root: &Path,
     recipe_source_path: &Path,
@@ -609,7 +604,9 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::collections::BTreeMap;
+
+    use fs_err as fs;
 
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
     use pixi_build_types::procedures::initialize::InitializeParams;
@@ -647,6 +644,7 @@ mod tests {
                         host_platform: Platform::Linux64,
                         build_platform: Platform::Linux64,
                         variant_configuration: None,
+                        variant_files: None,
                         work_directory: current_dir,
                     })
                     .await
@@ -655,6 +653,181 @@ mod tests {
                 insta::assert_snapshot!(conda_outputs_snapshot(result));
             });
         });
+    }
+
+    const VARIANT_RECIPE: &str = r#"
+    package:
+      name: variant-test
+      version: 0.1.0
+
+    build:
+      number: 0
+
+    requirements:
+      host:
+        - python
+        - numpy
+    "#;
+
+    #[tokio::test]
+    async fn test_variant_files_are_applied() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let variant_file = temp_dir.path().join("global-variants.yaml");
+        fs::write(&variant_file, "python:\n  - \"3.9\"\n").unwrap();
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.9");
+    }
+
+    #[tokio::test]
+    async fn test_variant_configuration_overrides_variant_files() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let variant_file = temp_dir.path().join("shared-variants.yaml");
+        fs::write(
+            &variant_file,
+            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+        )
+        .unwrap();
+
+        let mut variant_configuration = BTreeMap::new();
+        variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: Some(variant_configuration),
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.10");
+        assert_eq!(
+            result.outputs[0]
+                .metadata
+                .variant
+                .get("numpy")
+                .expect("numpy variant present from variant file"),
+            "1.22"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_override_auto_discovered_variant() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+
+        let auto_discovered_variant = temp_dir.path().join("variants.yaml");
+        fs::write(
+            &auto_discovered_variant,
+            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+        )
+        .unwrap();
+
+        let variant_file = temp_dir.path().join("override-variants.yaml");
+        fs::write(&variant_file, "python:\n  - \"3.10\"\n").unwrap();
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let variant = &result.outputs[0].metadata.variant;
+        assert_eq!(
+            variant
+                .get("python")
+                .expect("python variant present after override"),
+            "3.10"
+        );
+        assert_eq!(
+            variant
+                .get("numpy")
+                .expect("numpy variant present from auto-discovered file"),
+            "1.22"
+        );
     }
 
     const FAKE_RECIPE: &str = r#"

@@ -171,7 +171,7 @@ pub async fn get_build_output(
         let output = temp_recipe
             .within_context_async(move || async move {
                 output
-                    .resolve_dependencies(&tool_config, RunExportsDownload::SkipDownload)
+                    .resolve_dependencies(&tool_config, RunExportsDownload::DownloadMissing)
                     .await
                     .into_diagnostic()
             })

@@ -1,4 +1,80 @@
 # serializer version: 1
+# name: test_package_xml_condition_evaluation[ros1-default]
+  dict({
+    'distro': 'noetic',
+    'env': dict({
+      'ROS_DISTRO': 'noetic',
+      'ROS_VERSION': '1',
+    }),
+    'filtered_build': list([
+      'ros-noetic-catkin',
+      'ros-noetic-roscpp',
+    ]),
+    'filtered_run': list([
+      'ros-noetic-roscpp',
+    ]),
+    'override_env': dict({
+    }),
+  })
+# ---
+# name: test_package_xml_condition_evaluation[ros1-override-to-ros2]
+  dict({
+    'distro': 'noetic',
+    'env': dict({
+      'ROS_DISTRO': 'custom-noetic',
+      'ROS_VERSION': '2',
+    }),
+    'filtered_build': list([
+      'ros-noetic-ament-cmake',
+      'ros-noetic-rclcpp',
+    ]),
+    'filtered_run': list([
+      'ros-noetic-rclcpp',
+    ]),
+    'override_env': dict({
+      'ROS_DISTRO': 'custom-noetic',
+      'ROS_VERSION': '2',
+    }),
+  })
+# ---
+# name: test_package_xml_condition_evaluation[ros2-default]
+  dict({
+    'distro': 'jazzy',
+    'env': dict({
+      'ROS_DISTRO': 'jazzy',
+      'ROS_VERSION': '2',
+    }),
+    'filtered_build': list([
+      'ros-jazzy-ament-cmake',
+      'ros-jazzy-rclcpp',
+    ]),
+    'filtered_run': list([
+      'ros-jazzy-rclcpp',
+    ]),
+    'override_env': dict({
+    }),
+  })
+# ---
+# name: test_package_xml_condition_evaluation[ros2-override-to-ros1]
+  dict({
+    'distro': 'jazzy',
+    'env': dict({
+      'ROS_DISTRO': 'custom-jazzy',
+      'ROS_VERSION': '1',
+    }),
+    'filtered_build': list([
+      'ros-jazzy-catkin',
+      'ros-jazzy-roscpp',
+    ]),
+    'filtered_run': list([
+      'ros-jazzy-roscpp',
+    ]),
+    'override_env': dict({
+      'ROS_DISTRO': 'custom-jazzy',
+      'ROS_VERSION': '1',
+    }),
+  })
+# ---
 # name: test_recipe_includes_project_run_dependency
   '''
   context: {}

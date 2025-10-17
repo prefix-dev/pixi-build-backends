@@ -41,3 +41,60 @@ def test_metadata_provider_raises_on_broken_xml(package_xmls: Path):
     # Verify the exception contains location information
     error = exc_info.value
     assert "Failed to parse package.xml" in str(error)
+
+
+def test_metadata_provider_includes_package_mapping_files_in_input_globs():
+    """Test that package mapping files from config are included in input_globs."""
+    import tempfile
+    import yaml
+    from pixi_build_ros.config import ROSBackendConfig
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Create a package.xml inline
+        package_xml_content = """<?xml version="1.0"?>
+<package format="2">
+  <name>test_package</name>
+  <version>1.0.0</version>
+  <description>Test package</description>
+  <maintainer email="test@test.com">Test</maintainer>
+  <license>Apache-2.0</license>
+</package>
+"""
+        package_xml_path = temp_path / "package.xml"
+        package_xml_path.write_text(package_xml_content)
+
+        # Create a mapping file inline
+        mapping_content = {"custom_package": {"conda": ["custom-conda-package"]}}
+        mapping_file_path = temp_path / "custom_mapping.yaml"
+        with open(mapping_file_path, "w") as f:
+            yaml.dump(mapping_content, f)
+
+        # Create config with the mapping file
+        config = {
+            "distro": "noetic",
+            "extra-package-mappings": [str(mapping_file_path)],
+        }
+
+        backend_config = ROSBackendConfig.model_validate(config, context={"manifest_root": temp_path})
+
+        # Get package mapping file paths
+        package_mapping_files = [str(path) for path in backend_config.get_package_mapping_file_paths()]
+
+        # Create metadata provider
+        metadata_provider = ROSPackageXmlMetadataProvider(
+            str(package_xml_path),
+            distro_name="noetic",
+            package_mapping_files=package_mapping_files,
+        )
+
+        # Get input globs
+        input_globs = metadata_provider.input_globs()
+
+        # Verify the mapping file is included
+        assert str(mapping_file_path) in input_globs
+
+        # Verify base globs are still present
+        assert "package.xml" in input_globs
+        assert "CMakeLists.txt" in input_globs

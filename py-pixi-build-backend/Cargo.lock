@@ -4816,7 +4816,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.48.1"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#8fe56bacc9b8f0a33aeed3353b9a82d9501b62ce"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#d4d9a38a7197e9e64408d8dfd24a8a28773f5cae"
 dependencies = [
  "anyhow",
  "async-once-cell",
@@ -4912,7 +4912,7 @@ dependencies = [
 [[package]]
 name = "rattler_build_recipe_generator"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#8fe56bacc9b8f0a33aeed3353b9a82d9501b62ce"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#d4d9a38a7197e9e64408d8dfd24a8a28773f5cae"
 dependencies = [
  "async-once-cell",
  "async-recursion",

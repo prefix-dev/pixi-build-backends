@@ -1901,7 +1901,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "console 0.15.11",
 ]
@@ -4049,7 +4049,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "itertools 0.14.0",
  "ordermap",
@@ -4062,7 +4062,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "ordermap",
  "pixi_stable_hash",
@@ -4077,7 +4077,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "clap",
  "console 0.15.11",
@@ -4103,7 +4103,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "console 0.15.11",
  "rattler_cache",
@@ -4114,7 +4114,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4135,7 +4135,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "chrono",
  "console 0.15.11",
@@ -4175,7 +4175,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4195,7 +4195,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "dirs",
  "file_url",
@@ -4218,7 +4218,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "indexmap 2.11.4",
  "itertools 0.14.0",
@@ -4230,7 +4230,7 @@ dependencies = [
 [[package]]
 name = "pixi_stable_hash"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -4241,7 +4241,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "digest",
  "hex",
@@ -4256,7 +4256,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/Hofer-Julian/pixi?branch=feature%2Fpix-1190-featbuild-load-variants-from-packages#424dc9b1b446b90053cf70bd6ec292f24ef7bdaf"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
 dependencies = [
  "async-fd-lock",
  "fs-err",

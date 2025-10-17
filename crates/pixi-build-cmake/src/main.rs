@@ -9,10 +9,12 @@ use pixi_build_backend::{
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
+use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{PackageName, Platform};
+use rattler_conda_types::{Channel, PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -27,12 +29,13 @@ impl GenerateRecipe for CMakeGenerator {
 
     fn generate_recipe(
         &self,
-        model: &pixi_build_types::ProjectModelV1,
+        model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
-        host_platform: rattler_conda_types::Platform,
+        manifest_path: PathBuf,
+        host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<Channel>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
@@ -84,7 +87,7 @@ impl GenerateRecipe for CMakeGenerator {
             } else {
                 BuildPlatform::Unix
             },
-            source_dir: manifest_root.display().to_string(),
+            source_dir: manifest_path.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_host_python,
         }
@@ -212,6 +215,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -252,6 +256,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -287,6 +292,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -332,6 +338,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -407,6 +414,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -460,6 +468,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::default(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -503,6 +512,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
+                vec![],
             )
             .expect("Failed to generate recipe");
 

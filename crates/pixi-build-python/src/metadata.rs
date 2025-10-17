@@ -562,6 +562,7 @@ Documentation = "https://docs.example.com"
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -607,6 +608,7 @@ requires-python = ">=3.13"
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 

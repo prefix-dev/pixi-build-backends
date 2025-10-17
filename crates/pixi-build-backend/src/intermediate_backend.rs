@@ -46,7 +46,8 @@ use rattler_build::{
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig},
 };
 use rattler_conda_types::{
-    ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel, package::ArchiveType,
+    Channel, ChannelConfig, MatchSpec, Platform, compression_level::CompressionLevel,
+    package::ArchiveType,
 };
 use recipe_stage0::matchspec::{PackageDependency, SerializableMatchSpec};
 use serde::Deserialize;
@@ -323,6 +324,15 @@ where
             .variants
             .append(&mut param_variant_configuration);
 
+        // Convert channels from params
+        let channels: Vec<Channel> = params
+            .channel_base_urls
+            .iter()
+            .flatten()
+            .cloned()
+            .map(Channel::from_url)
+            .collect();
+
         // Construct the intermediate recipe
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
@@ -331,6 +341,7 @@ where
             host_platform,
             Some(PythonParams { editable: false }),
             &variant_config.variants.keys().cloned().collect(),
+            channels,
         )?;
 
         // Convert the recipe to source code.
@@ -661,6 +672,15 @@ where
                 .unwrap_or_default();
         variant_config.variants.append(&mut param_variants);
 
+        // Convert channels from params
+        let channels: Vec<Channel> = params
+            .channel_base_urls
+            .iter()
+            .flatten()
+            .cloned()
+            .map(Channel::from_url)
+            .collect();
+
         // Construct the intermediate recipe
         let mut generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
@@ -671,6 +691,7 @@ where
                 editable: params.editable,
             }),
             &variant_config.variants.keys().cloned().collect(),
+            channels.clone(),
         )?;
 
         // Convert the recipe to source code.
@@ -956,6 +977,9 @@ where
                 .unwrap_or_default();
         variant_config.variants.append(&mut param_variants);
 
+        // Convert channels from params
+        let channels: Vec<Channel> = params.channels.into_iter().map(Channel::from_url).collect();
+
         // Construct the intermediate recipe
         let generated_recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
@@ -964,6 +988,7 @@ where
             params.host_platform,
             Some(PythonParams { editable: false }),
             &variant_config.variants.keys().cloned().collect(),
+            channels,
         )?;
 
         // Convert the recipe to source code.
@@ -1213,6 +1238,7 @@ where
             .collect();
 
         // Construct the intermediate recipe
+        // Note: conda_build_v1 procedure doesn't have channels in params
         let mut recipe = self.generate_recipe.generate_recipe(
             &self.project_model,
             &config,
@@ -1222,6 +1248,7 @@ where
                 editable: params.editable.unwrap_or_default(),
             }),
             &variants.keys().cloned().collect(),
+            vec![], // No channels available in conda_build_v1
         )?;
 
         // Convert the recipe to source code.

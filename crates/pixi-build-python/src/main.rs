@@ -13,7 +13,7 @@ use pixi_build_backend::{
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
-use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
+use rattler_conda_types::{Channel, PackageName, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
 use recipe_stage0::recipe::{self, ConditionalRequirements, NoArchKind, Python, Script};
 use std::collections::HashSet;
@@ -56,15 +56,16 @@ impl GenerateRecipe for PythonGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<Channel>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
         let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
-            &manifest_root,
+            &manifest_path,
             config
                 .ignore_pyproject_manifest
                 .is_some_and(|ignore| ignore),
@@ -152,7 +153,7 @@ impl GenerateRecipe for PythonGenerator {
             },
             editable,
             extra_args: config.extra_args.clone(),
-            manifest_root: manifest_root.clone(),
+            manifest_root: manifest_path.clone(),
         }
         .render();
 
@@ -175,7 +176,7 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest_path = manifest_root.join("pyproject.toml");
+        let pyproject_manifest_path = manifest_path.join("pyproject.toml");
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
@@ -338,6 +339,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -380,6 +382,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -421,6 +424,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -460,6 +464,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -525,6 +530,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -568,6 +574,7 @@ mod tests {
             Platform::Linux64,
             None,
             &std::collections::HashSet::<pixi_build_backend::variants::NormalizedKey>::new(),
+            vec![],
         )?)
     }
 

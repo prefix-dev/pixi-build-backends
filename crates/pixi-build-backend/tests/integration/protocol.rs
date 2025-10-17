@@ -23,6 +23,7 @@ mod imp {
     use pixi_build_backend::generated_recipe::{
         BackendConfig, DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
     };
+    use rattler_conda_types::Channel;
     use serde::{Deserialize, Serialize};
     use std::{
         collections::HashSet,
@@ -67,6 +68,7 @@ mod imp {
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
             _variants: &HashSet<pixi_build_backend::variants::NormalizedKey>,
+            _channels: Vec<Channel>,
         ) -> miette::Result<GeneratedRecipe> {
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()

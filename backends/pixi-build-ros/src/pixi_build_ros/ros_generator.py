@@ -42,12 +42,23 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         manifest_path: str,
         host_platform: Platform,
         _python_params: PythonParams | None = None,
+        channels: list[str] | None = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
         manifest_root = Path(manifest_path)
         backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(
-            config, context={"manifest_root": manifest_root}
+            config,
+            context={
+                "manifest_root": manifest_root,
+                "channels": channels,
+            },
         )
+        # Resolve distro after validation, using channels from build system
+        backend_config = ROSBackendConfig.resolve_distro(
+            backend_config,
+            channels=channels,
+        )
+
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
         # Get package mapping file paths to include in input globs

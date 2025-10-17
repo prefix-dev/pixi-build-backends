@@ -71,6 +71,7 @@ class GenerateRecipeProtocol(Protocol):
         manifest_path: str,
         host_platform: Platform,
         python_params: Optional[PythonParams] = None,
+        channels: Optional[List[str]] = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
         ...

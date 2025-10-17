@@ -10,10 +10,12 @@ use pixi_build_backend::{
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
+use pixi_build_types::ProjectModelV1;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{PackageName, Platform};
+use rattler_conda_types::{Channel, PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::{collections::BTreeSet, path::Path, sync::Arc};
 
 #[derive(Default, Clone)]
@@ -24,12 +26,13 @@ impl GenerateRecipe for MojoGenerator {
 
     fn generate_recipe(
         &self,
-        model: &pixi_build_types::ProjectModelV1,
+        model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<Channel>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
@@ -45,7 +48,7 @@ impl GenerateRecipe for MojoGenerator {
         );
 
         // Auto-derive bins and pkg fields/configs if needed
-        let (bins, pkg) = config.auto_derive(&manifest_root, &cleaned_project_name)?;
+        let (bins, pkg) = config.auto_derive(&manifest_path, &cleaned_project_name)?;
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
@@ -95,7 +98,7 @@ impl GenerateRecipe for MojoGenerator {
         );
 
         let build_script = BuildScriptContext {
-            source_dir: manifest_root.display().to_string(),
+            source_dir: manifest_path.display().to_string(),
             bins,
             pkg,
         }
@@ -214,6 +217,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -260,6 +264,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -298,6 +303,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -342,6 +348,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -388,6 +395,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -430,6 +438,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -508,6 +517,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -573,6 +583,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 

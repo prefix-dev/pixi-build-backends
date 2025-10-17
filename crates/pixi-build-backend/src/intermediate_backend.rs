@@ -38,7 +38,7 @@ use rattler_build::{
         parser::{BuildString, find_outputs_from_src},
         variable::Variable,
     },
-    render::resolved_dependencies::DependencyInfo,
+    render::resolved_dependencies::{DependencyInfo, RunExportsDownload},
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
@@ -262,18 +262,52 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct a `VariantConfig` based on the input parameters.
-        //
-        // rattler-build recipes would also load variant.yaml (or
-        // conda-build-config.yaml) files here, but we only respect the variant
-        // configuration passed in.
-        //
-        // Determine the variant configuration to use. This is a combination of defaults
-        // from the generator and the user supplied parameters. The parameters
-        // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(host_platform)?;
+        // Determine the selector config that should be used while expanding
+        // variants for this recipe.
+        let selector_config_for_variants = SelectorConfig {
+            target_platform: host_platform,
+            host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+        };
+
+        let mut variants = self.generate_recipe.default_variants(host_platform)?;
+
+        // Construct a `VariantConfig` based on the input parameters. This is a
+        // combination of defaults provided by the generator (lowest priority),
+        // variants loaded from external files, and finally the user supplied
+        // variants (highest priority).
+        let mut variant_config = if let Some(variant_files) = params
+            .variant_files
+            .as_ref()
+            .filter(|files| !files.is_empty())
+        {
+            // Reverse the order of the variant files so that the first file has the highest priority.
+            let variant_files = variant_files
+                .clone()
+                .into_iter()
+                .rev()
+                .collect::<Vec<PathBuf>>();
+            let mut variant_config =
+                VariantConfig::from_files(&variant_files, &selector_config_for_variants)?;
+            variants.append(&mut variant_config.variants);
+            variant_config.variants = variants;
+            variant_config
+        } else {
+            VariantConfig {
+                variants,
+                pin_run_as_build: None,
+                zip_keys: None,
+            }
+        };
+
         let mut param_variant_configuration = params
             .variant_configuration
+            .clone()
             .unwrap_or_default()
             .into_iter()
             .map(|(k, v)| {
@@ -283,8 +317,9 @@ where
                 )
             })
             .collect();
-        let mut variants = recipe_variants;
-        variants.append(&mut param_variant_configuration);
+        variant_config
+            .variants
+            .append(&mut param_variant_configuration);
 
         // Construct the intermediate recipe
         let generated_recipe = self.generate_recipe.generate_recipe(
@@ -293,7 +328,7 @@ where
             self.source_dir.clone(),
             host_platform,
             Some(PythonParams { editable: false }),
-            &variants.keys().cloned().collect(),
+            &variant_config.variants.keys().cloned().collect(),
         )?;
 
         // Convert the recipe to source code.
@@ -320,22 +355,7 @@ where
         // filled in. This is on prupose because at this point we dont yet know all
         // values like the variant. We should introduce a new type of selector config
         // for this particular case.
-        let selector_config_for_variants = SelectorConfig {
-            target_platform: host_platform,
-            host_platform,
-            build_platform,
-            hash: None,
-            variant: Default::default(),
-            experimental: false,
-            allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
-        };
         let outputs = find_outputs_from_src(named_source.clone())?;
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
-        };
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -463,7 +483,7 @@ where
             let output = temp_recipe
                 .within_context_async(move || async move {
                     output
-                        .resolve_dependencies(&tool_config)
+                        .resolve_dependencies(&tool_config, RunExportsDownload::DownloadMissing)
                         .await
                         .into_diagnostic()
                 })
@@ -572,19 +592,51 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct a `VariantConfig` based on the input parameters.
-        //
-        // rattler-build recipes would also load variant.yaml (or
-        // conda-build-config.yaml) files here, but we only respect the variant
-        // configuration passed in.
-        //
-        // Determine the variant configuration to use. This is a combination of defaults
-        // from the generator and the user supplied parameters. The parameters
-        // from the user take precedence over the default variants.
-        let recipe_variants = self.generate_recipe.default_variants(host_platform)?;
-        let param_variants =
-            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
-        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
+        let selector_config_for_variants = SelectorConfig {
+            target_platform: host_platform,
+            host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+        };
+
+        let mut variants = self.generate_recipe.default_variants(host_platform)?;
+
+        // Construct a `VariantConfig` based on the input parameters. This is a
+        // combination of defaults provided by the generator (lowest priority),
+        // variants loaded from external files, and finally the user supplied
+        // variants (highest priority).
+        let mut variant_config = if let Some(variant_files) = params
+            .variant_files
+            .as_ref()
+            .filter(|files| !files.is_empty())
+        {
+            // Reverse the order of the variant files so that the first file has the highest priority.
+            let variant_files = variant_files
+                .clone()
+                .into_iter()
+                .rev()
+                .collect::<Vec<PathBuf>>();
+            let mut variant_config =
+                VariantConfig::from_files(&variant_files, &selector_config_for_variants)?;
+            variants.append(&mut variant_config.variants);
+            variant_config.variants = variants;
+            variant_config
+        } else {
+            VariantConfig {
+                variants,
+                pin_run_as_build: None,
+                zip_keys: None,
+            }
+        };
+
+        let mut param_variants =
+            convert_input_variant_configuration(params.variant_configuration.clone())
+                .unwrap_or_default();
+        variant_config.variants.append(&mut param_variants);
 
         // Construct the intermediate recipe
         let mut generated_recipe = self.generate_recipe.generate_recipe(
@@ -595,7 +647,7 @@ where
             Some(PythonParams {
                 editable: params.editable,
             }),
-            &variants.keys().cloned().collect(),
+            &variant_config.variants.keys().cloned().collect(),
         )?;
 
         // Convert the recipe to source code.
@@ -622,22 +674,7 @@ where
         // filled in. This is on prupose because at this point we dont yet know all
         // values like the variant. We should introduce a new type of selector config
         // for this particular case.
-        let selector_config_for_variants = SelectorConfig {
-            target_platform: host_platform,
-            host_platform,
-            build_platform,
-            hash: None,
-            variant: Default::default(),
-            experimental: false,
-            allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
-        };
         let outputs = find_outputs_from_src(named_source.clone())?;
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
-        };
         let mut discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),
@@ -832,21 +869,47 @@ where
             .map(|(_, target_config)| self.config.merge_with_target_config(target_config))
             .unwrap_or_else(|| Ok(self.config.clone()))?;
 
-        // Construct a `VariantConfig` based on the input parameters.
-        //
-        // rattler-build recipes would also load variant.yaml (or
-        // conda-build-config.yaml) files here, but we only respect the variant
-        // configuration passed in.
-        //
-        // Determine the variant configuration to use. This is a combination of defaults
-        // from the generator and the user supplied parameters. The parameters
-        // from the user take precedence over the default variants.
-        let recipe_variants = self
+        let selector_config_for_variants = SelectorConfig {
+            target_platform: params.host_platform,
+            host_platform: params.host_platform,
+            build_platform,
+            hash: None,
+            variant: Default::default(),
+            experimental: false,
+            allow_undefined: false,
+            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
+        };
+
+        let mut variants = self
             .generate_recipe
             .default_variants(params.host_platform)?;
-        let param_variants =
-            convert_input_variant_configuration(params.variant_configuration).unwrap_or_default();
-        let variants = BTreeMap::from_iter(itertools::chain!(recipe_variants, param_variants));
+
+        // Construct a `VariantConfig` based on the input parameters. This is a
+        // combination of defaults provided by the generator (lowest priority),
+        // variants loaded from external files, and finally the user supplied
+        // variants (highest priority).
+        let mut variant_config = if let Some(variant_files) = params
+            .variant_files
+            .as_ref()
+            .filter(|files| !files.is_empty())
+        {
+            let mut variant_config =
+                VariantConfig::from_files(variant_files, &selector_config_for_variants)?;
+            variants.append(&mut variant_config.variants);
+            variant_config.variants = variants;
+            variant_config
+        } else {
+            VariantConfig {
+                variants,
+                pin_run_as_build: None,
+                zip_keys: None,
+            }
+        };
+
+        let mut param_variants =
+            convert_input_variant_configuration(params.variant_configuration.clone())
+                .unwrap_or_default();
+        variant_config.variants.append(&mut param_variants);
 
         // Construct the intermediate recipe
         let recipe = self.generate_recipe.generate_recipe(
@@ -855,7 +918,7 @@ where
             self.source_dir.clone(),
             params.host_platform,
             Some(PythonParams { editable: false }),
-            &variants.keys().cloned().collect(),
+            &variant_config.variants.keys().cloned().collect(),
         )?;
 
         // Convert the recipe to source code.
@@ -876,22 +939,7 @@ where
         // filled in. This is on purpose because at this point we dont yet know all
         // values like the variant. We should introduce a new type of selector config
         // for this particular case.
-        let selector_config_for_variants = SelectorConfig {
-            target_platform: params.host_platform,
-            host_platform: params.host_platform,
-            build_platform,
-            hash: None,
-            variant: Default::default(),
-            experimental: false,
-            allow_undefined: false,
-            recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
-        };
         let outputs = find_outputs_from_src(named_source.clone())?;
-        let variant_config = VariantConfig {
-            variants,
-            pin_run_as_build: None,
-            zip_keys: None,
-        };
         let discovered_outputs = variant_config.find_variants(
             &outputs,
             named_source.clone(),

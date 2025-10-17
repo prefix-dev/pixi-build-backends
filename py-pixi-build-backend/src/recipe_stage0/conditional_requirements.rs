@@ -16,7 +16,7 @@ impl Display for PyVecItemPackageDependency {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for item in &self.inner {
-            write!(f, "{}, ", item)?;
+            write!(f, "{item}, ")?;
         }
         write!(f, "]")
     }
@@ -190,7 +190,7 @@ create_py_wrap!(
     |vec: &Vec<Item<PackageDependency>>, f: &mut Formatter<'_>| {
         write!(f, "[")?;
         for item in vec {
-            write!(f, "{}, ", item)?;
+            write!(f, "{item}, ")?;
         }
         write!(f, "]")
     }

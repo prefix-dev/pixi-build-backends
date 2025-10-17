@@ -23,6 +23,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  PYTHONIOENCODING: utf-8
+
 jobs:
   format_lint_test:
     name: Test the Python bindings

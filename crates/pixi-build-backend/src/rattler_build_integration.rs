@@ -8,6 +8,7 @@ use rattler_build::{
         PlatformWithVirtualPackages,
     },
     recipe::parser::find_outputs_from_src,
+    render::resolved_dependencies::RunExportsDownload,
     selectors::SelectorConfig,
     source_code::Source,
     system_tools::SystemTools,
@@ -172,7 +173,7 @@ pub async fn get_build_output(
         let output = temp_recipe
             .within_context_async(move || async move {
                 output
-                    .resolve_dependencies(&tool_config)
+                    .resolve_dependencies(&tool_config, RunExportsDownload::DownloadMissing)
                     .await
                     .into_diagnostic()
             })

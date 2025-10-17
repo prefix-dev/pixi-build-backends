@@ -65,6 +65,122 @@ def test_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str,
         assert f"ros-{distro.name}-{pkg}" in run_names
 
 
+def test_inline_package_xml_condition_evaluation(tmp_path: Path, distro: Distro):
+    """Ensure inline package.xml strings respect conditional dependencies."""
+    inline_package_xml = """<?xml version="1.0"?>
+<package format="3">
+  <name>conditional_pkg</name>
+  <version>0.1.0</version>
+  <description>Conditional dependency test</description>
+  <maintainer email="test@example.com">Tester</maintainer>
+  <license>MIT</license>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <build_depend condition="$ROS_VERSION == 2">rclcpp</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roscpp</build_depend>
+  <exec_depend condition="$ROS_VERSION == 2">rclcpp</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roscpp</exec_depend>
+</package>
+"""
+    package_xml_path = tmp_path / "package.xml"
+    package_xml_path.write_text(inline_package_xml, encoding="utf-8")
+
+    model_payload = {
+        "name": "conditional_pkg",
+        "version": "0.1.0",
+        "targets": {
+            "defaultTarget": {
+                "hostDependencies": {},
+                "buildDependencies": {},
+                "runDependencies": {},
+            },
+            "targets": {},
+        },
+    }
+    model = ProjectModelV1.from_json(json.dumps(model_payload))
+    generator = ROSGenerator()
+
+    generated_recipe = generator.generate_recipe(
+        model=model,
+        config={"distro": distro, "noarch": False},
+        manifest_path=str(tmp_path),
+        host_platform=Platform("linux-64"),
+    )
+
+    build_names = [
+        dep.concrete.package_name
+        for dep in generated_recipe.recipe.requirements.build
+        if dep.concrete
+    ]
+    run_names = [
+        dep.concrete.package_name for dep in generated_recipe.recipe.requirements.run if dep.concrete
+    ]
+
+    assert "ros-jazzy-ament-cmake" in build_names
+    assert "ros-jazzy-rclcpp" in build_names
+    assert "ros-jazzy-rclcpp" in run_names
+    assert "ros-jazzy-catkin" not in build_names
+    assert "ros-jazzy-roscpp" not in run_names
+
+    env_repr = str(generated_recipe.recipe.build.script.env)
+    expected_ros_version = "1" if distro.check_ros1() else "2"
+    assert f"ROS_VERSION: {expected_ros_version}" in env_repr
+    assert f"ROS_DISTRO: {distro.name}" in env_repr
+
+
+def test_inline_package_xml_env_override(tmp_path: Path, distro_noetic: Distro):
+    """Ensure user-provided ROS env values override defaults set by the build-backend"""
+    inline_package_xml = """<?xml version="1.0"?>
+<package format="3">
+  <name>conditional_pkg</name>
+  <version>0.1.0</version>
+  <description>Conditional dependency test</description>
+  <maintainer email="test@example.com">Tester</maintainer>
+  <license>MIT</license>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+</package>
+"""
+    package_xml_path = tmp_path / "package.xml"
+    package_xml_path.write_text(inline_package_xml, encoding="utf-8")
+
+    model_payload = {
+        "name": "conditional_pkg",
+        "version": "0.1.0",
+        "targets": {
+            "defaultTarget": {
+                "hostDependencies": {},
+                "buildDependencies": {},
+                "runDependencies": {},
+            },
+            "targets": {},
+        },
+    }
+    model = ProjectModelV1.from_json(json.dumps(model_payload))
+    generator = ROSGenerator()
+
+    override_env = {"ROS_VERSION": "2", "ROS_DISTRO": "override"}
+    generated_recipe = generator.generate_recipe(
+        model=model,
+        config={"distro": distro_noetic, "noarch": False, "env": override_env},
+        manifest_path=str(tmp_path),
+        host_platform=Platform("linux-64"),
+    )
+
+    build_names = [
+        dep.concrete.package_name
+        for dep in generated_recipe.recipe.requirements.build
+        if dep.concrete
+    ]
+
+    assert "ros-noetic-ament-cmake" in build_names
+    assert "ros-noetic-catkin" not in build_names
+
+    env_repr = str(generated_recipe.recipe.build.script.env)
+    assert "ROS_VERSION: 2" in env_repr
+    assert "ROS_DISTRO: override" in env_repr
+
+
 def test_ament_cmake_package_xml_to_recipe_config(
     package_xmls: Path, package_map: dict[str, PackageMapEntry], distro: Distro
 ):

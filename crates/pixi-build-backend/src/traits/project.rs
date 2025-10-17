@@ -25,7 +25,7 @@ pub trait ProjectModel {
     fn dependencies(
         &self,
         platform: Option<Platform>,
-    ) -> Dependencies<<<Self as ProjectModel>::Targets as Targets>::Spec> {
+    ) -> Dependencies<'_, <<Self as ProjectModel>::Targets as Targets>::Spec> {
         self.targets()
             .map(|t| t.dependencies(platform))
             .unwrap_or_default()

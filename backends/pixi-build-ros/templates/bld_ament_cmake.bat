@@ -18,11 +18,11 @@ set CXX=cl.exe
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 pushd %BUILD_DIR%
 
-:: set "CMAKE_GENERATOR=Ninja"
+set "CMAKE_GENERATOR=Ninja"
 :: We use the Visual Studio generator as a workaround for
 :: problems in Ninja when using long paths, see https://github.com/RoboStack/ros-humble/pull/229#issuecomment-2564856467
 :: Once those are solved, we can switch back to use Ninja
-set "CMAKE_GENERATOR=Visual Studio %VS_MAJOR% %VS_YEAR%"
+:: set "CMAKE_GENERATOR=Visual Studio %VS_MAJOR% %VS_YEAR%"
 
 :: PYTHON_INSTALL_DIR should be a relative path, see
 :: https://github.com/ament/ament_cmake/blob/2.3.2/ament_cmake_python/README.md

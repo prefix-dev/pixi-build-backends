@@ -47,3 +47,5 @@ AGENTS.md
 # Python
 *.pyc
 __pycache__/
+
+artifacts-channel

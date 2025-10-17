@@ -25,18 +25,20 @@ PackageMapEntry = dict[str, list[str] | dict[str, list[str]]]
 class PackageMappingSource:
     """Describes where additional package mapping data comes from."""
 
-    def __init__(self, mapping: dict[str, PackageMapEntry]):
+    def __init__(self, mapping: dict[str, PackageMapEntry], source_file: Path | None = None):
         if mapping is None:
             raise ValueError("PackageMappingSource mapping cannot be null.")
         if not isinstance(mapping, dict):
             raise TypeError("PackageMappingSource mapping must be a dictionary.")
         # Copy to keep the source immutable for callers.
         self.mapping: dict[str, PackageMapEntry] = dict(mapping)
+        # Track the source file path if this came from a file
+        self.source_file: Path | None = source_file
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, PackageMapEntry]) -> "PackageMappingSource":
         """Create a source directly from a mapping dictionary."""
-        return cls(mapping)
+        return cls(mapping, source_file=None)
 
     @classmethod
     def from_file(cls, file_path: str | Path) -> "PackageMappingSource":
@@ -48,10 +50,14 @@ class PackageMappingSource:
             data = yaml.safe_load(f) or {}
         if not isinstance(data, dict):
             raise TypeError("Expected package map file to contain a dictionary.")
-        return cls(data)
+        return cls(data, source_file=path)
 
     def get_package_mapping(self) -> dict[str, PackageMapEntry]:
         return dict(self.mapping)
+
+    def get_source_file(self) -> Path | None:
+        """Return the source file path if this mapping came from a file."""
+        return self.source_file
 
 
 class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allowed=True):
@@ -77,6 +83,14 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     def is_noarch(self) -> bool:
         """Whether to build a noarch package or a platform-specific package."""
         return self.noarch is None or self.noarch
+
+    def get_package_mapping_file_paths(self) -> list[Path]:
+        """Get all file paths from package mappings that came from files."""
+        file_paths = []
+        for source in self.extra_package_mappings:
+            if source_file := source.get_source_file():
+                file_paths.append(source_file)
+        return file_paths
 
     @pydantic.field_validator("distro", mode="before")
     @classmethod

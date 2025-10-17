@@ -49,6 +49,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         package_xml_path: str,
         *args,
         extra_input_globs: list[str] | None = None,
+        package_mapping_files: list[str] | None = None,
         **kwargs,
     ):
         """
@@ -56,11 +57,14 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
         Args:
             package_xml_path: Path to the package.xml file
+            extra_input_globs: Additional glob patterns to include
+            package_mapping_files: Package mapping file paths to track as inputs
         """
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
         self._package_data: PackageData | None = None
         self._extra_input_globs = list(extra_input_globs or [])
+        self._package_mapping_files = list(package_mapping_files or [])
         # Early load the package.xml data to ensure it's valid
         _ = self._package_xml_data
 
@@ -170,7 +174,8 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
     def input_globs(self) -> list[str]:
         """Return input globs that affect this metadata provider."""
         base_globs = ["package.xml", "CMakeLists.txt", "setup.py", "setup.cfg"]
-        return list(set(base_globs + self._extra_input_globs))
+        all_globs = base_globs + self._extra_input_globs + self._package_mapping_files
+        return list(set(all_globs))
 
 
 class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
@@ -187,15 +192,22 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
         distro_name: str | None = None,
         *,
         extra_input_globs: list[str] | None = None,
+        package_mapping_files: list[str] | None = None,
     ):
         """
         Initialize the ROS metadata provider.
 
         Args:
             package_xml_path: Path to the package.xml file
-            distro: ROS distro. If None, will use the base package name without distro prefix.
+            distro_name: ROS distro. If None, will use the base package name without distro prefix.
+            extra_input_globs: Additional glob patterns to include
+            package_mapping_files: Package mapping file paths to track as inputs
         """
-        super().__init__(package_xml_path, extra_input_globs=extra_input_globs)
+        super().__init__(
+            package_xml_path,
+            extra_input_globs=extra_input_globs,
+            package_mapping_files=package_mapping_files,
+        )
         self._distro_name: str | None = distro_name
 
     def name(self) -> str | None:

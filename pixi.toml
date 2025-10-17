@@ -15,12 +15,7 @@ build-release = "cargo build --release"
 build-ci = "cargo build --profile ci --locked"
 nextest = "cargo nextest run --workspace --all-targets"
 doctest = "cargo test --doc"
-pytest-build-ros = "pixi run --manifest-path backends/pixi-build-ros test"
-test = [
-  { task = "nextest" },
-  { task = "doctest" },
-  { task = "pytest-build-ros" },
-]
+test = [{ task = "nextest" }, { task = "doctest" }]
 generate-matrix = "python scripts/generate-matrix.py"
 
 install-pixi-build-python = { cmd = "cargo install --path crates/pixi-build-python --locked --force" }

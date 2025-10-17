@@ -77,11 +77,11 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 
 
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
-pixi_consts = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
-pixi_manifest = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
-pixi_spec = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
-pixi_build_type_conversions = { git = "https://github.com/Hofer-Julian/pixi", branch = "feature/pix-1190-featbuild-load-variants-from-packages" }
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
 #pixi_consts = { path = "../pixi/crates/pixi_consts" }

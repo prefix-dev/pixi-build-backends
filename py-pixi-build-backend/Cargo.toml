@@ -29,7 +29,6 @@ pixi_build_types = "*"
 pixi_manifest = "*"
 pixi_spec = "*"
 pixi_build_type_conversions = "*"
-pixi_consts = "*"
 
 # Core serialization and async support
 serde = { version = "1.0", features = ["derive"] }
@@ -58,7 +57,6 @@ pyo3-build-config = "0.26"
 
 [patch.crates-io]
 pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }

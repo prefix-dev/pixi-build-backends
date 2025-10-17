@@ -107,14 +107,8 @@ def test_inline_package_xml_condition_evaluation(tmp_path: Path, distro: Distro)
         host_platform=Platform("linux-64"),
     )
 
-    build_names = [
-        dep.concrete.package_name
-        for dep in generated_recipe.recipe.requirements.build
-        if dep.concrete
-    ]
-    run_names = [
-        dep.concrete.package_name for dep in generated_recipe.recipe.requirements.run if dep.concrete
-    ]
+    build_names = [dep.concrete.package_name for dep in generated_recipe.recipe.requirements.build if dep.concrete]
+    run_names = [dep.concrete.package_name for dep in generated_recipe.recipe.requirements.run if dep.concrete]
 
     assert "ros-jazzy-ament-cmake" in build_names
     assert "ros-jazzy-rclcpp" in build_names
@@ -167,11 +161,7 @@ def test_inline_package_xml_env_override(tmp_path: Path, distro_noetic: Distro):
         host_platform=Platform("linux-64"),
     )
 
-    build_names = [
-        dep.concrete.package_name
-        for dep in generated_recipe.recipe.requirements.build
-        if dep.concrete
-    ]
+    build_names = [dep.concrete.package_name for dep in generated_recipe.recipe.requirements.build if dep.concrete]
 
     assert "ros-noetic-ament-cmake" in build_names
     assert "ros-noetic-catkin" not in build_names

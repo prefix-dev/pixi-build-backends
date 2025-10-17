@@ -2,8 +2,10 @@
 ROS generator implementation using Python bindings.
 """
 
+import os
 from pathlib import Path
 from importlib.resources import files
+from unittest.mock import patch
 
 from typing import Any
 from pixi_build_backend.types.generated_recipe import (
@@ -62,25 +64,35 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
         # Read package.xml for dependency extraction
         package_xml_str = get_package_xml_content(manifest_root)
-        package_xml = convert_package_xml_to_catkin_package(package_xml_str)
+        ros_env_defaults = {
+            "ROS_DISTRO": backend_config.distro.name,
+            "ROS_VERSION": "1" if backend_config.distro.check_ros1() else "2",
+        }
+        user_env = dict(backend_config.env or {})
+        patched_env = {**ros_env_defaults, **user_env}
 
-        # load package map
+        # Ensure ROS-related environment variables are available while evaluating conditions.
+        # uses the unitest patch for this
+        with patch.dict(os.environ, patched_env, clear=False):
+            package_xml = convert_package_xml_to_catkin_package(package_xml_str)
 
-        # TODO: Currently hardcoded and not able to override, this should be configurable
-        package_files = files("pixi_build_ros")
-        robostack_file = Path(str(package_files)) / "robostack.yaml"
-        # workaround for from source install
-        if not robostack_file.is_file():
-            robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
+            # load package map
 
-        package_map_data = load_package_map_data(
-            backend_config.extra_package_mappings + [PackageMappingSource.from_file(robostack_file)]
-        )
+            # TODO: Currently hardcoded and not able to override, this should be configurable
+            package_files = files("pixi_build_ros")
+            robostack_file = Path(str(package_files)) / "robostack.yaml"
+            # workaround for from source install
+            if not robostack_file.is_file():
+                robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
 
-        # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(
-            package_xml, backend_config.distro, host_platform, package_map_data
-        )
+            package_map_data = load_package_map_data(
+                backend_config.extra_package_mappings + [PackageMappingSource.from_file(robostack_file)]
+            )
+
+            # Get requirements from package.xml
+            package_requirements = package_xml_to_conda_requirements(
+                package_xml, backend_config.distro, host_platform, package_map_data
+            )
 
         # Add standard dependencies
         build_deps = [
@@ -128,9 +140,12 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         )
         build_script_lines = build_script_context.render()
 
+        script_env = dict(ros_env_defaults)
+        script_env.update(user_env)
+
         generated_recipe.recipe.build.script = Script(
             content=build_script_lines,
-            env=backend_config.env,
+            env=script_env,
         )
 
         if backend_config.debug_dir:

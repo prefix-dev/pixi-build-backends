@@ -47,3 +47,6 @@ python:
 # Pin the compiler used
 rust_compiler_version:
   - 1.87.0
+
+python:
+  - 3.13

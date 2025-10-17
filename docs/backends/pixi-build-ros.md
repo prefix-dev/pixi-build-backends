@@ -150,8 +150,18 @@ Environment variables to set during the build process. These variables are avail
 
 ```toml
 [package.build.config]
-env = { ROS_VERSION = "2", AMENT_CMAKE_ENVIRONMENT_HOOKS_ENABLED = "1" }
+env = { AMENT_CMAKE_ENVIRONMENT_HOOKS_ENABLED = "1" }
 ```
+
+#### Automatically injected environment variables
+
+The ROS backend keeps the following variables in sync with the selected distro, so you do not need to set them manually in `env`:
+
+- `ROS_DISTRO` &mdash; set to the distro name you configure in `distro`.
+- `ROS_VERSION` &mdash; set to `"1"` for ROS 1 distros and `"2"` for ROS 2 distros.
+
+These values are available both while evaluating `package.xml` conditionals and during the generated build script. Any custom entries you provide in `env` are merged on top of these defaults.
+If you explicitly set `ROS_DISTRO` or `ROS_VERSION` in `env`, your values take precedence over the defaults.
 
 ### `debug-dir`
 

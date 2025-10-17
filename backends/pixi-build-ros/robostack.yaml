@@ -404,6 +404,12 @@ libpcl-all:
   robostack: [pcl]
 libpcl-all-dev:
   robostack: [pcl, libboost-devel, vtk-base, REQUIRE_OPENGL]
+libpcl-common:
+  robostack: [pcl]
+libpcl-filters:
+  robostack: [pcl]
+libpcl-io:
+  robostack: [pcl]
 libpng-dev:
   robostack: [libpng]
 libpoco-dev:

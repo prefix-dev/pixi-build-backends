@@ -1,0 +1,5 @@
+---
+source: crates/pixi-build-zig/src/build_script.rs
+expression: script
+---
+zig build --prefix $PREFIX

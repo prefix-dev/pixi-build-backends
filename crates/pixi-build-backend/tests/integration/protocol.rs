@@ -26,6 +26,7 @@ mod imp {
     #[serde(rename_all = "kebab-case")]
     pub struct TestBackendConfig {
         /// If set, internal state will be logged as files in that directory
+        #[serde(alias = "debug_dir")]
         pub debug_dir: Option<PathBuf>,
     }
 

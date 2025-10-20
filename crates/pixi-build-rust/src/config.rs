@@ -14,6 +14,7 @@ pub struct RustBackendConfig {
     #[serde(default)]
     pub env: IndexMap<String, String>,
     /// If set, internal state will be logged as files in that directory
+    #[serde(alias = "debug_dir")]
     pub debug_dir: Option<PathBuf>,
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
@@ -96,26 +97,20 @@ mod tests {
     }
 
     #[test]
-    fn test_debug_dir_only_accepts_kebab_case() {
-        // The struct uses #[serde(rename_all = "kebab-case")], so it only accepts debug-dir
+    fn test_debug_dir_accepts_both_formats() {
+        // Test with debug-dir (kebab-case) - the canonical format
         let json_with_hyphen = json!({
             "debug-dir": "/path/to/debug"
         });
         let config = serde_json::from_value::<RustBackendConfig>(json_with_hyphen).unwrap();
         assert_eq!(config.debug_dir, Some(PathBuf::from("/path/to/debug")));
 
-        // Test that debug_dir (underscore) is rejected
+        // Test with debug_dir (underscore) - should also work due to alias
         let json_with_underscore = json!({
             "debug_dir": "/path/to/debug"
         });
-        let result = serde_json::from_value::<RustBackendConfig>(json_with_underscore);
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("unknown field `debug_dir`")
-        );
+        let config = serde_json::from_value::<RustBackendConfig>(json_with_underscore).unwrap();
+        assert_eq!(config.debug_dir, Some(PathBuf::from("/path/to/debug")));
     }
 
     #[test]

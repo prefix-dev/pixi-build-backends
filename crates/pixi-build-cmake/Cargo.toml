@@ -4,6 +4,11 @@ version = "0.3.3"
 description = "CMake build backend for Pixi"
 edition.workspace = true
 
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["pixi-build-backend/rustls-tls", "rattler-build/rustls-tls"]
+native-tls = ["pixi-build-backend/native-tls", "rattler-build/native-tls"]
+
 [dependencies]
 indexmap = { workspace = true }
 miette = { workspace = true }

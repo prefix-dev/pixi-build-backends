@@ -3,8 +3,6 @@ use std::path::{Path, PathBuf};
 use pixi_build_types::procedures::conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result};
 use pixi_build_types::procedures::conda_outputs::{CondaOutputsParams, CondaOutputsResult};
 use pixi_build_types::procedures::{
-    conda_build_v0::{CondaBuildParams, CondaBuildResult},
-    conda_metadata::{CondaMetadataParams, CondaMetadataResult},
     initialize::{InitializeParams, InitializeResult},
     negotiate_capabilities::{NegotiateCapabilitiesParams, NegotiateCapabilitiesResult},
 };
@@ -39,19 +37,6 @@ pub trait Protocol {
     /// Get the debug directory
     /// If set, internal state will be logged as files in that directory
     fn debug_dir(&self) -> Option<&Path>;
-
-    /// Called when the client requests metadata for a Conda package.
-    async fn conda_get_metadata(
-        &self,
-        _params: CondaMetadataParams,
-    ) -> miette::Result<CondaMetadataResult> {
-        unimplemented!("conda_get_metadata not implemented");
-    }
-
-    /// Called when the client requests to build a Conda package.
-    async fn conda_build_v0(&self, _params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
-        unimplemented!("conda_build not implemented");
-    }
 
     /// Called when the client requests outputs for a Conda package.
     async fn conda_outputs(

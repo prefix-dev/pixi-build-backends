@@ -1901,7 +1901,7 @@ dependencies = [
 [[package]]
 name = "fancy_display"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "console 0.15.11",
 ]
@@ -2649,7 +2649,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.0",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4022,7 +4022,6 @@ dependencies = [
  "pathdiff",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts",
  "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
@@ -4049,7 +4048,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "itertools 0.14.0",
  "ordermap",
@@ -4062,7 +4061,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "ordermap",
  "pixi_stable_hash",
@@ -4077,7 +4076,7 @@ dependencies = [
 [[package]]
 name = "pixi_config"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "clap",
  "console 0.15.11",
@@ -4103,7 +4102,7 @@ dependencies = [
 [[package]]
 name = "pixi_consts"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "console 0.15.11",
  "rattler_cache",
@@ -4114,7 +4113,7 @@ dependencies = [
 [[package]]
 name = "pixi_git"
 version = "0.0.1"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "dashmap",
  "dunce",
@@ -4135,7 +4134,7 @@ dependencies = [
 [[package]]
 name = "pixi_manifest"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "chrono",
  "console 0.15.11",
@@ -4175,7 +4174,7 @@ dependencies = [
 [[package]]
 name = "pixi_pypi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "itertools 0.14.0",
  "pep440_rs",
@@ -4195,7 +4194,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "dirs",
  "file_url",
@@ -4218,7 +4217,7 @@ dependencies = [
 [[package]]
 name = "pixi_spec_containers"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "indexmap 2.11.4",
  "itertools 0.14.0",
@@ -4230,7 +4229,7 @@ dependencies = [
 [[package]]
 name = "pixi_stable_hash"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -4241,7 +4240,7 @@ dependencies = [
 [[package]]
 name = "pixi_toml"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "digest",
  "hex",
@@ -4256,7 +4255,7 @@ dependencies = [
 [[package]]
 name = "pixi_utils"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#d71d19c5d6d8c9291df4f957b93691e5572a7f4e"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#7ec3155994043c8af39ca22962153f63657e75ed"
 dependencies = [
  "async-fd-lock",
  "fs-err",
@@ -4470,7 +4469,6 @@ dependencies = [
  "pixi-build-backend",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_consts",
  "pixi_manifest",
  "pixi_spec",
  "pyo3",
@@ -4624,7 +4622,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.6.0",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -4661,7 +4659,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.0",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -4818,7 +4816,7 @@ dependencies = [
 [[package]]
 name = "rattler-build"
 version = "0.48.1"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#8fe56bacc9b8f0a33aeed3353b9a82d9501b62ce"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#d4d9a38a7197e9e64408d8dfd24a8a28773f5cae"
 dependencies = [
  "anyhow",
  "async-once-cell",
@@ -4914,7 +4912,7 @@ dependencies = [
 [[package]]
 name = "rattler_build_recipe_generator"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/rattler-build?branch=main#8fe56bacc9b8f0a33aeed3353b9a82d9501b62ce"
+source = "git+https://github.com/prefix-dev/rattler-build?branch=main#d4d9a38a7197e9e64408d8dfd24a8a28773f5cae"
 dependencies = [
  "async-once-cell",
  "async-recursion",

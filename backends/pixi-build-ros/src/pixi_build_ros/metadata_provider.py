@@ -152,17 +152,8 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
     def license_file(self) -> str | None:
         """Return package.xml as the license files, relative to manifest_root."""
-        from pathlib import Path
-
-        package_xml_abs = Path(self.package_xml_path).resolve()
-        manifest_root_abs = Path(self.manifest_root).resolve()
-
-        try:
-            relative_path = package_xml_abs.relative_to(manifest_root_abs)
-            return str(relative_path)
-        except ValueError:
-            # If package_xml is not relative to manifest_root (i.e., higher in the directory tree), return None
-            return None
+        # TODO: This does not work currently, so return None
+        return None
 
     def summary(self) -> str | None:
         """Return the description as summary from package.xml."""

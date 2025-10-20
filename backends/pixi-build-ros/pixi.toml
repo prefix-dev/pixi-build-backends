@@ -9,6 +9,9 @@ preview = ["pixi-build"]
 [activation.env]
 CARGO_TARGET_DIR = "target/pixi"
 
+[tasks]
+lint.depends-on = ["fmt", "lint-ruff", "lint-mypy"]
+
 [target.linux-64.dependencies]
 clang = ">=21.1,<21.2"
 mold = ">=2.33.0,<3.0"

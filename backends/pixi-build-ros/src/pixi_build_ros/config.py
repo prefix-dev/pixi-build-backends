@@ -173,16 +173,14 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         )
 
     @pydantic.model_validator(mode="after")
-    @classmethod
     def _ensure_distro(
-        cls,
-        config: "ROSBackendConfig",
+        self,
         info: pydantic.ValidationInfo,
     ) -> "ROSBackendConfig":
         """Ensure distro is resolved after validation."""
         context = info.context or {}
         channels = context.get("channels")
-        return cls.resolve_distro(config, channels=channels)
+        return self.resolve_distro(self, channels=channels)
 
     @pydantic.field_validator("debug_dir", mode="before")
     @classmethod
@@ -231,3 +229,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
                 )
             result.append(entry)
         return result
+
+    def get_distro(self) -> Distro:
+        if self.distro is None:
+            raise ValueError("Distro could not be resolved from the channels or the `distro` build config.")
+        return self.distro

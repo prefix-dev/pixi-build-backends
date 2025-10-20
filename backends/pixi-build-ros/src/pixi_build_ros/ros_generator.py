@@ -65,7 +65,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         package_mapping_files = [str(path) for path in backend_config.get_package_mapping_file_paths()]
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
-            backend_config.distro.name,
+            backend_config.get_distro().name,
             extra_input_globs=list(backend_config.extra_input_globs or []),
             package_mapping_files=package_mapping_files,
         )
@@ -76,8 +76,8 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         # Read package.xml for dependency extraction
         package_xml_str = get_package_xml_content(manifest_root)
         ros_env_defaults = {
-            "ROS_DISTRO": backend_config.distro.name,
-            "ROS_VERSION": "1" if backend_config.distro.check_ros1() else "2",
+            "ROS_DISTRO": backend_config.get_distro().name,
+            "ROS_VERSION": "1" if backend_config.get_distro().check_ros1() else "2",
         }
         user_env = dict(backend_config.env or {})
         patched_env = {**ros_env_defaults, **user_env}
@@ -102,7 +102,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
             # Get requirements from package.xml
             package_requirements = package_xml_to_conda_requirements(
-                package_xml, backend_config.distro, host_platform, package_map_data
+                package_xml, backend_config.get_distro(), host_platform, package_map_data
             )
 
         # Add standard dependencies
@@ -135,8 +135,8 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
             package_requirements.host.append(ItemPackageDependency(name=dep))
 
         # add a simple default host and run dependency on the ros{2}-distro-mutex
-        package_requirements.host.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
-        package_requirements.run.append(ItemPackageDependency(name=backend_config.distro.ros_distro_mutex_name))
+        package_requirements.host.append(ItemPackageDependency(name=backend_config.get_distro().ros_distro_mutex_name))
+        package_requirements.run.append(ItemPackageDependency(name=backend_config.get_distro().ros_distro_mutex_name))
 
         # Merge package requirements into the model requirements
         requirements = merge_requirements(generated_recipe.recipe.requirements, package_requirements)
@@ -147,7 +147,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
         # Generate build script
         build_script_context = BuildScriptContext.load_from_template(
-            package_xml, build_platform, manifest_root, backend_config.distro
+            package_xml, build_platform, manifest_root, backend_config.get_distro()
         )
         build_script_lines = build_script_context.render()
 

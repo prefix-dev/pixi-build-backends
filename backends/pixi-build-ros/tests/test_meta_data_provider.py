@@ -17,7 +17,7 @@ def test_metadata_provider(package_xmls: Path):
     assert metadata_provider.description() == "Demo"
     assert metadata_provider.homepage() == "https://test.io/custom_ros"
     assert metadata_provider.repository() == "https://github.com/test/custom_ros"
-    assert metadata_provider.license_file() == "custom_ros.xml"
+    assert metadata_provider.license_file() is None
 
 
 def test_ros_metadata_provider(package_xmls: Path):
@@ -30,7 +30,7 @@ def test_ros_metadata_provider(package_xmls: Path):
     assert metadata_provider.description() == "Demo"
     assert metadata_provider.homepage() == "https://test.io/custom_ros"
     assert metadata_provider.repository() == "https://github.com/test/custom_ros"
-    assert metadata_provider.license_file() == "custom_ros.xml"
+    assert metadata_provider.license_file() is None
 
 
 def test_metadata_provider_raises_on_broken_xml(package_xmls: Path):

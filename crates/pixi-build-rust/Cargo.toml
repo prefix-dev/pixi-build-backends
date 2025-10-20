@@ -7,6 +7,11 @@ repository.workspace = true
 license.workspace = true
 edition.workspace = true
 
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["pixi-build-backend/rustls-tls"]
+native-tls = ["pixi-build-backend/native-tls"]
+
 [dependencies]
 fs-err = { workspace = true }
 indexmap = { workspace = true }

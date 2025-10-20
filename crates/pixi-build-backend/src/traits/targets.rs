@@ -81,7 +81,7 @@ pub trait Targets {
     fn targets(&self) -> impl Iterator<Item = (&Self::Selector, &Self::Target)>;
 
     /// Return all dependencies for the given platform
-    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<Self::Spec>;
+    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<'_, Self::Spec>;
 
     /// Return the run dependencies for the given platform
     fn run_dependencies(
@@ -191,7 +191,7 @@ impl Targets for pbt::TargetsV1 {
             .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>()
     }
 
-    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<Self::Spec> {
+    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<'_, Self::Spec> {
         let build_deps = self.build_dependencies(platform);
         let host_deps = self.host_dependencies(platform);
         let run_deps = self.run_dependencies(platform);

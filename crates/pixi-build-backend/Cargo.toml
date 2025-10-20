@@ -3,6 +3,17 @@ name = "pixi-build-backend"
 version = "0.1.3"
 edition.workspace = true
 
+[features]
+default = ["rustls-tls"]
+# Use rustls for TLS (pure Rust implementation)
+rustls-tls = [
+  "reqwest/rustls-tls",
+  "reqwest/rustls-tls-native-roots",
+  "rattler-build/rustls-tls",
+]
+# Use native-tls/OpenSSL for TLS
+native-tls = ["reqwest/native-tls", "rattler-build/native-tls"]
+
 [dependencies]
 async-trait = { workspace = true }
 chrono = { workspace = true }

@@ -87,6 +87,7 @@ def test_metadata_provider_includes_package_mapping_files_in_input_globs():
         # Create metadata provider
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
+            str(temp_path),
             distro_name="noetic",
             package_mapping_files=package_mapping_files,
         )

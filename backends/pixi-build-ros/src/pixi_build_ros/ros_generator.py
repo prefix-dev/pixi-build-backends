@@ -50,6 +50,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         package_xml_path = manifest_root / "package.xml"
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
+            str(manifest_root),
             backend_config.distro.name,
             extra_input_globs=list(backend_config.extra_input_globs or []),
         )

@@ -47,6 +47,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
     def __init__(  # type: ignore[no-untyped-def]  # no typing for args and kwargs
         self,
         package_xml_path: str,
+        manifest_root: str,
         *args,
         extra_input_globs: list[str] | None = None,
         **kwargs,
@@ -56,9 +57,11 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
         Args:
             package_xml_path: Path to the package.xml file
+            manifest_root: Path to the manifest root directory
         """
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
+        self.manifest_root = manifest_root
         self._package_data: PackageData | None = None
         self._extra_input_globs = list(extra_input_globs or [])
         # Early load the package.xml data to ensure it's valid
@@ -144,8 +147,18 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         return None
 
     def license_file(self) -> str | None:
-        """Return package.xml as the license files."""
-        return "package.xml"
+        """Return package.xml as the license files, relative to manifest_root."""
+        from pathlib import Path
+
+        package_xml_abs = Path(self.package_xml_path).resolve()
+        manifest_root_abs = Path(self.manifest_root).resolve()
+
+        try:
+            relative_path = package_xml_abs.relative_to(manifest_root_abs)
+            return str(relative_path)
+        except ValueError:
+            # If package_xml is not relative to manifest_root (i.e., higher in the directory tree), return None
+            return None
 
     def summary(self) -> str | None:
         """Return the description as summary from package.xml."""
@@ -184,6 +197,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     def __init__(
         self,
         package_xml_path: str,
+        manifest_root: str,
         distro_name: str | None = None,
         *,
         extra_input_globs: list[str] | None = None,
@@ -193,9 +207,10 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
 
         Args:
             package_xml_path: Path to the package.xml file
+            manifest_root: Path to the manifest root directory
             distro: ROS distro. If None, will use the base package name without distro prefix.
         """
-        super().__init__(package_xml_path, extra_input_globs=extra_input_globs)
+        super().__init__(package_xml_path, manifest_root, extra_input_globs=extra_input_globs)
         self._distro_name: str | None = distro_name
 
     def name(self) -> str | None:

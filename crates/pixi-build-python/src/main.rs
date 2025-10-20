@@ -13,7 +13,7 @@ use pixi_build_backend::{
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
-use rattler_conda_types::{Channel, PackageName, Platform, package::EntryPoint};
+use rattler_conda_types::{ChannelUrl, PackageName, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
 use recipe_stage0::recipe::{self, ConditionalRequirements, NoArchKind, Python, Script};
 use std::collections::HashSet;
@@ -60,7 +60,7 @@ impl GenerateRecipe for PythonGenerator {
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
-        _channels: Vec<Channel>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 

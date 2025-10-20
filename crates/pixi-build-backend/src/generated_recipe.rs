@@ -1,7 +1,7 @@
 use miette::Diagnostic;
 use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{Channel, Platform, Version};
+use rattler_conda_types::{ChannelUrl, Platform, Version};
 use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
 use serde::de::DeserializeOwned;
 use std::collections::HashSet;
@@ -61,7 +61,7 @@ pub trait GenerateRecipe {
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
-        channels: Vec<Channel>,
+        channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files

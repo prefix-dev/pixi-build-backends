@@ -14,7 +14,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::{Channel, Platform};
+use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{ConditionalRequirements, Item, Script},
@@ -40,7 +40,7 @@ impl GenerateRecipe for RustGenerator {
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
-        _channels: Vec<Channel>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.

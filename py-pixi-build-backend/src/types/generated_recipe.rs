@@ -19,7 +19,7 @@ use pyo3::{
     pyclass, pymethods,
     types::{PyAnyMethods, PyList, PyString},
 };
-use rattler_conda_types::{Channel, Platform};
+use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::IntermediateRecipe;
 
 create_py_wrap!(PyVecString, Vec<String>, |v: &Vec<String>,
@@ -172,7 +172,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         host_platform: Platform,
         python_params: Option<PythonParams>,
         _variants: &HashSet<NormalizedKey>,
-        channels: Vec<Channel>,
+        channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::attach(|py| {
             let manifest_str = manifest_root.to_string_lossy().to_string();
@@ -215,8 +215,8 @@ impl GenerateRecipe for PyGenerateRecipe {
                 .into_diagnostic()?;
 
             // Convert channels to Python list of strings
-            let channels_list = PyList::new(py, channels.iter().map(|c| c.base_url.to_string()))
-                .into_diagnostic()?;
+            let channels_list =
+                PyList::new(py, channels.iter().map(|c| c.to_string())).into_diagnostic()?;
 
             let generated_recipe_py = self
                 .model

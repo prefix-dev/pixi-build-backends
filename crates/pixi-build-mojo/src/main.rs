@@ -12,7 +12,7 @@ use pixi_build_backend::{
 };
 use pixi_build_types::ProjectModelV1;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{Channel, PackageName, Platform};
+use rattler_conda_types::{ChannelUrl, PackageName, Platform};
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -32,7 +32,7 @@ impl GenerateRecipe for MojoGenerator {
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
-        _channels: Vec<Channel>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)

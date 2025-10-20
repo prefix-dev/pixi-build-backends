@@ -3,6 +3,11 @@ name = "pixi-build-mojo"
 version = "0.1.3"
 edition.workspace = true
 
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["pixi-build-backend/rustls-tls", "rattler-build/rustls-tls"]
+native-tls = ["pixi-build-backend/native-tls", "rattler-build/native-tls"]
+
 [dependencies]
 indexmap = { workspace = true }
 miette = { workspace = true }

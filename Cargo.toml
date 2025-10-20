@@ -28,10 +28,7 @@ marked-yaml = "0.8.0"
 miette = "7.5.0"
 minijinja = "2.7.0"
 parking_lot = "0.12.3"
-reqwest = { version = "0.12.12", default-features = false, features = [
-  "rustls-tls",
-  "rustls-tls-native-roots",
-] }
+reqwest = { version = "0.12.12", default-features = false }
 reqwest-middleware = "0.4.0"
 rstest = "0.26.0"
 serde = "1.0"
@@ -54,9 +51,7 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
-rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false, features = [
-  "rustls-tls",
-] }
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false }
 
 file_url = "0.2.5"
 rattler_conda_types = { version = "0.40.0", default-features = false }

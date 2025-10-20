@@ -7,6 +7,11 @@ edition = "2024"
 name = "pixi_build_backend"
 crate-type = ["cdylib"]
 
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["pixi-build-backend/rustls-tls", "rattler-build/rustls-tls"]
+native-tls = ["pixi-build-backend/native-tls", "rattler-build/native-tls"]
+
 [dependencies]
 # PyO3 for Python bindings
 pyo3 = { version = "0.26", features = [

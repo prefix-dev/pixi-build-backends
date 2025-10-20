@@ -8,7 +8,6 @@ use pixi_build_types as pbt;
 use pixi_build_types::{BinaryPackageSpecV1, NamedSpecV1};
 use rattler_build::{
     NormalizedKey,
-    metadata::PackageIdentifier,
     recipe::{parser::Dependency, variable::Variable},
     render::{
         pin::PinError,
@@ -17,6 +16,7 @@ use rattler_build::{
             SourceDependency, VariantDependency,
         },
     },
+    types::PackageIdentifier,
 };
 use rattler_conda_types::{
     MatchSpec, NamelessMatchSpec, PackageName, PackageRecord, ParseStrictness::Strict,
@@ -131,12 +131,7 @@ pub fn convert_input_variant_configuration(
 ) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
     variants.map(|v| {
         v.into_iter()
-            .map(|(k, v)| {
-                (
-                    k.into(),
-                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                )
-            })
+            .map(|(k, v)| (k.into(), v.into_iter().map(|v| v.into()).collect()))
             .collect()
     })
 }

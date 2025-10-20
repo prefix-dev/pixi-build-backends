@@ -65,6 +65,102 @@ def test_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str,
         assert f"ros-{distro.name}-{pkg}" in run_names
 
 
+@pytest.mark.parametrize(
+    ("distro_variant", "override_env"),
+    [
+        pytest.param("ros2", None, id="ros2-default"),
+        pytest.param("ros1", None, id="ros1-default"),
+        pytest.param("ros2", {"ROS_VERSION": "1", "ROS_DISTRO": "custom-jazzy"}, id="ros2-override-to-ros1"),
+        pytest.param("ros1", {"ROS_VERSION": "2", "ROS_DISTRO": "custom-noetic"}, id="ros1-override-to-ros2"),
+    ],
+    indirect=["distro_variant"],
+)
+def test_package_xml_condition_evaluation(
+    tmp_path: Path,
+    distro_variant: Distro,
+    override_env: dict[str, str] | None,
+    snapshot,
+):
+    """Ensure package.xml respect conditional dependencies. Set through ROS environment variables"""
+    inline_package_xml = """<?xml version="1.0"?>
+<package format="3">
+  <name>conditional_pkg</name>
+  <version>0.1.0</version>
+  <description>Conditional dependency test</description>
+  <maintainer email="test@example.com">Tester</maintainer>
+  <license>MIT</license>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <build_depend condition="$ROS_VERSION == 2">rclcpp</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roscpp</build_depend>
+  <exec_depend condition="$ROS_VERSION == 2">rclcpp</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roscpp</exec_depend>
+</package>
+"""
+    package_xml_path = tmp_path / "package.xml"
+    package_xml_path.write_text(inline_package_xml, encoding="utf-8")
+
+    model_payload = {
+        "name": "conditional_pkg",
+        "version": "0.1.0",
+        "targets": {
+            "defaultTarget": {
+                "hostDependencies": {},
+                "buildDependencies": {},
+                "runDependencies": {},
+            },
+            "targets": {},
+        },
+    }
+    model = ProjectModelV1.from_json(json.dumps(model_payload))
+    generator = ROSGenerator()
+
+    config = {"distro": distro_variant, "noarch": False}
+    if override_env is not None:
+        config["env"] = override_env
+
+    generated_recipe = generator.generate_recipe(
+        model=model,
+        config=config,
+        manifest_path=str(tmp_path),
+        host_platform=Platform("linux-64"),
+    )
+
+    build_names = [dep.concrete.package_name for dep in generated_recipe.recipe.requirements.build if dep.concrete]
+    run_names = [dep.concrete.package_name for dep in generated_recipe.recipe.requirements.run if dep.concrete]
+
+    # Only track the dependencies declared in the inline package.xml snippet above.
+    declared_deps = {"ament_cmake", "catkin", "rclcpp", "roscpp"}
+    normalized_declared_deps = {dep.replace("_", "-") for dep in declared_deps}
+    prefix = f"ros-{distro_variant.name}-"
+    filtered_build = sorted(
+        dep for dep in build_names if dep.startswith(prefix) and dep.removeprefix(prefix) in normalized_declared_deps
+    )
+    filtered_run = sorted(
+        dep for dep in run_names if dep.startswith(prefix) and dep.removeprefix(prefix) in normalized_declared_deps
+    )
+
+    # Only use the env variables we are interested in
+    env_repr = str(generated_recipe.recipe.build.script.env)
+    env_dict: dict[str, str] = {}
+    for item in env_repr.strip("{} ,").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        key, value = item.split(":", 1)
+        env_dict[key.strip()] = value.strip()
+
+    snapshot.assert_match(
+        {
+            "distro": distro_variant.name,
+            "override_env": override_env or {},
+            "filtered_build": filtered_build,
+            "filtered_run": filtered_run,
+            "env": dict(sorted(env_dict.items())),
+        }
+    )
+
+
 def test_ament_cmake_package_xml_to_recipe_config(
     package_xmls: Path, package_map: dict[str, PackageMapEntry], distro: Distro
 ):

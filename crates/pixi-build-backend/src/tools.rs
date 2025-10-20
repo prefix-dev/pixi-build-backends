@@ -7,20 +7,16 @@ use std::{
 use indexmap::IndexSet;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_types::procedures::conda_metadata::CondaMetadataParams;
 use rattler_build::{
     hash::HashInfo,
-    metadata::{
-        BuildConfiguration, Debug, Directories, Output, PackageIdentifier, PackagingSettings,
-        PlatformWithVirtualPackages,
-    },
+    metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
     recipe::{
         Jinja, ParsingError, Recipe,
         parser::{BuildString, GlobVec, find_outputs_from_src},
-        variable::Variable,
     },
     selectors::SelectorConfig,
     system_tools::SystemTools,
+    types::{Directories, PackageIdentifier, PackagingSettings},
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig, VariantConfigError},
 };
 use rattler_conda_types::compression_level::CompressionLevel;
@@ -105,7 +101,7 @@ impl LoadedVariantConfig {
         input_variant_configuration: &BTreeMap<String, Vec<String>>,
     ) -> Self {
         for (k, v) in input_variant_configuration {
-            let variables = v.iter().map(|v| Variable::from_string(v)).collect();
+            let variables = v.iter().map(|v| v.clone().into()).collect();
             self.variant_config
                 .variants
                 .insert(k.as_str().into(), variables);
@@ -126,32 +122,6 @@ impl RattlerBuild {
             recipe_source: source,
             selector_config,
             work_directory,
-        }
-    }
-
-    /// Create a `SelectorConfig` from the given `CondaMetadataParams`.
-    pub fn selector_config_from(params: &CondaMetadataParams) -> SelectorConfig {
-        SelectorConfig {
-            target_platform: params
-                .build_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            host_platform: params
-                .host_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            build_platform: params
-                .build_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            hash: None,
-            variant: Default::default(),
-            experimental: true,
-            allow_undefined: false,
-            recipe_path: None,
         }
     }
 
@@ -185,7 +155,7 @@ impl RattlerBuild {
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
-                let variables = v.iter().map(|v| Variable::from_string(v)).collect();
+                let variables = v.iter().map(|v| v.clone().into()).collect();
                 variant_config.variants.insert(k.as_str().into(), variables);
             }
         }

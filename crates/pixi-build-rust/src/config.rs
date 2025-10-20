@@ -96,6 +96,29 @@ mod tests {
     }
 
     #[test]
+    fn test_debug_dir_only_accepts_kebab_case() {
+        // The struct uses #[serde(rename_all = "kebab-case")], so it only accepts debug-dir
+        let json_with_hyphen = json!({
+            "debug-dir": "/path/to/debug"
+        });
+        let config = serde_json::from_value::<RustBackendConfig>(json_with_hyphen).unwrap();
+        assert_eq!(config.debug_dir, Some(PathBuf::from("/path/to/debug")));
+
+        // Test that debug_dir (underscore) is rejected
+        let json_with_underscore = json!({
+            "debug_dir": "/path/to/debug"
+        });
+        let result = serde_json::from_value::<RustBackendConfig>(json_with_underscore);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("unknown field `debug_dir`")
+        );
+    }
+
+    #[test]
     fn test_merge_with_target_config() {
         let mut base_env = indexmap::IndexMap::new();
         base_env.insert("BASE_VAR".to_string(), "base_value".to_string());

@@ -70,7 +70,7 @@ ros-jazzy-my-ros-package = { path = "." }
 # or if the package is in a separate pixi.toml
 # ros-jazzy-my-ros-package = { path = "src/my_ros_package" }
 ```
-Note that you need to specify the `ros-jazzy-` prefix when you use a distro configuration. 
+Note that you need to specify the `ros-jazzy-` prefix when you use a distro configuration.
 
 
 ### Automatic Metadata Detection
@@ -83,8 +83,6 @@ This includes:
 - **Maintainers**: Extracted from maintainer fields in `package.xml`
 - **Homepage**: From URL fields with type "website" in `package.xml`
 - **Repository**: From URL fields with type "repository" in `package.xml`
-
-For example, if your `package.xml` contains:
 
 ```xml
 <package format="3">
@@ -112,6 +110,24 @@ repository = "https://github.com/user/my_ros_package"
 The backend will automatically use the metadata from `package.xml` to generate a complete conda package named `ros-jazzy-my-ros-package`.
 The fields in the `pixi.toml` will override the values from `package.xml` if they are explicitly set.
 
+### Automatic Distro Detection
+`pixi-build-ros` will automatically detect the ROS distro based on the `channels` in the workspace.
+If a `distro` is not specified in the `pixi.toml`, it will be automatically detected based on the `channels` in the workspace.
+
+```toml title="pixi.toml"
+[workspace]
+channels = ["conda-forge", "robostack-jazzy"]
+
+
+[package.build.config]
+ # This would already be automatically detected by a function in the backend.
+ # Because it searches for `robostack-` and uses the first match, if it's not defined like this.
+distro = "jazzy"
+```
+
+This is implemented to easily switch between distros over ros packages, by changing the `channel` used in the `workspace` section.
+
+
 ### Automatic Dependency Resolution
 
 Because the definition of a dependency in a `package.xml` file is not similar to a conda package name, the backend needs to map ROS dependencies to conda packages.
@@ -126,10 +142,10 @@ The `<distro>` part of the package name is automatically generated based on the 
 
 You can customize the ROS backend behavior using the `[package.build.config]` section in your `pixi.toml`. The backend supports the following configuration options:
 
-### `distro` (Required)
+### `distro` (Optional)
 
 - **Type**: `String`
-- **Default**: Not set (required)
+- **Default**: Uses the [automated detection](#automatic-distro-detection) based on the `channels` in the workspace.
 - **Target Merge Behavior**: `Overwrite` - Platform-specific distro takes precedence over base
 
 The ROS distribution to build for. This affects dependency mapping and build configuration.
@@ -237,7 +253,7 @@ package_name:  # The name of the package in the package.xml
 package_name2: # The name of the package in the package.xml
   conda: [package1, package2] # Maps to a list of conda packages
 ros_package:   # The name of the package in the package.xml
-  ros: ros_package # Maps to a RoboStack style package name, e.g. `ros-<distro>-ros-package` 
+  ros: ros_package # Maps to a RoboStack style package name, e.g. `ros-<distro>-ros-package`
 ```
 
 

@@ -168,14 +168,14 @@ impl GenerateRecipe for PyGenerateRecipe {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: PathBuf,
+        manifest_root: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         _variants: &HashSet<NormalizedKey>,
         channels: Vec<Channel>,
     ) -> miette::Result<GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::attach(|py| {
-            let manifest_str = manifest_path.to_string_lossy().to_string();
+            let manifest_str = manifest_root.to_string_lossy().to_string();
 
             // we don't pass the wrapper but the python inner model directly
             let py_object = config.model.clone();

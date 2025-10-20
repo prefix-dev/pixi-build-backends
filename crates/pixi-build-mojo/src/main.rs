@@ -28,7 +28,7 @@ impl GenerateRecipe for MojoGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: PathBuf,
+        manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
@@ -48,7 +48,7 @@ impl GenerateRecipe for MojoGenerator {
         );
 
         // Auto-derive bins and pkg fields/configs if needed
-        let (bins, pkg) = config.auto_derive(&manifest_path, &cleaned_project_name)?;
+        let (bins, pkg) = config.auto_derive(&manifest_root, &cleaned_project_name)?;
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
@@ -98,7 +98,7 @@ impl GenerateRecipe for MojoGenerator {
         );
 
         let build_script = BuildScriptContext {
-            source_dir: manifest_path.display().to_string(),
+            source_dir: manifest_root.display().to_string(),
             bins,
             pkg,
         }

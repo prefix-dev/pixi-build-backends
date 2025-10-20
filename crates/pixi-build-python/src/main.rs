@@ -56,7 +56,7 @@ impl GenerateRecipe for PythonGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: PathBuf,
+        manifest_root: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
@@ -65,7 +65,7 @@ impl GenerateRecipe for PythonGenerator {
         let params = python_params.unwrap_or_default();
 
         let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
-            &manifest_path,
+            &manifest_root,
             config
                 .ignore_pyproject_manifest
                 .is_some_and(|ignore| ignore),
@@ -153,7 +153,7 @@ impl GenerateRecipe for PythonGenerator {
             },
             editable,
             extra_args: config.extra_args.clone(),
-            manifest_root: manifest_path.clone(),
+            manifest_root: manifest_root.clone(),
         }
         .render();
 
@@ -176,7 +176,7 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // read pyproject.toml content if it exists
-        let pyproject_manifest_path = manifest_path.join("pyproject.toml");
+        let pyproject_manifest_path = manifest_root.join("pyproject.toml");
         let pyproject_manifest = if pyproject_manifest_path.exists() {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =

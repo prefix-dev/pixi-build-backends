@@ -36,7 +36,7 @@ impl GenerateRecipe for RustGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: PathBuf,
+        manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
@@ -45,7 +45,7 @@ impl GenerateRecipe for RustGenerator {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.
         let mut cargo_metadata = CargoMetadataProvider::new(
-            &manifest_path,
+            &manifest_root,
             config.ignore_cargo_manifest.is_some_and(|ignore| ignore),
         );
 
@@ -135,7 +135,7 @@ impl GenerateRecipe for RustGenerator {
         }
 
         let build_script = BuildScriptContext {
-            source_dir: manifest_path.display().to_string(),
+            source_dir: manifest_root.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_openssl,
             has_sccache,

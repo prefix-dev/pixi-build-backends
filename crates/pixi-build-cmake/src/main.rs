@@ -31,7 +31,7 @@ impl GenerateRecipe for CMakeGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: PathBuf,
+        manifest_root: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
@@ -87,7 +87,7 @@ impl GenerateRecipe for CMakeGenerator {
             } else {
                 BuildPlatform::Unix
             },
-            source_dir: manifest_path.display().to_string(),
+            source_dir: manifest_root.display().to_string(),
             extra_args: config.extra_args.clone(),
             has_host_python,
         }

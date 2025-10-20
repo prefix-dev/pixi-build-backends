@@ -39,7 +39,7 @@ jobs:
       - name: Run mypy
         run: |
           cd backends/pixi-build-ros
-          pixi run -e test lint-mypy
+          pixi run -e test lint
       - name: Run tests
         run: |
           cd backends/pixi-build-ros

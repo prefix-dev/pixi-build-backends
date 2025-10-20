@@ -127,6 +127,7 @@ distro = "jazzy"
 
 This is implemented to easily switch between distros over ros packages, by changing the `channel` used in the `workspace` section.
 
+This does not work with the `robostack-staging` channel, as it contains packages for multiple distros.
 
 ### Automatic Dependency Resolution
 

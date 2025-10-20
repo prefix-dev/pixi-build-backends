@@ -2,12 +2,6 @@
 members = ["crates/*"]
 resolver = "2"
 
-[workspace.metadata]
-# TLS Backend Selection
-# By default, pixi-build uses rustls for TLS connections.
-# To use OpenSSL instead, build the backend crate with:
-#   cargo build -p pixi-build-backend --no-default-features --features native-tls
-
 [workspace.package]
 edition = "2024"
 repository = "https://github.com/prefix-dev/pixi-build-backends"

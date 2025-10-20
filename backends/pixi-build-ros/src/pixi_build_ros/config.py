@@ -45,8 +45,10 @@ def _extract_distro_from_channels_list(channels: list[str] | None) -> str | None
         channel_name = channel.rstrip("/").split("/")[-1]
         match = robostack_pattern.search(channel_name)
         if match:
+            if "staging" in match.group(1):
+                # Don't use the "robostack-staging" channel for distro detection
+                continue
             return match.group(1)
-
     return None
 
 

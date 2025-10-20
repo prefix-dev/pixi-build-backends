@@ -25,6 +25,14 @@ def test_extract_distro_from_short_channel_name():
     assert distro == "humble"
 
 
+def test_dont_extract_from_staging():
+    """Test extracting distro from short robostack channel name."""
+    channels = ["robostack-staging", "conda-forge"]
+
+    distro = _extract_distro_from_channels_list(channels)
+    assert distro is None
+
+
 def test_extract_distro_with_trailing_slash():
     """Test extracting distro from URL with trailing slash."""
     channels = ["https://prefix.dev/robostack-noetic/"]

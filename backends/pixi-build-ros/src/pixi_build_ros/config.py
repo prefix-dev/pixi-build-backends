@@ -104,7 +104,9 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
     # Environment variables to set during the build
     env: dict[str, str] | None = None
     # Directory for debug files of this script
-    debug_dir: Path | None = pydantic.Field(default=None, alias="debug-dir")
+    debug_dir: Path | None = pydantic.Field(
+        default=None, validation_alias=pydantic.AliasChoices("debug-dir", "debug_dir")
+    )
     # Extra input globs to include in the build hash
     extra_input_globs: list[str] | None = pydantic.Field(default=None, alias="extra-input-globs")
 

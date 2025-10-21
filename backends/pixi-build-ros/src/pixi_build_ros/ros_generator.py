@@ -65,6 +65,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         package_mapping_files = [str(path) for path in backend_config.get_package_mapping_file_paths()]
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
+            str(manifest_root),
             backend_config.get_distro().name,
             extra_input_globs=list(backend_config.extra_input_globs or []),
             package_mapping_files=package_mapping_files,

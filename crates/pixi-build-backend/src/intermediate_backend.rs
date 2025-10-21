@@ -113,9 +113,13 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
                 (source_dir, manifest_rel_path)
             }
             Some(source_dir) => {
-                let manifest_rel_path = pathdiff::diff_paths(manifest_path, &source_dir)
+                let manifest_rel_path = pathdiff::diff_paths(&manifest_path, &source_dir)
                     .ok_or_else(|| {
-                        miette::miette!("the manifest is not relative to the source directory")
+                        miette::miette!(
+                            "the manifest: {} is not relative to the source directory: {}",
+                            manifest_path.display(),
+                            source_dir.display()
+                        )
                     })?;
                 (source_dir, manifest_rel_path)
             }

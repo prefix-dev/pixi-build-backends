@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct RattlerBuildBackendConfig {
     /// If set, internal state will be logged as files in that directory
+    #[serde(alias = "debug_dir")]
     pub debug_dir: Option<PathBuf>,
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]

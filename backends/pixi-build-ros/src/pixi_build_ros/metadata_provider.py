@@ -47,6 +47,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
     def __init__(  # type: ignore[no-untyped-def]  # no typing for args and kwargs
         self,
         package_xml_path: str,
+        manifest_root: str,
         *args,
         extra_input_globs: list[str] | None = None,
         package_mapping_files: list[str] | None = None,
@@ -57,11 +58,13 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
 
         Args:
             package_xml_path: Path to the package.xml file
+            manifest_root: Path to the manifest root directory
             extra_input_globs: Additional glob patterns to include
             package_mapping_files: Package mapping file paths to track as inputs
         """
         super().__init__(*args, **kwargs)
         self.package_xml_path = package_xml_path
+        self.manifest_root = manifest_root
         self._package_data: PackageData | None = None
         self._extra_input_globs = list(extra_input_globs or [])
         self._package_mapping_files = list(package_mapping_files or [])
@@ -148,8 +151,9 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         return None
 
     def license_file(self) -> str | None:
-        """Return package.xml as the license files."""
-        return "package.xml"
+        """Return package.xml as the license files, relative to manifest_root."""
+        # TODO: This does not work currently, so return None
+        return None
 
     def summary(self) -> str | None:
         """Return the description as summary from package.xml."""
@@ -189,6 +193,7 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
     def __init__(
         self,
         package_xml_path: str,
+        manifest_root: str,
         distro_name: str | None = None,
         *,
         extra_input_globs: list[str] | None = None,
@@ -199,12 +204,14 @@ class ROSPackageXmlMetadataProvider(PackageXmlMetadataProvider):
 
         Args:
             package_xml_path: Path to the package.xml file
+            manifest_root: Path to the manifest root directory
             distro_name: ROS distro. If None, will use the base package name without distro prefix.
             extra_input_globs: Additional glob patterns to include
             package_mapping_files: Package mapping file paths to track as inputs
         """
         super().__init__(
             package_xml_path,
+            manifest_root=manifest_root,
             extra_input_globs=extra_input_globs,
             package_mapping_files=package_mapping_files,
         )

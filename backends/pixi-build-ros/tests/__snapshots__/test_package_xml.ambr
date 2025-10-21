@@ -124,7 +124,7 @@
   about:
     homepage: https://test.io/custom_ros
     license: LicenseRef-Apache License 2.0
-    license_file: package.xml
+    license_file: null
     summary: Demo
     description: Demo
     documentation: null

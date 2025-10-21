@@ -68,7 +68,7 @@
   about:
     homepage: null
     license: LicenseRef-Apache License 2.0
-    license_file: package.xml
+    license_file: null
     summary: Demo
     description: Demo
     documentation: null
@@ -145,7 +145,7 @@
   about:
     homepage: null
     license: LicenseRef-Apache License 2.0
-    license_file: package.xml
+    license_file: null
     summary: Demo
     description: Demo
     documentation: null
@@ -222,7 +222,7 @@
   about:
     homepage: null
     license: LicenseRef-Apache License 2.0
-    license_file: package.xml
+    license_file: null
     summary: Demo
     description: Demo
     documentation: null

@@ -24,6 +24,9 @@ cache:
         then: set "CARGO_TARGET_DIR=%RECIPE_DIR%\..\..\target/channel-build-cache"
         else: export CARGO_TARGET_DIR=${RECIPE_DIR}/../../target/channel-build-cache
       - if: win
+        then: if not exist "%CARGO_TARGET_DIR%" mkdir "%CARGO_TARGET_DIR%"
+        else: mkdir -p $CARGO_TARGET_DIR
+      - if: win
         then: set "CARGO_HOME=%RECIPE_DIR%\..\..\target/channel-build-cache-home"
         else: export CARGO_HOME=$(realpath ${RECIPE_DIR}/../../target/channel-build-cache-home)
       - if: win

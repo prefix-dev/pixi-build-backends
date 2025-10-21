@@ -95,7 +95,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
 
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # Can be auto-detected from robostack- channel if not explicitly specified
-    _distro: Distro | None = pydantic.Field(default=None, alias="distro")
+    distro_: Distro | None = pydantic.Field(default=None, alias="distro")
 
     noarch: bool | None = None
     # Environment variables to set during the build
@@ -124,7 +124,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
                 file_paths.append(source_file)
         return file_paths
 
-    @pydantic.field_validator("distro", mode="before")
+    @pydantic.field_validator("distro_", mode="before")
     @classmethod
     def _parse_distro(cls, value: Any) -> Distro | None:
         """Parse a distro string."""
@@ -153,7 +153,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             ValueError: If distro cannot be determined
         """
         # If distro is already set, nothing to do
-        if self.distro:
+        if self.distro_:
             return self
 
         # Try to auto-detect from channels
@@ -162,7 +162,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             detected_distro_name = _extract_distro_from_channels_list(channels)
 
         if detected_distro_name:
-            self.distro = Distro(detected_distro_name)
+            self.distro_ = Distro(detected_distro_name)
             return self
 
         # If we couldn't detect a distro, raise an error
@@ -231,6 +231,6 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
 
     @property
     def distro(self) -> Distro:
-        if not self.distro:
+        if not self.distro_:
             raise ValueError("Distro could not be resolved from the channels or the `distro` build config.")
-        return self.distro
+        return self.distro_

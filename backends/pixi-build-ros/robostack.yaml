@@ -550,6 +550,8 @@ log4cxx:
   robostack: [log4cxx]
 lua5.2-dev:
   robostack: [lua]
+lua-dev:
+  robostack: [lua]
 lz4:
   robostack: [lz4]
 maven:

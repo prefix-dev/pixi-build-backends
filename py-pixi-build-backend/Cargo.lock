@@ -4547,7 +4547,7 @@ dependencies = [
 
 [[package]]
 name = "py-pixi-build-backend"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "indexmap 2.11.4",
  "miette",

@@ -37,7 +37,7 @@ def _extract_distro_from_channels_list(channels: list[str] | None) -> str | None
         return None
 
     # Pattern to match robostack-<distro> in channel URLs or names
-    robostack_pattern = re.compile(r"robostack-(\w+)")
+    robostack_pattern = re.compile(r".?robostack-(?!staging\b)(\w+)")
 
     for channel in channels:
         # Extract the last path component or the whole channel name if it's not a URL
@@ -45,9 +45,6 @@ def _extract_distro_from_channels_list(channels: list[str] | None) -> str | None
         channel_name = channel.rstrip("/").split("/")[-1]
         match = robostack_pattern.search(channel_name)
         if match:
-            if "staging" in match.group(1):
-                # Don't use the "robostack-staging" channel for distro detection
-                continue
             return match.group(1)
     return None
 
@@ -98,7 +95,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
 
     # ROS distribution to use, e.g., "foxy", "galactic", "humble"
     # Can be auto-detected from robostack- channel if not explicitly specified
-    distro: Distro | None = None
+    _distro: Distro | None = pydantic.Field(default=None, alias="distro")
 
     noarch: bool | None = None
     # Environment variables to set during the build
@@ -137,10 +134,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             return value
         return None
 
-    @classmethod
     def resolve_distro(
-        cls,
-        config: "ROSBackendConfig",
+        self,
         channels: list[str] | None = None,
     ) -> "ROSBackendConfig":
         """Resolve the distro field, auto-detecting from channels if not explicitly set.
@@ -158,8 +153,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             ValueError: If distro cannot be determined
         """
         # If distro is already set, nothing to do
-        if config.distro is not None:
-            return config
+        if self.distro:
+            return self
 
         # Try to auto-detect from channels
         detected_distro_name = None
@@ -167,13 +162,13 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             detected_distro_name = _extract_distro_from_channels_list(channels)
 
         if detected_distro_name:
-            config.distro = Distro(detected_distro_name)
-            return config
+            self.distro = Distro(detected_distro_name)
+            return self
 
         # If we couldn't detect a distro, raise an error
         raise ValueError(
-            "ROS distro must be either explicitly configured or auto-detected from robostack channels. "
-            "No robostack channel found in the project."
+            "ROS distro must be either explicitly configured or auto-detected from robostack channels."
+            f"A 'robostack-<distro>' channel (e.g. 'robostack-kilted') was not found in the provided channels: {channels}."
         )
 
     @pydantic.model_validator(mode="after")
@@ -184,7 +179,7 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         """Ensure distro is resolved after validation."""
         context = info.context or {}
         channels = context.get("channels")
-        return self.resolve_distro(self, channels=channels)
+        return self.resolve_distro(channels=channels)
 
     @pydantic.field_validator("debug_dir", mode="before")
     @classmethod
@@ -234,7 +229,8 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
             result.append(entry)
         return result
 
-    def get_distro(self) -> Distro:
-        if self.distro is None:
+    @property
+    def distro(self) -> Distro:
+        if not self.distro:
             raise ValueError("Distro could not be resolved from the channels or the `distro` build config.")
         return self.distro

@@ -1461,7 +1461,7 @@ packages:
   timestamp: 1758169642572
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.1.2
+  version: 0.3.0
   build: hbf21a9e_0
   subdir: linux-64
   depends:
@@ -1473,12 +1473,12 @@ packages:
   - __glibc >=2.17
   license: BSD-3-Clause
   input:
-    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    hash: 3b8404c0ede29b45d2a2e9df2150c2fab5c77b00b79afaaa0983af7dc4956117
     globs:
     - pyproject.toml
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.1.2
+  version: 0.3.0
   build: hbf21a9e_0
   subdir: osx-arm64
   depends:
@@ -1490,12 +1490,12 @@ packages:
   - __osx >=11.0
   license: BSD-3-Clause
   input:
-    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    hash: 3b8404c0ede29b45d2a2e9df2150c2fab5c77b00b79afaaa0983af7dc4956117
     globs:
     - pyproject.toml
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.1.2
+  version: 0.3.0
   build: hbf21a9e_0
   subdir: win-64
   depends:
@@ -1505,7 +1505,7 @@ packages:
   - python_abi 3.14.* *_cp314
   license: BSD-3-Clause
   input:
-    hash: 4f797a3726e1fd995cd6a259224fdc840cee844c3be917168c31f5afd2d0b739
+    hash: 3b8404c0ede29b45d2a2e9df2150c2fab5c77b00b79afaaa0983af7dc4956117
     globs:
     - pyproject.toml
 - conda: https://prefix.dev/conda-forge/linux-64/py-rattler-0.15.0-py310h045cca9_1.conda

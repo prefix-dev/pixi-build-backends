@@ -1,6 +1,6 @@
 [package]
 name = "pixi-build-mojo"
-version = "0.1.3"
+version = "0.1.4"
 edition.workspace = true
 
 [features]

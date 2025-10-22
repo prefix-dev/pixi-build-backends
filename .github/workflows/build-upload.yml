@@ -130,6 +130,20 @@ jobs:
             ${{ runner.temp }}/**/*.conda
             ${{ runner.temp }}/**/*.sig
 
+      - name: Kill any lingering processes (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          # Kill any Python processes
+          Get-Process python* -ErrorAction SilentlyContinue | Stop-Process -Force
+
+          # Kill any processes from the pixi environment
+          $pixiPath = "${{ github.workspace }}\.pixi\envs\build\bin"
+          Get-Process | Where-Object { $_.Path -like "$pixiPath*" } | Stop-Process -Force
+
+          # Wait a moment for handles to be released
+          Start-Sleep -Seconds 2
+
   aggregate:
     needs: build
     runs-on: ubuntu-latest

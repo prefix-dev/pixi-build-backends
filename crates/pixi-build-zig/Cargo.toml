@@ -1,0 +1,28 @@
+[package]
+name = "pixi-build-zig"
+version = "0.1.0"
+description = "A Zig build backend for Pixi"
+documentation = "https://prefix-dev.github.io/pixi-build-backends/backends/pixi-build-zig/"
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+fs-err = { workspace = true }
+indexmap = { workspace = true }
+miette = { workspace = true }
+minijinja = { workspace = true, features = ["json"] }
+rattler_conda_types = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+pixi-build-backend = { workspace = true }
+pixi_build_types = { workspace = true }
+
+recipe-stage0 = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
+rstest = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }

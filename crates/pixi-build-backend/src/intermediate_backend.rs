@@ -253,23 +253,11 @@ where
         // combination of defaults provided by the generator (lowest priority),
         // variants loaded from external files, and finally the user supplied
         // variants (highest priority).
-        let mut variant_config = if let Some(variant_files) = params
-            .variant_files
-            .as_ref()
-            .filter(|files| !files.is_empty())
-        {
-            let mut variant_config =
-                VariantConfig::from_files(variant_files, &selector_config_for_variants)?;
-            variants.append(&mut variant_config.variants);
-            variant_config.variants = variants;
-            variant_config
-        } else {
-            VariantConfig {
-                variants,
-                pin_run_as_build: None,
-                zip_keys: None,
-            }
-        };
+        let variant_files = params.variant_files.unwrap_or_default();
+        let mut variant_config =
+            VariantConfig::from_files(&variant_files, &selector_config_for_variants)?;
+        variants.append(&mut variant_config.variants);
+        variant_config.variants = variants;
 
         let mut param_variants =
             convert_input_variant_configuration(params.variant_configuration.clone())

@@ -1,5 +1,0 @@
----
-source: crates/pixi-build/src/bin/pixi-build-python/python.rs
-expression: entry_points.to_string()
----
-entry point value  1 should be a string

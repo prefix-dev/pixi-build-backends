@@ -377,12 +377,14 @@ where
                 &named_source.path,
             );
 
-            // Save intermediate recipe in the debug dir
-            // and the used variant for this recipe
-            let debug_path = directories.work_dir.join("recipe.yaml");
-            let variant_path = directories.work_dir.join("variants.yaml");
+            // Save intermediate recipe and the used variant
+            // in the work dir by hash of the variant
+            let dir_for_recipe = directories.work_dir.join("recipe").join(&hash.hash);
 
-            tokio_fs::create_dir_all(&directories.work_dir)
+            let debug_path = dir_for_recipe.join("recipe.yaml");
+            let variant_path = dir_for_recipe.join("variants.yaml");
+
+            tokio_fs::create_dir_all(&dir_for_recipe)
                 .await
                 .into_diagnostic()?;
 
@@ -603,11 +605,18 @@ where
             recipe_path,
         );
 
-        // Save intermediate recipe in the debug dir
-        let debug_path = directories.work_dir.join("recipe.yaml");
-        let variant_path = directories.work_dir.join("variants.yaml");
+        // Save intermediate recipe and the used variant
+        // in the work dir by hash of the variant
+        let variant = discovered_output.used_vars;
 
-        tokio_fs::create_dir_all(&directories.work_dir)
+        let dir_for_recipe = directories
+            .work_dir
+            .join("recipe")
+            .join(&discovered_output.hash.hash);
+        let debug_path = dir_for_recipe.join("recipe.yaml");
+        let variant_path = dir_for_recipe.join("variants.yaml");
+
+        tokio_fs::create_dir_all(&dir_for_recipe)
             .await
             .into_diagnostic()?;
         tokio_fs::write(
@@ -649,7 +658,7 @@ where
                     virtual_packages: vec![],
                 },
                 hash: discovered_output.hash,
-                variant: discovered_output.used_vars.clone(),
+                variant,
                 directories,
                 channels: vec![],
                 channel_priority: Default::default(),

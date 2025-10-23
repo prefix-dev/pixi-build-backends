@@ -606,8 +606,6 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
 mod tests {
     use std::collections::BTreeMap;
 
-    use fs_err as fs;
-
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
     use pixi_build_types::procedures::initialize::InitializeParams;
     use rattler_build::console_utils::LoggingOutputHandler;
@@ -673,10 +671,19 @@ mod tests {
     async fn test_variant_files_are_applied() {
         let temp_dir = tempdir().unwrap();
         let recipe_path = temp_dir.path().join("recipe.yaml");
-        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
 
         let variant_file = temp_dir.path().join("global-variants.yaml");
-        fs::write(&variant_file, "python:\n  - \"3.9\"\n").unwrap();
+        tokio::fs::write(
+            &variant_file,
+            r#"python:
+  - "3.9"
+"#,
+        )
+        .await
+        .expect("Failed to write variant file");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -714,17 +721,71 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_variant_configuration_is_applied() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write recipe");
+
+        let mut variant_configuration = BTreeMap::new();
+        variant_configuration.insert("python".to_string(), vec!["3.11".to_string()]);
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path.clone(),
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: Some(variant_configuration),
+                variant_files: None,
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result.outputs[0].metadata.variant["python"], "3.11",
+            "Python variant should come from the provided configuration"
+        );
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"], "linux-64",
+            "Target platform should match the requested platform"
+        );
+    }
+
+    #[tokio::test]
     async fn test_variant_configuration_overrides_variant_files() {
         let temp_dir = tempdir().unwrap();
         let recipe_path = temp_dir.path().join("recipe.yaml");
-        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
 
         let variant_file = temp_dir.path().join("shared-variants.yaml");
-        fs::write(
+        tokio::fs::write(
             &variant_file,
-            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+            r#"python:
+  - "3.8"
+numpy:
+  - "1.22"
+"#,
         )
-        .unwrap();
+        .await
+        .expect("Failed to write shared variants");
 
         let mut variant_configuration = BTreeMap::new();
         variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
@@ -776,17 +837,31 @@ mod tests {
     async fn test_variant_files_override_auto_discovered_variant() {
         let temp_dir = tempdir().unwrap();
         let recipe_path = temp_dir.path().join("recipe.yaml");
-        fs::write(&recipe_path, VARIANT_RECIPE).unwrap();
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
 
         let auto_discovered_variant = temp_dir.path().join("variants.yaml");
-        fs::write(
+        tokio::fs::write(
             &auto_discovered_variant,
-            "python:\n  - \"3.8\"\nnumpy:\n  - \"1.22\"\n",
+            r#"python:
+  - "3.8"
+numpy:
+  - "1.22"
+"#,
         )
-        .unwrap();
+        .await
+        .expect("Failed to write auto-discovered variants");
 
         let variant_file = temp_dir.path().join("override-variants.yaml");
-        fs::write(&variant_file, "python:\n  - \"3.10\"\n").unwrap();
+        tokio::fs::write(
+            &variant_file,
+            r#"python:
+  - "3.10"
+"#,
+        )
+        .await
+        .expect("Failed to write overriding variants");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {

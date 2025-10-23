@@ -165,6 +165,7 @@ mod tests {
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use recipe_stage0::recipe::{Item, Value};
+    use tokio::fs;
 
     use super::*;
 
@@ -431,6 +432,52 @@ mod tests {
         .await;
 
         assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"],
+            "linux-64"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_are_applied() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                   "buildDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        let variant_file = temp_dir.path().join("variants.yaml");
+        fs::write(
+            &variant_file,
+            r#"boltons:
+  - "==2.0.0"
+"#,
+        )
+        .await
+        .expect("Failed to write variants file");
+
+        let result = intermediate_conda_outputs::<CMakeGenerator>(
+            Some(project_model),
+            Some(temp_dir.path().to_path_buf()),
+            Platform::Linux64,
+            None,
+            Some(vec![variant_file]),
+        )
+        .await;
+
+        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
             "linux-64"

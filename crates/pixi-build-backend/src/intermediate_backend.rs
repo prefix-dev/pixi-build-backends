@@ -378,16 +378,28 @@ where
             );
 
             // Save intermediate recipe in the debug dir
+            // and the used variant for this recipe
             let debug_path = directories.work_dir.join("recipe.yaml");
+            let variant_path = directories.work_dir.join("variants.yaml");
+
             tokio_fs::create_dir_all(&directories.work_dir)
                 .await
                 .into_diagnostic()?;
+
             tokio_fs::write(
                 &debug_path,
                 generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
             )
             .await
             .into_diagnostic()?;
+
+            let variant_yaml = serde_yaml::to_string(&variant)
+                .into_diagnostic()
+                .context("failed to serialize variant to YAML")?;
+
+            tokio_fs::write(&variant_path, variant_yaml)
+                .await
+                .into_diagnostic()?;
 
             subpackages.insert(
                 recipe.package().name().clone(),
@@ -570,7 +582,7 @@ where
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
         let variant_config = VariantConfig {
-            variants,
+            variants: variants.clone(),
             pin_run_as_build: None,
             zip_keys: None,
         };
@@ -593,6 +605,8 @@ where
 
         // Save intermediate recipe in the debug dir
         let debug_path = directories.work_dir.join("recipe.yaml");
+        let variant_path = directories.work_dir.join("variants.yaml");
+
         tokio_fs::create_dir_all(&directories.work_dir)
             .await
             .into_diagnostic()?;
@@ -602,6 +616,14 @@ where
         )
         .await
         .into_diagnostic()?;
+
+        let variant_yaml = serde_yaml::to_string(&variants)
+            .into_diagnostic()
+            .context("failed to serialize variant to YAML")?;
+
+        tokio_fs::write(&variant_path, variant_yaml)
+            .await
+            .into_diagnostic()?;
 
         let tool_config = Configuration::builder()
             .with_opt_cache_dir(self.cache_dir.clone())

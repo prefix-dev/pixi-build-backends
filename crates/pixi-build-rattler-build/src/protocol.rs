@@ -37,6 +37,7 @@ use rattler_build::{
     variant_config::{ParseErrors, VariantConfig},
 };
 use rattler_conda_types::{Platform, compression_level::CompressionLevel, package::ArchiveType};
+use tracing::warn;
 pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
@@ -53,10 +54,6 @@ impl RattlerBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl Protocol for RattlerBuildBackend {
-    fn debug_dir(&self) -> Option<&Path> {
-        self.config.debug_dir.as_deref()
-    }
-
     async fn conda_outputs(
         &self,
         params: CondaOutputsParams,
@@ -500,13 +497,6 @@ fn get_metadata_input_globs(
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
-    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        configuration
-            .and_then(|config| {
-                serde_json::from_value::<RattlerBuildBackendConfig>(config.clone()).ok()
-            })
-            .and_then(|config| config.debug_dir)
-    }
     async fn initialize(
         &self,
         params: InitializeParams,
@@ -518,6 +508,13 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         } else {
             RattlerBuildBackendConfig::default()
         };
+
+        if let Some(path) = config.debug_dir.as_ref() {
+            warn!(
+                path = %path.display(),
+                "`debug-dir` backend configuration is deprecated and ignored; debug data is now written to the build work directory."
+            );
+        }
 
         let mut workspace_dependencies = HashMap::new();
 

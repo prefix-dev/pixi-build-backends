@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct RattlerBuildBackendConfig {
-    /// If set, internal state will be logged as files in that directory
+    /// Deprecated. Setting this has no effect; debug data is always written to
+    /// the `debug` subdirectory of the work directory.
     #[serde(alias = "debug_dir")]
     pub debug_dir: Option<PathBuf>,
     /// Extra input globs to include in addition to the default ones

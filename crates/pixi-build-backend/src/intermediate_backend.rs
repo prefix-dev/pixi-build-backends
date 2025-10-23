@@ -34,9 +34,11 @@ use rattler_build::{
 use rattler_conda_types::{Platform, compression_level::CompressionLevel, package::ArchiveType};
 
 use serde::Deserialize;
+use tracing::warn;
 
 use crate::{
     TargetSelector,
+    consts::DEBUG_OUTPUT_DIR,
     dependencies::{
         convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
     },
@@ -129,6 +131,13 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
             .into_diagnostic()
             .context("failed to parse configuration")?;
 
+        if let Some(path) = config.debug_dir() {
+            warn!(
+                path = %path.display(),
+                "`debug-dir` backend configuration is deprecated and ignored; debug data is now written to the build work directory."
+            );
+        }
+
         let target_config = target_config
             .into_iter()
             .map(|(target, config)| {
@@ -160,12 +169,6 @@ where
     T: GenerateRecipe + Clone + Send + Sync + 'static,
     T::Config: Send + Sync + 'static,
 {
-    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        configuration
-            .and_then(|config| serde_json::from_value::<T::Config>(config).ok())
-            .and_then(|config| config.debug_dir().map(|d| d.to_path_buf()))
-    }
-
     async fn initialize(
         &self,
         params: InitializeParams,
@@ -217,10 +220,6 @@ where
     T: GenerateRecipe + Clone + Send + Sync + 'static,
     T::Config: BackendConfig + Send + Sync + 'static,
 {
-    fn debug_dir(&self) -> Option<&Path> {
-        self.config.debug_dir()
-    }
-
     async fn conda_outputs(
         &self,
         params: CondaOutputsParams,
@@ -378,12 +377,12 @@ where
             );
 
             // Save intermediate recipe in the debug dir
-            let debug_path = directories.work_dir.join("recipe.yaml");
-            tokio_fs::create_dir_all(&directories.work_dir)
+            let debug_dir = directories.work_dir.join(DEBUG_OUTPUT_DIR);
+            tokio_fs::create_dir_all(&debug_dir)
                 .await
                 .into_diagnostic()?;
             tokio_fs::write(
-                &debug_path,
+                debug_dir.join("recipe.yaml"),
                 generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
             )
             .await
@@ -592,12 +591,12 @@ where
         );
 
         // Save intermediate recipe in the debug dir
-        let debug_path = directories.work_dir.join("recipe.yaml");
-        tokio_fs::create_dir_all(&directories.work_dir)
+        let debug_dir = directories.work_dir.join(DEBUG_OUTPUT_DIR);
+        tokio_fs::create_dir_all(&debug_dir)
             .await
             .into_diagnostic()?;
         tokio_fs::write(
-            &debug_path,
+            debug_dir.join("recipe.yaml"),
             recipe.recipe.to_yaml_pretty().into_diagnostic()?,
         )
         .await

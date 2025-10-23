@@ -182,16 +182,7 @@ If you explicitly set `ROS_DISTRO` or `ROS_VERSION` in `env`, your values take p
 
 ### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-- **Target Merge Behavior**: Not allowed - Cannot have target specific value
-
-If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
-
-```toml title="pixi.toml"
-[package.build.config]
-debug-dir = ".build-debug"
-```
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; if it is still present in a manifest the backend emits a warning so you can safely remove it.
 
 ### `extra-input-globs`
 

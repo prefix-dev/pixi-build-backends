@@ -147,17 +147,7 @@ env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 
 ### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-- **Target Merge Behavior**: Not allowed - Cannot have target specific value
-
-If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
-
-```toml
-[package.build.config]
-debug-dir = ".build-debug"
-```
-
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; when present a warning is emitted so you can safely remove the setting.
 
 ### `extra-input-globs`
 

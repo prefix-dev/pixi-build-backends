@@ -1,5 +1,6 @@
 import os
 import re
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -191,6 +192,18 @@ class ROSBackendConfig(pydantic.BaseModel, extra="forbid", arbitrary_types_allow
         if info.context and "manifest_root" in info.context:
             base_path = Path(info.context["manifest_root"])
         return _parse_str_as_abs_path(value, base_path)
+
+    @pydantic.model_validator(mode="after")
+    def _warn_deprecated_debug_dir(self) -> "ROSBackendConfig":
+        """Warn when the deprecated debug_dir setting is used."""
+        if self.debug_dir:
+            warnings.warn(
+                "`debug-dir` backend configuration is deprecated and ignored, it will be removed later. "
+                "Debug data is now written to the build work directory.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self
 
     @pydantic.field_validator("extra_package_mappings", mode="before")
     @classmethod

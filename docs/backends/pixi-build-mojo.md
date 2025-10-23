@@ -160,15 +160,7 @@ env = { ASSERT = "all" }
 
 #### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-
-Directory to place internal pixi debug information into.
-
-```toml
-[package.build.config]
-debug-dir = ".build-debug"
-```
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; if present, the backend emits a warning to highlight that it no longer has any effect.
 
 #### `extra-input-globs`
 

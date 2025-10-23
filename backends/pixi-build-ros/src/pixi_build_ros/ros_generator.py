@@ -160,14 +160,6 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
             env=script_env,
         )
 
-        if backend_config.debug_dir:
-            recipe = generated_recipe.recipe.to_yaml()
-            package = generated_recipe.recipe.package
-            debug_file_path = backend_config.debug_dir / f"{package.name.get_concrete()}-{package.version}-recipe.yaml"
-            debug_file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(debug_file_path, "w") as debug_file:
-                debug_file.write(recipe)
-
         # Test the build script before running to early out.
         # TODO: returned script.content list is not a list of strings, a container for that
         # so it cant be compared directly with the list yet

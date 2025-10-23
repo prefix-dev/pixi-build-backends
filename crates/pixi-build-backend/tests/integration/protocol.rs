@@ -140,7 +140,11 @@ async fn test_conda_build_v1() {
         ".subdir" => "[redacted]",
     });
 
-    // we also want to assert that we put intermediate_recipe.yaml in the debug dir
-
-    assert!(build_dir.join("work").join("recipe.yaml").exists());
+    assert!(
+        build_dir
+            .join("work")
+            .join("debug")
+            .join("recipe.yaml")
+            .exists()
+    );
 }

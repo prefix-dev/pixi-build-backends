@@ -57,7 +57,7 @@ When you build a package using `pixi build`, the build backends generate a compl
 
 The build backends generate recipes in two locations:
 
-### 1. General Recipe (all outputs)
+#### 1. General Recipe (all outputs)
 
 ```
 <your_project>/.pixi/build/work/<package-name>--<hash>/work/
@@ -68,7 +68,7 @@ This directory contains:
 - `recipe.yaml` - A general recipe that can build all package outputs
 - `variants.yaml` - All variant configurations for the package
 
-### 2. Variant-Specific Recipe (single output)
+#### 2. Variant-Specific Recipe (single output)
 
 ```
 <your_project>/.pixi/build/work/<package-name>--<hash>/work/recipe/<variant_hash>/

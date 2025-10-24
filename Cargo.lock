@@ -4197,6 +4197,7 @@ dependencies = [
 name = "pixi-build-cmake"
 version = "0.3.4"
 dependencies = [
+ "fs-err",
  "indexmap 2.11.4",
  "insta",
  "miette",
@@ -4210,6 +4211,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
+ "tempfile",
  "tokio",
 ]
 

@@ -41,18 +41,15 @@ pub(crate) fn remove_empty_values(value: &mut Value) {
     }
 }
 
-/// Calls the `conda/outputs` procedure of the `IntermediateBackend` for the
+/// Prepares and calls the `conda/outputs` procedure of the `IntermediateBackend` for the
 /// given recipe general and with the given project model.
-///
-/// Returns a pretty-printed JSON string of the outputs that can be used for
-/// snapshots
-pub fn intermediate_conda_outputs_snapshot<T>(
+pub async fn intermediate_conda_outputs<T>(
     project_model: Option<pixi_build_types::ProjectModelV1>,
     source_dir: Option<PathBuf>,
     host_platform: Platform,
     variant_configuration: Option<BTreeMap<String, Vec<String>>>,
     variant_files: Option<Vec<PathBuf>>,
-) -> String
+) -> CondaOutputsResult
 where
     T: GenerateRecipe + Default + Clone + Send + Sync + 'static,
     <T as GenerateRecipe>::Config: Send + Sync + 'static,
@@ -61,41 +58,35 @@ where
         Some(dir) => dir.join("pixi.toml"),
         None => PathBuf::from("pixi.toml"),
     };
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    runtime.block_on(async move {
-        let (protocol, _result) = IntermediateBackendInstantiator::<T>::new(
-            LoggingOutputHandler::default(),
-            Arc::new(T::default()),
-        )
-        .initialize(InitializeParams {
-            workspace_root: None,
-            source_dir,
-            manifest_path,
-            project_model: project_model.map(Into::into),
-            configuration: None,
-            target_configuration: None,
-            cache_directory: None,
+
+    let (protocol, _result) = IntermediateBackendInstantiator::<T>::new(
+        LoggingOutputHandler::default(),
+        Arc::new(T::default()),
+    )
+    .initialize(InitializeParams {
+        workspace_root: None,
+        source_dir,
+        manifest_path,
+        project_model: project_model.map(Into::into),
+        configuration: None,
+        target_configuration: None,
+        cache_directory: None,
+    })
+    .await
+    .unwrap();
+
+    let current_dir = std::env::current_dir().unwrap();
+    protocol
+        .conda_outputs(CondaOutputsParams {
+            channels: vec![],
+            host_platform,
+            build_platform: host_platform,
+            variant_configuration,
+            variant_files,
+            work_directory: current_dir,
         })
         .await
-        .unwrap();
-
-        let current_dir = std::env::current_dir().unwrap();
-        let result = protocol
-            .conda_outputs(CondaOutputsParams {
-                channels: vec![],
-                host_platform,
-                build_platform: host_platform,
-                variant_configuration,
-                variant_files,
-                work_directory: current_dir,
-            })
-            .await
-            .unwrap();
-
-        conda_outputs_snapshot(result)
-    })
+        .unwrap()
 }
 
 /// A function to convert a `CondaOutputsResult` into a pretty-printed JSON

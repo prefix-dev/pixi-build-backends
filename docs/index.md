@@ -83,7 +83,7 @@ This directory contains:
 
 To debug or rebuild a package using the same configuration, you have two options:
 
-## Option 1: Navigate to the recipe directory
+### Option 1: Navigate to the recipe directory
 
 1. Navigate to the recipe directory:
    ```bash
@@ -95,7 +95,7 @@ To debug or rebuild a package using the same configuration, you have two options
    rattler-build build
    ```
 
-## Option 2: Point to the recipe directory
+### Option 2: Point to the recipe directory
 
 Use the `--recipe` flag to build without changing directories:
 

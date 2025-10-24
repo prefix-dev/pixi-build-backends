@@ -49,3 +49,4 @@ AGENTS.md
 __pycache__/
 
 artifacts-channel
+crates/pixi-build-cmake/work

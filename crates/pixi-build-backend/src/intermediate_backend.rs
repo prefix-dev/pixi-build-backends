@@ -336,6 +336,9 @@ where
         let mut outputs = Vec::new();
 
         let num_of_outputs = discovered_outputs.len();
+
+        let mut variants_saved = false;
+
         for discovered_output in discovered_outputs {
             let variant = discovered_output.used_vars;
             let hash = HashInfo::from_variant(&variant, &discovered_output.noarch_type);
@@ -379,21 +382,25 @@ where
 
             // Save intermediate recipe and the used variant
             // in the work dir by hash of the variant
-            let dir_for_recipe = directories.work_dir.join("recipe").join(&hash.hash);
+            // and entire variants.yaml at the root of work_dir
+            let dir_for_general_files = &directories.work_dir;
 
-            let debug_path = dir_for_recipe.join("recipe.yaml");
+            let dir_for_general_recipe = dir_for_general_files.join("recipe.yaml");
+            let dir_for_general_variants = dir_for_general_files.join("variants.yaml");
+
+            let dir_for_recipe = directories.work_dir.join("recipe").join(&hash.hash);
+            let recipe_path = dir_for_recipe.join("recipe.yaml");
             let variant_path = dir_for_recipe.join("variants.yaml");
 
             tokio_fs::create_dir_all(&dir_for_recipe)
                 .await
                 .into_diagnostic()?;
 
-            tokio_fs::write(
-                &debug_path,
-                generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?,
-            )
-            .await
-            .into_diagnostic()?;
+            let recipe_yaml = generated_recipe.recipe.to_yaml_pretty().into_diagnostic()?;
+
+            tokio_fs::write(&recipe_path, &recipe_yaml)
+                .await
+                .into_diagnostic()?;
 
             let variant_yaml = serde_yaml::to_string(&variant)
                 .into_diagnostic()
@@ -402,6 +409,23 @@ where
             tokio_fs::write(&variant_path, variant_yaml)
                 .await
                 .into_diagnostic()?;
+
+            // write the entire variants.yaml at the root of work_dir
+            if !variants_saved {
+                let variants = serde_yaml::to_string(&variant_config)
+                    .into_diagnostic()
+                    .context("failed to serialize variant config to YAML")?;
+
+                tokio_fs::write(&dir_for_general_variants, variants)
+                    .await
+                    .into_diagnostic()?;
+
+                tokio_fs::write(&dir_for_general_recipe, recipe_yaml)
+                    .await
+                    .into_diagnostic()?;
+
+                variants_saved = true;
+            }
 
             subpackages.insert(
                 recipe.package().name().clone(),
@@ -583,8 +607,9 @@ where
             recipe_path: Some(self.source_dir.join(&self.manifest_rel_path)),
         };
         let outputs = find_outputs_from_src(named_source.clone())?;
+
         let variant_config = VariantConfig {
-            variants: variants.clone(),
+            variants,
             pin_run_as_build: None,
             zip_keys: None,
         };
@@ -609,28 +634,49 @@ where
         // in the work dir by hash of the variant
         let variant = discovered_output.used_vars;
 
+        // Save intermediate recipe and the used variant
+        // in the work dir by hash of the variant
+        // and entire variants.yaml at the root of work_dir
+        let dir_for_general_files = &directories.work_dir;
+
+        let dir_for_general_recipe = dir_for_general_files.join("recipe.yaml");
+        let dir_for_general_variants = dir_for_general_files.join("variants.yaml");
+
         let dir_for_recipe = directories
             .work_dir
             .join("recipe")
             .join(&discovered_output.hash.hash);
-        let debug_path = dir_for_recipe.join("recipe.yaml");
+        let recipe_path = dir_for_recipe.join("recipe.yaml");
         let variant_path = dir_for_recipe.join("variants.yaml");
 
         tokio_fs::create_dir_all(&dir_for_recipe)
             .await
             .into_diagnostic()?;
-        tokio_fs::write(
-            &debug_path,
-            recipe.recipe.to_yaml_pretty().into_diagnostic()?,
-        )
-        .await
-        .into_diagnostic()?;
 
-        let variant_yaml = serde_yaml::to_string(&variants)
+        let recipe_yaml = recipe.recipe.to_yaml_pretty().into_diagnostic()?;
+
+        tokio_fs::write(&recipe_path, &recipe_yaml)
+            .await
+            .into_diagnostic()?;
+
+        let variant_yaml = serde_yaml::to_string(&variant)
             .into_diagnostic()
             .context("failed to serialize variant to YAML")?;
 
         tokio_fs::write(&variant_path, variant_yaml)
+            .await
+            .into_diagnostic()?;
+
+        // write the entire variants.yaml at the root of work_dir
+        let variants = serde_yaml::to_string(&variant_config)
+            .into_diagnostic()
+            .context("failed to serialize variant config to YAML")?;
+
+        tokio_fs::write(&dir_for_general_variants, variants)
+            .await
+            .into_diagnostic()?;
+
+        tokio_fs::write(&dir_for_general_recipe, recipe_yaml)
             .await
             .into_diagnostic()?;
 

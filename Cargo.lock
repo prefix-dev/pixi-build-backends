@@ -4169,7 +4169,6 @@ dependencies = [
  "pathdiff",
  "pixi_build_type_conversions",
  "pixi_build_types",
- "pixi_manifest",
  "pixi_spec",
  "pyproject-toml",
  "rattler-build",

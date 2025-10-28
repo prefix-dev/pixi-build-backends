@@ -61,7 +61,6 @@ rattler_virtual_packages = { version = "2.1.3", default-features = false }
 
 pixi_build_types = { version = "*" }
 pixi_consts = { version = "*" }
-pixi_manifest = { version = "*" }
 pixi_spec = { version = "*" }
 pixi_build_type_conversions = { version = "*" }
 
@@ -74,13 +73,11 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 [patch.crates-io]
 pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
 #pixi_consts = { path = "../pixi/crates/pixi_consts" }
-#pixi_manifest = { path = "../pixi/crates/pixi_manifest" }
 #pixi_spec = { path = "../pixi/crates/pixi_spec" }
 #pixi_build_type_conversions = { path = "../pixi/crates/pixi_build_type_conversions" }
 

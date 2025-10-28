@@ -50,7 +50,6 @@ pathdiff = { workspace = true }
 thiserror = { workspace = true }
 
 pixi_build_types = { workspace = true }
-pixi_manifest = { workspace = true }
 pixi_spec = { workspace = true }
 pixi_build_type_conversions = { workspace = true }
 

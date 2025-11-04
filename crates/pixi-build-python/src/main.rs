@@ -126,10 +126,10 @@ impl GenerateRecipe for PythonGenerator {
         // Get the list of compilers from config, defaulting to no compilers for pure
         // Python packages and add them to the build requirements.
         let compilers = config.compilers.clone().unwrap_or_default();
-        pixi_build_backend::compilers::add_compilers_to_requirements_by_name(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &model_dependencies.build,
+            &model_dependencies,
             &host_platform,
         );
         pixi_build_backend::compilers::add_stdlib_to_requirements(

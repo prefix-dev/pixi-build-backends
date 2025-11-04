@@ -84,7 +84,7 @@ pub fn compiler_requirement(language: &Language) -> Item<PackageDependency> {
 /// * `dependencies` - The Dependencies struct containing build/host/run dependencies
 /// * `host_platform` - The target platform for determining default compiler
 ///   names
-pub fn add_compilers_to_requirements_with_dependencies<S>(
+pub fn add_compilers_to_requirements<S>(
     compilers: &[String],
     requirements: &mut Vec<Item<PackageDependency>>,
     dependencies: &crate::traits::targets::Dependencies<S>,

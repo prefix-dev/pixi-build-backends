@@ -58,7 +58,7 @@ impl GenerateRecipe for CMakeGenerator {
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         // Add configured compilers to build requirements
-        pixi_build_backend::compilers::add_compilers_to_requirements_with_dependencies(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
             &model_dependencies,

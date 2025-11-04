@@ -86,10 +86,10 @@ impl GenerateRecipe for MojoGenerator {
             compilers.swap_remove(idx);
         }
 
-        pixi_build_backend::compilers::add_compilers_to_requirements_by_name(
+        pixi_build_backend::compilers::add_compilers_to_requirements_with_dependencies(
             &compilers,
             &mut requirements.build,
-            &model_dependencies.build,
+            &model_dependencies,
             &host_platform,
         );
         pixi_build_backend::compilers::add_stdlib_to_requirements(

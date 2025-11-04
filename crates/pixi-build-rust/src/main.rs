@@ -71,10 +71,10 @@ impl GenerateRecipe for RustGenerator {
             .unwrap_or_else(|| vec!["rust".to_string()]);
 
         // Add configured compilers to build requirements
-        pixi_build_backend::compilers::add_compilers_to_requirements_by_name(
+        pixi_build_backend::compilers::add_compilers_to_requirements_with_dependencies(
             &compilers,
             &mut requirements.build,
-            &model_dependencies.build,
+            &model_dependencies,
             &host_platform,
         );
         pixi_build_backend::compilers::add_stdlib_to_requirements(
@@ -675,6 +675,155 @@ mod tests {
         assert_eq!(
             compiler_templates[0], "${{ compiler('rust') }}",
             "Default compiler should be rust"
+        );
+    }
+
+    #[test]
+    fn test_target_specific_build_dependencies_linux() {
+        use pixi_build_backend::traits::ProjectModel;
+
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+                "targets": {
+                    "linux-64": {
+                        "buildDependencies": {
+                            "openssl": {
+                                "binary": {
+                                    "version": ">=3.0"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Test that the ProjectModel correctly filters dependencies for Linux64
+        let linux_deps = project_model.dependencies(Some(Platform::Linux64));
+        assert!(
+            linux_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            "openssl should be in build dependencies for Linux64"
+        );
+
+        // Test that the ProjectModel correctly excludes dependencies for Osx64
+        let osx_deps = project_model.dependencies(Some(Platform::Osx64));
+        assert!(
+            !osx_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            "openssl should NOT be in build dependencies for Osx64"
+        );
+
+        // Test that the intermediate recipe contains the conditional items
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify that conditional build dependencies are in the recipe
+        let has_conditional_openssl = generated_recipe
+            .recipe
+            .requirements
+            .build
+            .iter()
+            .any(|item| matches!(item, Item::Conditional(_)));
+
+        assert!(
+            has_conditional_openssl,
+            "Recipe should contain conditional build dependencies"
+        );
+    }
+
+    #[test]
+    fn test_target_specific_build_dependencies_with_unix_selector() {
+        use pixi_build_backend::traits::ProjectModel;
+
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                    "runDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+                "targets": {
+                    "unix": {
+                        "buildDependencies": {
+                            "gcc": {
+                                "binary": {
+                                    "version": "*"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Test that the ProjectModel correctly filters dependencies for Linux64 (unix)
+        let linux_deps = project_model.dependencies(Some(Platform::Linux64));
+        assert!(
+            linux_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should be in build dependencies for Linux64 (unix)"
+        );
+
+        // Test that the ProjectModel correctly filters dependencies for Osx64 (unix)
+        let osx_deps = project_model.dependencies(Some(Platform::Osx64));
+        assert!(
+            osx_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should be in build dependencies for Osx64 (unix)"
+        );
+
+        // Test that the ProjectModel correctly excludes dependencies for Win64 (not unix)
+        let win_deps = project_model.dependencies(Some(Platform::Win64));
+        assert!(
+            !win_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should NOT be in build dependencies for Win64 (not unix)"
+        );
+
+        // Test that the intermediate recipe contains the conditional items
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify that conditional build dependencies are in the recipe
+        let has_conditional = generated_recipe
+            .recipe
+            .requirements
+            .build
+            .iter()
+            .any(|item| matches!(item, Item::Conditional(_)));
+
+        assert!(
+            has_conditional,
+            "Recipe should contain conditional build dependencies"
         );
     }
 }

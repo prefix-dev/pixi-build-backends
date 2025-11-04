@@ -58,10 +58,10 @@ impl GenerateRecipe for CMakeGenerator {
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         // Add configured compilers to build requirements
-        pixi_build_backend::compilers::add_compilers_to_requirements_by_name(
+        pixi_build_backend::compilers::add_compilers_to_requirements_with_dependencies(
             &compilers,
             &mut requirements.build,
-            &model_dependencies.build,
+            &model_dependencies,
             &host_platform,
         );
         pixi_build_backend::compilers::add_stdlib_to_requirements(
@@ -80,9 +80,7 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python
         // executable
-        let has_host_python = model_dependencies.host.contains("python")
-            || model_dependencies.build.contains("python")
-            || model_dependencies.run.contains("python");
+        let has_host_python = model_dependencies.host.contains("python");
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {

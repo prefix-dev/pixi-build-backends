@@ -731,10 +731,10 @@ mod tests {
                 if cond.then.0.iter().any(|dep| dep.package_name().as_source() == "openssl") {
                     // Print the actual condition for debugging
                     eprintln!("Found openssl conditional with condition: '{}'", cond.condition);
-                    // The condition should be exactly "build_platform == 'linux-64'"
+                    // The condition should be exactly "host_platform == 'linux-64'"
                     assert_eq!(
-                        cond.condition, "build_platform == 'linux-64'",
-                        "Condition should be exactly \"build_platform == 'linux-64'\""
+                        cond.condition, "host_platform == 'linux-64'",
+                        "Condition should be exactly \"host_platform == 'linux-64'\""
                     );
                     found_openssl_conditional = true;
                     break;

@@ -160,7 +160,9 @@ def test_generate_recipe_with_versions_in_model_and_package(
         assert generated_recipe.recipe.to_yaml() == snapshot
 
 
-def test_generate_recipe_with_explicit_package_xml_path(package_xmls: Path, test_data_dir: Path, distro_noetic: Distro, snapshot):
+def test_generate_recipe_with_explicit_package_xml_path(
+    package_xmls: Path, test_data_dir: Path, distro_noetic: Distro, snapshot
+):
     """Test the generate_recipe function of ROSGenerator with versions."""
     # Create a temporary directory to simulate the package directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -191,7 +193,7 @@ def test_generate_recipe_with_explicit_package_xml_path(package_xmls: Path, test
         generated_recipe = generator.generate_recipe(
             model=model,
             config=config,
-            # in other tests we always pass a directory, 
+            # in other tests we always pass a directory,
             # here we pass the explicit package.xml path
             # to handle the situation that we do not multiply package.xml filename
             manifest_path=str(package_xml_dest),

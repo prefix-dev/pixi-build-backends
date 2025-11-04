@@ -98,12 +98,6 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
-        eprintln!(
-            "backends: source dir {}",
-            source_dir.clone().unwrap_or_default().display()
-        );
-        eprintln!("backends: manifest path {}", manifest_path.display());
-
         // Determine the root directory of the manifest
         let (source_dir, manifest_rel_path) = match source_dir {
             None => {

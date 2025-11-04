@@ -55,9 +55,8 @@ def get_build_input_globs(config: dict[str, Any], editable: bool) -> list[str]:
     return all_globs
 
 
-def get_package_xml_content(manifest_root: Path) -> str:
+def get_package_xml_content(package_xml_path: Path) -> str:
     """Read package.xml file from the manifest root."""
-    package_xml_path = manifest_root / "package.xml"
     if not package_xml_path.exists():
         raise FileNotFoundError(f"package.xml not found at {package_xml_path}")
 

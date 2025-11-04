@@ -87,15 +87,8 @@ impl PackageSpec for pbt::PackageSpecV1 {
     ) -> miette::Result<(MatchSpec, Option<Self::SourceSpec>)> {
         match self {
             pbt::PackageSpecV1::Binary(binary_spec) => {
-                let match_spec = if binary_spec.version == Some("*".parse().unwrap()) {
-                    // Skip dependencies with wildcard versions.
-                    name.as_normalized()
-                        .to_string()
-                        .parse::<MatchSpec>()
-                        .into_diagnostic()?
-                } else {
-                    MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name))
-                };
+                // Always use to_nameless() to preserve all fields including build constraints
+                let match_spec = MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name));
                 Ok((match_spec, None))
             }
             pbt::PackageSpecV1::Source(source_spec) => Ok((

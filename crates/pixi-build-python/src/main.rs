@@ -93,9 +93,10 @@ impl GenerateRecipe for PythonGenerator {
         );
 
         let installer_name = installer.package_name().to_string();
+        let installer_pkg = pixi_build_types::SourcePackageName::from(installer_name.as_str());
 
         // add installer in the host requirements
-        if !model_dependencies.host.contains(installer_name.as_str())
+        if !model_dependencies.host.contains_key(&installer_pkg)
         {
             requirements
                 .host
@@ -111,12 +112,13 @@ impl GenerateRecipe for PythonGenerator {
             python_requirement_str.parse().into_diagnostic()
         };
 
+        let python_pkg = pixi_build_types::SourcePackageName::from("python");
         // add python in both host and run requirements
-        if !model_dependencies.host.contains("python")
+        if !model_dependencies.host.contains_key(&python_pkg)
         {
             requirements.host.push(get_python_requirement()?);
         }
-        if !model_dependencies.run.contains("python")
+        if !model_dependencies.run.contains_key(&python_pkg)
         {
             requirements.run.push(get_python_requirement()?);
         }

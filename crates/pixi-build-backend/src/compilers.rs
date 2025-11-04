@@ -3,10 +3,9 @@
 
 use std::{collections::HashSet, fmt::Display, ops::Deref};
 
-use indexmap::IndexMap;
 use itertools::Itertools;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{PackageName, Platform};
+use rattler_conda_types::Platform;
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Value},
@@ -82,52 +81,6 @@ pub fn compiler_requirement(language: &Language) -> Item<PackageDependency> {
 /// # Arguments
 /// * `compilers` - List of compiler names (e.g., ["c", "cxx", "rust", "cuda"])
 /// * `requirements` - Mutable reference to the requirements to modify
-/// * `resolved_build_requirements` - IndexMap of already resolved build
-///   requirements
-/// * `host_platform` - The target platform for determining default compiler
-///   names
-/// * `variants` - The variants available in the recipe, used to determine if
-///   stdlib is needed
-pub fn add_compilers_and_stdlib_to_requirements(
-    compilers: &[String],
-    requirements: &mut Vec<Item<PackageDependency>>,
-    resolved_build_requirements: &IndexMap<PackageName, PackageDependency>,
-    host_platform: &Platform,
-    variants: &HashSet<NormalizedKey>,
-) {
-    add_compilers_to_requirements(
-        compilers,
-        requirements,
-        resolved_build_requirements,
-        host_platform,
-    );
-    add_stdlib_to_requirements(compilers, requirements, variants);
-}
-
-pub fn add_compilers_to_requirements(
-    compilers: &[String],
-    requirements: &mut Vec<Item<PackageDependency>>,
-    resolved_build_requirements: &IndexMap<PackageName, PackageDependency>,
-    host_platform: &Platform,
-) {
-    for compiler_str in compilers {
-        // Check if the specific compiler is already present
-        let language_compiler = default_compiler(host_platform, compiler_str);
-
-        if !resolved_build_requirements.contains_key(&PackageName::new_unchecked(language_compiler))
-        {
-            let template = format!("${{{{ compiler('{compiler_str}') }}}}");
-            requirements.push(Item::Value(Value::Template(template)));
-        }
-    }
-}
-
-/// Add configured compilers to build requirements if they are not already
-/// present. This variant accepts a Dependencies struct.
-///
-/// # Arguments
-/// * `compilers` - List of compiler names (e.g., ["c", "cxx", "rust", "cuda"])
-/// * `requirements` - Mutable reference to the requirements to modify
 /// * `dependencies` - The Dependencies struct containing build/host/run dependencies
 /// * `host_platform` - The target platform for determining default compiler
 ///   names
@@ -140,31 +93,13 @@ pub fn add_compilers_to_requirements_with_dependencies<S>(
     for compiler_str in compilers {
         // Check if the specific compiler is already present in build dependencies
         let language_compiler = default_compiler(host_platform, compiler_str);
+        let source_package_name = pixi_build_types::SourcePackageName::from(language_compiler);
 
-        if !dependencies.build.contains(&language_compiler)
+        if !dependencies.build.contains_key(&source_package_name)
         {
             let template = format!("${{{{ compiler('{compiler_str}') }}}}");
             requirements.push(Item::Value(Value::Template(template)));
         }
-    }
-}
-
-/// Trait for checking if a collection contains an element
-pub trait Contains<T: ?Sized> {
-    fn contains(&self, item: &T) -> bool;
-}
-
-// Implement Contains for IndexMap with PackageName keys
-impl<V> Contains<str> for IndexMap<PackageName, V> {
-    fn contains(&self, item: &str) -> bool {
-        self.keys().any(|k| k.as_source() == item)
-    }
-}
-
-// Implement Contains for IndexMap<&SourcePackageName, V> to check for string keys
-impl<'a, V> Contains<str> for IndexMap<&'a pixi_build_types::SourcePackageName, V> {
-    fn contains(&self, item: &str) -> bool {
-        self.keys().any(|k| <str>::eq(k.as_ref(), item))
     }
 }
 

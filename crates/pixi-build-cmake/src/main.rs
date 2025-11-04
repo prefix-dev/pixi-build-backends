@@ -72,7 +72,8 @@ impl GenerateRecipe for CMakeGenerator {
 
         // add necessary build tools
         for tool in ["cmake", "ninja"] {
-            if !model_dependencies.build.contains(tool) {
+            let tool_name = pixi_build_types::SourcePackageName::from(tool);
+            if !model_dependencies.build.contains_key(&tool_name) {
                 requirements.build.push(tool.parse().into_diagnostic()?);
             }
         }
@@ -80,7 +81,7 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python
         // executable
-        let has_host_python = model_dependencies.host.contains("python");
+        let has_host_python = model_dependencies.host.contains_key(&pixi_build_types::SourcePackageName::from("python"));
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {

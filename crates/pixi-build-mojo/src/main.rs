@@ -72,10 +72,11 @@ impl GenerateRecipe for MojoGenerator {
             // They should be removable at a future point.
             let alt_names = ["max", "mojo", "modular"];
 
-            if !model_dependencies.build.contains(mojo_compiler_pkg)
+            let mojo_pkg_name = pixi_build_types::SourcePackageName::from(mojo_compiler_pkg);
+            if !model_dependencies.build.contains_key(&mojo_pkg_name)
                 && !alt_names
                     .iter()
-                    .any(|alt| model_dependencies.build.contains(alt))
+                    .any(|alt| model_dependencies.build.contains_key(&pixi_build_types::SourcePackageName::from(*alt)))
             {
                 requirements
                     .build

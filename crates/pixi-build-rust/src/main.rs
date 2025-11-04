@@ -9,7 +9,6 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
-    compilers::Contains,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
@@ -83,10 +82,8 @@ impl GenerateRecipe for RustGenerator {
             variants,
         );
 
-        // Check if openssl is in any of the dependencies
-        let has_openssl = model_dependencies.build.contains("openssl")
-            || model_dependencies.host.contains("openssl")
-            || model_dependencies.run.contains("openssl");
+        // Check if openssl is in the host dependencies
+        let has_openssl = model_dependencies.host.contains_key(&pixi_build_types::SourcePackageName::from("openssl"));
 
         let mut has_sccache = false;
 
@@ -686,15 +683,6 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    }
-                },
                 "targets": {
                     "linux-64": {
                         "buildDependencies": {
@@ -736,32 +724,26 @@ mod tests {
             .expect("Failed to generate recipe");
 
         // Verify that conditional build dependencies contain openssl with linux-64 condition
-        let has_conditional_openssl = generated_recipe
-            .recipe
-            .requirements
-            .build
-            .iter()
-            .any(|item| {
-                if let Item::Conditional(cond) = item {
-                    // Check if condition is for linux-64 (build_platform == 'linux-64')
-                    let is_linux64_condition = cond.condition.contains("build_platform")
-                        && cond.condition.contains("linux-64");
-
-                    if !is_linux64_condition {
-                        return false;
-                    }
-
-                    // Check if the then branch contains openssl
-                    cond.then.0.iter().any(|dep| {
-                        dep.package_name().as_source() == "openssl"
-                    })
-                } else {
-                    false
+        let mut found_openssl_conditional = false;
+        for item in &generated_recipe.recipe.requirements.build {
+            if let Item::Conditional(cond) = item {
+                // Check if the then branch contains openssl
+                if cond.then.0.iter().any(|dep| dep.package_name().as_source() == "openssl") {
+                    // Print the actual condition for debugging
+                    eprintln!("Found openssl conditional with condition: '{}'", cond.condition);
+                    // The condition should be exactly "build_platform == 'linux-64'"
+                    assert_eq!(
+                        cond.condition, "build_platform == 'linux-64'",
+                        "Condition should be exactly \"build_platform == 'linux-64'\""
+                    );
+                    found_openssl_conditional = true;
+                    break;
                 }
-            });
+            }
+        }
 
         assert!(
-            has_conditional_openssl,
+            found_openssl_conditional,
             "Recipe should contain conditional build dependency for openssl with linux-64 condition"
         );
     }
@@ -774,15 +756,6 @@ mod tests {
             "name": "foobar",
             "version": "0.1.0",
             "targets": {
-                "defaultTarget": {
-                    "runDependencies": {
-                        "boltons": {
-                            "binary": {
-                                "version": "*"
-                            }
-                        }
-                    }
-                },
                 "targets": {
                     "unix": {
                         "buildDependencies": {
@@ -831,31 +804,26 @@ mod tests {
             .expect("Failed to generate recipe");
 
         // Verify that conditional build dependencies contain gcc with unix condition
-        let has_conditional_gcc = generated_recipe
-            .recipe
-            .requirements
-            .build
-            .iter()
-            .any(|item| {
-                if let Item::Conditional(cond) = item {
-                    // Check if condition is for unix
-                    let is_unix_condition = cond.condition.contains("unix");
-
-                    if !is_unix_condition {
-                        return false;
-                    }
-
-                    // Check if the then branch contains gcc
-                    cond.then.0.iter().any(|dep| {
-                        dep.package_name().as_source() == "gcc"
-                    })
-                } else {
-                    false
+        let mut found_gcc_conditional = false;
+        for item in &generated_recipe.recipe.requirements.build {
+            if let Item::Conditional(cond) = item {
+                // Check if the then branch contains gcc
+                if cond.then.0.iter().any(|dep| dep.package_name().as_source() == "gcc") {
+                    // Print the actual condition for debugging
+                    eprintln!("Found gcc conditional with condition: '{}'", cond.condition);
+                    // The condition should be exactly "unix"
+                    assert_eq!(
+                        cond.condition, "unix",
+                        "Condition should be exactly \"unix\""
+                    );
+                    found_gcc_conditional = true;
+                    break;
                 }
-            });
+            }
+        }
 
         assert!(
-            has_conditional_gcc,
+            found_gcc_conditional,
             "Recipe should contain conditional build dependency for gcc with unix condition"
         );
     }

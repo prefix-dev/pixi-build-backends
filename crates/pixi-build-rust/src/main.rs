@@ -723,7 +723,7 @@ mod tests {
             "openssl should NOT be in build dependencies for Osx64"
         );
 
-        // Test that the intermediate recipe contains the conditional items
+        // Test that the intermediate recipe contains the conditional items with correct condition
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
@@ -735,17 +735,34 @@ mod tests {
             )
             .expect("Failed to generate recipe");
 
-        // Verify that conditional build dependencies are in the recipe
+        // Verify that conditional build dependencies contain openssl with linux-64 condition
         let has_conditional_openssl = generated_recipe
             .recipe
             .requirements
             .build
             .iter()
-            .any(|item| matches!(item, Item::Conditional(_)));
+            .any(|item| {
+                if let Item::Conditional(cond) = item {
+                    // Check if condition is for linux-64 (build_platform == 'linux-64')
+                    let is_linux64_condition = cond.condition.contains("build_platform")
+                        && cond.condition.contains("linux-64");
+
+                    if !is_linux64_condition {
+                        return false;
+                    }
+
+                    // Check if the then branch contains openssl
+                    cond.then.0.iter().any(|dep| {
+                        dep.package_name().as_source() == "openssl"
+                    })
+                } else {
+                    false
+                }
+            });
 
         assert!(
             has_conditional_openssl,
-            "Recipe should contain conditional build dependencies"
+            "Recipe should contain conditional build dependency for openssl with linux-64 condition"
         );
     }
 
@@ -801,7 +818,7 @@ mod tests {
             "gcc should NOT be in build dependencies for Win64 (not unix)"
         );
 
-        // Test that the intermediate recipe contains the conditional items
+        // Test that the intermediate recipe contains the conditional items with correct condition
         let generated_recipe = RustGenerator::default()
             .generate_recipe(
                 &project_model,
@@ -813,17 +830,33 @@ mod tests {
             )
             .expect("Failed to generate recipe");
 
-        // Verify that conditional build dependencies are in the recipe
-        let has_conditional = generated_recipe
+        // Verify that conditional build dependencies contain gcc with unix condition
+        let has_conditional_gcc = generated_recipe
             .recipe
             .requirements
             .build
             .iter()
-            .any(|item| matches!(item, Item::Conditional(_)));
+            .any(|item| {
+                if let Item::Conditional(cond) = item {
+                    // Check if condition is for unix
+                    let is_unix_condition = cond.condition.contains("unix");
+
+                    if !is_unix_condition {
+                        return false;
+                    }
+
+                    // Check if the then branch contains gcc
+                    cond.then.0.iter().any(|dep| {
+                        dep.package_name().as_source() == "gcc"
+                    })
+                } else {
+                    false
+                }
+            });
 
         assert!(
-            has_conditional,
-            "Recipe should contain conditional build dependencies"
+            has_conditional_gcc,
+            "Recipe should contain conditional build dependency for gcc with unix condition"
         );
     }
 }

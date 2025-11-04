@@ -42,6 +42,22 @@ impl Installer {
             Installer::Pip
         }
     }
+
+    /// Determine the installer from an iterator of dependency package names.
+    /// Checks if "uv" is present in the package names.
+    pub fn determine_installer_from_names<'a>(
+        mut package_names: impl Iterator<Item = &'a str>,
+    ) -> Installer
+    {
+        // Check all dependency names for "uv" package
+        let has_uv = package_names.any(|name| name == UV);
+
+        if has_uv {
+            Installer::Uv
+        } else {
+            Installer::Pip
+        }
+    }
 }
 
 #[derive(Serialize)]

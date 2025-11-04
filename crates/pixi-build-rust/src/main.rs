@@ -9,15 +9,16 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
-    compilers::add_compilers_and_stdlib_to_requirements,
+    compilers::Contains,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
-    recipe::{ConditionalRequirements, Item, Script},
+    recipe::{Item, Script},
 };
 use std::collections::HashSet;
 use std::{
@@ -56,13 +57,11 @@ impl GenerateRecipe for RustGenerator {
         // we need to add compilers
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["rust"] if not
         // specified
@@ -72,15 +71,22 @@ impl GenerateRecipe for RustGenerator {
             .unwrap_or_else(|| vec!["rust".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements_by_name(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies.build,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
-        let has_openssl = resolved_requirements.contains(&"openssl".parse().into_diagnostic()?);
+        // Check if openssl is in any of the dependencies
+        let has_openssl = model_dependencies.build.contains("openssl")
+            || model_dependencies.host.contains("openssl")
+            || model_dependencies.run.contains("openssl");
 
         let mut has_sccache = false;
 

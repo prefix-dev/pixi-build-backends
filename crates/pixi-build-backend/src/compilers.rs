@@ -122,6 +122,54 @@ pub fn add_compilers_to_requirements(
     }
 }
 
+/// Add configured compilers to build requirements if they are not already
+/// present. This variant accepts any type that can check for package names.
+///
+/// # Arguments
+/// * `compilers` - List of compiler names (e.g., ["c", "cxx", "rust", "cuda"])
+/// * `requirements` - Mutable reference to the requirements to modify
+/// * `resolved_build_names` - Something that can check if a package name exists
+/// * `host_platform` - The target platform for determining default compiler
+///   names
+pub fn add_compilers_to_requirements_by_name<C>(
+    compilers: &[String],
+    requirements: &mut Vec<Item<PackageDependency>>,
+    resolved_build_names: &C,
+    host_platform: &Platform,
+) where
+    C: Contains<str>,
+{
+    for compiler_str in compilers {
+        // Check if the specific compiler is already present
+        let language_compiler = default_compiler(host_platform, compiler_str);
+
+        if !resolved_build_names.contains(&language_compiler)
+        {
+            let template = format!("${{{{ compiler('{compiler_str}') }}}}");
+            requirements.push(Item::Value(Value::Template(template)));
+        }
+    }
+}
+
+/// Trait for checking if a collection contains an element
+pub trait Contains<T: ?Sized> {
+    fn contains(&self, item: &T) -> bool;
+}
+
+// Implement Contains for IndexMap with PackageName keys
+impl<V> Contains<str> for IndexMap<PackageName, V> {
+    fn contains(&self, item: &str) -> bool {
+        self.keys().any(|k| k.as_source() == item)
+    }
+}
+
+// Implement Contains for IndexMap<&SourcePackageName, V> to check for string keys
+impl<'a, V> Contains<str> for IndexMap<&'a pixi_build_types::SourcePackageName, V> {
+    fn contains(&self, item: &str) -> bool {
+        self.keys().any(|k| <str>::eq(k.as_ref(), item))
+    }
+}
+
 /// Returns the standard library for a given language, if applicable.
 ///
 /// The implementation just always returns `c` for all languages except for some

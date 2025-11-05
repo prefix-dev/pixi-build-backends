@@ -81,7 +81,9 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python
         // executable
-        let has_host_python = model_dependencies.host.contains_key(&pixi_build_types::SourcePackageName::from("python"));
+        let has_host_python = model_dependencies
+            .host
+            .contains_key(&pixi_build_types::SourcePackageName::from("python"));
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {

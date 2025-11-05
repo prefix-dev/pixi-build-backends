@@ -88,16 +88,14 @@ impl GenerateRecipe for PythonGenerator {
         // are added to the `host` requirements, while for cmake/rust they are
         // added to the `build` requirements.
         // We only check build and host dependencies for the installer.
-        let installer = Installer::determine_installer_from_names(
-            model_dependencies.build_and_host_names()
-        );
+        let installer =
+            Installer::determine_installer_from_names(model_dependencies.build_and_host_names());
 
         let installer_name = installer.package_name().to_string();
         let installer_pkg = pixi_build_types::SourcePackageName::from(installer_name.as_str());
 
         // add installer in the host requirements
-        if !model_dependencies.host.contains_key(&installer_pkg)
-        {
+        if !model_dependencies.host.contains_key(&installer_pkg) {
             requirements
                 .host
                 .push(installer_name.parse().into_diagnostic()?);
@@ -114,12 +112,10 @@ impl GenerateRecipe for PythonGenerator {
 
         let python_pkg = pixi_build_types::SourcePackageName::from("python");
         // add python in both host and run requirements
-        if !model_dependencies.host.contains_key(&python_pkg)
-        {
+        if !model_dependencies.host.contains_key(&python_pkg) {
             requirements.host.push(get_python_requirement()?);
         }
-        if !model_dependencies.run.contains_key(&python_pkg)
-        {
+        if !model_dependencies.run.contains_key(&python_pkg) {
             requirements.run.push(get_python_requirement()?);
         }
 

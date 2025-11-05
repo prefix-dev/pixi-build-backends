@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
 use minijinja::Environment;
-use rattler_conda_types::PackageName;
-use recipe_stage0::{matchspec::PackageDependency, requirements::PackageSpecDependencies};
 use serde::Serialize;
 
 const UV: &str = "uv";
@@ -31,24 +29,11 @@ impl Installer {
         }
     }
 
-    pub fn determine_installer(
-        dependencies: &PackageSpecDependencies<PackageDependency>,
-    ) -> Installer {
-        // Determine the installer to use
-        let uv = PackageName::new_unchecked(UV.to_string());
-        if dependencies.contains(&uv) {
-            Installer::Uv
-        } else {
-            Installer::Pip
-        }
-    }
-
     /// Determine the installer from an iterator of dependency package names.
     /// Checks if "uv" is present in the package names.
     pub fn determine_installer_from_names<'a>(
         mut package_names: impl Iterator<Item = &'a str>,
-    ) -> Installer
-    {
+    ) -> Installer {
         // Check all dependency names for "uv" package
         let has_uv = package_names.any(|name| name == UV);
 

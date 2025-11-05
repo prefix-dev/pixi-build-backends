@@ -74,9 +74,11 @@ impl GenerateRecipe for MojoGenerator {
 
             let mojo_pkg_name = pixi_build_types::SourcePackageName::from(mojo_compiler_pkg);
             if !model_dependencies.build.contains_key(&mojo_pkg_name)
-                && !alt_names
-                    .iter()
-                    .any(|alt| model_dependencies.build.contains_key(&pixi_build_types::SourcePackageName::from(*alt)))
+                && !alt_names.iter().any(|alt| {
+                    model_dependencies
+                        .build
+                        .contains_key(&pixi_build_types::SourcePackageName::from(*alt))
+                })
             {
                 requirements
                     .build

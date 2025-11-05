@@ -95,8 +95,7 @@ pub fn add_compilers_to_requirements<S>(
         let language_compiler = default_compiler(host_platform, compiler_str);
         let source_package_name = pixi_build_types::SourcePackageName::from(language_compiler);
 
-        if !dependencies.build.contains_key(&source_package_name)
-        {
+        if !dependencies.build.contains_key(&source_package_name) {
             let template = format!("${{{{ compiler('{compiler_str}') }}}}");
             requirements.push(Item::Value(Value::Template(template)));
         }

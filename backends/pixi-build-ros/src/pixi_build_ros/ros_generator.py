@@ -45,16 +45,16 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         channels: list[str] | None = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
-        manifest_path: Path = Path(manifest_path)
+        manifest_path_obj = Path(manifest_path)
         # nichmor: I'm confused here what we should expect
         # an absolute path to package.xml or a directory containing it
         # so I'm handling both cases
-        if manifest_path.is_file():
-            if manifest_path.name != "package.xml":
+        if manifest_path_obj.is_file():
+            if manifest_path_obj.name != "package.xml":
                 raise ValueError("Manifest filename must be package.xml for ROS packages.")
-            manifest_root = manifest_path.parent
+            manifest_root = manifest_path_obj.parent
         else:
-            manifest_root = manifest_path
+            manifest_root = manifest_path_obj
 
         backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(
             config,

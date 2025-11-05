@@ -83,7 +83,9 @@ impl GenerateRecipe for RustGenerator {
         );
 
         // Check if openssl is in the host dependencies
-        let has_openssl = model_dependencies.host.contains_key(&pixi_build_types::SourcePackageName::from("openssl"));
+        let has_openssl = model_dependencies
+            .host
+            .contains_key(&pixi_build_types::SourcePackageName::from("openssl"));
 
         let mut has_sccache = false;
 
@@ -700,14 +702,18 @@ mod tests {
         // Test that the ProjectModel correctly filters dependencies for Linux64
         let linux_deps = project_model.dependencies(Some(Platform::Linux64));
         assert!(
-            linux_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            linux_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
             "openssl should be in build dependencies for Linux64"
         );
 
         // Test that the ProjectModel correctly excludes dependencies for Osx64
         let osx_deps = project_model.dependencies(Some(Platform::Osx64));
         assert!(
-            !osx_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            !osx_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
             "openssl should NOT be in build dependencies for Osx64"
         );
 
@@ -720,6 +726,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -728,9 +735,17 @@ mod tests {
         for item in &generated_recipe.recipe.requirements.build {
             if let Item::Conditional(cond) = item {
                 // Check if the then branch contains openssl
-                if cond.then.0.iter().any(|dep| dep.package_name().as_source() == "openssl") {
+                if cond
+                    .then
+                    .0
+                    .iter()
+                    .any(|dep| dep.package_name().as_source() == "openssl")
+                {
                     // Print the actual condition for debugging
-                    eprintln!("Found openssl conditional with condition: '{}'", cond.condition);
+                    eprintln!(
+                        "Found openssl conditional with condition: '{}'",
+                        cond.condition
+                    );
                     // The condition should be exactly "host_platform == 'linux-64'"
                     assert_eq!(
                         cond.condition, "host_platform == 'linux-64'",
@@ -773,21 +788,27 @@ mod tests {
         // Test that the ProjectModel correctly filters dependencies for Linux64 (unix)
         let linux_deps = project_model.dependencies(Some(Platform::Linux64));
         assert!(
-            linux_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            linux_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
             "gcc should be in build dependencies for Linux64 (unix)"
         );
 
         // Test that the ProjectModel correctly filters dependencies for Osx64 (unix)
         let osx_deps = project_model.dependencies(Some(Platform::Osx64));
         assert!(
-            osx_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            osx_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
             "gcc should be in build dependencies for Osx64 (unix)"
         );
 
         // Test that the ProjectModel correctly excludes dependencies for Win64 (not unix)
         let win_deps = project_model.dependencies(Some(Platform::Win64));
         assert!(
-            !win_deps.build.contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            !win_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
             "gcc should NOT be in build dependencies for Win64 (not unix)"
         );
 
@@ -800,6 +821,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -808,7 +830,12 @@ mod tests {
         for item in &generated_recipe.recipe.requirements.build {
             if let Item::Conditional(cond) = item {
                 // Check if the then branch contains gcc
-                if cond.then.0.iter().any(|dep| dep.package_name().as_source() == "gcc") {
+                if cond
+                    .then
+                    .0
+                    .iter()
+                    .any(|dep| dep.package_name().as_source() == "gcc")
+                {
                     // Print the actual condition for debugging
                     eprintln!("Found gcc conditional with condition: '{}'", cond.condition);
                     // The condition should be exactly "unix"

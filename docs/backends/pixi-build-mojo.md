@@ -193,7 +193,7 @@ For target-specific configuration, platform compilers completely replace the bas
 [package.build.config]
 compilers = ["mojo"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 compilers = ["mojo", "c", "cuda"]
 # Result for linux-64: ["mojo", "c", "cuda"]
 ```

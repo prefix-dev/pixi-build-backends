@@ -113,7 +113,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-input-globs = ["*.yaml", "*.md"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-input-globs = ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 # Result for linux-64: ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 ```

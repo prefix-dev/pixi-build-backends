@@ -116,7 +116,7 @@ For target-specific configuration, platform arguments completely replace the bas
 [package.build.config]
 extra-args = ["--release"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-args = ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 # Result for linux-64: ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 ```
@@ -140,7 +140,7 @@ For target-specific configuration, platform environment variables are merged wit
 [package.build.config]
 env = { RUST_LOG = "info", COMMON_VAR = "base" }
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 # Result for linux-64: { RUST_LOG = "info", COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 ```
@@ -172,7 +172,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-input-globs = ["*.txt"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-input-globs = ["*.txt", "*.so", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.so", "linux-configs/**/*"]
 ```
@@ -203,7 +203,7 @@ For target-specific configuration:
 [package.build.config]
 ignore-cargo-manifest = false
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 ignore-cargo-manifest = true
 # Result for linux-64: Cargo.toml metadata will be ignored
 ```
@@ -227,7 +227,7 @@ For target-specific configuration, platform compilers completely replace the bas
 [package.build.config]
 compilers = ["rust"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 compilers = ["rust", "c", "cxx"]
 # Result for linux-64: ["rust", "c", "cxx"]
 ```

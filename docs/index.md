@@ -60,7 +60,7 @@ The build backends generate recipes in two locations:
 #### 1. General Recipe (all outputs)
 
 ```
-<your_project>/.pixi/build/work/<package-name>--<hash>/work/
+<your_project>/.pixi/build/work/<package-name>--<hash>/debug/
 ```
 
 This directory contains:
@@ -71,7 +71,7 @@ This directory contains:
 #### 2. Variant-Specific Recipe (single output)
 
 ```
-<your_project>/.pixi/build/work/<package-name>--<hash>/work/recipe/<variant_hash>/
+<your_project>/.pixi/build/work/<package-name>--<hash>/debug/recipe/<variant_hash>/
 ```
 
 This directory contains:
@@ -83,11 +83,11 @@ This directory contains:
 
 To debug or rebuild a package using the same configuration, you have two options:
 
-### Option 1: Navigate to the recipe directory
+#### Option 1: Navigate to the recipe directory
 
 1. Navigate to the recipe directory:
    ```bash
-   cd .pixi/build/work/<package-name>--<hash>/work/recipe/<variant_hash>/
+   cd .pixi/build/work/<package-name>--<hash>/recipe/<variant_hash>/debug/
    ```
 
 2. Use `rattler-build` to rebuild the package:
@@ -95,12 +95,12 @@ To debug or rebuild a package using the same configuration, you have two options
    rattler-build build
    ```
 
-### Option 2: Point to the recipe directory
+#### Option 2: Point to the recipe directory
 
 Use the `--recipe` flag to build without changing directories:
 
 ```bash
-rattler-build build --recipe .pixi/build/work/<package-name>--<hash>/work/recipe/<variant_hash>/
+rattler-build build --recipe .pixi/build/work/<package-name>--<hash>/debug/recipe/<variant_hash>/
 ```
 
 This allows you to:
@@ -111,6 +111,15 @@ This allows you to:
 
 !!! tip
     The `<variant_hash>` ensures that each unique combination of build variants gets its own recipe directory, making it easy to compare different build configurations.
+
+### Debugging JSON-RPC
+
+You can find JSON version of your project model and requests/responses in the same directory alongside `recipe.yaml`. 
+We store:
+
+- Project model: `project_model.json`
+- Requests: `*_params.json`
+- Responses: `*_response.json`
 
 ## 🔗 Useful Links
 

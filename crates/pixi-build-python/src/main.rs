@@ -56,13 +56,29 @@ impl GenerateRecipe for PythonGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
+
+        // Determine the manifest root, because `manifest_path` can be
+        // either a direct file path or a directory path.
+        let manifest_root = if manifest_path.is_file() {
+            manifest_path
+                .parent()
+                .ok_or_else(|| {
+                    miette::Error::msg(format!(
+                        "Manifest path {} is a file but has no parent directory.",
+                        manifest_path.display()
+                    ))
+                })?
+                .to_path_buf()
+        } else {
+            manifest_path.clone()
+        };
 
         let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
             &manifest_root,

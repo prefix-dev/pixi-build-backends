@@ -63,7 +63,6 @@ impl<'a, S> Dependencies<'a, S> {
     /// Return an iterator of all package names from build and host dependencies.
     /// This is useful for checking build tools and compilers.
     pub fn build_and_host_names(&self) -> impl Iterator<Item = &str> {
-        use itertools::Itertools;
         self.build
             .keys()
             .chain(self.host.keys())

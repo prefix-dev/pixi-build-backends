@@ -9,7 +9,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::{ProjectModelV1, SourcePackageName};
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
@@ -72,7 +72,7 @@ impl GenerateRecipe for CMakeGenerator {
 
         // add necessary build tools
         for tool in ["cmake", "ninja"] {
-            let tool_name = pixi_build_types::SourcePackageName::from(tool);
+            let tool_name = SourcePackageName::from(tool);
             if !model_dependencies.build.contains_key(&tool_name) {
                 requirements.build.push(tool.parse().into_diagnostic()?);
             }
@@ -83,7 +83,7 @@ impl GenerateRecipe for CMakeGenerator {
         // executable
         let has_host_python = model_dependencies
             .host
-            .contains_key(&pixi_build_types::SourcePackageName::from("python"));
+            .contains_key(&SourcePackageName::from("python"));
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {

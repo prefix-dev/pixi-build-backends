@@ -105,7 +105,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
         for (selector, target) in specific_targets {
             let package_requirements = target_to_package_spec(target);
 
-            // add the binary requirements
+            // Add the binary requirements
             // Use host_platform for all dependency types to match the actual target platform
             build_items.extend(
                 package_requirements

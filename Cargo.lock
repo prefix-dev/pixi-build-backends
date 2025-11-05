@@ -4194,7 +4194,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-cmake"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "fs-err",
  "indexmap 2.11.4",
@@ -4216,7 +4216,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-mojo"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "indexmap 2.11.4",
  "insta",
@@ -4236,7 +4236,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-python"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "fs-err",
  "indexmap 2.11.4",
@@ -4283,7 +4283,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rust"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "cargo_toml",
  "fs-err",

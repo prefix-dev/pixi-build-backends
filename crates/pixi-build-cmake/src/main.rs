@@ -5,14 +5,14 @@ use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::{ProjectModelV1, SourcePackageName};
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{ChannelUrl, PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use rattler_conda_types::{ChannelUrl, Platform};
+use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::{
@@ -61,13 +61,11 @@ impl GenerateRecipe for CMakeGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["cxx"] if not specified
         let compilers = config
@@ -76,18 +74,22 @@ impl GenerateRecipe for CMakeGenerator {
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
         // add necessary build tools
         for tool in ["cmake", "ninja"] {
-            let tool_name = PackageName::new_unchecked(tool);
-            if !resolved_requirements.build.contains_key(&tool_name) {
+            let tool_name = SourcePackageName::from(tool);
+            if !model_dependencies.build.contains_key(&tool_name) {
                 requirements.build.push(tool.parse().into_diagnostic()?);
             }
         }
@@ -95,7 +97,9 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python
         // executable
-        let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
+        let has_host_python = model_dependencies
+            .host
+            .contains_key(&SourcePackageName::from("python"));
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {

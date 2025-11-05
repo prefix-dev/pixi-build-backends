@@ -7,15 +7,15 @@ use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
-use rattler_conda_types::{ChannelUrl, PackageName, Platform, package::EntryPoint};
+use rattler_conda_types::{ChannelUrl, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
-use recipe_stage0::recipe::{self, ConditionalRequirements, NoArchKind, Python, Script};
+use recipe_stage0::recipe::{self, NoArchKind, Python, Script};
 use std::collections::HashSet;
 use std::{
     collections::BTreeSet,
@@ -93,27 +93,25 @@ impl GenerateRecipe for PythonGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Ensure the python build tools are added to the `host` requirements.
         // Please note: this is a subtle difference for python, where the build tools
         // are added to the `host` requirements, while for cmake/rust they are
         // added to the `build` requirements.
-        let installer = Installer::determine_installer(&resolved_requirements);
+        // We only check build and host dependencies for the installer.
+        let installer =
+            Installer::determine_installer_from_names(model_dependencies.build_and_host_names());
 
         let installer_name = installer.package_name().to_string();
+        let installer_pkg = pixi_build_types::SourcePackageName::from(installer_name.as_str());
 
         // add installer in the host requirements
-        if !resolved_requirements
-            .host
-            .contains_key(&PackageName::new_unchecked(&installer_name))
-        {
+        if !model_dependencies.host.contains_key(&installer_pkg) {
             requirements
                 .host
                 .push(installer_name.parse().into_diagnostic()?);
@@ -128,28 +126,27 @@ impl GenerateRecipe for PythonGenerator {
             python_requirement_str.parse().into_diagnostic()
         };
 
+        let python_pkg = pixi_build_types::SourcePackageName::from("python");
         // add python in both host and run requirements
-        if !resolved_requirements
-            .host
-            .contains_key(&PackageName::new_unchecked("python"))
-        {
+        if !model_dependencies.host.contains_key(&python_pkg) {
             requirements.host.push(get_python_requirement()?);
         }
-        if !resolved_requirements
-            .run
-            .contains_key(&PackageName::new_unchecked("python"))
-        {
+        if !model_dependencies.run.contains_key(&python_pkg) {
             requirements.run.push(get_python_requirement()?);
         }
 
         // Get the list of compilers from config, defaulting to no compilers for pure
         // Python packages and add them to the build requirements.
         let compilers = config.compilers.clone().unwrap_or_default();
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 

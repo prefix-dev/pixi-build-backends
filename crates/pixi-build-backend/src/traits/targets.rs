@@ -59,6 +59,16 @@ impl<'a, S> Dependencies<'a, S> {
     pub fn contains(&self, name: &SourcePackageName) -> bool {
         self.run.contains_key(name) || self.host.contains_key(name) || self.build.contains_key(name)
     }
+
+    /// Return an iterator of all package names from build and host dependencies.
+    /// This is useful for checking build tools and compilers.
+    pub fn build_and_host_names(&self) -> impl Iterator<Item = &str> {
+        self.build
+            .keys()
+            .chain(self.host.keys())
+            .map(|name| name.as_ref() as &str)
+            .unique()
+    }
 }
 
 /// A trait that represent a project target.

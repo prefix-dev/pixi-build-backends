@@ -6,14 +6,14 @@ use config::{MojoBackendConfig, clean_project_name};
 use miette::{Error, IntoDiagnostic};
 use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{ChannelUrl, PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use rattler_conda_types::{ChannelUrl, Platform};
+use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::{collections::BTreeSet, path::Path, sync::Arc};
@@ -68,13 +68,12 @@ impl GenerateRecipe for MojoGenerator {
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["mojo"] if not specified
         let mut compilers = config
@@ -84,17 +83,18 @@ impl GenerateRecipe for MojoGenerator {
 
         // Handle mojo compiler specially if it's in the list
         if let Some(idx) = compilers.iter().position(|name| name == "mojo") {
-            let mojo_compiler_pkg = "mojo-compiler".to_string();
+            let mojo_compiler_pkg = "mojo-compiler";
             // All of these packages also contain the mojo compiler and maintain backward compat.
             // They should be removable at a future point.
             let alt_names = ["max", "mojo", "modular"];
 
-            if !resolved_requirements
-                .build
-                .contains_key(&PackageName::new_unchecked(&mojo_compiler_pkg))
-                && !alt_names
-                    .iter()
-                    .any(|alt| resolved_requirements.build.contains_key(*alt))
+            let mojo_pkg_name = pixi_build_types::SourcePackageName::from(mojo_compiler_pkg);
+            if !model_dependencies.build.contains_key(&mojo_pkg_name)
+                && !alt_names.iter().any(|alt| {
+                    model_dependencies
+                        .build
+                        .contains_key(&pixi_build_types::SourcePackageName::from(*alt))
+                })
             {
                 requirements
                     .build
@@ -105,11 +105,15 @@ impl GenerateRecipe for MojoGenerator {
             compilers.swap_remove(idx);
         }
 
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 

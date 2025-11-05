@@ -9,15 +9,15 @@ use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
     cache::{sccache_envs, sccache_tools},
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
-    recipe::{ConditionalRequirements, Item, Script},
+    recipe::{Item, Script},
 };
 use std::collections::HashSet;
 use std::{
@@ -72,13 +72,11 @@ impl GenerateRecipe for RustGenerator {
         // we need to add compilers
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["rust"] if not
         // specified
@@ -88,15 +86,22 @@ impl GenerateRecipe for RustGenerator {
             .unwrap_or_else(|| vec!["rust".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
-        let has_openssl = resolved_requirements.contains(&"openssl".parse().into_diagnostic()?);
+        // Check if openssl is in the host dependencies
+        let has_openssl = model_dependencies
+            .host
+            .contains_key(&pixi_build_types::SourcePackageName::from("openssl"));
 
         let mut has_sccache = false;
 
@@ -685,6 +690,184 @@ mod tests {
         assert_eq!(
             compiler_templates[0], "${{ compiler('rust') }}",
             "Default compiler should be rust"
+        );
+    }
+
+    #[test]
+    fn test_target_specific_build_dependencies_linux() {
+        use pixi_build_backend::traits::ProjectModel;
+
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "targets": {
+                    "linux-64": {
+                        "buildDependencies": {
+                            "openssl": {
+                                "binary": {
+                                    "version": ">=3.0"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Test that the ProjectModel correctly filters dependencies for Linux64
+        let linux_deps = project_model.dependencies(Some(Platform::Linux64));
+        assert!(
+            linux_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            "openssl should be in build dependencies for Linux64"
+        );
+
+        // Test that the ProjectModel correctly excludes dependencies for Osx64
+        let osx_deps = project_model.dependencies(Some(Platform::Osx64));
+        assert!(
+            !osx_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("openssl")),
+            "openssl should NOT be in build dependencies for Osx64"
+        );
+
+        // Test that the intermediate recipe contains the conditional items with correct condition
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+                vec![],
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify that conditional build dependencies contain openssl with linux-64 condition
+        let mut found_openssl_conditional = false;
+        for item in &generated_recipe.recipe.requirements.build {
+            if let Item::Conditional(cond) = item {
+                // Check if the then branch contains openssl
+                if cond
+                    .then
+                    .0
+                    .iter()
+                    .any(|dep| dep.package_name().as_source() == "openssl")
+                {
+                    // Print the actual condition for debugging
+                    eprintln!(
+                        "Found openssl conditional with condition: '{}'",
+                        cond.condition
+                    );
+                    // The condition should be exactly "host_platform == 'linux-64'"
+                    assert_eq!(
+                        cond.condition, "host_platform == 'linux-64'",
+                        "Condition should be exactly \"host_platform == 'linux-64'\""
+                    );
+                    found_openssl_conditional = true;
+                    break;
+                }
+            }
+        }
+
+        assert!(
+            found_openssl_conditional,
+            "Recipe should contain conditional build dependency for openssl with linux-64 condition"
+        );
+    }
+
+    #[test]
+    fn test_target_specific_build_dependencies_with_unix_selector() {
+        use pixi_build_backend::traits::ProjectModel;
+
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "targets": {
+                    "unix": {
+                        "buildDependencies": {
+                            "gcc": {
+                                "binary": {
+                                    "version": "*"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Test that the ProjectModel correctly filters dependencies for Linux64 (unix)
+        let linux_deps = project_model.dependencies(Some(Platform::Linux64));
+        assert!(
+            linux_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should be in build dependencies for Linux64 (unix)"
+        );
+
+        // Test that the ProjectModel correctly filters dependencies for Osx64 (unix)
+        let osx_deps = project_model.dependencies(Some(Platform::Osx64));
+        assert!(
+            osx_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should be in build dependencies for Osx64 (unix)"
+        );
+
+        // Test that the ProjectModel correctly excludes dependencies for Win64 (not unix)
+        let win_deps = project_model.dependencies(Some(Platform::Win64));
+        assert!(
+            !win_deps
+                .build
+                .contains_key(&pixi_build_types::SourcePackageName::from("gcc")),
+            "gcc should NOT be in build dependencies for Win64 (not unix)"
+        );
+
+        // Test that the intermediate recipe contains the conditional items with correct condition
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+                vec![],
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify that conditional build dependencies contain gcc with unix condition
+        let mut found_gcc_conditional = false;
+        for item in &generated_recipe.recipe.requirements.build {
+            if let Item::Conditional(cond) = item {
+                // Check if the then branch contains gcc
+                if cond
+                    .then
+                    .0
+                    .iter()
+                    .any(|dep| dep.package_name().as_source() == "gcc")
+                {
+                    // Print the actual condition for debugging
+                    eprintln!("Found gcc conditional with condition: '{}'", cond.condition);
+                    // The condition should be exactly "unix"
+                    assert_eq!(
+                        cond.condition, "unix",
+                        "Condition should be exactly \"unix\""
+                    );
+                    found_gcc_conditional = true;
+                    break;
+                }
+            }
+        }
+
+        assert!(
+            found_gcc_conditional,
+            "Recipe should contain conditional build dependency for gcc with unix condition"
         );
     }
 }

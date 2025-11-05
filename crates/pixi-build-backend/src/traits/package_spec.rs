@@ -10,7 +10,6 @@
 
 use std::{fmt::Debug, sync::Arc};
 
-use miette::IntoDiagnostic;
 use pixi_build_types::{self as pbt};
 use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName};
 
@@ -87,15 +86,8 @@ impl PackageSpec for pbt::PackageSpecV1 {
     ) -> miette::Result<(MatchSpec, Option<Self::SourceSpec>)> {
         match self {
             pbt::PackageSpecV1::Binary(binary_spec) => {
-                let match_spec = if binary_spec.version == Some("*".parse().unwrap()) {
-                    // Skip dependencies with wildcard versions.
-                    name.as_normalized()
-                        .to_string()
-                        .parse::<MatchSpec>()
-                        .into_diagnostic()?
-                } else {
-                    MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name))
-                };
+                // Always use to_nameless() to preserve all fields including build constraints
+                let match_spec = MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name));
                 Ok((match_spec, None))
             }
             pbt::PackageSpecV1::Source(source_spec) => Ok((
@@ -140,5 +132,101 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
 impl PackageSourceSpec for pbt::SourcePackageSpecV1 {
     fn to_v1(self) -> pbt::SourcePackageSpecV1 {
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rattler_conda_types::{ParseStrictness, StringMatcher, VersionSpec};
+
+    #[test]
+    fn test_to_match_spec_preserves_build_constraint_with_wildcard_version() {
+        // Test case: dependency with wildcard version and build constraint
+        // e.g., tk = { build = "xft*" }
+        let build_matcher: StringMatcher = "xft*".parse().unwrap();
+        let binary_spec = pbt::BinaryPackageSpecV1 {
+            version: Some(VersionSpec::Any),
+            build: Some(build_matcher.clone()),
+            build_number: None,
+            file_name: None,
+            channel: None,
+            subdir: None,
+            md5: None,
+            sha256: None,
+            url: None,
+            license: None,
+        };
+
+        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_name = PackageName::try_from("tk").unwrap();
+
+        let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
+
+        // Verify the build constraint is preserved
+        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(match_spec.version, Some(VersionSpec::Any));
+        assert_eq!(match_spec.build, Some(build_matcher));
+    }
+
+    #[test]
+    fn test_to_match_spec_preserves_build_constraint_with_specific_version() {
+        // Test case: dependency with specific version and build constraint
+        // e.g., tk = { version = "8.6.13", build = "xft*" }
+        let version = VersionSpec::from_str("8.6.13", ParseStrictness::Lenient).unwrap();
+        let build_matcher: StringMatcher = "xft*".parse().unwrap();
+        let binary_spec = pbt::BinaryPackageSpecV1 {
+            version: Some(version.clone()),
+            build: Some(build_matcher.clone()),
+            build_number: None,
+            file_name: None,
+            channel: None,
+            subdir: None,
+            md5: None,
+            sha256: None,
+            url: None,
+            license: None,
+        };
+
+        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_name = PackageName::try_from("tk").unwrap();
+
+        let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
+
+        // Verify both version and build constraint are preserved
+        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(match_spec.version, Some(version));
+        assert_eq!(match_spec.build, Some(build_matcher));
+    }
+
+    #[test]
+    fn test_to_match_spec_without_build_constraint() {
+        // Test case: dependency with wildcard version but no build constraint
+        // e.g., python = "*"
+        let binary_spec = pbt::BinaryPackageSpecV1 {
+            version: Some(VersionSpec::Any),
+            build: None,
+            build_number: None,
+            file_name: None,
+            channel: None,
+            subdir: None,
+            md5: None,
+            sha256: None,
+            url: None,
+            license: None,
+        };
+
+        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_name = PackageName::try_from("python").unwrap();
+
+        let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
+
+        // Verify the match spec is correct
+        assert_eq!(
+            match_spec.name,
+            Some(PackageName::try_from("python").unwrap())
+        );
+        assert_eq!(match_spec.version, Some(VersionSpec::Any));
+        assert_eq!(match_spec.build, None);
     }
 }

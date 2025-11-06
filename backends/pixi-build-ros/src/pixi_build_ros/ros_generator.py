@@ -50,8 +50,6 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         # an absolute path to package.xml or a directory containing it
         # so I'm handling both cases
         if manifest_path_obj.is_file():
-            if manifest_path_obj.name != "package.xml":
-                raise ValueError("Manifest filename must be package.xml for ROS packages.")
             manifest_root = manifest_path_obj.parent
         else:
             manifest_root = manifest_path_obj

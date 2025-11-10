@@ -178,6 +178,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                Vec::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -246,6 +247,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                Vec::new(),
             )
             .expect("Failed to generate recipe");
 
@@ -312,6 +314,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                Vec::new(),
             )
             .expect("Failed to generate recipe");
 

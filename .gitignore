@@ -40,8 +40,13 @@ pixi-build-python-output/
 __pycache__/
 *.pyc
 
+# Agents
 *.local*
+AGENTS.md
 
 # Python
 *.pyc
 __pycache__/
+
+artifacts-channel
+crates/pixi-build-cmake/work

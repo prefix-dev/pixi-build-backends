@@ -59,6 +59,16 @@ impl<'a, S> Dependencies<'a, S> {
     pub fn contains(&self, name: &SourcePackageName) -> bool {
         self.run.contains_key(name) || self.host.contains_key(name) || self.build.contains_key(name)
     }
+
+    /// Return an iterator of all package names from build and host dependencies.
+    /// This is useful for checking build tools and compilers.
+    pub fn build_and_host_names(&self) -> impl Iterator<Item = &str> {
+        self.build
+            .keys()
+            .chain(self.host.keys())
+            .map(|name| name.as_ref() as &str)
+            .unique()
+    }
 }
 
 /// A trait that represent a project target.
@@ -81,7 +91,7 @@ pub trait Targets {
     fn targets(&self) -> impl Iterator<Item = (&Self::Selector, &Self::Target)>;
 
     /// Return all dependencies for the given platform
-    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<Self::Spec>;
+    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<'_, Self::Spec>;
 
     /// Return the run dependencies for the given platform
     fn run_dependencies(
@@ -191,7 +201,7 @@ impl Targets for pbt::TargetsV1 {
             .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>()
     }
 
-    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<Self::Spec> {
+    fn dependencies(&self, platform: Option<Platform>) -> Dependencies<'_, Self::Spec> {
         let build_deps = self.build_dependencies(platform);
         let host_deps = self.host_dependencies(platform);
         let run_deps = self.run_dependencies(platform);

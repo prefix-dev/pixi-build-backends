@@ -1,1 +1,1 @@
-pub use pixi_consts::consts::*;
+pub const DEBUG_OUTPUT_DIR: &str = "debug";

@@ -11,11 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUST_LOG: info
-  RUST_BACKTRACE: 1
-  RUSTFLAGS: "-D warnings"
-  CARGO_TERM_COLOR: always
-  TARGET_DIR: target/pixi/ci
   PYTHONIOENCODING: utf-8
 
 jobs:
@@ -23,25 +18,29 @@ jobs:
     name: Build Ubuntu
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      ACTIONS_CACHE_SERVICE_V2: on
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2
+      - name: Configure sccache
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          workspaces: ". -> target/pixi"
-          key: ${{ hashFiles('pixi.lock') }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+          script: |
+            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
+      - name: Show sccache stats
+        run: pixi run -e build sccache --stop-server
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-linux-x86_64
-          path: |
-            ${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: artifacts-channel
           if-no-files-found: error
           retention-days: 60
 
@@ -49,6 +48,9 @@ jobs:
     name: Build Windows
     runs-on: windows-latest
     timeout-minutes: 20
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      ACTIONS_CACHE_SERVICE_V2: on
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Create Dev Drive
@@ -60,21 +62,25 @@ jobs:
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           manifest-path: ${{ env.PIXI_WORKSPACE }}/pixi.toml
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2
+      - name: Configure sccache
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          workspaces: ". -> ${{ env.PIXI_WORKSPACE }}/target/pixi"
-          key: ${{ hashFiles('pixi.lock') }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+          script: |
+            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Enable long paths (Windows)
+        run: git config --global core.longpaths true
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
+        working-directory: ${{ env.PIXI_WORKSPACE }}
+      - name: Show sccache stats
+        run: pixi run -e build sccache --stop-server
         working-directory: ${{ env.PIXI_WORKSPACE }}
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-windows-x86_64
-          path: |
-            ${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.PIXI_WORKSPACE }}/${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: ${{ env.PIXI_WORKSPACE }}/artifacts-channel
           if-no-files-found: error
           retention-days: 60
 
@@ -82,25 +88,29 @@ jobs:
     name: Build macOS
     runs-on: macos-latest
     timeout-minutes: 20
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      ACTIONS_CACHE_SERVICE_V2: on
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2
+      - name: Configure sccache
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          workspaces: ". -> target/pixi"
-          key: ${{ hashFiles('pixi.lock') }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Build backends
-        run: pixi run build-ci
+          script: |
+            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Build backends channel
+        run: pixi run -e build create-testsuite-channel
+      - name: Show sccache stats
+        run: pixi run -e build sccache --stop-server
       - name: Upload executables as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pixi-build-backends-macos-aarch64
-          path: |
-            ${{ env.TARGET_DIR }}/pixi-build-*
-            !${{ env.TARGET_DIR }}/pixi-build-*.d
+          path: artifacts-channel
           if-no-files-found: error
           retention-days: 60
 
@@ -135,9 +145,6 @@ jobs:
 
       - name: Run integration tests
         run: pixi run --locked test-slow
-        env:
-          PIXI_BIN_DIR: ${{ github.workspace }}/artifacts
-          BUILD_BACKENDS_BIN_DIR: ${{ github.workspace }}/artifacts
 
   test-windows-x86_64:
     name: Test Windows x86_64
@@ -177,9 +184,6 @@ jobs:
       - name: Run integration tests
         run: pixi run --locked test-slow
         working-directory: ${{ env.PIXI_WORKSPACE }}
-        env:
-          PIXI_BIN_DIR: ${{ env.PIXI_WORKSPACE }}/artifacts
-          BUILD_BACKENDS_BIN_DIR: ${{ env.PIXI_WORKSPACE }}/artifacts
 
   test-macos-aarch64:
     name: Test macOS aarch64
@@ -212,6 +216,3 @@ jobs:
 
       - name: Run integration tests
         run: pixi run --locked test-slow
-        env:
-          PIXI_BIN_DIR: ${{ github.workspace }}/artifacts
-          BUILD_BACKENDS_BIN_DIR: ${{ github.workspace }}/artifacts

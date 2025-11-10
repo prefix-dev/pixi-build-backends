@@ -1,30 +1,22 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 
 use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
-use fs_err::tokio as tokio_fs;
-use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use pixi_build_backend::specs_conversion::from_build_v1_args_to_finalized_dependencies;
 use pixi_build_backend::{
     dependencies::{convert_binary_dependencies, convert_dependencies},
     intermediate_backend::{conda_build_v1_directories, find_matching_output},
     protocol::{Protocol, ProtocolInstantiator},
-    tools::{LoadedVariantConfig, RattlerBuild},
-    utils::TemporaryRenderedRecipe,
+    tools::LoadedVariantConfig,
 };
 use pixi_build_types::{
-    BackendCapabilities, CondaPackageMetadata, PathSpecV1, SourcePackageSpecV1, TargetV1,
+    BackendCapabilities, PathSpecV1, SourcePackageSpecV1, TargetV1,
     procedures::{
-        conda_build_v0::{
-            CondaBuildParams, CondaBuildResult, CondaBuiltPackage, CondaOutputIdentifier,
-        },
         conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result},
-        conda_metadata::{CondaMetadataParams, CondaMetadataResult},
         conda_outputs::{
             CondaOutput, CondaOutputDependencies, CondaOutputIgnoreRunExports, CondaOutputMetadata,
             CondaOutputRunExports, CondaOutputsParams, CondaOutputsResult,
@@ -37,26 +29,15 @@ use rattler_build::{
     build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
-    metadata::{
-        BuildConfiguration, Debug, Output, PackageIdentifier, PackagingSettings,
-        PlatformWithVirtualPackages,
-    },
-    recipe::{
-        Jinja, ParsingError, Recipe,
-        parser::{BuildString, find_outputs_from_src},
-        variable::Variable,
-    },
-    render::resolved_dependencies::DependencyInfo,
+    metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
+    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
     selectors::SelectorConfig,
-    tool_configuration::{BaseClient, Configuration},
+    tool_configuration::Configuration,
+    types::{PackageIdentifier, PackagingSettings},
     variant_config::{ParseErrors, VariantConfig},
 };
-use rattler_conda_types::{
-    ChannelConfig, MatchSpec, PackageName, Platform, compression_level::CompressionLevel,
-    package::ArchiveType,
-};
-use rattler_virtual_packages::VirtualPackageOverrides;
-use url::Url;
+use rattler_conda_types::{Platform, compression_level::CompressionLevel, package::ArchiveType};
+use tracing::warn;
 pub struct RattlerBuildBackendInstantiator {
     logging_output_handler: LoggingOutputHandler,
 }
@@ -73,183 +54,6 @@ impl RattlerBuildBackendInstantiator {
 
 #[async_trait::async_trait]
 impl Protocol for RattlerBuildBackend {
-    fn debug_dir(&self) -> Option<&Path> {
-        self.config.debug_dir.as_deref()
-    }
-
-    async fn conda_get_metadata(
-        &self,
-        params: CondaMetadataParams,
-    ) -> miette::Result<CondaMetadataResult> {
-        // Create the work directory if it does not exist
-        tokio_fs::create_dir_all(&params.work_directory)
-            .await
-            .into_diagnostic()?;
-
-        let host_platform = params
-            .host_platform
-            .as_ref()
-            .map(|p| p.platform)
-            .unwrap_or(Platform::current());
-
-        let build_platform = params
-            .build_platform
-            .as_ref()
-            .map(|p| p.platform)
-            .unwrap_or(Platform::current());
-
-        let selector_config = RattlerBuild::selector_config_from(&params);
-
-        let rattler_build_tool = RattlerBuild::new(
-            self.recipe_source.clone(),
-            selector_config,
-            params.work_directory.clone(),
-        );
-
-        let channel_config = ChannelConfig {
-            channel_alias: params.channel_configuration.base_url,
-            root_dir: self
-                .recipe_source
-                .path
-                .parent()
-                .expect("should have parent")
-                .to_path_buf(),
-        };
-
-        let channels = params
-            .channel_base_urls
-            .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
-
-        let discovered_outputs =
-            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
-
-        let host_vpkgs = params
-            .host_platform
-            .as_ref()
-            .map(|p| p.virtual_packages.clone())
-            .unwrap_or_default();
-
-        let host_vpkgs = RattlerBuild::detect_virtual_packages(host_vpkgs)?;
-
-        let build_vpkgs = params
-            .build_platform
-            .as_ref()
-            .map(|p| p.virtual_packages.clone())
-            .unwrap_or_default();
-
-        let build_vpkgs = RattlerBuild::detect_virtual_packages(build_vpkgs)?;
-
-        let outputs = rattler_build_tool.get_outputs(
-            &discovered_outputs,
-            channels,
-            build_vpkgs,
-            host_vpkgs,
-            host_platform,
-            build_platform,
-        )?;
-
-        let base_client =
-            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
-
-        let tool_config = Configuration::builder()
-            .with_opt_cache_dir(self.cache_dir.clone())
-            .with_logging_output_handler(self.logging_output_handler.clone())
-            .with_channel_config(channel_config.clone())
-            .with_testing(false)
-            .with_keep_build(true)
-            .with_reqwest_client(base_client)
-            .finish();
-
-        let mut solved_packages = vec![];
-
-        for output in &outputs {
-            let temp_recipe = TemporaryRenderedRecipe::from_output(output)?;
-            let tool_config = &tool_config;
-            let output = temp_recipe
-                .within_context_async(move || async move {
-                    output
-                        .clone()
-                        .resolve_dependencies(tool_config)
-                        .await
-                        .into_diagnostic()
-                })
-                .await?;
-
-            let finalized_deps = &output
-                .finalized_dependencies
-                .as_ref()
-                .expect("dependencies should be resolved at this point")
-                .run;
-
-            let selector_config = output.build_configuration.selector_config();
-
-            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
-
-            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-            let build_string = output.recipe.build().string().resolve(
-                &hash,
-                output.recipe.build().number(),
-                &jinja,
-            );
-
-            let depends = finalized_deps.depends.iter().map(DependencyInfo::spec);
-
-            let mut sources: HashMap<String, SourcePackageSpecV1> = outputs
-                .iter()
-                .cartesian_product(depends.clone())
-                .filter_map(|(output, depend)| {
-                    if Some(output.name()) == depend.name.as_ref() {
-                        Some(output.name())
-                    } else {
-                        None
-                    }
-                })
-                .map(|name| {
-                    (
-                        name.as_source().to_string(),
-                        SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
-                            // Our source dependency lives in the same recipe
-                            path: ".".to_string(),
-                        }),
-                    )
-                })
-                .collect();
-
-            // Add workspace dependencies to the sources
-            sources.extend(self.workspace_dependencies.clone());
-
-            let conda = CondaPackageMetadata {
-                name: output.name().clone(),
-                version: output.version().clone(),
-                build: build_string.to_string(),
-                build_number: output.recipe.build.number,
-                subdir: output.build_configuration.target_platform,
-                depends: depends.map(MatchSpec::to_string).collect(),
-                constraints: finalized_deps
-                    .constraints
-                    .iter()
-                    .map(DependencyInfo::spec)
-                    .map(MatchSpec::to_string)
-                    .collect(),
-                license: output.recipe.about.license.map(|l| l.to_string()),
-                license_family: output.recipe.about.license_family,
-                noarch: output.recipe.build.noarch,
-                sources,
-            };
-            solved_packages.push(conda);
-        }
-
-        let input_globs = Some(get_metadata_input_globs(
-            &self.manifest_root,
-            &self.recipe_source.path,
-        )?);
-
-        Ok(CondaMetadataResult {
-            packages: solved_packages,
-            input_globs,
-        })
-    }
-
     async fn conda_outputs(
         &self,
         params: CondaOutputsParams,
@@ -273,20 +77,17 @@ impl Protocol for RattlerBuildBackend {
             &self.source_dir,
             &self.recipe_source.path,
             &selector_config_for_variants,
-        )
-        .into_diagnostic()?
+            params.variant_files.iter().flatten().map(PathBuf::as_path),
+        )?
         .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
-        let discovered_outputs = variant_config
-            .variant_config
-            .find_variants(
-                &output_nodes,
-                self.recipe_source.clone(),
-                &selector_config_for_variants,
-            )
-            .into_diagnostic()?;
+        let discovered_outputs = variant_config.variant_config.find_variants(
+            &output_nodes,
+            self.recipe_source.clone(),
+            &selector_config_for_variants,
+        )?;
 
         // Construct a mapping that for packages that we want from source.
         //
@@ -460,160 +261,6 @@ impl Protocol for RattlerBuildBackend {
             outputs,
             input_globs,
         })
-    }
-
-    async fn conda_build_v0(&self, params: CondaBuildParams) -> miette::Result<CondaBuildResult> {
-        // Create the work directory if it does not exist
-        tokio_fs::create_dir_all(&params.work_directory)
-            .await
-            .into_diagnostic()?;
-
-        let host_platform = params
-            .host_platform
-            .as_ref()
-            .map(|p| p.platform)
-            .unwrap_or(Platform::current());
-
-        let build_platform = Platform::current();
-
-        let selector_config = SelectorConfig {
-            target_platform: build_platform,
-            host_platform,
-            build_platform,
-            hash: None,
-            variant: Default::default(),
-            experimental: true,
-            allow_undefined: false,
-            recipe_path: Some(self.recipe_source.path.clone()),
-        };
-
-        let host_vpkgs = params
-            .host_platform
-            .as_ref()
-            .map(|p| p.virtual_packages.clone())
-            .unwrap_or_default();
-
-        let host_vpkgs = match host_vpkgs {
-            Some(vpkgs) => vpkgs,
-            None => {
-                PlatformWithVirtualPackages::detect(&VirtualPackageOverrides::from_env())
-                    .into_diagnostic()?
-                    .virtual_packages
-            }
-        };
-
-        let build_vpkgs = params
-            .build_platform_virtual_packages
-            .clone()
-            .unwrap_or_default();
-
-        let channel_config = ChannelConfig {
-            channel_alias: params.channel_configuration.base_url,
-            root_dir: self
-                .recipe_source
-                .path
-                .parent()
-                .expect("should have parent")
-                .to_path_buf(),
-        };
-
-        let channels = params
-            .channel_base_urls
-            .unwrap_or_else(|| vec![Url::from_str("https://prefix.dev/conda-forge").unwrap()]);
-
-        let rattler_build_tool = RattlerBuild::new(
-            self.recipe_source.clone(),
-            selector_config,
-            params.work_directory.clone(),
-        );
-
-        // Discover and filter the outputs.
-        let mut discovered_outputs =
-            rattler_build_tool.discover_outputs(&params.variant_configuration)?;
-        if let Some(outputs) = &params.outputs {
-            discovered_outputs.retain(|output| {
-                let name = PackageName::from_str(&output.name)
-                    .map_or_else(|_| output.name.clone(), |n| n.as_normalized().to_string());
-                let id = CondaOutputIdentifier {
-                    name: Some(name),
-                    version: Some(output.version.clone()),
-                    build: output.recipe.build.string.clone().into(),
-                    subdir: Some(output.target_platform.to_string()),
-                };
-                outputs.contains(&id)
-            });
-        }
-
-        let outputs = rattler_build_tool.get_outputs(
-            &discovered_outputs,
-            channels,
-            build_vpkgs,
-            host_vpkgs,
-            host_platform,
-            build_platform,
-        )?;
-
-        let mut built = vec![];
-
-        let base_client =
-            BaseClient::new(None, None, HashMap::default(), HashMap::default()).unwrap();
-
-        let tool_config = Configuration::builder()
-            .with_opt_cache_dir(self.cache_dir.clone())
-            .with_logging_output_handler(self.logging_output_handler.clone())
-            .with_channel_config(channel_config.clone())
-            .with_testing(false)
-            .with_keep_build(true)
-            .with_reqwest_client(base_client)
-            .finish();
-
-        for output in outputs {
-            let temp_recipe = TemporaryRenderedRecipe::from_output(&output)?;
-
-            let tool_config = &tool_config;
-
-            let mut output_with_build_string = output.clone();
-
-            let selector_config = output.build_configuration.selector_config();
-
-            let jinja = Jinja::new(selector_config.clone()).with_context(&output.recipe.context);
-
-            let hash = HashInfo::from_variant(output.variant(), output.recipe.build().noarch());
-            let build_string = output.recipe.build().string().resolve(
-                &hash,
-                output.recipe.build().number(),
-                &jinja,
-            );
-            output_with_build_string.recipe.build.string =
-                BuildString::Resolved(build_string.to_string());
-
-            let (output, build_path) = temp_recipe
-                .within_context_async(move || async move {
-                    run_build(
-                        output_with_build_string,
-                        tool_config,
-                        // rattler-build requires a clean work dir
-                        WorkingDirectoryBehavior::Cleanup,
-                    )
-                    .await
-                })
-                .await?;
-
-            built.push(CondaBuiltPackage {
-                output_file: build_path,
-                input_globs: build_input_globs(
-                    &self.manifest_root,
-                    &self.recipe_source.path,
-                    extract_mutable_package_sources(&output),
-                    self.config.extra_input_globs.clone(),
-                )?,
-                name: output.name().clone(),
-                version: output.version().to_string(),
-                build: build_string.to_string(),
-                subdir: output.target_platform().to_string(),
-            });
-        }
-        Ok(CondaBuildResult { packages: built })
     }
 
     async fn conda_build_v1(
@@ -850,13 +497,6 @@ fn get_metadata_input_globs(
 
 #[async_trait::async_trait]
 impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
-    fn debug_dir(configuration: Option<serde_json::Value>) -> Option<PathBuf> {
-        configuration
-            .and_then(|config| {
-                serde_json::from_value::<RattlerBuildBackendConfig>(config.clone()).ok()
-            })
-            .and_then(|config| config.debug_dir)
-    }
     async fn initialize(
         &self,
         params: InitializeParams,
@@ -868,6 +508,13 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         } else {
             RattlerBuildBackendConfig::default()
         };
+
+        if let Some(path) = config.debug_dir.as_ref() {
+            warn!(
+                path = %path.display(),
+                "`debug-dir` backend configuration is deprecated and ignored; debug data is now written to the build work directory."
+            );
+        }
 
         let mut workspace_dependencies = HashMap::new();
 
@@ -944,8 +591,6 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
 
 pub(crate) fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
-        provides_conda_metadata: Some(true),
-        provides_conda_build: Some(true),
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
         highest_supported_project_model: Some(
@@ -956,63 +601,14 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        path::{Path, PathBuf},
-        str::FromStr,
-    };
+    use std::collections::BTreeMap;
 
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
-    use pixi_build_types::{
-        ChannelConfiguration,
-        procedures::{
-            conda_build_v0::CondaBuildParams, conda_metadata::CondaMetadataParams,
-            initialize::InitializeParams,
-        },
-    };
+    use pixi_build_types::procedures::initialize::InitializeParams;
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;
-    use url::Url;
 
     use super::*;
-
-    #[tokio::test]
-    async fn test_conda_get_metadata() {
-        // get cargo manifest dir
-        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
-
-        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
-            .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
-                manifest_path: recipe,
-                project_model: None,
-                configuration: None,
-                target_configuration: None,
-                cache_directory: None,
-            })
-            .await
-            .unwrap();
-
-        let current_dir = std::env::current_dir().unwrap();
-
-        let result = factory
-            .0
-            .conda_get_metadata(CondaMetadataParams {
-                host_platform: None,
-                build_platform: None,
-                channel_configuration: ChannelConfiguration {
-                    base_url: Url::from_str("https://prefix.dev").unwrap(),
-                },
-                channel_base_urls: None,
-                work_directory: current_dir,
-                variant_configuration: None,
-            })
-            .await
-            .unwrap();
-
-        assert_eq!(result.packages.len(), 1);
-    }
 
     #[test]
     fn test_conda_outputs() {
@@ -1043,6 +639,7 @@ mod tests {
                         host_platform: Platform::Linux64,
                         build_platform: Platform::Linux64,
                         variant_configuration: None,
+                        variant_files: None,
                         work_directory: current_dir,
                     })
                     .await
@@ -1053,17 +650,43 @@ mod tests {
         });
     }
 
+    const VARIANT_RECIPE: &str = r#"
+    package:
+      name: variant-test
+      version: 0.1.0
+
+    build:
+      number: 0
+
+    requirements:
+      host:
+        - python
+        - numpy
+    "#;
+
     #[tokio::test]
-    async fn test_conda_build() {
-        // get cargo manifest dir
-        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let recipe = manifest_dir.join("../../tests/recipe/boltons/recipe.yaml");
+    async fn test_variant_files_are_applied() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
+
+        let variant_file = temp_dir.path().join("global-variants.yaml");
+        tokio::fs::write(
+            &variant_file,
+            r#"python:
+  - "3.9"
+"#,
+        )
+        .await
+        .expect("Failed to write variant file");
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
                 workspace_root: None,
                 source_dir: None,
-                manifest_path: recipe,
+                manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
                 target_configuration: None,
@@ -1072,28 +695,210 @@ mod tests {
             .await
             .unwrap();
 
-        let current_dir = tempdir().unwrap();
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.9");
+    }
+
+    #[tokio::test]
+    async fn test_variant_configuration_is_applied() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write recipe");
+
+        let mut variant_configuration = BTreeMap::new();
+        variant_configuration.insert("python".to_string(), vec!["3.11".to_string()]);
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path.clone(),
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
 
         let result = factory
             .0
-            .conda_build_v0(CondaBuildParams {
-                build_platform_virtual_packages: None,
-                host_platform: None,
-                channel_base_urls: None,
-                channel_configuration: ChannelConfiguration {
-                    base_url: Url::from_str("https://prefix.dev").unwrap(),
-                },
-                outputs: None,
-                work_directory: current_dir.keep(),
-                variant_configuration: None,
-                editable: false,
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: Some(variant_configuration),
+                variant_files: None,
+                work_directory: temp_dir.path().to_path_buf(),
             })
             .await
             .unwrap();
 
         assert_eq!(
-            result.packages[0].name.as_normalized(),
-            "boltons-with-extra"
+            result.outputs[0].metadata.variant["python"], "3.11",
+            "Python variant should come from the provided configuration"
+        );
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"], "linux-64",
+            "Target platform should match the requested platform"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_configuration_overrides_variant_files() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
+
+        let variant_file = temp_dir.path().join("shared-variants.yaml");
+        tokio::fs::write(
+            &variant_file,
+            r#"python:
+  - "3.8"
+numpy:
+  - "1.22"
+"#,
+        )
+        .await
+        .expect("Failed to write shared variants");
+
+        let mut variant_configuration = BTreeMap::new();
+        variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: Some(variant_configuration),
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let python_value = result.outputs[0]
+            .metadata
+            .variant
+            .get("python")
+            .expect("python variant present");
+        assert_eq!(python_value, "3.10");
+        assert_eq!(
+            result.outputs[0]
+                .metadata
+                .variant
+                .get("numpy")
+                .expect("numpy variant present from variant file"),
+            "1.22"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_override_auto_discovered_variant() {
+        let temp_dir = tempdir().unwrap();
+        let recipe_path = temp_dir.path().join("recipe.yaml");
+        tokio::fs::write(&recipe_path, VARIANT_RECIPE)
+            .await
+            .expect("Failed to write variant recipe");
+
+        let auto_discovered_variant = temp_dir.path().join("variants.yaml");
+        tokio::fs::write(
+            &auto_discovered_variant,
+            r#"python:
+  - "3.8"
+numpy:
+  - "1.22"
+"#,
+        )
+        .await
+        .expect("Failed to write auto-discovered variants");
+
+        let variant_file = temp_dir.path().join("override-variants.yaml");
+        tokio::fs::write(
+            &variant_file,
+            r#"python:
+  - "3.10"
+"#,
+        )
+        .await
+        .expect("Failed to write overriding variants");
+
+        let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
+            .initialize(InitializeParams {
+                workspace_root: None,
+                source_dir: None,
+                manifest_path: recipe_path,
+                project_model: None,
+                configuration: None,
+                target_configuration: None,
+                cache_directory: None,
+            })
+            .await
+            .unwrap();
+
+        let result = factory
+            .0
+            .conda_outputs(CondaOutputsParams {
+                channels: vec![],
+                host_platform: Platform::Linux64,
+                build_platform: Platform::Linux64,
+                variant_configuration: None,
+                variant_files: Some(vec![variant_file.clone()]),
+                work_directory: temp_dir.path().to_path_buf(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.outputs.len(), 1);
+        let variant = &result.outputs[0].metadata.variant;
+        assert_eq!(
+            variant
+                .get("python")
+                .expect("python variant present after override"),
+            "3.10"
+        );
+        assert_eq!(
+            variant
+                .get("numpy")
+                .expect("numpy variant present from auto-discovered file"),
+            "1.22"
         );
     }
 

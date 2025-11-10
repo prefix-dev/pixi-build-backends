@@ -181,10 +181,10 @@ compilers = ["c", "cxx", "fortran"]
 compilers = ["cxx"]
 
 # Linux needs additional CUDA support
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 compilers = ["cxx", "cuda"]
 
 # Windows needs additional C compiler for some dependencies
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 compilers = ["c", "cxx"]
 ```

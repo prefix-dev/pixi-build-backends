@@ -83,7 +83,7 @@ For target-specific configuration, platform-specific noarch setting overrides th
 [package.build.config]
 noarch = true
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 noarch = false  # Windows needs platform build
 # Result for win-64: false
 ```
@@ -107,24 +107,14 @@ For target-specific configuration, platform environment variables are merged wit
 [package.build.config]
 env = { PYTHONPATH = "/base/path", COMMON_VAR = "base" }
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 env = { COMMON_VAR = "windows", WIN_SPECIFIC = "value" }
 # Result for win-64: { PYTHONPATH = "/base/path", COMMON_VAR = "windows", WIN_SPECIFIC = "value" }
 ```
 
 ### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-- **Target Merge Behavior**: Not allowed - Cannot have target specific value
-
-If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
-
-```toml
-[package.build.config]
-debug-dir = ".build-debug"
-```
-
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; if present, a warning is emitted to highlight that the setting no longer has any effect.
 ### `extra-input-globs`
 
 - **Type**: `Array<String>`
@@ -148,7 +138,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-input-globs = ["*.py"]
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 extra-input-globs = ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 # Result for win-64: ["*.py", "*.dll", "*.pyd", "windows-resources/**/*"]
 ```
@@ -172,7 +162,7 @@ For target-specific configuration, platform compilers completely replace the bas
 [package.build.config]
 compilers = []
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 compilers = ["c", "cxx"]
 # Result for win-64: ["c", "cxx"] (only on Windows)
 ```
@@ -213,7 +203,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-args = ["-Cbuilddir=mybuilddir"]
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 extra-args = ["-Cbuilddir=foo"]
 # Result for win-64: ["-Cbuilddir=foo"]
 ```
@@ -239,7 +229,7 @@ For target-specific configuration, platform-specific setting overrides the base:
 [package.build.config]
 ignore-pyproject-manifest = false
 
-[package.build.config.targets.win-64]
+[package.build.target.win-64.config]
 ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
 # Result for win-64: true
 ```

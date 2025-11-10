@@ -1,9 +1,11 @@
 """
-Python generator implementation using Python bindings.
+ROS generator implementation using Python bindings.
 """
 
+import os
 from pathlib import Path
 from importlib.resources import files
+from unittest.mock import patch
 
 from typing import Any
 from pixi_build_backend.types.generated_recipe import (
@@ -11,9 +13,9 @@ from pixi_build_backend.types.generated_recipe import (
     GeneratedRecipe,
 )
 from .metadata_provider import ROSPackageXmlMetadataProvider
-from pixi_build_backend.types.intermediate_recipe import Script, ConditionalRequirements
+from pixi_build_backend.types.intermediate_recipe import Script
 
-from pixi_build_backend.types.item import ItemPackageDependency, VecItemPackageDependency
+from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.platform import Platform
 from pixi_build_backend.types.project_model import ProjectModelV1
 from pixi_build_backend.types.python_params import PythonParams
@@ -25,6 +27,7 @@ from .utils import (
     convert_package_xml_to_catkin_package,
     get_package_xml_content,
     load_package_map_data,
+    merge_requirements,
 )
 from .config import ROSBackendConfig, PackageMappingSource
 
@@ -39,44 +42,77 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         manifest_path: str,
         host_platform: Platform,
         _python_params: PythonParams | None = None,
+        channels: list[str] | None = None,
     ) -> GeneratedRecipe:
         """Generate a recipe for a Python package."""
-        manifest_root = Path(manifest_path)
+        manifest_path_obj = Path(manifest_path)
+        # nichmor: I'm confused here what we should expect
+        # an absolute path to package.xml or a directory containing it
+        # so I'm handling both cases
+        if manifest_path_obj.is_file():
+            manifest_root = manifest_path_obj.parent
+        else:
+            manifest_root = manifest_path_obj
+
         backend_config: ROSBackendConfig = ROSBackendConfig.model_validate(
-            config, context={"manifest_root": manifest_root}
+            config,
+            context={
+                "manifest_root": manifest_root,
+                "channels": channels,
+            },
         )
+        # Resolve distro after validation, using channels from build system
+        backend_config = ROSBackendConfig.resolve_distro(
+            backend_config,
+            channels=channels,
+        )
+
         # Create metadata provider for package.xml
         package_xml_path = manifest_root / "package.xml"
+        # Get package mapping file paths to include in input globs
+        package_mapping_files = [str(path) for path in backend_config.get_package_mapping_file_paths()]
         metadata_provider = ROSPackageXmlMetadataProvider(
             str(package_xml_path),
+            str(manifest_root),
             backend_config.distro.name,
             extra_input_globs=list(backend_config.extra_input_globs or []),
+            package_mapping_files=package_mapping_files,
         )
 
         # Create base recipe from model with metadata provider
         generated_recipe = GeneratedRecipe.from_model(model, metadata_provider)
 
         # Read package.xml for dependency extraction
-        package_xml_str = get_package_xml_content(manifest_root)
-        package_xml = convert_package_xml_to_catkin_package(package_xml_str)
+        package_xml_str = get_package_xml_content(package_xml_path)
+        ros_env_defaults = {
+            "ROS_DISTRO": backend_config.distro.name,
+            "ROS_VERSION": "1" if backend_config.distro.check_ros1() else "2",
+        }
+        user_env = dict(backend_config.env or {})
+        patched_env = {**ros_env_defaults, **user_env}
 
-        # load package map
+        # Ensure ROS-related environment variables are available while evaluating conditions.
+        # uses the unitest patch for this
+        with patch.dict(os.environ, patched_env, clear=False):
+            package_xml = convert_package_xml_to_catkin_package(package_xml_str)
 
-        # TODO: Currently hardcoded and not able to override, this should be configurable
-        package_files = files("pixi_build_ros")
-        robostack_file = Path(str(package_files)) / "robostack.yaml"
-        # workaround for from source install
-        if not robostack_file.is_file():
-            robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
+            # load package map
 
-        package_map_data = load_package_map_data(
-            backend_config.extra_package_mappings + [PackageMappingSource.from_file(robostack_file)]
-        )
+            # TODO: Currently hardcoded and not able to override, this should be configurable
+            package_files = files("pixi_build_ros")
+            robostack_file = Path(str(package_files)) / "robostack.yaml"
+            # workaround for from source install
+            if not robostack_file.is_file():
+                robostack_file = Path(__file__).parent.parent.parent / "robostack.yaml"
 
-        # Get requirements from package.xml
-        package_requirements = package_xml_to_conda_requirements(
-            package_xml, backend_config.distro, host_platform, package_map_data
-        )
+            package_map_data = load_package_map_data(
+                backend_config.extra_package_mappings + [PackageMappingSource.from_file(robostack_file)]
+            )
+
+            # Get requirements from package.xml
+            package_requirements = package_xml_to_conda_requirements(
+                package_xml, backend_config.distro, host_platform, package_map_data
+            )
 
         # Add standard dependencies
         build_deps = [
@@ -124,18 +160,13 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         )
         build_script_lines = build_script_context.render()
 
+        script_env = dict(ros_env_defaults)
+        script_env.update(user_env)
+
         generated_recipe.recipe.build.script = Script(
             content=build_script_lines,
-            env=backend_config.env,
+            env=script_env,
         )
-
-        if backend_config.debug_dir:
-            recipe = generated_recipe.recipe.to_yaml()
-            package = generated_recipe.recipe.package
-            debug_file_path = backend_config.debug_dir / f"{package.name.get_concrete()}-{package.version}-recipe.yaml"
-            debug_file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(debug_file_path, "w") as debug_file:
-                debug_file.write(recipe)
 
         # Test the build script before running to early out.
         # TODO: returned script.content list is not a list of strings, a container for that
@@ -153,69 +184,3 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         if host_platform.is_windows:
             variants["cxx_compiler"] = ["vs2019"]
         return variants
-
-
-def merge_requirements(
-    model_requirements: ConditionalRequirements,
-    package_requirements: ConditionalRequirements,
-) -> ConditionalRequirements:
-    """Merge two sets of requirements."""
-    merged = ConditionalRequirements()
-
-    merged.host = merge_unique_items(model_requirements.host, package_requirements.host)
-    merged.build = merge_unique_items(model_requirements.build, package_requirements.build)
-    merged.run = merge_unique_items(model_requirements.run, package_requirements.run)
-
-    # If the dependency is of type Source in one of the requirements, we need to set them to Source for all variants
-    return merged
-
-
-def merge_unique_items(
-    model: list[ItemPackageDependency] | VecItemPackageDependency,
-    package: list[ItemPackageDependency] | VecItemPackageDependency,
-) -> list[ItemPackageDependency]:
-    """Merge unique items from source into target."""
-
-    def _find_matching(list_to_find: list[ItemPackageDependency], name: str) -> ItemPackageDependency | None:
-        for dep in list_to_find:
-            if dep.concrete.package_name == name:
-                return dep
-        else:
-            return None
-
-    def _merge_specs(spec1: str, spec2: str, package_name: str) -> str:
-        # remove the package name
-        version_spec1 = spec1.removeprefix(package_name).strip()
-        version_spec2 = spec2.removeprefix(package_name).strip()
-
-        if " " in version_spec1 or " " in version_spec2:
-            raise ValueError(f"{version_spec1}, or {version_spec2} contains spaces, cannot merge specifiers.")
-
-        # early out with *, empty or ==
-        if version_spec1 in ["*", ""] or "==" in version_spec2 or version_spec1 == version_spec2:
-            return spec2
-        if version_spec2 in ["*", ""] or "==" in version_spec1:
-            return spec1
-        return package_name + " " + ",".join([version_spec1, version_spec2])
-
-    result: list[ItemPackageDependency] = []
-    templates_in_model = [str(i.template) for i in model]
-    for item in list(model) + list(package):
-        # It's concrete (i.e. no template)
-        if item.concrete is not None:
-            # It does not exist yet in model
-            item_in_result = _find_matching(result, item.concrete.package_name)
-            if not item_in_result:
-                result.append(item)
-            else:
-                new_dep = ItemPackageDependency(
-                    name=_merge_specs(
-                        item_in_result.concrete.binary_spec, item.concrete.binary_spec, item.concrete.package_name
-                    )
-                )
-                result.remove(item_in_result)
-                result.append(new_dep)
-
-        elif str(item.template) not in templates_in_model:
-            result.append(item)
-    return result

@@ -14,8 +14,7 @@ if [ "${PKG_NAME}" == "ros-noetic-catkin" ]; then
     CATKIN_BUILD_BINARY_PACKAGE="OFF"
 fi
 
-rm -rf build
-mkdir build
+mkdir -p build
 cd build
 
 # necessary for correctly linking SIP files (from python_qt_bindings)

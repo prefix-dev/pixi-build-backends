@@ -78,7 +78,7 @@ For target-specific configuration, platform arguments completely replace the bas
 [package.build.config]
 extra-args = ["-DCMAKE_BUILD_TYPE=Release"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-args = ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
 # Result for linux-64: ["-DCMAKE_BUILD_TYPE=Debug", "-DLINUX_FLAG=ON"]
 ```
@@ -102,24 +102,14 @@ For target-specific configuration, platform environment variables are merged wit
 [package.build.config]
 env = { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "base" }
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 env = { COMMON_VAR = "linux", LINUX_VAR = "value" }
 # Result for linux-64: { CMAKE_VERBOSE_MAKEFILE = "OFF", COMMON_VAR = "linux", LINUX_VAR = "value" }
 ```
 
 ### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-- **Target Merge Behavior**: Not allowed - Cannot have target specific value
-
-If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
-
-```toml
-[package.build.config]
-debug-dir = ".build-debug"
-```
-
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside each work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; if it is present in a manifest a warning is emitted.
 
 ### `extra-input-globs`
 
@@ -144,7 +134,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-input-globs = ["*.txt"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-input-globs = ["*.txt", "*.linux", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.linux", "linux-configs/**/*"]
 ```
@@ -168,7 +158,7 @@ For target-specific configuration, platform compilers completely replace the bas
 [package.build.config]
 compilers = ["cxx"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 compilers = ["c", "cxx", "cuda"]
 # Result for linux-64: ["c", "cxx", "cuda"]
 ```

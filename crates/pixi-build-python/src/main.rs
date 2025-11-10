@@ -7,15 +7,15 @@ use config::PythonBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
-use rattler_conda_types::{PackageName, Platform, package::EntryPoint};
+use rattler_conda_types::{ChannelUrl, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
-use recipe_stage0::recipe::{self, ConditionalRequirements, NoArchKind, Python, Script};
+use recipe_stage0::recipe::{self, NoArchKind, Python, Script};
 use std::collections::HashSet;
 use std::{
     collections::BTreeSet,
@@ -56,12 +56,29 @@ impl GenerateRecipe for PythonGenerator {
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
+
+        // Determine the manifest root, because `manifest_path` can be
+        // either a direct file path or a directory path.
+        let manifest_root = if manifest_path.is_file() {
+            manifest_path
+                .parent()
+                .ok_or_else(|| {
+                    miette::Error::msg(format!(
+                        "Manifest path {} is a file but has no parent directory.",
+                        manifest_path.display()
+                    ))
+                })?
+                .to_path_buf()
+        } else {
+            manifest_path.clone()
+        };
 
         let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
             &manifest_root,
@@ -76,27 +93,25 @@ impl GenerateRecipe for PythonGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Ensure the python build tools are added to the `host` requirements.
         // Please note: this is a subtle difference for python, where the build tools
         // are added to the `host` requirements, while for cmake/rust they are
         // added to the `build` requirements.
-        let installer = Installer::determine_installer(&resolved_requirements);
+        // We only check build and host dependencies for the installer.
+        let installer =
+            Installer::determine_installer_from_names(model_dependencies.build_and_host_names());
 
         let installer_name = installer.package_name().to_string();
+        let installer_pkg = pixi_build_types::SourcePackageName::from(installer_name.as_str());
 
         // add installer in the host requirements
-        if !resolved_requirements
-            .host
-            .contains_key(&PackageName::new_unchecked(&installer_name))
-        {
+        if !model_dependencies.host.contains_key(&installer_pkg) {
             requirements
                 .host
                 .push(installer_name.parse().into_diagnostic()?);
@@ -111,28 +126,27 @@ impl GenerateRecipe for PythonGenerator {
             python_requirement_str.parse().into_diagnostic()
         };
 
+        let python_pkg = pixi_build_types::SourcePackageName::from("python");
         // add python in both host and run requirements
-        if !resolved_requirements
-            .host
-            .contains_key(&PackageName::new_unchecked("python"))
-        {
+        if !model_dependencies.host.contains_key(&python_pkg) {
             requirements.host.push(get_python_requirement()?);
         }
-        if !resolved_requirements
-            .run
-            .contains_key(&PackageName::new_unchecked("python"))
-        {
+        if !model_dependencies.run.contains_key(&python_pkg) {
             requirements.run.push(get_python_requirement()?);
         }
 
         // Get the list of compilers from config, defaulting to no compilers for pure
         // Python packages and add them to the build requirements.
         let compilers = config.compilers.clone().unwrap_or_default();
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
@@ -271,8 +285,12 @@ pub async fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use indexmap::IndexMap;
+    use pixi_build_backend::utils::test::intermediate_conda_outputs;
     use recipe_stage0::recipe::{Item, Value};
+    use tokio::fs;
 
     use super::*;
 
@@ -312,6 +330,129 @@ mod tests {
         };
     }
 
+    #[tokio::test]
+    async fn test_intermediate_conda_outputs_snapshot() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                   "buildDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        fs::write(
+            temp_dir.path().join("pyproject.toml"),
+            r#"[project]
+name = "foobar"
+version = "0.1.0"
+"#,
+        )
+        .await
+        .expect("Failed to write pyproject.toml");
+        fs::write(
+            temp_dir.path().join("pixi.toml"),
+            r#"[project]
+name = "foobar"
+version = "0.1.0"
+"#,
+        )
+        .await
+        .expect("Failed to write pixi.toml");
+
+        let variant_configuration =
+            BTreeMap::from([("boltons".to_string(), Vec::from(["==1.0.0".to_string()]))]);
+
+        let result = intermediate_conda_outputs::<PythonGenerator>(
+            Some(project_model),
+            Some(temp_dir.path().to_path_buf()),
+            Platform::Linux64,
+            Some(variant_configuration),
+            None,
+        )
+        .await;
+
+        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"],
+            "noarch"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_are_applied() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                   "buildDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        fs::write(
+            temp_dir.path().join("pyproject.toml"),
+            r#"[project]
+name = "foobar"
+version = "0.1.0"
+"#,
+        )
+        .await
+        .expect("Failed to write pyproject.toml");
+        fs::write(
+            temp_dir.path().join("pixi.toml"),
+            r#"[project]
+name = "foobar"
+version = "0.1.0"
+"#,
+        )
+        .await
+        .expect("Failed to write pixi.toml");
+
+        let variant_file = temp_dir.path().join("variants.yaml");
+        fs::write(
+            &variant_file,
+            r#"boltons:
+  - "==2.0.0"
+"#,
+        )
+        .await
+        .expect("Failed to write variants file");
+
+        let result = intermediate_conda_outputs::<PythonGenerator>(
+            Some(project_model),
+            Some(temp_dir.path().to_path_buf()),
+            Platform::Linux64,
+            None,
+            Some(vec![variant_file]),
+        )
+        .await;
+
+        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"],
+            "noarch"
+        );
+    }
+
     #[test]
     fn test_pip_is_in_host_requirements() {
         let project_model = project_fixture!({
@@ -338,6 +479,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -380,6 +522,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -421,6 +564,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -460,6 +604,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -525,6 +670,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -568,6 +714,7 @@ mod tests {
             Platform::Linux64,
             None,
             &std::collections::HashSet::<pixi_build_backend::variants::NormalizedKey>::new(),
+            vec![],
         )?)
     }
 

@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 use miette::IntoDiagnostic;
 use pixi_build_types::PlatformAndVirtualPackages;
 use rattler_build::{
-    NormalizedKey,
-    metadata::{Directories, PlatformWithVirtualPackages},
-    recipe::variable::Variable,
+    NormalizedKey, metadata::PlatformWithVirtualPackages, recipe::variable::Variable,
+    types::Directories,
 };
 use rattler_conda_types::ChannelUrl;
 use rattler_virtual_packages::VirtualPackageOverrides;

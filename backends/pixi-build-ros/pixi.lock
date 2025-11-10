@@ -1688,7 +1688,7 @@ packages:
   license: MIT
   license_family: MIT
   purls:
-  - pkg:pypi/pytest?source=hash-mapping
+  - pkg:pypi/pytest?source=compressed-mapping
   size: 294852
   timestamp: 1762354779909
 - conda: https://prefix.dev/conda-forge/linux-64/python-3.14.0-h32b2ec7_102_cp314.conda

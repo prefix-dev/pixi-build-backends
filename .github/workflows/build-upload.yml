@@ -123,7 +123,7 @@ jobs:
           fi
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: conda-packages-${{ matrix.bins.bin }}-${{ matrix.bins.target }}
           path: |
@@ -152,13 +152,13 @@ jobs:
         target: [linux-64, linux-aarch64, linux-ppc64le, win-64, osx-64, osx-arm64]
     steps:
       - name: Download conda package artifacts for ${{ matrix.target }}
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: conda-packages-*-${{ matrix.target }}
           path: conda-artifacts-${{ matrix.target }}
           merge-multiple: true
       - name: Upload aggregated conda packages for ${{ matrix.target }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: conda-packages-${{ matrix.target }}
           path: conda-artifacts-${{ matrix.target }}/**/*.conda
@@ -170,7 +170,7 @@ jobs:
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Download all conda packages
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: conda-packages-*
           path: conda-packages

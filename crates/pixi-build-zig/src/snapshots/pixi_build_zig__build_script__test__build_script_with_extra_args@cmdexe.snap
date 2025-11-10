@@ -1,0 +1,7 @@
+---
+source: crates/pixi-build-zig/src/build_script.rs
+expression: script
+---
+zig build --prefix %LIBRARY_PREFIX% -Doptimize=ReleaseFast
+
+if errorlevel 1 exit 1

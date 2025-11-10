@@ -4311,7 +4311,7 @@ name = "pixi-build-zig"
 version = "0.1.0"
 dependencies = [
  "fs-err",
- "indexmap 2.11.1",
+ "indexmap 2.11.4",
  "insta",
  "miette",
  "minijinja",
@@ -4323,7 +4323,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 2.0.16",
+ "thiserror 2.0.17",
  "tokio",
 ]
 

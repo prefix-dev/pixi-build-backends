@@ -10,7 +10,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
-use rattler_conda_types::{MatchSpec, PackageName, Platform};
+use rattler_conda_types::{ChannelUrl, MatchSpec, PackageName, Platform};
 use recipe_stage0::matchspec::PackageDependency;
 use recipe_stage0::recipe::{ConditionalRequirements, Script};
 use std::collections::HashSet;
@@ -34,6 +34,7 @@ impl GenerateRecipe for ZigGenerator {
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         _variants: &HashSet<NormalizedKey>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         // Create the recipe using the default metadata provider
         let mut generated_recipe =

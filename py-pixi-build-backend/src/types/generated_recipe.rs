@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{
     create_py_wrap,
@@ -9,16 +9,17 @@ use crate::{
 };
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{
-    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe,
+    DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
 };
 use pixi_build_backend::{NormalizedKey, Variable};
+use pixi_build_types::ProjectModelV1;
 use pyo3::{
     Py, PyAny, PyErr, PyResult, Python,
     exceptions::PyValueError,
     pyclass, pymethods,
-    types::{PyAnyMethods, PyString},
+    types::{PyAnyMethods, PyList, PyString},
 };
-use rattler_conda_types::Platform;
+use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::IntermediateRecipe;
 
 create_py_wrap!(PyVecString, Vec<String>, |v: &Vec<String>,
@@ -165,15 +166,16 @@ impl GenerateRecipe for PyGenerateRecipe {
 
     fn generate_recipe(
         &self,
-        model: &pixi_build_types::ProjectModelV1,
+        model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_path: std::path::PathBuf,
-        host_platform: rattler_conda_types::Platform,
-        python_params: Option<pixi_build_backend::generated_recipe::PythonParams>,
+        manifest_root: PathBuf,
+        host_platform: Platform,
+        python_params: Option<PythonParams>,
         _variants: &HashSet<NormalizedKey>,
-    ) -> miette::Result<pixi_build_backend::generated_recipe::GeneratedRecipe> {
+        channels: Vec<ChannelUrl>,
+    ) -> miette::Result<GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::attach(|py| {
-            let manifest_str = manifest_path.to_string_lossy().to_string();
+            let manifest_str = manifest_root.to_string_lossy().to_string();
 
             // we don't pass the wrapper but the python inner model directly
             let py_object = config.model.clone();
@@ -212,6 +214,10 @@ impl GenerateRecipe for PyGenerateRecipe {
                 )
                 .into_diagnostic()?;
 
+            // Convert channels to Python list of strings
+            let channels_list =
+                PyList::new(py, channels.iter().map(|c| c.to_string())).into_diagnostic()?;
+
             let generated_recipe_py = self
                 .model
                 .bind(py)
@@ -223,6 +229,7 @@ impl GenerateRecipe for PyGenerateRecipe {
                         PyString::new(py, manifest_str.as_str()),
                         platform_model,
                         python_params_model,
+                        channels_list,
                     ),
                     None,
                 )

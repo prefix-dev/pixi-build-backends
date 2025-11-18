@@ -7,20 +7,16 @@ use std::{
 use indexmap::IndexSet;
 use itertools::Itertools;
 use miette::IntoDiagnostic;
-use pixi_build_types::procedures::conda_metadata::CondaMetadataParams;
 use rattler_build::{
     hash::HashInfo,
-    metadata::{
-        BuildConfiguration, Debug, Directories, Output, PackageIdentifier, PackagingSettings,
-        PlatformWithVirtualPackages,
-    },
+    metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
     recipe::{
         Jinja, ParsingError, Recipe,
         parser::{BuildString, GlobVec, find_outputs_from_src},
-        variable::Variable,
     },
     selectors::SelectorConfig,
     system_tools::SystemTools,
+    types::{Directories, PackageIdentifier, PackagingSettings},
     variant_config::{DiscoveredOutput, ParseErrors, VariantConfig, VariantConfigError},
 };
 use rattler_conda_types::compression_level::CompressionLevel;
@@ -62,10 +58,11 @@ impl LoadedVariantConfig {
     /// Load variant configuration from a recipe path. This checks if there is a
     /// `variants.yaml` and loads it alongside the recipe.
     #[allow(clippy::result_large_err)]
-    pub fn from_recipe_path(
+    pub fn from_recipe_path<'a>(
         source_dir: &Path,
         recipe_path: &Path,
         selector_config: &SelectorConfig,
+        additional_variant_files: impl Iterator<Item = &'a Path>,
     ) -> Result<Self, VariantConfigError<Arc<str>>> {
         let mut variant_files = Vec::new();
         let mut input_globs = BTreeSet::new();
@@ -90,6 +87,9 @@ impl LoadedVariantConfig {
             }
         };
 
+        // Add additional variant files
+        variant_files.extend(additional_variant_files.map(|p| p.to_path_buf()));
+
         Ok(Self {
             variant_config: VariantConfig::from_files(&variant_files, selector_config)?,
             input_globs,
@@ -101,7 +101,7 @@ impl LoadedVariantConfig {
         input_variant_configuration: &BTreeMap<String, Vec<String>>,
     ) -> Self {
         for (k, v) in input_variant_configuration {
-            let variables = v.iter().map(|v| Variable::from_string(v)).collect();
+            let variables = v.iter().map(|v| v.clone().into()).collect();
             self.variant_config
                 .variants
                 .insert(k.as_str().into(), variables);
@@ -125,35 +125,10 @@ impl RattlerBuild {
         }
     }
 
-    /// Create a `SelectorConfig` from the given `CondaMetadataParams`.
-    pub fn selector_config_from(params: &CondaMetadataParams) -> SelectorConfig {
-        SelectorConfig {
-            target_platform: params
-                .build_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            host_platform: params
-                .host_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            build_platform: params
-                .build_platform
-                .as_ref()
-                .map(|p| p.platform)
-                .unwrap_or(Platform::current()),
-            hash: None,
-            variant: Default::default(),
-            experimental: true,
-            allow_undefined: false,
-            recipe_path: None,
-        }
-    }
-
     /// Discover the outputs from the recipe.
     pub fn discover_outputs(
         &self,
+        variant_files: &[PathBuf],
         variant_config_input: &Option<BTreeMap<String, Vec<String>>>,
     ) -> miette::Result<IndexSet<DiscoveredOutput>> {
         // First find all outputs from the recipe
@@ -161,7 +136,7 @@ impl RattlerBuild {
 
         // Check if there is a `variants.yaml` file next to the recipe that we should
         // potentially use.
-        let mut variant_configs = None;
+        let mut variant_config_paths = Vec::new();
         if let Some(variant_path) = self
             .recipe_source
             .path
@@ -169,18 +144,18 @@ impl RattlerBuild {
             .map(|parent| parent.join(VARIANTS_CONFIG_FILE))
         {
             if variant_path.is_file() {
-                variant_configs = Some(vec![variant_path]);
+                variant_config_paths.push(variant_path);
             }
         };
 
-        let variant_configs = variant_configs.unwrap_or_default();
+        variant_config_paths.extend(variant_files.iter().cloned());
 
         let mut variant_config =
-            VariantConfig::from_files(&variant_configs, &self.selector_config)?;
+            VariantConfig::from_files(&variant_config_paths, &self.selector_config)?;
 
         if let Some(variant_config_input) = variant_config_input {
             for (k, v) in variant_config_input.iter() {
-                let variables = v.iter().map(|v| Variable::from_string(v)).collect();
+                let variables = v.iter().map(|v| v.clone().into()).collect();
                 variant_config.variants.insert(k.as_str().into(), variables);
             }
         }
@@ -384,7 +359,7 @@ pub fn output_directory(
             [0..placeholder_length - build_dir.join("host_env").as_os_str().len()]
             .to_string();
 
-        build_dir.join(format!("host_env{}", placeholder))
+        build_dir.join(format!("host_env{placeholder}"))
     };
 
     Directories {

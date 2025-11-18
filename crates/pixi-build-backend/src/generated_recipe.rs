@@ -1,7 +1,7 @@
 use miette::Diagnostic;
 use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{Platform, Version};
+use rattler_conda_types::{ChannelUrl, Platform, Version};
 use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
 use serde::de::DeserializeOwned;
 use std::collections::HashSet;
@@ -50,6 +50,9 @@ pub trait GenerateRecipe {
     ///   be removed when profiles will be implemented.
     /// * `variants` - The variant names that are available to the recipe. This might
     ///   influence how the recipe is generated.
+    /// * `channels` - The channels that are being used for this build. This can be
+    ///   used for backend-specific logic that depends on which channels are available.
+    #[allow(clippy::too_many_arguments)]
     fn generate_recipe(
         &self,
         model: &ProjectModelV1,
@@ -58,6 +61,7 @@ pub trait GenerateRecipe {
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files
@@ -89,7 +93,7 @@ pub trait GenerateRecipe {
 }
 
 pub trait BackendConfig: DeserializeOwned + Clone {
-    /// At least debug dir should be provided by the backend config
+    /// Debug dir provided by the backend config
     fn debug_dir(&self) -> Option<&Path>;
 
     /// Merge this configuration with a target-specific configuration.

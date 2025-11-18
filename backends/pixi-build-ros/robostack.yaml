@@ -358,6 +358,8 @@ liblz4-dev:
   robostack: [lz4]
 libmicrohttpd:
   robostack: [libmicrohttpd]
+libnanoflann-dev:
+  robostack: [nanoflann]
 libncurses-dev:
   robostack:
     linux: [ncurses]
@@ -402,6 +404,12 @@ libpcl-all:
   robostack: [pcl]
 libpcl-all-dev:
   robostack: [pcl, libboost-devel, vtk-base, REQUIRE_OPENGL]
+libpcl-common:
+  robostack: [pcl]
+libpcl-filters:
+  robostack: [pcl]
+libpcl-io:
+  robostack: [pcl]
 libpng-dev:
   robostack: [libpng]
 libpoco-dev:
@@ -541,6 +549,8 @@ linux-kernel-headers:
 log4cxx:
   robostack: [log4cxx]
 lua5.2-dev:
+  robostack: [lua]
+lua-dev:
   robostack: [lua]
 lz4:
   robostack: [lz4]
@@ -904,10 +914,14 @@ python3-tk:
   robostack: [tk]
 python3-tornado:
   robostack: [tornado]
+python3-transforms3d:
+  robostack: [transforms3d]
 python3-twisted:
   robostack: [twisted]
 python3-typeguard:
   robostack: [typeguard]
+python3-types-pyyaml:
+  robostack: [types-pyyaml]
 python3-unidiff:
   robostack: [unidiff]
 python3-usb:

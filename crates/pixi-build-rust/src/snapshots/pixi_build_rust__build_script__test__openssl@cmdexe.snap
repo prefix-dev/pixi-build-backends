@@ -1,7 +1,6 @@
 ---
 source: crates/pixi-build-rust/src/build_script.rs
 expression: script
-snapshot_kind: text
 ---
 SET OPENSSL_DIR="%PREFIX%"
 

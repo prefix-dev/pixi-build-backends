@@ -105,7 +105,8 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
         for (selector, target) in specific_targets {
             let package_requirements = target_to_package_spec(target);
 
-            // add the binary requirements
+            // Add the binary requirements
+            // Use host_platform for all dependency types to match the actual target platform
             build_items.extend(
                 package_requirements
                     .build
@@ -113,7 +114,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
                     .map(|spec| spec.1)
                     .map(|spec| {
                         Conditional {
-                            condition: to_rattler_build_selector(selector, PlatformKind::Build),
+                            condition: to_rattler_build_selector(selector, PlatformKind::Host),
                             then: ListOrItem(vec![spec]),
                             else_value: ListOrItem::default(),
                         }
@@ -141,7 +142,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
                     .map(|spec| spec.1)
                     .map(|spec| {
                         Conditional {
-                            condition: to_rattler_build_selector(selector, PlatformKind::Target),
+                            condition: to_rattler_build_selector(selector, PlatformKind::Host),
                             then: ListOrItem(vec![spec]),
                             else_value: ListOrItem::default(),
                         }

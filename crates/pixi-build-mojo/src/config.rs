@@ -17,6 +17,7 @@ pub struct MojoBackendConfig {
     pub env: IndexMap<String, String>,
 
     /// Dir that can be specified for outputting pixi debug state.
+    #[serde(alias = "debug_dir")]
     pub debug_dir: Option<PathBuf>,
 
     /// Extra input globs to include in addition to the default ones.

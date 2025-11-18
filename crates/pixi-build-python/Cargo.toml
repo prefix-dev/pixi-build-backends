@@ -1,7 +1,12 @@
 [package]
 name = "pixi-build-python"
-version = "0.4.0"
+version = "0.4.2"
 edition.workspace = true
+
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["pixi-build-backend/rustls-tls"]
+native-tls = ["pixi-build-backend/native-tls"]
 
 [dependencies]
 indexmap = { workspace = true }

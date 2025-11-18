@@ -39,3 +39,15 @@ def distro():
 def distro_noetic():
     """Reusable distro noetic fixture."""
     return Distro("noetic")
+
+
+@pytest.fixture
+def distro_variant(request, distro: Distro, distro_noetic: Distro) -> Distro:
+    """Parameterizable fixture that yields either a ROS1 or ROS2 distro."""
+    match request.param:
+        case "ros2":
+            return distro
+        case "ros1":
+            return distro_noetic
+        case other:
+            raise ValueError(f"Unknown distro marker: {other}")

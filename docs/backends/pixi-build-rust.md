@@ -116,7 +116,7 @@ For target-specific configuration, platform arguments completely replace the bas
 [package.build.config]
 extra-args = ["--release"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-args = ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 # Result for linux-64: ["--features", "linux-specific", "--target", "x86_64-unknown-linux-gnu"]
 ```
@@ -140,24 +140,14 @@ For target-specific configuration, platform environment variables are merged wit
 [package.build.config]
 env = { RUST_LOG = "info", COMMON_VAR = "base" }
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 env = { COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 # Result for linux-64: { RUST_LOG = "info", COMMON_VAR = "linux", CARGO_PROFILE_RELEASE_LTO = "true" }
 ```
 
 ### `debug-dir`
 
-- **Type**: `String` (path)
-- **Default**: Not set
-- **Target Merge Behavior**: Not allowed - Cannot have target specific value
-
-If specified, internal build state and debug information will be written to this directory. Useful for troubleshooting build issues.
-
-```toml
-[package.build.config]
-debug-dir = ".build-debug"
-```
-
+The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; when present a warning is emitted so you can safely remove the setting.
 
 ### `extra-input-globs`
 
@@ -182,7 +172,7 @@ For target-specific configuration, platform-specific globs completely replace th
 [package.build.config]
 extra-input-globs = ["*.txt"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 extra-input-globs = ["*.txt", "*.so", "linux-configs/**/*"]
 # Result for linux-64: ["*.txt", "*.so", "linux-configs/**/*"]
 ```
@@ -213,7 +203,7 @@ For target-specific configuration:
 [package.build.config]
 ignore-cargo-manifest = false
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 ignore-cargo-manifest = true
 # Result for linux-64: Cargo.toml metadata will be ignored
 ```
@@ -237,7 +227,7 @@ For target-specific configuration, platform compilers completely replace the bas
 [package.build.config]
 compilers = ["rust"]
 
-[package.build.config.targets.linux-64]
+[package.build.target.linux-64.config]
 compilers = ["rust", "c", "cxx"]
 # Result for linux-64: ["rust", "c", "cxx"]
 ```

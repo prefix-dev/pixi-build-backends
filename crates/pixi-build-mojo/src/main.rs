@@ -6,14 +6,16 @@ use config::{MojoBackendConfig, clean_project_name};
 use miette::{Error, IntoDiagnostic};
 use pixi_build_backend::generated_recipe::DefaultMetadataProvider;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
+use pixi_build_types::ProjectModelV1;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use rattler_conda_types::{ChannelUrl, Platform};
+use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::{collections::BTreeSet, path::Path, sync::Arc};
 
 #[derive(Default, Clone)]
@@ -24,13 +26,30 @@ impl GenerateRecipe for MojoGenerator {
 
     fn generate_recipe(
         &self,
-        model: &pixi_build_types::ProjectModelV1,
+        model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
+        manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
+        // Determine the manifest root, because `manifest_path` can be
+        // either a direct file path or a directory path.
+        let manifest_root = if manifest_path.is_file() {
+            manifest_path
+                .parent()
+                .ok_or_else(|| {
+                    miette::Error::msg(format!(
+                        "Manifest path {} is a file but has no parent directory.",
+                        manifest_path.display()
+                    ))
+                })?
+                .to_path_buf()
+        } else {
+            manifest_path.clone()
+        };
+
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()?;
@@ -49,13 +68,12 @@ impl GenerateRecipe for MojoGenerator {
 
         // Add compiler
         let requirements = &mut generated_recipe.recipe.requirements;
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["mojo"] if not specified
         let mut compilers = config
@@ -65,17 +83,18 @@ impl GenerateRecipe for MojoGenerator {
 
         // Handle mojo compiler specially if it's in the list
         if let Some(idx) = compilers.iter().position(|name| name == "mojo") {
-            let mojo_compiler_pkg = "mojo-compiler".to_string();
+            let mojo_compiler_pkg = "mojo-compiler";
             // All of these packages also contain the mojo compiler and maintain backward compat.
             // They should be removable at a future point.
             let alt_names = ["max", "mojo", "modular"];
 
-            if !resolved_requirements
-                .build
-                .contains_key(&PackageName::new_unchecked(&mojo_compiler_pkg))
-                && !alt_names
-                    .iter()
-                    .any(|alt| resolved_requirements.build.contains_key(*alt))
+            let mojo_pkg_name = pixi_build_types::SourcePackageName::from(mojo_compiler_pkg);
+            if !model_dependencies.build.contains_key(&mojo_pkg_name)
+                && !alt_names.iter().any(|alt| {
+                    model_dependencies
+                        .build
+                        .contains_key(&pixi_build_types::SourcePackageName::from(*alt))
+                })
             {
                 requirements
                     .build
@@ -86,11 +105,15 @@ impl GenerateRecipe for MojoGenerator {
             compilers.swap_remove(idx);
         }
 
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
@@ -214,6 +237,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -260,6 +284,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -298,6 +323,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -342,6 +368,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -388,6 +415,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -430,6 +458,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -439,7 +468,7 @@ mod tests {
         // Check for mojo-compiler package (should be present)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(has_mojo_compiler, "Should have mojo-compiler package");
 
         // Check for additional compiler templates
@@ -508,6 +537,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -517,7 +547,7 @@ mod tests {
         // Check for mojo-compiler package (should be present by default)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(
             has_mojo_compiler,
             "Should have mojo-compiler package by default"
@@ -573,6 +603,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -582,7 +613,7 @@ mod tests {
         // Check for mojo-compiler package (should NOT be present)
         let has_mojo_compiler = build_reqs
             .iter()
-            .any(|item| format!("{:?}", item).contains("mojo-compiler"));
+            .any(|item| format!("{item:?}").contains("mojo-compiler"));
         assert!(
             !has_mojo_compiler,
             "Should NOT have mojo-compiler package when user opts out"

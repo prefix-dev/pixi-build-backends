@@ -15,12 +15,7 @@ build-release = "cargo build --release"
 build-ci = "cargo build --profile ci --locked"
 nextest = "cargo nextest run --workspace --all-targets"
 doctest = "cargo test --doc"
-pytest-build-ros = "pixi run --manifest-path backends/pixi-build-ros test"
-test = [
-  { task = "nextest" },
-  { task = "doctest" },
-  { task = "pytest-build-ros" },
-]
+test = [{ task = "nextest" }, { task = "doctest" }]
 generate-matrix = "python scripts/generate-matrix.py"
 
 install-pixi-build-pixi = { cmd = "cargo install --path crates/pixi-build-pixi --locked --force" }
@@ -41,7 +36,7 @@ install-pixi-backends = { depends-on = [
 
 
 [dependencies]
-rust = ">=1.87.0,<1.88"
+rust = ">=1.88.0,<1.89"
 python = ">=3.12.4,<4"
 openssl = ">=3.5.0,<4"
 compilers = "1.11.0.*"
@@ -49,6 +44,7 @@ pkg-config = ">=0.29.2,<0.30"
 libzlib = ">=1.3.1,<2"
 liblzma = ">=5.8.1,<6"
 cargo-nextest = ">=0.9.96,<0.10"
+cargo-insta = ">=1.43.2,<2"
 
 [activation.env]
 CARGO_TARGET_DIR = "target/pixi"
@@ -67,6 +63,9 @@ ruff = ">=0.13,<0.14"
 
 [feature.build.dependencies]
 rattler-build = ">=0.46.0,<1"
+rattler-index = ">=0.25.2,<0.26"
+python = "*"
+sccache = ">=0.11.0,<0.12"
 
 [feature.build.tasks.build-recipe-ci]
 cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --variant-config recipe/variants.yaml --output-dir={{ output_dir }} --recipe {{ recipe }}{% if target_platform is defined and target_platform %} --target-platform {{ target_platform }}{% endif %}"
@@ -82,6 +81,89 @@ depends-on = [
 ]
 args = ["recipe", { arg = "target_platform", default = "" }]
 
+[feature.build.tasks.rm-rust-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-rust*.conda || true"
+inputs = [
+  "crates/pixi-build-rust/src/*.rs",
+  "crates/pixi-build-rust/Cargo.toml",
+]
+
+[feature.build.tasks.rm-rattler-build-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-rattler-build*.conda || true"
+inputs = [
+  "crates/pixi-build-rattler-build/src/*.rs",
+  "crates/pixi-build-rattler-build/Cargo.toml",
+]
+
+[feature.build.tasks.rm-python-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-python*.conda || true"
+inputs = [
+  "crates/pixi-build-python/src/*.rs",
+  "crates/pixi-build-python/Cargo.toml",
+]
+
+[feature.build.tasks.rm-mojo-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-mojo*.conda || true"
+inputs = [
+  "crates/pixi-build-mojo/src/*.rs",
+  "crates/pixi-build-mojo/Cargo.toml",
+]
+
+[feature.build.tasks.rm-cmake-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-cmake*.conda || true"
+inputs = [
+  "crates/pixi-build-cmake/src/*.rs",
+  "crates/pixi-build-cmake/Cargo.toml",
+]
+
+[feature.build.tasks.rm-ros-backend-package]
+cmd = "rm -rf artifacts-channel/*/pixi-build-ros*.conda || true"
+inputs = [
+  "backends/pixi-build-ros/**/*.py",
+  "backends/pixi-build-ros/pyproject.toml",
+  "backends/pixi-build-ros/templates/*",
+]
+
+[feature.build.tasks.build-testsuite-backends]
+depends-on = [
+  "rm-rust-backend-package",
+  "rm-rattler-build-backend-package",
+  "rm-python-backend-package",
+  "rm-mojo-backend-package",
+  "rm-cmake-backend-package",
+  "rm-ros-backend-package",
+]
+cmd = "rattler-build build --experimental --no-build-id --skip-existing --recipe recipe/testsuite-backends --variant-config recipe/variants.yaml --output-dir artifacts-channel"
+inputs = [
+  "recipe/testsuite-backends/recipe.yaml",
+  "recipe/variants.yaml",
+  "crates/**/src/*.rs",
+  "crates/**/Cargo.toml",
+  "backends/pixi-build-ros/**/*.py",
+  "backends/pixi-build-ros/pyproject.toml",
+  "backends/pixi-build-ros/templates/*",
+]
+outputs = ["artifacts-channel"]
+
+[feature.build.tasks.clean-backends-build-outputs]
+depends-on = ["build-testsuite-backends"]
+cmd = "python scripts/clean-outputs.py artifacts-channel"
+
+[feature.build.tasks.index-testsuite-channel]
+depends-on = ["build-testsuite-backends"]
+cmd = "rattler-index fs --force --write-shards false --write-zst false artifacts-channel"
+
+[feature.build.tasks.rm-build]
+cmd = "rm -rf artifacts-channel/bld"
+
+[feature.build.tasks.create-channel]
+depends-on = ["rm-build", "build-testsuite-backends", "index-testsuite-channel"]
+
+[feature.build.tasks.create-testsuite-channel]
+depends-on = ["create-channel", "clean-backends-build-outputs"]
+
+[feature.build.activation.env]
+RUSTC_WRAPPER = "sccache"
 
 [feature.schema.tasks]
 generate-schema = "python schema/model.py > schema/schema.json"
@@ -94,7 +176,7 @@ shellcheck = ">=0.10.0,<0.11"
 taplo = ">=0.10,<0.11"
 typos = ">=1.23.1,<2"
 dprint = ">=0.50.0,<0.51"
-lefthook = ">=1.12.2,<2"
+lefthook = ">=2.0.2,<3"
 
 [feature.lint.tasks]
 actionlint = { cmd = "actionlint", env = { SHELLCHECK_OPTS = "-e SC2086" } }

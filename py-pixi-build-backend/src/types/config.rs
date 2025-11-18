@@ -26,9 +26,10 @@ impl<'de> Deserialize<'de> for PyBackendConfig {
         Python::attach(|py| {
             let model = pythonize(py, &data).map_err(serde::de::Error::custom)?;
 
+            // Support both debug_dir and debug-dir
             let debug_dir: Option<PathBuf> = data
                 .as_object_mut()
-                .and_then(|obj| obj.get("debug_dir"))
+                .and_then(|obj| obj.get("debug-dir").or_else(|| obj.get("debug_dir")))
                 .and_then(|v| v.as_str().map(PathBuf::from));
 
             Ok(PyBackendConfig {

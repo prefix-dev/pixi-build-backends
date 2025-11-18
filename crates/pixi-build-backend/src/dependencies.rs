@@ -8,7 +8,6 @@ use pixi_build_types as pbt;
 use pixi_build_types::{BinaryPackageSpecV1, NamedSpecV1};
 use rattler_build::{
     NormalizedKey,
-    metadata::PackageIdentifier,
     recipe::{parser::Dependency, variable::Variable},
     render::{
         pin::PinError,
@@ -17,6 +16,7 @@ use rattler_build::{
             SourceDependency, VariantDependency,
         },
     },
+    types::PackageIdentifier,
 };
 use rattler_conda_types::{
     MatchSpec, NamelessMatchSpec, PackageName, PackageRecord, ParseStrictness::Strict,
@@ -131,12 +131,7 @@ pub fn convert_input_variant_configuration(
 ) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
     variants.map(|v| {
         v.into_iter()
-            .map(|(k, v)| {
-                (
-                    k.into(),
-                    v.into_iter().map(|v| Variable::from_string(&v)).collect(),
-                )
-            })
+            .map(|(k, v)| (k.into(), v.into_iter().map(|v| v.into()).collect()))
             .collect()
     })
 }
@@ -397,7 +392,7 @@ pub fn apply_variant(
                     let name = &pin.pin_value().name;
                     let subpackage = subpackages
                         .get(name)
-                        .ok_or(ResolveError::SubpackageNotFound(name.to_owned()))?;
+                        .ok_or(ResolveError::PinSubpackageNotFound(name.to_owned()))?;
                     let pinned = pin
                         .pin_value()
                         .apply(&subpackage.version, &subpackage.build_string)?;
@@ -412,7 +407,7 @@ pub fn apply_variant(
                     let name = &pin.pin_value().name;
                     let pin_package = compatibility_specs
                         .get(name)
-                        .ok_or(ResolveError::SubpackageNotFound(name.to_owned()))?;
+                        .ok_or(ResolveError::PinCompatibleNotFound(name.to_owned()))?;
 
                     let pinned = pin
                         .pin_value()

@@ -3,10 +3,9 @@
 
 use std::{collections::HashSet, fmt::Display, ops::Deref};
 
-use indexmap::IndexMap;
 use itertools::Itertools;
 use rattler_build::NormalizedKey;
-use rattler_conda_types::{PackageName, Platform};
+use rattler_conda_types::Platform;
 use recipe_stage0::{
     matchspec::PackageDependency,
     recipe::{Item, Value},
@@ -27,7 +26,7 @@ impl Display for Language<'_> {
             Language::Cxx => write!(f, "cxx"),
             Language::Fortran => write!(f, "fortran"),
             Language::Rust => write!(f, "rust"),
-            Language::Other(name) => write!(f, "{}", name),
+            Language::Other(name) => write!(f, "{name}"),
         }
     }
 }
@@ -82,41 +81,22 @@ pub fn compiler_requirement(language: &Language) -> Item<PackageDependency> {
 /// # Arguments
 /// * `compilers` - List of compiler names (e.g., ["c", "cxx", "rust", "cuda"])
 /// * `requirements` - Mutable reference to the requirements to modify
-/// * `resolved_build_requirements` - IndexMap of already resolved build
-///   requirements
+/// * `dependencies` - The Dependencies struct containing build/host/run dependencies
 /// * `host_platform` - The target platform for determining default compiler
 ///   names
-/// * `variants` - The variants available in the recipe, used to determine if
-///   stdlib is needed
-pub fn add_compilers_and_stdlib_to_requirements(
+pub fn add_compilers_to_requirements<S>(
     compilers: &[String],
     requirements: &mut Vec<Item<PackageDependency>>,
-    resolved_build_requirements: &IndexMap<PackageName, PackageDependency>,
-    host_platform: &Platform,
-    variants: &HashSet<NormalizedKey>,
-) {
-    add_compilers_to_requirements(
-        compilers,
-        requirements,
-        resolved_build_requirements,
-        host_platform,
-    );
-    add_stdlib_to_requirements(compilers, requirements, variants);
-}
-
-pub fn add_compilers_to_requirements(
-    compilers: &[String],
-    requirements: &mut Vec<Item<PackageDependency>>,
-    resolved_build_requirements: &IndexMap<PackageName, PackageDependency>,
+    dependencies: &crate::traits::targets::Dependencies<S>,
     host_platform: &Platform,
 ) {
     for compiler_str in compilers {
-        // Check if the specific compiler is already present
+        // Check if the specific compiler is already present in build dependencies
         let language_compiler = default_compiler(host_platform, compiler_str);
+        let source_package_name = pixi_build_types::SourcePackageName::from(language_compiler);
 
-        if !resolved_build_requirements.contains_key(&PackageName::new_unchecked(language_compiler))
-        {
-            let template = format!("${{{{ compiler('{}') }}}}", compiler_str);
+        if !dependencies.build.contains_key(&source_package_name) {
+            let template = format!("${{{{ compiler('{compiler_str}') }}}}");
             requirements.push(Item::Value(Value::Template(template)));
         }
     }
@@ -151,7 +131,7 @@ pub fn add_stdlib_to_requirements(
         }
 
         // If the stdlib key exists, add it to the requirements
-        let template = format!("${{{{ stdlib('{}') }}}}", stdlib);
+        let template = format!("${{{{ stdlib('{stdlib}') }}}}");
         requirements.push(Item::Value(Value::Template(template)));
     }
 }

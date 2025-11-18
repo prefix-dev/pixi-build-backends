@@ -5,14 +5,16 @@ use build_script::{BuildPlatform, BuildScriptContext};
 use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
-    compilers::add_compilers_and_stdlib_to_requirements,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
+    traits::ProjectModel,
 };
+use pixi_build_types::{ProjectModelV1, SourcePackageName};
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use rattler_conda_types::{ChannelUrl, Platform};
+use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -27,13 +29,30 @@ impl GenerateRecipe for CMakeGenerator {
 
     fn generate_recipe(
         &self,
-        model: &pixi_build_types::ProjectModelV1,
+        model: &ProjectModelV1,
         config: &Self::Config,
-        manifest_root: std::path::PathBuf,
-        host_platform: rattler_conda_types::Platform,
+        manifest_path: PathBuf,
+        host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
+        // Determine the manifest root, because `manifest_path` can be
+        // either a direct file path or a directory path.
+        let manifest_root = if manifest_path.is_file() {
+            manifest_path
+                .parent()
+                .ok_or_else(|| {
+                    miette::Error::msg(format!(
+                        "Manifest path {} is a file but has no parent directory.",
+                        manifest_path.display()
+                    ))
+                })?
+                .to_path_buf()
+        } else {
+            manifest_path.clone()
+        };
+
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()?;
@@ -42,13 +61,11 @@ impl GenerateRecipe for CMakeGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
+        // Get the platform-specific dependencies from the project model.
+        // This properly handles target selectors like [target.linux-64] by using
+        // the ProjectModel trait's platform-aware API instead of trying to evaluate
+        // rattler-build selectors with simple string comparison.
+        let model_dependencies = model.dependencies(Some(host_platform));
 
         // Get the list of compilers from config, defaulting to ["cxx"] if not specified
         let compilers = config
@@ -57,18 +74,22 @@ impl GenerateRecipe for CMakeGenerator {
             .unwrap_or_else(|| vec!["cxx".to_string()]);
 
         // Add configured compilers to build requirements
-        add_compilers_and_stdlib_to_requirements(
+        pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,
-            &resolved_requirements.build,
+            &model_dependencies,
             &host_platform,
+        );
+        pixi_build_backend::compilers::add_stdlib_to_requirements(
+            &compilers,
+            &mut requirements.build,
             variants,
         );
 
         // add necessary build tools
         for tool in ["cmake", "ninja"] {
-            let tool_name = PackageName::new_unchecked(tool);
-            if !resolved_requirements.build.contains_key(&tool_name) {
+            let tool_name = SourcePackageName::from(tool);
+            if !model_dependencies.build.contains_key(&tool_name) {
                 requirements.build.push(tool.parse().into_diagnostic()?);
             }
         }
@@ -76,7 +97,9 @@ impl GenerateRecipe for CMakeGenerator {
         // Check if the host platform has a host python dependency
         // This is used to determine if we need to the cmake argument for the python
         // executable
-        let has_host_python = resolved_requirements.contains(&PackageName::new_unchecked("python"));
+        let has_host_python = model_dependencies
+            .host
+            .contains_key(&SourcePackageName::from("python"));
 
         let build_script = BuildScriptContext {
             build_platform: if Platform::current().is_windows() {
@@ -153,13 +176,16 @@ mod tests {
     use std::path::PathBuf;
 
     use indexmap::IndexMap;
-    use pixi_build_backend::protocol::ProtocolInstantiator;
+    use pixi_build_backend::{
+        protocol::ProtocolInstantiator, utils::test::intermediate_conda_outputs,
+    };
     use pixi_build_types::{
         ProjectModelV1,
         procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
     };
     use rattler_build::console_utils::LoggingOutputHandler;
     use recipe_stage0::recipe::{Item, Value};
+    use tokio::fs;
 
     use super::*;
 
@@ -212,6 +238,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -252,6 +279,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -287,6 +315,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -332,6 +361,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -372,6 +402,7 @@ mod tests {
                 host_platform: Platform::Win64,
                 build_platform: Platform::Win64,
                 variant_configuration: None,
+                variant_files: None,
                 work_directory: current_dir,
             })
             .await
@@ -385,6 +416,91 @@ mod tests {
                 .map(String::as_str),
             Some("vs2019"),
             "On windows the default cxx_compiler variant should be vs2019"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_intermediate_conda_outputs_snapshot() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                   "buildDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        let variant_configuration =
+            BTreeMap::from([("boltons".to_string(), Vec::from(["==1.0.0".to_string()]))]);
+
+        let result = intermediate_conda_outputs::<CMakeGenerator>(
+            Some(project_model),
+            Some(temp_dir.path().to_path_buf()),
+            Platform::Linux64,
+            Some(variant_configuration),
+            None,
+        )
+        .await;
+
+        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"],
+            "linux-64"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_variant_files_are_applied() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+            "targets": {
+                "defaultTarget": {
+                   "buildDependencies": {
+                        "boltons": {
+                            "binary": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                },
+            }
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        let variant_file = temp_dir.path().join("variants.yaml");
+        fs::write(
+            &variant_file,
+            r#"boltons:
+  - "==2.0.0"
+"#,
+        )
+        .await
+        .expect("Failed to write variants file");
+
+        let result = intermediate_conda_outputs::<CMakeGenerator>(
+            Some(project_model),
+            Some(temp_dir.path().to_path_buf()),
+            Platform::Linux64,
+            None,
+            Some(vec![variant_file]),
+        )
+        .await;
+
+        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["target_platform"],
+            "linux-64"
         );
     }
 
@@ -406,6 +522,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::new(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -459,6 +576,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::default(),
+                vec![],
             )
             .expect("Failed to generate recipe");
 
@@ -502,6 +620,7 @@ mod tests {
                 Platform::Linux64,
                 None,
                 &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
+                vec![],
             )
             .expect("Failed to generate recipe");
 

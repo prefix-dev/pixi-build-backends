@@ -9,15 +9,15 @@ pub mod specs_conversion;
 pub mod cache;
 pub mod common;
 pub mod compilers;
-mod consts;
 pub mod dependencies;
 mod encoded_source_spec_url;
-pub mod project;
 pub mod source;
 pub mod tools;
 pub mod traits;
 pub mod utils;
 pub mod variants;
+
+pub mod consts;
 
 pub use traits::{PackageSourceSpec, PackageSpec, ProjectModel, TargetSelector, Targets};
 

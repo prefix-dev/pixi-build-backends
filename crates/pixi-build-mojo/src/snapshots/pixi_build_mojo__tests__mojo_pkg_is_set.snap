@@ -14,8 +14,7 @@ build:
     env: {}
     secrets: []
 requirements:
-  build:
-    - mojo-compiler
+  build: []
   host: []
   run:
     - boltons

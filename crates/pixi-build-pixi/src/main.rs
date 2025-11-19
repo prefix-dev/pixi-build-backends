@@ -5,12 +5,13 @@ use build_script::BuildScriptContext;
 use config::PixiBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
+    ProjectModel,
     generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
-use rattler_conda_types::{PackageName, Platform};
-use recipe_stage0::recipe::{ConditionalRequirements, Script};
+use rattler_conda_types::{ChannelUrl, Platform};
+use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -31,7 +32,8 @@ impl GenerateRecipe for PixiGenerator {
         manifest_root: std::path::PathBuf,
         host_platform: rattler_conda_types::Platform,
         _python_params: Option<PythonParams>,
-        _variants: &HashSet<NormalizedKey>,
+        variants: &HashSet<NormalizedKey>,
+        _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
@@ -39,22 +41,24 @@ impl GenerateRecipe for PixiGenerator {
 
         let requirements = &mut generated_recipe.recipe.requirements;
 
-        let resolved_requirements = ConditionalRequirements::resolve(
-            requirements.build.as_ref(),
-            requirements.host.as_ref(),
-            requirements.run.as_ref(),
-            requirements.run_constraints.as_ref(),
-            Some(host_platform),
-        );
-
-        // Add pixi as a build dependency
-        let pixi_name = PackageName::new_unchecked("pixi");
-        if !resolved_requirements.build.contains_key(&pixi_name) {
-            requirements.build.push("pixi".parse().into_diagnostic()?);
+        // Add compilers if configured
+        if let Some(compilers) = &config.compilers {
+            let model_dependencies = model.dependencies(Some(host_platform));
+            pixi_build_backend::compilers::add_compilers_to_requirements(
+                compilers,
+                &mut requirements.build,
+                &model_dependencies,
+                &host_platform,
+            );
+            pixi_build_backend::compilers::add_stdlib_to_requirements(
+                compilers,
+                &mut requirements.build,
+                variants,
+            );
         }
 
         let build_script = BuildScriptContext {
-            build_task: config.build_task.clone(),
+            build_tasks: config.build_tasks.clone(),
             manifest_root,
         }
         .render();

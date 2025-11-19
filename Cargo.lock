@@ -4238,7 +4238,7 @@ dependencies = [
 name = "pixi-build-pixi"
 version = "0.3.3"
 dependencies = [
- "indexmap 2.11.1",
+ "indexmap 2.11.4",
  "insta",
  "miette",
  "minijinja",

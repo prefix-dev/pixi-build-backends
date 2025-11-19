@@ -4,6 +4,16 @@ use indexmap::IndexMap;
 use pixi_build_backend::generated_recipe::BackendConfig;
 use serde::{Deserialize, Serialize};
 
+/// A build task with optional environment specification
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct BuildTask {
+    /// Name of the task to run
+    pub task: String,
+    /// Optional environment to run the task in
+    pub environment: Option<String>,
+}
+
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PixiBackendConfig {
@@ -15,13 +25,12 @@ pub struct PixiBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
-    /// Name of the build task in pixi.toml (defaults to "build")
-    #[serde(default = "default_build_task")]
-    pub build_task: String,
-}
-
-fn default_build_task() -> String {
-    "build".to_string()
+    /// Build tasks to run in order, each with optional environment
+    #[serde(default)]
+    pub build_tasks: Vec<BuildTask>,
+    /// List of compilers to use (e.g., ["c", "cxx", "cuda"])
+    /// If not specified, no compilers will be added
+    pub compilers: Option<Vec<String>>,
 }
 
 impl BackendConfig for PixiBackendConfig {
@@ -53,11 +62,15 @@ impl BackendConfig for PixiBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
-            build_task: if target_config.build_task == default_build_task() {
-                self.build_task.clone()
+            build_tasks: if target_config.build_tasks.is_empty() {
+                self.build_tasks.clone()
             } else {
-                target_config.build_task.clone()
+                target_config.build_tasks.clone()
             },
+            compilers: target_config
+                .compilers
+                .clone()
+                .or_else(|| self.compilers.clone()),
         })
     }
 }

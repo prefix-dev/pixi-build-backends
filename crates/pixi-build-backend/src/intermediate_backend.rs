@@ -34,7 +34,7 @@ use rattler_build::{
 use rattler_conda_types::{Platform, compression_level::CompressionLevel, package::ArchiveType};
 
 use serde::Deserialize;
-use tracing::warn;
+use tracing::{instrument, warn};
 
 use crate::{
     TargetSelector,
@@ -220,6 +220,7 @@ where
     T: GenerateRecipe + Clone + Send + Sync + 'static,
     T::Config: BackendConfig + Send + Sync + 'static,
 {
+    #[instrument(skip_all, fields(procedure = "conda_outputs"))]
     async fn conda_outputs(
         &self,
         params: CondaOutputsParams,
@@ -528,6 +529,7 @@ where
         })
     }
 
+    #[instrument(skip_all, fields(procedure = "conda_build_v1"))]
     async fn conda_build_v1(
         &self,
         params: CondaBuildV1Params,

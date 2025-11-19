@@ -43,6 +43,7 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
+tracing-core = "0.1"
 url = { workspace = true }
 pyproject-toml = { workspace = true }
 dirs = { workspace = true }
@@ -57,6 +58,9 @@ jsonrpc-stdio-server = { workspace = true }
 jsonrpc-http-server = { workspace = true }
 jsonrpc-core = { workspace = true }
 recipe-stage0 = { workspace = true }
+tracing-opentelemetry = "0.32.0"
+opentelemetry = "0.31.0"
+opentelemetry_sdk = { version = "0.31.0", features = ["trace"] }
 
 
 [dev-dependencies]

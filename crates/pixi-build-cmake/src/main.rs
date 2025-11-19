@@ -6,7 +6,9 @@ use config::CMakeBackendConfig;
 use miette::IntoDiagnostic;
 use pixi_build_backend::{
     compilers::add_compilers_and_stdlib_to_requirements,
-    generated_recipe::{DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams},
+    generated_recipe::{
+        BackendConfig, DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
+    },
     intermediate_backend::IntermediateBackendInstantiator,
 };
 use pixi_build_types::ProjectModelV1;
@@ -37,6 +39,10 @@ impl GenerateRecipe for CMakeGenerator {
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
     ) -> miette::Result<GeneratedRecipe> {
+        if config.debug_dir().is_some() {
+            tracing::warn!("Debug dir is set");
+        }
+
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()?;

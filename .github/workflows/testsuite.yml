@@ -22,7 +22,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       ACTIONS_CACHE_SERVICE_V2: on
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -37,7 +37,7 @@ jobs:
       - name: Show sccache stats
         run: pixi run -e build sccache --stop-server
       - name: Upload executables as artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: pixi-build-backends-linux-x86_64
           path: artifacts-channel
@@ -52,7 +52,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       ACTIONS_CACHE_SERVICE_V2: on
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
       - name: Create Dev Drive
         run: ${{ github.workspace }}/.github/workflows/setup-dev-drive.ps1
       - name: Copy Git Repo to Dev Drive
@@ -77,7 +77,7 @@ jobs:
         run: pixi run -e build sccache --stop-server
         working-directory: ${{ env.PIXI_WORKSPACE }}
       - name: Upload executables as artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: pixi-build-backends-windows-x86_64
           path: ${{ env.PIXI_WORKSPACE }}/artifacts-channel
@@ -92,7 +92,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       ACTIONS_CACHE_SERVICE_V2: on
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
       - uses: prefix-dev/setup-pixi@main
         with:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -107,7 +107,7 @@ jobs:
       - name: Show sccache stats
         run: pixi run -e build sccache --stop-server
       - name: Upload executables as artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: pixi-build-backends-macos-aarch64
           path: artifacts-channel
@@ -120,7 +120,7 @@ jobs:
     needs: build-binary-linux-x86_64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           repository: prefix-dev/pixi-build-testsuite
 
@@ -152,7 +152,7 @@ jobs:
     needs: build-binary-windows-x86_64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           repository: prefix-dev/pixi-build-testsuite
 
@@ -191,7 +191,7 @@ jobs:
     needs: build-binary-macos-aarch64
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           repository: prefix-dev/pixi-build-testsuite
 

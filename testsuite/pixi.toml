@@ -1,0 +1,98 @@
+[workspace]
+authors = ["Julian Hofer <julian@prefix.dev>"]
+channels = ["https://prefix.dev/conda-forge"]
+description = "Test Pixi and its backend in unison"
+name = "pixi-build-testsuite"
+platforms = ["linux-64", "win-64", "osx-arm64"]
+requires-pixi = ">=0.45"
+
+# Preview as it's being found by some of the tests
+preview = ["pixi-build"]
+
+[dependencies]
+filelock = ">=3.16.0,<4"
+git = "==2.51.0"
+httpx = ">=0.28.0,<1"
+mypy = ">=1.18,<1.19"
+py-rattler = ">=0.16,<0.17"
+pygithub = ">=2.5.0,<3"
+pytest = "*"
+pytest-rerunfailures = ">=16,<17"
+pytest-timeout = ">=2.3.1,<3"
+pytest-xdist = ">=3.6.1,<4"
+python = "3.14.*"
+python-dotenv = ">=1.1.0,<2"
+pyyaml = ">=6.0.2,<7"
+rich = ">=14,<15"
+syrupy = ">=5,<6"
+tomli-w = ">=1.2.0,<2"
+types-pyyaml = ">=6.0.12.20241230,<7"
+
+
+[tasks]
+test = [{ task = "test-slow" }]
+test-fast = "pytest --numprocesses=auto --durations=0 --timeout=100 -m 'not slow' tests/integration_python"
+test-slow = "pytest --numprocesses=auto --durations=0 --timeout=600 tests/integration_python"
+
+# pass the file to run as an argument to the task
+# you can also pass a specific test function, like this:
+# /path/to/test.py::test_function
+test-specific-test = { cmd = "pytest -k '{{ test_substring }}'", args = [
+  "test_substring",
+] }
+# Update one test channel by passing on value of `mappings.toml`
+# e.g. "multiple_versions_channel_1"
+build-repos = { cmd = "python scripts/build-repos.py", description = "Update and build external repositories (PIXI and BUILD_BACKENDS)" }
+check-branch-override = { cmd = "python scripts/check-branch-override.py", description = "Check for branch override files that shouldn't be merged" }
+download-artifacts = { cmd = "python scripts/download-artifacts.py" }
+update-lockfiles = { cmd = "python scripts/update-lockfiles.py {{ folder }}", args = [
+  { "arg" = "folder", "default" = "" },
+], description = "Update pixi.lock files by running pixi lock in test directories" }
+update-test-channel = { cmd = "python update-channels.py {{ channel }}", args = [
+  "channel",
+], cwd = "tests/data/channels" }
+
+
+[feature.lint.dependencies]
+actionlint = ">=1.7.7,<2"
+dprint = ">=0.50.0,<0.51"
+go-shfmt = ">=3.11.0,<4"
+lefthook = ">=2.0.1,<3"
+ruff = ">=0.14,<0.15"
+shellcheck = ">=0.10.0,<0.11"
+taplo = ">=0.10,<0.11"
+typos = ">=1.29.10,<2"
+
+[feature.lint.tasks]
+actionlint = { cmd = "actionlint", env = { SHELLCHECK_OPTS = "-e SC2086" } }
+dprint-check = { cmd = "dprint check --log-level=silent", description = "Check formatting with dprint" }
+dprint-fmt = { cmd = "dprint fmt --incremental=false", description = "Format with dprint" }
+lefthook = { cmd = "lefthook", description = "Run lefthook" }
+lint = { cmd = "lefthook run pre-commit --all-files --force", description = "Run all linters and formatters on all code" }
+pre-commit-install = "lefthook install"
+ruff-format = "ruff format --exit-non-zero-on-format --force-exclude"
+ruff-lint = "ruff check --fix --exit-non-zero-on-fix --force-exclude"
+toml-format = { cmd = "taplo fmt", env = { RUST_LOG = "warn" } }
+toml-lint = "taplo lint --verbose **/pixi.toml"
+typecheck-python = "mypy"
+typos = "typos --force-exclude"
+
+#
+# Feature to build recipes
+#
+[feature.recipes.dependencies]
+rattler-build = ">=0.48,<0.49"
+
+[feature.recipes.tasks.build-backends]
+cmd = "rattler-build build --recipe-dir empty --output-dir ."
+cwd = "tests/build-backends"
+description = "Build build-backends used for testing purposes"
+
+#
+# Environment descriptions
+#
+
+[environments]
+default = { solve-group = "default" }
+lint = { features = ["lint"], solve-group = "default" }
+recipes = { features = ["recipes"], no-default-feature = true }

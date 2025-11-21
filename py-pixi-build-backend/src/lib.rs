@@ -4,6 +4,7 @@ use crate::error::{CliException, GeneratedRecipeException};
 
 mod cli;
 pub mod error;
+mod logging;
 mod recipe_stage0;
 mod types;
 
@@ -122,6 +123,11 @@ fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add entry points
     m.add_function(wrap_pyfunction!(cli::py_main, m)?)?;
     m.add_function(wrap_pyfunction!(cli::py_main_sync, m)?)?;
+    m.add_function(wrap_pyfunction!(logging::trace, m)?)?;
+    m.add_function(wrap_pyfunction!(logging::debug, m)?)?;
+    m.add_function(wrap_pyfunction!(logging::info, m)?)?;
+    m.add_function(wrap_pyfunction!(logging::warn, m)?)?;
+    m.add_function(wrap_pyfunction!(logging::error, m)?)?;
 
     // Exceptions
     m.add("CliError", py.get_type::<CliException>())?;

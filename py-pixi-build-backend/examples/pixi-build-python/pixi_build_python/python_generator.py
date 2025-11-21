@@ -5,6 +5,7 @@ Python generator implementation using Python bindings.
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, List, Any
+from pixi_build_backend import configure_logger
 from pixi_build_backend.types.generated_recipe import (
     GenerateRecipeProtocol,
     GeneratedRecipe,
@@ -18,6 +19,8 @@ from pixi_build_backend.types.item import ItemPackageDependency
 from .build_script import BuildScriptContext, Installer, BuildPlatform
 from .utils import extract_entry_points
 from .utils import read_pyproject_toml, get_build_input_globs, get_editable_setting
+
+LOGGER = configure_logger("pixi.example.python-backend")
 
 
 @dataclass
@@ -58,6 +61,8 @@ class PythonGenerator(GenerateRecipeProtocol):
         # Create base recipe from model
         generated_recipe = GeneratedRecipe.from_model(model)
 
+        LOGGER.info("Generating recipe for %s on %s", model.project.name, host_platform)
+
         # Get recipe components
         recipe = generated_recipe.recipe
         requirements = recipe.requirements
@@ -68,6 +73,7 @@ class PythonGenerator(GenerateRecipeProtocol):
         # Determine installer (pip or uv)
         installer = Installer.determine_installer(resolved_requirements.host)
         installer_name = installer.package_name()
+        LOGGER.debug("Using %s installer", installer_name)
 
         # Add installer to host requirements if not present
         if installer_name not in resolved_requirements.host:
@@ -81,6 +87,7 @@ class PythonGenerator(GenerateRecipeProtocol):
 
         # Determine build platform
         build_platform = BuildPlatform.current()
+        LOGGER.debug("Detected build platform: %s", build_platform.value)
 
         # Get editable setting
         editable = get_editable_setting(python_params)

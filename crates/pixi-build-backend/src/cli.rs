@@ -1,3 +1,5 @@
+use std::{io, str::FromStr};
+
 use clap::{Parser, Subcommand};
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 use miette::IntoDiagnostic;
@@ -6,7 +8,7 @@ use pixi_build_types::{
     procedures::negotiate_capabilities::NegotiateCapabilitiesParams,
 };
 use rattler_build::console_utils::{LoggingOutputHandler, get_default_env_filter};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{filter::Directive, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{protocol::ProtocolInstantiator, server::Server};
 
@@ -52,10 +54,33 @@ pub(crate) async fn main_impl<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHa
     // Setup logging
     let log_handler = LoggingOutputHandler::default();
 
-    let registry = tracing_subscriber::registry()
-        .with(get_default_env_filter(args.verbose.log_level_filter()).into_diagnostic()?);
+    let mut env_filter =
+        get_default_env_filter(args.verbose.log_level_filter()).into_diagnostic()?;
+    env_filter =
+        env_filter.add_directive(Directive::from_str("pixi_build=warn").into_diagnostic()?);
 
-    registry.with(log_handler.clone()).init();
+    let is_server = args.command.is_none();
+
+    if is_server {
+        let json_layer = tracing_subscriber::fmt::layer()
+            .json()
+            .with_ansi(false)
+            .with_current_span(true)
+            .with_span_list(true)
+            .with_target(true)
+            .with_writer(io::stderr)
+            .without_time();
+
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(json_layer)
+            .init();
+    } else {
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(log_handler.clone())
+            .init();
+    }
 
     let factory = factory(log_handler);
 

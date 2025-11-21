@@ -2696,7 +2696,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4188,6 +4188,7 @@ dependencies = [
  "toml",
  "toml_edit 0.23.7",
  "tracing",
+ "tracing-core",
  "tracing-subscriber",
  "url",
 ]
@@ -4212,6 +4213,7 @@ dependencies = [
  "strum",
  "tempfile",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4773,7 +4775,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -4810,7 +4812,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
  "windows-sys 0.60.2",
 ]

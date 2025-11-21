@@ -84,7 +84,7 @@ pub(crate) async fn main_impl<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHa
 
     let factory = factory(log_handler);
 
-    let result = match args.command {
+    match args.command {
         None => run_server(args.http_port, factory).await,
         Some(Commands::Capabilities) => {
             let backend_capabilities = capabilities::<T>().await?;
@@ -104,9 +104,7 @@ pub(crate) async fn main_impl<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHa
             );
             Ok(())
         }
-    };
-
-    result
+    }
 }
 
 /// The entry point for the CLI which should be called from the backends implementation.

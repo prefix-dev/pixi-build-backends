@@ -30,8 +30,8 @@ PIP_REQUIRE_VIRTUALENV = "false"
 
 [feature.build.dependencies]
 python = "*"
-maturin = "~=1.9.3"
-pip = "~=25.2.0"
+maturin = "~=1.10.2"
+pip = "~=25.3.0"
 rust = "~=1.88.0"
 
 [feature.build.target.linux-64.dependencies]
@@ -49,7 +49,7 @@ toml = "*"
 types-toml = "*"
 
 # Formatting and linting
-ruff = ">=0.13,<0.14"
+ruff = ">=0.14,<0.15"
 
 [feature.dev.dependencies]
 # Development tools (IDE support)

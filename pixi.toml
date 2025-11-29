@@ -59,13 +59,13 @@ scripts = ["scripts/activate.sh"]
 
 [feature.schema.dependencies]
 pydantic = ">=2.8.2,<3"
-ruff = ">=0.13,<0.14"
+ruff = ">=0.14,<0.15"
 
 [feature.build.dependencies]
 rattler-build = ">=0.46.0,<1"
-rattler-index = ">=0.25.2,<0.26"
+rattler-index = ">=0.27.6,<0.28"
 python = "*"
-sccache = ">=0.11.0,<0.12"
+sccache = ">=0.12,<0.13"
 
 [feature.build.tasks.build-recipe-ci]
 cmd = "rattler-build build --test native --channel https://prefix.dev/pixi-build-backends --channel https://prefix.dev/conda-forge --variant-config recipe/variants.yaml --output-dir={{ output_dir }} --recipe {{ recipe }}{% if target_platform is defined and target_platform %} --target-platform {{ target_platform }}{% endif %}"

@@ -69,7 +69,7 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
             hash: None,
             variant: Default::default(),
-            experimental: false,
+            experimental: self.config.experimental,
             allow_undefined: false,
             recipe_path: Some(self.recipe_source.path.clone()),
         };
@@ -299,7 +299,7 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
             hash: None,
             variant: Default::default(),
-            experimental: false,
+            experimental: self.config.experimental,
             allow_undefined: false,
             recipe_path: Some(self.recipe_source.path.clone()),
         };

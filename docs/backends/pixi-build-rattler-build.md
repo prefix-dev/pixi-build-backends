@@ -86,6 +86,30 @@ a = { path = "../a" }
 
 The rattler-build backend supports the following TOML configuration options:
 
+### `experimental`
+
+- **Type**: `Boolean`
+- **Default**: `false`
+- **Target Merge Behavior**: `OR` - Enabled if either base or target has it enabled
+
+Enables experimental features in rattler-build. This is required for certain advanced features like the `cache:` functionality for multi-output recipes.
+
+```toml
+[package.build.config]
+experimental = true
+```
+
+For target-specific configuration, the experimental flag uses OR logic - if either the base config or any matching target config has it enabled, it will be enabled:
+
+```toml
+[package.build.config]
+experimental = false
+
+[package.build.target.linux-64.config]
+experimental = true
+# Result for linux-64: experimental = true (OR logic)
+```
+
 ### `debug-dir`
 
 The backend always writes JSON-RPC request/response logs and the generated intermediate recipe to the `debug` subdirectory inside the work directory (for example `<work_directory>/debug`). The deprecated `debug-dir` configuration option is ignored; if it is still set in a manifest the backend emits a warning to make the change explicit.

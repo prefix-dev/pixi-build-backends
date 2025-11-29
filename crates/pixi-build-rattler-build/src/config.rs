@@ -12,6 +12,18 @@ pub struct RattlerBuildBackendConfig {
     /// Extra input globs to include in addition to the default ones
     #[serde(default)]
     pub extra_input_globs: Vec<String>,
+    /// Extra arguments to pass to rattler-build.
+    /// Supported arguments include:
+    /// - `--experimental`: Enable experimental features (e.g., cache support)
+    #[serde(default)]
+    pub extra_args: Vec<String>,
+}
+
+impl RattlerBuildBackendConfig {
+    /// Returns `true` if `--experimental` is present in `extra_args`.
+    pub fn experimental(&self) -> bool {
+        self.extra_args.iter().any(|arg| arg == "--experimental")
+    }
 }
 
 impl BackendConfig for RattlerBuildBackendConfig {
@@ -23,6 +35,7 @@ impl BackendConfig for RattlerBuildBackendConfig {
     /// Target-specific values override base values using the following rules:
     /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
+    /// - extra_args: Platform-specific completely replaces base
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
         if target_config.debug_dir.is_some() {
             miette::bail!("`debug_dir` cannot have a target specific value");
@@ -34,6 +47,11 @@ impl BackendConfig for RattlerBuildBackendConfig {
                 self.extra_input_globs.clone()
             } else {
                 target_config.extra_input_globs.clone()
+            },
+            extra_args: if target_config.extra_args.is_empty() {
+                self.extra_args.clone()
+            } else {
+                target_config.extra_args.clone()
             },
         })
     }
@@ -57,11 +75,13 @@ mod tests {
         let base_config = RattlerBuildBackendConfig {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            extra_args: vec!["--base-arg".to_string()],
         };
 
         let target_config = RattlerBuildBackendConfig {
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
+            extra_args: vec!["--target-arg".to_string()],
         };
 
         let merged = base_config
@@ -73,6 +93,9 @@ mod tests {
 
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
+
+        // extra_args should be completely overridden
+        assert_eq!(merged.extra_args, vec!["--target-arg".to_string()]);
     }
 
     #[test]
@@ -80,6 +103,7 @@ mod tests {
         let base_config = RattlerBuildBackendConfig {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
+            extra_args: vec!["--experimental".to_string()],
         };
 
         let empty_target_config = RattlerBuildBackendConfig::default();
@@ -91,6 +115,7 @@ mod tests {
         // Should keep base values when target is empty
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
+        assert_eq!(merged.extra_args, vec!["--experimental".to_string()]);
     }
 
     #[test]
@@ -109,5 +134,37 @@ mod tests {
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("`debug_dir` cannot have a target specific value"));
+    }
+
+    #[test]
+    fn test_experimental_flag() {
+        // Test that experimental() returns true when --experimental is present
+        let config_with_experimental = RattlerBuildBackendConfig {
+            extra_args: vec!["--experimental".to_string()],
+            ..Default::default()
+        };
+        assert!(config_with_experimental.experimental());
+
+        // Test that experimental() returns true when --experimental is among other args
+        let config_with_multiple_args = RattlerBuildBackendConfig {
+            extra_args: vec![
+                "--some-arg".to_string(),
+                "--experimental".to_string(),
+                "--another-arg".to_string(),
+            ],
+            ..Default::default()
+        };
+        assert!(config_with_multiple_args.experimental());
+
+        // Test that experimental() returns false when --experimental is not present
+        let config_without_experimental = RattlerBuildBackendConfig {
+            extra_args: vec!["--other-flag".to_string()],
+            ..Default::default()
+        };
+        assert!(!config_without_experimental.experimental());
+
+        // Test that experimental() returns false when extra_args is empty
+        let config_empty = RattlerBuildBackendConfig::default();
+        assert!(!config_empty.experimental());
     }
 }

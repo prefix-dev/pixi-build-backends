@@ -118,6 +118,33 @@ extra-input-globs = ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 # Result for linux-64: ["*.yaml", "*.md", "*.sh", "patches-linux/**/*"]
 ```
 
+### `extra-args`
+
+- **Type**: `Array<String>`
+- **Default**: `[]`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific args completely replace base args
+
+Extra arguments to pass to rattler-build. This allows you to enable experimental features or pass other CLI flags without needing backend updates.
+
+Currently supported arguments:
+
+- `--experimental`: Enable experimental features (e.g., `cache:` support for multi-output recipes)
+
+```toml
+[package.build.config]
+extra-args = ["--experimental"]
+```
+
+For target-specific configuration, platform-specific args completely replace the base:
+
+```toml
+[package.build.config]
+extra-args = ["--experimental"]
+
+[package.build.target.linux-64.config]
+extra-args = []  # Disable experimental for linux-64
+```
+
 ## Build Process
 
 The rattler-build backend follows this build process:

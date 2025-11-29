@@ -22,7 +22,7 @@ scripts = ["../../scripts/activate.sh"]
 
 [dependencies]
 pydantic = ">=2.8.2,<3"
-py_rattler = ">=0.15.0,<0.16"
+py_rattler = ">=0.18,<0.19"
 py-pixi-build-backend = "*"
 
 [pypi-dependencies]

@@ -14,7 +14,7 @@ pub struct RattlerBuildBackendConfig {
     pub extra_input_globs: Vec<String>,
     /// Enable experimental features in rattler-build (e.g., cache support for multi-output recipes)
     #[serde(default)]
-    pub experimental: bool,
+    pub experimental: Option<bool>,
 }
 
 impl BackendConfig for RattlerBuildBackendConfig {
@@ -32,7 +32,7 @@ impl BackendConfig for RattlerBuildBackendConfig {
             miette::bail!("`debug_dir` cannot have a target specific value");
         }
 
-        if target_config.experimental {
+        if target_config.experimental.is_some() {
             miette::bail!("`experimental` cannot have a target specific value");
         }
 
@@ -66,13 +66,13 @@ mod tests {
         let base_config = RattlerBuildBackendConfig {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
-            experimental: false,
+            experimental: Some(false),
         };
 
         let target_config = RattlerBuildBackendConfig {
             debug_dir: None,
             extra_input_globs: vec!["*.target".to_string()],
-            experimental: false,
+            experimental: None, // Not specified in target
         };
 
         let merged = base_config
@@ -85,8 +85,8 @@ mod tests {
         // extra_input_globs should be completely overridden
         assert_eq!(merged.extra_input_globs, vec!["*.target".to_string()]);
 
-        // experimental should be false when both are false
-        assert!(!merged.experimental);
+        // experimental should be preserved from base
+        assert_eq!(merged.experimental, Some(false));
     }
 
     #[test]
@@ -94,7 +94,7 @@ mod tests {
         let base_config = RattlerBuildBackendConfig {
             debug_dir: Some(PathBuf::from("/base/debug")),
             extra_input_globs: vec!["*.base".to_string()],
-            experimental: true,
+            experimental: Some(true),
         };
 
         let empty_target_config = RattlerBuildBackendConfig::default();
@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(merged.debug_dir, Some(PathBuf::from("/base/debug")));
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
         // experimental should be true when base has it enabled
-        assert!(merged.experimental);
+        assert_eq!(merged.experimental, Some(true));
     }
 
     #[test]
@@ -130,14 +130,26 @@ mod tests {
 
     #[test]
     fn test_merge_target_experimental_error() {
-        // Test that setting experimental in target config returns an error
+        // Test that setting experimental in target config returns an error (even if false)
         let base_config = RattlerBuildBackendConfig {
-            experimental: false,
+            experimental: None,
             ..Default::default()
         };
 
+        // Test with experimental = true in target
         let target_config = RattlerBuildBackendConfig {
-            experimental: true,
+            experimental: Some(true),
+            ..Default::default()
+        };
+
+        let result = base_config.merge_with_target_config(&target_config);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("`experimental` cannot have a target specific value"));
+
+        // Test with experimental = false in target (should also error)
+        let target_config = RattlerBuildBackendConfig {
+            experimental: Some(false),
             ..Default::default()
         };
 
@@ -151,27 +163,39 @@ mod tests {
     fn test_merge_experimental_from_base() {
         // Test that experimental value from base config is preserved
         let base = RattlerBuildBackendConfig {
-            experimental: true,
+            experimental: Some(true),
             ..Default::default()
         };
         let target = RattlerBuildBackendConfig {
-            experimental: false,
+            experimental: None, // Not specified in target
             ..Default::default()
         };
         let merged = base.merge_with_target_config(&target).unwrap();
-        assert!(merged.experimental);
+        assert_eq!(merged.experimental, Some(true));
 
         // Test with experimental false in base
         let base = RattlerBuildBackendConfig {
-            experimental: false,
+            experimental: Some(false),
             ..Default::default()
         };
         let target = RattlerBuildBackendConfig {
-            experimental: false,
+            experimental: None, // Not specified in target
             ..Default::default()
         };
         let merged = base.merge_with_target_config(&target).unwrap();
-        assert!(!merged.experimental);
+        assert_eq!(merged.experimental, Some(false));
+
+        // Test with experimental None in base (default)
+        let base = RattlerBuildBackendConfig {
+            experimental: None,
+            ..Default::default()
+        };
+        let target = RattlerBuildBackendConfig {
+            experimental: None,
+            ..Default::default()
+        };
+        let merged = base.merge_with_target_config(&target).unwrap();
+        assert_eq!(merged.experimental, None);
     }
 
     #[test]
@@ -180,12 +204,17 @@ mod tests {
             "experimental": true
         });
         let config: RattlerBuildBackendConfig = serde_json::from_value(json_data).unwrap();
-        assert!(config.experimental);
+        assert_eq!(config.experimental, Some(true));
 
         let json_data = json!({
             "experimental": false
         });
         let config: RattlerBuildBackendConfig = serde_json::from_value(json_data).unwrap();
-        assert!(!config.experimental);
+        assert_eq!(config.experimental, Some(false));
+
+        // Test that not specifying experimental results in None
+        let json_data = json!({});
+        let config: RattlerBuildBackendConfig = serde_json::from_value(json_data).unwrap();
+        assert_eq!(config.experimental, None);
     }
 }

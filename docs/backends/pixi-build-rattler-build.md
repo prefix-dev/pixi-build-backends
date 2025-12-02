@@ -90,7 +90,7 @@ The rattler-build backend supports the following TOML configuration options:
 
 - **Type**: `Boolean`
 - **Default**: `false`
-- **Target Merge Behavior**: `OR` - Enabled if either base or target has it enabled
+- **Target Merge Behavior**: Not allowed - must be set at root level only
 
 Enables experimental features in rattler-build. This is required for certain advanced features like the `cache:` functionality for multi-output recipes.
 
@@ -99,16 +99,7 @@ Enables experimental features in rattler-build. This is required for certain adv
 experimental = true
 ```
 
-For target-specific configuration, the experimental flag uses OR logic - if either the base config or any matching target config has it enabled, it will be enabled:
-
-```toml
-[package.build.config]
-experimental = false
-
-[package.build.target.linux-64.config]
-experimental = true
-# Result for linux-64: experimental = true (OR logic)
-```
+Note: This option cannot be set in target-specific configurations. It must be set at the root `[package.build.config]` level only.
 
 ### `debug-dir`
 

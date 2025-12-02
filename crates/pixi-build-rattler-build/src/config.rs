@@ -26,10 +26,14 @@ impl BackendConfig for RattlerBuildBackendConfig {
     /// Target-specific values override base values using the following rules:
     /// - debug_dir: Not allowed to have target specific value
     /// - extra_input_globs: Platform-specific completely replaces base
-    /// - experimental: Enabled if either base or target has it enabled (OR logic)
+    /// - experimental: Not allowed to have target specific value
     fn merge_with_target_config(&self, target_config: &Self) -> miette::Result<Self> {
         if target_config.debug_dir.is_some() {
             miette::bail!("`debug_dir` cannot have a target specific value");
+        }
+
+        if target_config.experimental {
+            miette::bail!("`experimental` cannot have a target specific value");
         }
 
         Ok(Self {
@@ -39,8 +43,7 @@ impl BackendConfig for RattlerBuildBackendConfig {
             } else {
                 target_config.extra_input_globs.clone()
             },
-            // Enable experimental if either base or target has it enabled
-            experimental: self.experimental || target_config.experimental,
+            experimental: self.experimental,
         })
     }
 }
@@ -126,10 +129,27 @@ mod tests {
     }
 
     #[test]
-    fn test_merge_experimental_or_logic() {
-        // Test that experimental uses OR logic: enabled if either base or target has it enabled
+    fn test_merge_target_experimental_error() {
+        // Test that setting experimental in target config returns an error
+        let base_config = RattlerBuildBackendConfig {
+            experimental: false,
+            ..Default::default()
+        };
 
-        // Case 1: base true, target false -> true
+        let target_config = RattlerBuildBackendConfig {
+            experimental: true,
+            ..Default::default()
+        };
+
+        let result = base_config.merge_with_target_config(&target_config);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("`experimental` cannot have a target specific value"));
+    }
+
+    #[test]
+    fn test_merge_experimental_from_base() {
+        // Test that experimental value from base config is preserved
         let base = RattlerBuildBackendConfig {
             experimental: true,
             ..Default::default()
@@ -141,31 +161,7 @@ mod tests {
         let merged = base.merge_with_target_config(&target).unwrap();
         assert!(merged.experimental);
 
-        // Case 2: base false, target true -> true
-        let base = RattlerBuildBackendConfig {
-            experimental: false,
-            ..Default::default()
-        };
-        let target = RattlerBuildBackendConfig {
-            experimental: true,
-            ..Default::default()
-        };
-        let merged = base.merge_with_target_config(&target).unwrap();
-        assert!(merged.experimental);
-
-        // Case 3: both true -> true
-        let base = RattlerBuildBackendConfig {
-            experimental: true,
-            ..Default::default()
-        };
-        let target = RattlerBuildBackendConfig {
-            experimental: true,
-            ..Default::default()
-        };
-        let merged = base.merge_with_target_config(&target).unwrap();
-        assert!(merged.experimental);
-
-        // Case 4: both false -> false
+        // Test with experimental false in base
         let base = RattlerBuildBackendConfig {
             experimental: false,
             ..Default::default()

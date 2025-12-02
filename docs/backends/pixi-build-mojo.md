@@ -140,7 +140,7 @@ The auto-derive feature supports various common project layouts:
 
 ### Required Dependencies
 
-- `max` package for both the compiler and linked runtime
+- `mojo` / `mojo-compiler` package for both the compiler and linked runtime
 
 ## Configuration Options
 
@@ -177,31 +177,26 @@ extra-input-globs = ["**/*.c", "assets/**/*", "*.md"]
 ### `compilers`
 
 - **Type**: `Array<String>`
-- **Default**: `["mojo"]`
+- **Default**: `[]`
 - **Target Merge Behavior**: `Overwrite` - Platform-specific compilers completely replace base compilers
 
-List of compilers to use for the build. The mojo compiler is handled specially and uses the `mojo-compiler` package, while other compilers use conda-forge's standard compiler infrastructure.
+List of compilers to use for the build. Compilers use conda-forge's standard compiler infrastructure.
 
 ```toml
 [package.build.config]
-compilers = ["mojo", "c", "cxx"]
+compilers = ["c", "cxx"]
 ```
 
 For target-specific configuration, platform compilers completely replace the base configuration:
 
 ```toml
 [package.build.config]
-compilers = ["mojo"]
+compilers = []
 
 [package.build.target.linux-64.config]
-compilers = ["mojo", "c", "cuda"]
+compilers = ["c", "cuda"]
 # Result for linux-64: ["mojo", "c", "cuda"]
 ```
-
-**Special mojo compiler behavior:**
-- When `mojo` is included in the compilers list, the backend automatically adds the `mojo-compiler` package to build requirements
-- You can opt out of the mojo compiler entirely by specifying a list without `"mojo"`, e.g., `compilers = ["c", "cxx"]`
-- The mojo compiler does not use the standard conda-forge compiler template system like other compilers
 
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md). Note that the mojo compiler has special behavior as described above.

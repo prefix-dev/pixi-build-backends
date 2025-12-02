@@ -133,12 +133,6 @@ The table below lists the core compilers, specialized compilers, and some backen
 |----------|-------------|-----------|
 | `cuda` | NVIDIA CUDA compiler | Linux, Windows, (limited macOS) |
 
-### Backend-Specific Compilers
-
-| Compiler | Description | Backend | Special Behavior |
-|----------|-------------|---------|------------------|
-| `mojo` | Mojo compiler | pixi-build-mojo | Uses `mojo-compiler` package instead of template |
-
 ## Backend-Specific Defaults
 
 Only certain `pixi-build` backends support the `compilers` configuration option. Each supporting backend has sensible defaults based on the typical requirements for that language ecosystem:
@@ -148,7 +142,7 @@ Only certain `pixi-build` backends support the `compilers` configuration option.
 | **[pixi-build-cmake](../backends/pixi-build-cmake.md#compilers)** | ✅ **Supported** | `["cxx"]` | Most CMake projects are C++ |
 | **[pixi-build-rust](../backends/pixi-build-rust.md#compilers)** | ✅ **Supported** | `["rust"]` | Rust projects need the Rust compiler |
 | **[pixi-build-python](../backends/pixi-build-python.md#compilers)** | ✅ **Supported** | `[]` | Pure Python packages typically don't need compilers |
-| **[pixi-build-mojo](../backends/pixi-build-mojo.md#compilers)** | ✅ **Supported** | `["mojo"]` | Mojo projects need the Mojo compiler |
+| **[pixi-build-mojo](../backends/pixi-build-mojo.md#compilers)** | ✅ **Supported** | `[]` | `mojo-compiler` must be specified in the `package.*-dependencies` manually. |
 | **pixi-build-rattler-build** | ❌ **Not Supported** | N/A | Uses direct `recipe.yaml` - configure compilers directly in recipe |
 
 !!! info "Adding Compiler Support to Other Backends"

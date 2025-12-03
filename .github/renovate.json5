@@ -18,6 +18,7 @@
     {
       "groupName": "GitHub Actions",
       "matchManagers": ["github-actions"]
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
       "groupName": "Pixi-Lock",

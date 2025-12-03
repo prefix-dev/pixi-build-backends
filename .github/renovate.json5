@@ -38,7 +38,6 @@
     {
       "description": "We want a separate PR for all rattler crates",
       "matchPackageNames": ["rattler*", "file_url", "coalesced_map", "path_resolver", "simple_spawn_blocking"],
-      "matchManagers": ["cargo"],
       "groupName": "rattler",
       "addLabels": ["rattler"]
     },

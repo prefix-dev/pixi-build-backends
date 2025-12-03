@@ -60,22 +60,22 @@ def generate_matrix(filter_package_name=None):
         check=True,
     )
     cargo_metadata = json.loads(result.stdout)
-    
+
     # Get all packages with binary or cdylib targets
     all_packages = []
-    
+
     if "packages" in cargo_metadata:
         for package in cargo_metadata["packages"]:
             # Include packages with binary targets (Rust binaries)
             has_binary = any(target["kind"][0] == "bin" for target in package.get("targets", []))
-            
+
             if has_binary:
                 all_packages.append({
                     "name": package["name"],
                     "version": package["version"],
                     "type": "rust"
                 })
-    
+
     # Add py-pixi-build-backend manually since it's outside the workspace
     with open("py-pixi-build-backend/Cargo.toml", "rb") as f:
         cargo_toml = tomllib.load(f)
@@ -84,7 +84,7 @@ def generate_matrix(filter_package_name=None):
             "version": cargo_toml["package"]["version"],
             "type": "python"
         })
-    
+
     # Add pixi-build-ros manually since it's a Python package in backends/
     with open("backends/pixi-build-ros/pyproject.toml", "rb") as f:
         pyproject_toml = tomllib.load(f)
@@ -93,7 +93,7 @@ def generate_matrix(filter_package_name=None):
             "version": pyproject_toml["project"]["version"],
             "type": "python"
         })
-    
+
     # Filter packages by name if specified
     if filter_package_name:
         available_packages = [pkg["name"] for pkg in all_packages]
@@ -110,8 +110,8 @@ def generate_matrix(filter_package_name=None):
         {"target": "linux-aarch64", "os": "ubuntu-latest"},
         {"target": "linux-ppc64le", "os": "ubuntu-latest"},
         {"target": "win-64", "os": "windows-latest"},
-        {"target": "osx-64", "os": "macos-14"},
-        {"target": "osx-arm64", "os": "macos-14"},
+        {"target": "osx-64", "os": "macos-15-intel"},
+        {"target": "osx-arm64", "os": "macos-15"},
     ]
 
     def get_targets_for_package(package_name, all_targets):
@@ -134,15 +134,15 @@ def generate_matrix(filter_package_name=None):
         # Untagged build - include all packages with auto-versioning
         date_suffix = get_current_date()
         git_hash = get_git_short_hash()
-        
+
         print(f"Building all packages for untagged build with date suffix: {date_suffix}, git hash: {git_hash}", file=sys.stderr)
-        
+
         package_names = []
         for package in all_packages:
             package_names.append(package["name"])
             # Create auto-version: original_version.ddmmyyyy.git_hash
             auto_version = f"{package['version']}.{date_suffix}.{git_hash}"
-            
+
             # Generate environment variable name
             if package["name"] == "py-pixi-build-backend":
                 env_name = "PY_PIXI_BUILD_BACKEND_VERSION"
@@ -150,7 +150,7 @@ def generate_matrix(filter_package_name=None):
                 env_name = "PIXI_BUILD_ROS_VERSION"
             else:
                 env_name = f"{package['name'].replace('-', '_').upper()}_VERSION"
-            
+
             for target in get_targets_for_package(package["name"], targets):
                 matrix.append(
                     {
@@ -164,7 +164,7 @@ def generate_matrix(filter_package_name=None):
 
         if not package_names:
             raise RuntimeError("No packages found for untagged build")
-        
+
         print(f"Found {len(package_names)} packages: {', '.join(package_names)}", file=sys.stderr)
     else:
         # Tag-based build - only include tagged packages
@@ -224,20 +224,20 @@ def generate_matrix(filter_package_name=None):
             raise RuntimeError("No packages found to build for untagged build")
         else:
             raise RuntimeError("No tagged packages found to build")
-    
+
     matrix_json = json.dumps(matrix)
-    
+
     # Debug output to stderr so it doesn't interfere with matrix JSON
     print(f"Generated matrix with {len(matrix)} entries", file=sys.stderr)
-    
+
     print(matrix_json)
 
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Generate build matrix for packages")
     parser.add_argument("--package", help="Filter to specific package name")
     args = parser.parse_args()
-    
+
     generate_matrix(args.package)

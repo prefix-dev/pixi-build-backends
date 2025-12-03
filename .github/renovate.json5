@@ -1,24 +1,23 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":maintainLockFilesMonthly"],
+  "extends": ["config:recommended"],
   "schedule": ["on tuesday"],
   "enabledManagers": ["github-actions", "pixi", "cargo"],
   "commitMessagePrefix": "chore(ci):",
   "ignorePaths": ["**/examples/**", "**/docs/**", "**/tests/**"],
+  "cargo": {
+    // See https://docs.renovatebot.com/configuration-options/#rangestrategy
+    "rangeStrategy": "update-lockfile",
+  },
   "packageRules": [
+    {
+      "description": "Pin GitHub Actions to immutable SHAs.",
+      "matchDepTypes": ["action"],
+      "pinDigests": true,
+    },
     {
       "groupName": "GitHub Actions",
       "matchManagers": ["github-actions"]
-    },
-    {
-      "description": "We run multiple macOS runner versions on purpose since 13 runs on x86_64",
-      "matchPackageNames": "macos",
-      "matchManagers": ["github-actions"],
-      "enabled": false
-    },
-    {
-      "groupName": "Pixi",
-      "matchManagers": ["pixi"]
     },
     {
       "groupName": "Pixi-Lock",
@@ -32,19 +31,20 @@
       "enabled": false
     },
     {
-      "groupName": "Cargo",
-      "matchManagers": ["cargo"]
-    },
-    {
       "groupName": "Cargo-Lock",
       "matchManagers": ["cargo"],
       "matchUpdateTypes": ["lockFileMaintenance"]
     },
     {
-      "description": "We want a separate PR for rattler crates",
-      "matchPackageNames": ["rattler*", "file_url"],
+      "description": "We want a separate PR for all rattler crates",
+      "matchPackageNames": ["rattler*", "file_url", "coalesced_map", "path_resolver", "simple_spawn_blocking"],
       "matchManagers": ["cargo"],
-      "enabled": false
-    }
-  ]
+      "groupName": "rattler",
+      "addLabels": ["rattler"]
+    },
+  ],
+  "vulnerabilityAlerts": {
+    "commitMessageSuffix": "",
+    "labels": ["security"],
+  },
 }

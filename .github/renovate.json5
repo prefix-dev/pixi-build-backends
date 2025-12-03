@@ -42,6 +42,13 @@
       "groupName": "rattler",
       "addLabels": ["rattler"]
     },
+    {
+      "description": "Combine pyo3 related PRs",
+      "matchPackageNames": ["pyo3*", "pythonize"],
+      "matchManagers": ["cargo"],
+      "groupName": "pyo3",
+      "addLabels": ["python"]
+    }
   ],
   "vulnerabilityAlerts": {
     "commitMessageSuffix": "",

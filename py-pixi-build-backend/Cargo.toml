@@ -40,7 +40,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "rt"] }
-rattler_conda_types = { version = "0.40.0", default-features = false }
+rattler_conda_types = { version = "0.42.0", default-features = false }
 
 rattler-build = "*"
 
@@ -81,3 +81,8 @@ pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", bran
 #pixi_build_type_conversions = { path = "../../pixi/crates/pixi_build_type_conversions" }
 
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }
+
+# This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
+reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
+reqwest-retry = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
+version-ranges = { git = "https://github.com/astral-sh/pubgrub", rev = "d8efd77673c9a90792da9da31b6c0da7ea8a324b" }

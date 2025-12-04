@@ -3053,9 +3053,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
 dependencies = [
  "cfg-if 1.0.3",
- "js-sys",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -4172,7 +4169,7 @@ dependencies = [
  "serde",
  "unicode-width 0.2.2",
  "unscanny",
- "version-ranges 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "version-ranges",
 ]
 
 [[package]]
@@ -4194,7 +4191,7 @@ dependencies = [
  "unicode-width 0.2.2",
  "url",
  "urlencoding",
- "version-ranges 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "version-ranges",
 ]
 
 [[package]]
@@ -4334,8 +4331,6 @@ dependencies = [
  "rattler_package_streaming",
  "rattler_virtual_packages",
  "recipe-stage0",
- "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -4539,7 +4534,7 @@ dependencies = [
  "pixi_utils",
  "rattler_networking",
  "reqwest",
- "reqwest-middleware 0.4.2 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
+ "reqwest-middleware",
  "serde",
  "thiserror 2.0.17",
  "tokio",
@@ -4689,8 +4684,8 @@ dependencies = [
  "rattler_networking",
  "rattler_shell",
  "reqwest",
- "reqwest-middleware 0.4.2 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
- "reqwest-retry 0.7.0 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
+ "reqwest-middleware",
+ "reqwest-retry 0.7.0",
  "rlimit",
  "serde",
  "serde_json",
@@ -5137,7 +5132,7 @@ dependencies = [
  "reflink-copy",
  "regex",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "serde_json",
  "simple_spawn_blocking",
  "smallvec",
@@ -5210,7 +5205,7 @@ dependencies = [
  "reflink-copy",
  "regex",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "reqwest-retry 0.8.0",
  "retry-policies 0.5.1",
  "scroll",
@@ -5266,7 +5261,7 @@ dependencies = [
  "rattler_redaction",
  "rayon",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "serde_json",
  "simple_spawn_blocking",
  "tempfile",
@@ -5456,7 +5451,7 @@ dependencies = [
  "netrc-rs",
  "rattler_config",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "retry-policies 0.4.0",
  "serde",
  "serde_json",
@@ -5484,7 +5479,7 @@ dependencies = [
  "rattler_networking",
  "rattler_redaction",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "serde_json",
  "simple_spawn_blocking",
  "tar",
@@ -5517,7 +5512,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3aa5057629aeb20861919e9ae56875985d58028f3c6f433a20b5ded086e1cec5"
 dependencies = [
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "url",
 ]
 
@@ -5561,7 +5556,7 @@ dependencies = [
  "rattler_package_streaming",
  "rattler_redaction",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "retry-policies 0.4.0",
  "rmp-serde",
  "self_cell",
@@ -5660,8 +5655,8 @@ dependencies = [
  "rattler_redaction",
  "rattler_solve",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "reqwest-retry 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
+ "reqwest-retry 0.7.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -6046,21 +6041,6 @@ dependencies = [
 [[package]]
 name = "reqwest-middleware"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57f17d28a6e6acfe1733fe24bcd30774d13bffa4b8a22535b4c8c98423088d4e"
-dependencies = [
- "anyhow",
- "async-trait",
- "http 1.3.1",
- "reqwest",
- "serde",
- "thiserror 1.0.69",
- "tower-service",
-]
-
-[[package]]
-name = "reqwest-middleware"
-version = "0.4.2"
 source = "git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2#7650ed76215a962a96d94a79be71c27bffde7ab2"
 dependencies = [
  "anyhow",
@@ -6075,28 +6055,6 @@ dependencies = [
 [[package]]
 name = "reqwest-retry"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29c73e4195a6bfbcb174b790d9b3407ab90646976c55de58a6515da25d851178"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures",
- "getrandom 0.2.16",
- "http 1.3.1",
- "hyper 1.7.0",
- "parking_lot 0.11.2",
- "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "retry-policies 0.4.0",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "wasm-timer",
-]
-
-[[package]]
-name = "reqwest-retry"
-version = "0.7.0"
 source = "git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2#7650ed76215a962a96d94a79be71c27bffde7ab2"
 dependencies = [
  "anyhow",
@@ -6106,7 +6064,7 @@ dependencies = [
  "http 1.3.1",
  "hyper 1.7.0",
  "reqwest",
- "reqwest-middleware 0.4.2 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
+ "reqwest-middleware",
  "retry-policies 0.4.0",
  "thiserror 2.0.17",
  "tokio",
@@ -6127,7 +6085,7 @@ dependencies = [
  "http 1.3.1",
  "hyper 1.7.0",
  "reqwest",
- "reqwest-middleware 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest-middleware",
  "retry-policies 0.5.1",
  "thiserror 2.0.17",
  "tokio",
@@ -7889,7 +7847,7 @@ dependencies = [
  "percent-encoding",
  "reqsign 0.18.1",
  "reqwest",
- "reqwest-middleware 0.4.2 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
+ "reqwest-middleware",
  "rust-netrc",
  "rustc-hash",
  "schemars 1.0.4",
@@ -8055,7 +8013,7 @@ dependencies = [
  "uv-redacted",
  "uv-small-str",
  "uv-warnings",
- "version-ranges 0.1.1 (git+https://github.com/astral-sh/pubgrub?rev=d8efd77673c9a90792da9da31b6c0da7ea8a324b)",
+ "version-ranges",
 ]
 
 [[package]]
@@ -8099,7 +8057,7 @@ dependencies = [
  "dashmap",
  "fs-err",
  "reqwest",
- "reqwest-middleware 0.4.2 (git+https://github.com/astral-sh/reqwest-middleware?rev=7650ed76215a962a96d94a79be71c27bffde7ab2)",
+ "reqwest-middleware",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -8219,7 +8177,7 @@ dependencies = [
  "unicode-width 0.2.2",
  "unscanny",
  "uv-cache-key",
- "version-ranges 0.1.1 (git+https://github.com/astral-sh/pubgrub?rev=d8efd77673c9a90792da9da31b6c0da7ea8a324b)",
+ "version-ranges",
 ]
 
 [[package]]
@@ -8245,7 +8203,7 @@ dependencies = [
  "uv-normalize",
  "uv-pep440",
  "uv-redacted",
- "version-ranges 0.1.1 (git+https://github.com/astral-sh/pubgrub?rev=d8efd77673c9a90792da9da31b6c0da7ea8a324b)",
+ "version-ranges",
 ]
 
 [[package]]
@@ -8405,15 +8363,6 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-
-[[package]]
-name = "version-ranges"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8d079415ceb2be83fc355adbadafe401307d5c309c7e6ade6638e6f9f42f42d"
-dependencies = [
- "smallvec",
-]
 
 [[package]]
 name = "version-ranges"
@@ -8600,21 +8549,6 @@ checksum = "15053d8d85c7eccdbefef60f06769760a563c7f0a9d6902a13d35c7800b0ad65"
 dependencies = [
  "futures-util",
  "js-sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot 0.11.2",
- "pin-utils",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

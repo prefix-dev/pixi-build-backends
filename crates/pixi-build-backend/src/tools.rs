@@ -98,10 +98,13 @@ impl LoadedVariantConfig {
 
     pub fn extend_with_input_variants(
         mut self,
-        input_variant_configuration: &BTreeMap<String, Vec<String>>,
+        input_variant_configuration: &BTreeMap<String, Vec<pixi_build_types::VariantValue>>,
     ) -> Self {
         for (k, v) in input_variant_configuration {
-            let variables = v.iter().map(|v| v.clone().into()).collect();
+            let variables = v
+                .iter()
+                .map(|v| rattler_build::recipe::variable::Variable::from_string(&v.to_string()))
+                .collect();
             self.variant_config
                 .variants
                 .insert(k.as_str().into(), variables);

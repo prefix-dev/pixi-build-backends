@@ -76,6 +76,11 @@ pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
+# This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
+reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
+reqwest-retry = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
+version-ranges = { git = "https://github.com/astral-sh/pubgrub", rev = "d8efd77673c9a90792da9da31b6c0da7ea8a324b" }
+
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
 #pixi_consts = { path = "../pixi/crates/pixi_consts" }
 #pixi_spec = { path = "../pixi/crates/pixi_spec" }

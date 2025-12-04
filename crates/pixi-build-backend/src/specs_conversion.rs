@@ -12,7 +12,9 @@ use rattler_build::render::resolved_dependencies::{
     DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
     RunExportDependency, SourceDependency,
 };
-use rattler_conda_types::{Channel, MatchSpec, PackageName, package::RunExportsJson};
+use rattler_conda_types::{
+    Channel, MatchSpec, PackageName, PackageNameMatcher, package::RunExportsJson,
+};
 use recipe_stage0::{
     matchspec::{PackageDependency, SourceMatchSpec},
     recipe::{Conditional, ConditionalList, ConditionalRequirements, Item, ListOrItem},
@@ -165,7 +167,7 @@ pub(crate) fn source_package_spec_to_package_dependency(
     source_spec: SourcePackageSpecV1,
 ) -> miette::Result<SourceMatchSpec> {
     let spec = MatchSpec {
-        name: Some(name),
+        name: Some(PackageNameMatcher::Exact(name)),
         ..Default::default()
     };
 
@@ -197,7 +199,7 @@ fn binary_package_spec_to_package_dependency(
     let version = version.filter(|v| v != &rattler_conda_types::VersionSpec::Any);
 
     PackageDependency::Binary(MatchSpec {
-        name: Some(name),
+        name: Some(PackageNameMatcher::Exact(name)),
         version,
         build,
         build_number,
@@ -210,6 +212,7 @@ fn binary_package_spec_to_package_dependency(
         sha256,
         url,
         license,
+        condition: None,
     })
 }
 

@@ -437,7 +437,12 @@ where
                     python_site_packages_path: None,
                     variant: variant
                         .iter()
-                        .map(|(key, value)| (key.0.clone(), value.to_string()))
+                        .map(|(key, value)| {
+                            (
+                                key.0.clone(),
+                                pixi_build_types::VariantValue::from(value.to_string()),
+                            )
+                        })
                         .collect(),
                 },
                 build_dependencies: Some(CondaOutputDependencies {
@@ -555,7 +560,12 @@ where
             .output
             .variant
             .iter()
-            .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+            .map(|(k, v)| {
+                (
+                    k.as_str().into(),
+                    vec![Variable::from_string(&v.to_string())],
+                )
+            })
             .collect();
 
         // Construct the intermediate recipe

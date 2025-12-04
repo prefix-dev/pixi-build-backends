@@ -82,13 +82,18 @@ pub enum PackageDependency {
 impl PackageDependency {
     pub fn package_name(&self) -> PackageName {
         match self {
-            PackageDependency::Binary(spec) => {
-                spec.name.clone().expect("Binary spec should have a name")
-            }
+            PackageDependency::Binary(spec) => spec
+                .name
+                .as_ref()
+                .and_then(|matcher| matcher.as_exact())
+                .cloned()
+                .expect("Binary spec should have a name"),
             PackageDependency::Source(source_spec) => source_spec
                 .spec
                 .name
-                .clone()
+                .as_ref()
+                .and_then(|matcher| matcher.as_exact())
+                .cloned()
                 .expect("Source spec should have a name"),
         }
     }

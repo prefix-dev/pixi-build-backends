@@ -19,7 +19,8 @@ use rattler_build::{
     types::PackageIdentifier,
 };
 use rattler_conda_types::{
-    MatchSpec, NamelessMatchSpec, PackageName, PackageRecord, ParseStrictness::Strict,
+    MatchSpec, NamelessMatchSpec, PackageName, PackageNameMatcher, PackageRecord,
+    ParseStrictness::Strict,
 };
 use thiserror::Error;
 
@@ -75,7 +76,10 @@ impl<'a> MatchspecExtractor<'a> {
                     )
                     .into_diagnostic()
                     .context("failed to convert variant to matchspec")?;
-                    specs.push(MatchSpec::from_nameless(spec, Some(name)));
+                    specs.push(MatchSpec::from_nameless(
+                        spec,
+                        Some(PackageNameMatcher::Exact(name)),
+                    ));
                     continue;
                 }
             }
@@ -127,11 +131,18 @@ impl<T: PackageSpec> ExtractedDependencies<T> {
 /// Converts the input variant configuration passed from pixi to something that
 /// rattler build can deal with.
 pub fn convert_input_variant_configuration(
-    variants: Option<BTreeMap<String, Vec<String>>>,
+    variants: Option<BTreeMap<String, Vec<pixi_build_types::VariantValue>>>,
 ) -> Option<BTreeMap<NormalizedKey, Vec<Variable>>> {
     variants.map(|v| {
         v.into_iter()
-            .map(|(k, v)| (k.into(), v.into_iter().map(|v| v.into()).collect()))
+            .map(|(k, v)| {
+                (
+                    k.into(),
+                    v.into_iter()
+                        .map(|v| Variable::from_string(&v.to_string()))
+                        .collect(),
+                )
+            })
             .collect()
     })
 }
@@ -185,7 +196,8 @@ fn can_apply_variant(spec: &MatchSpec) -> Option<&PackageName> {
             sha256: None,
             license: None,
             url: None,
-        } => Some(name),
+            condition: None,
+        } => name.as_exact(),
         _ => None,
     }
 }
@@ -234,7 +246,10 @@ fn convert_dependency(
             if let Some(source_package) =
                 spec.url.clone().and_then(from_source_url_to_source_package)
             {
-                let Some(name) = spec.name else {
+                let Some(name_matcher) = spec.name else {
+                    return Err(ConvertDependencyError::MissingName);
+                };
+                let Some(name) = name_matcher.as_exact() else {
                     return Err(ConvertDependencyError::MissingName);
                 };
                 return Ok(pbt::NamedSpecV1 {
@@ -264,7 +279,10 @@ fn convert_dependency(
         _ => todo!("Handle other dependency types"),
     };
 
-    let (Some(name), spec) = match_spec.into_nameless() else {
+    let (Some(name_matcher), spec) = match_spec.into_nameless() else {
+        return Err(ConvertDependencyError::MissingName);
+    };
+    let Some(name) = name_matcher.as_exact() else {
         return Err(ConvertDependencyError::MissingName);
     };
 
@@ -314,7 +332,10 @@ fn convert_binary_dependency(
         return Ok(spec);
     }
 
-    let (Some(name), spec) = match_spec.into_nameless() else {
+    let (Some(name_matcher), spec) = match_spec.into_nameless() else {
+        return Err(ConvertDependencyError::MissingName);
+    };
+    let Some(name) = name_matcher.as_exact() else {
         return Err(ConvertDependencyError::MissingName);
     };
 
@@ -363,26 +384,29 @@ pub fn apply_variant(
                 Dependency::Spec(m) => {
                     let m = m.clone();
                     if build_time && m.version.is_none() && m.build.is_none() {
-                        if let Some(name) = &m.name {
-                            if let Some(version) = variant.get(&name.into()) {
-                                // if the variant starts with an alphanumeric character,
-                                // we have to add a '=' to the version spec
-                                let mut spec = version.to_string();
+                        if let Some(name_matcher) = &m.name {
+                            if let Some(exact_name) = name_matcher.as_exact() {
+                                if let Some(version) = variant.get(&exact_name.into()) {
+                                    // if the variant starts with an alphanumeric character,
+                                    // we have to add a '=' to the version spec
+                                    let mut spec = version.to_string();
 
-                                // check if all characters are alphanumeric or ., in that case add
-                                // a '=' to get "startswith" behavior
-                                if spec.chars().all(|c| c.is_alphanumeric() || c == '.') {
-                                    spec = format!("={spec}");
+                                    // check if all characters are alphanumeric or ., in that case add
+                                    // a '=' to get "startswith" behavior
+                                    if spec.chars().all(|c| c.is_alphanumeric() || c == '.') {
+                                        spec = format!("={spec}");
+                                    }
+
+                                    let variant = exact_name.as_normalized().to_string();
+                                    let spec: NamelessMatchSpec = spec.parse().map_err(|e| {
+                                        ResolveError::VariantSpecParseError(variant.clone(), e)
+                                    })?;
+
+                                    let spec =
+                                        MatchSpec::from_nameless(spec, Some(name_matcher.clone()));
+
+                                    return Ok(VariantDependency { spec, variant }.into());
                                 }
-
-                                let variant = name.as_normalized().to_string();
-                                let spec: NamelessMatchSpec = spec.parse().map_err(|e| {
-                                    ResolveError::VariantSpecParseError(variant.clone(), e)
-                                })?;
-
-                                let spec = MatchSpec::from_nameless(spec, Some(name.clone()));
-
-                                return Ok(VariantDependency { spec, variant }.into());
                             }
                         }
                     }

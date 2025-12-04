@@ -201,9 +201,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.description.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.description",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(description.clone()))
@@ -228,9 +228,7 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.homepage.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
-                        "workspace.package.homepage",
-                    )))
+                    MetadataError::MissingInheritedValue(String::from("workspace.package.homepage"))
                 })?,
         };
         Ok(Some(homepage.clone()))
@@ -255,9 +253,7 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.license.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
-                        "workspace.package.license",
-                    )))
+                    MetadataError::MissingInheritedValue(String::from("workspace.package.license"))
                 })?,
         };
         Ok(Some(license.clone()))
@@ -283,9 +279,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.license_file.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.license-file",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(license_file.display().to_string()))
@@ -322,9 +318,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.documentation.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.documentation",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(documentation.clone()))
@@ -349,9 +345,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.repository.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.repository",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(repository.clone()))

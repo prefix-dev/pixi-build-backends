@@ -62,26 +62,25 @@ impl<'a> MatchspecExtractor<'a> {
         for (name, spec) in dependencies.into_iter() {
             let name = PackageName::from_str(name.as_str()).into_diagnostic()?;
             // If we have a variant override, we should use that instead of the spec.
-            if spec.can_be_used_as_variant() {
-                if let Some(variant_value) = self
+            if spec.can_be_used_as_variant()
+                && let Some(variant_value) = self
                     .variant
                     .as_ref()
                     .and_then(|variant| variant.get(&NormalizedKey::from(&name)))
-                {
-                    let spec = NamelessMatchSpec::from_str(
-                        variant_value.as_ref().as_str().wrap_err_with(|| {
-                            miette::miette!("Variant {variant_value} needs to be a string")
-                        })?,
-                        Strict,
-                    )
-                    .into_diagnostic()
-                    .context("failed to convert variant to matchspec")?;
-                    specs.push(MatchSpec::from_nameless(
-                        spec,
-                        Some(PackageNameMatcher::Exact(name)),
-                    ));
-                    continue;
-                }
+            {
+                let spec = NamelessMatchSpec::from_str(
+                    variant_value.as_ref().as_str().wrap_err_with(|| {
+                        miette::miette!("Variant {variant_value} needs to be a string")
+                    })?,
+                    Strict,
+                )
+                .into_diagnostic()
+                .context("failed to convert variant to matchspec")?;
+                specs.push(MatchSpec::from_nameless(
+                    spec,
+                    Some(PackageNameMatcher::Exact(name)),
+                ));
+                continue;
             }
 
             // Match on supported packages
@@ -383,32 +382,31 @@ pub fn apply_variant(
             match s {
                 Dependency::Spec(m) => {
                     let m = m.clone();
-                    if build_time && m.version.is_none() && m.build.is_none() {
-                        if let Some(name_matcher) = &m.name {
-                            if let Some(exact_name) = name_matcher.as_exact() {
-                                if let Some(version) = variant.get(&exact_name.into()) {
-                                    // if the variant starts with an alphanumeric character,
-                                    // we have to add a '=' to the version spec
-                                    let mut spec = version.to_string();
+                    if build_time
+                        && m.version.is_none()
+                        && m.build.is_none()
+                        && let Some(name_matcher) = &m.name
+                        && let Some(exact_name) = name_matcher.as_exact()
+                        && let Some(version) = variant.get(&exact_name.into())
+                    {
+                        // if the variant starts with an alphanumeric character,
+                        // we have to add a '=' to the version spec
+                        let mut spec = version.to_string();
 
-                                    // check if all characters are alphanumeric or ., in that case add
-                                    // a '=' to get "startswith" behavior
-                                    if spec.chars().all(|c| c.is_alphanumeric() || c == '.') {
-                                        spec = format!("={spec}");
-                                    }
-
-                                    let variant = exact_name.as_normalized().to_string();
-                                    let spec: NamelessMatchSpec = spec.parse().map_err(|e| {
-                                        ResolveError::VariantSpecParseError(variant.clone(), e)
-                                    })?;
-
-                                    let spec =
-                                        MatchSpec::from_nameless(spec, Some(name_matcher.clone()));
-
-                                    return Ok(VariantDependency { spec, variant }.into());
-                                }
-                            }
+                        // check if all characters are alphanumeric or ., in that case add
+                        // a '=' to get "startswith" behavior
+                        if spec.chars().all(|c| c.is_alphanumeric() || c == '.') {
+                            spec = format!("={spec}");
                         }
+
+                        let variant = exact_name.as_normalized().to_string();
+                        let spec: NamelessMatchSpec = spec
+                            .parse()
+                            .map_err(|e| ResolveError::VariantSpecParseError(variant.clone(), e))?;
+
+                        let spec = MatchSpec::from_nameless(spec, Some(name_matcher.clone()));
+
+                        return Ok(VariantDependency { spec, variant }.into());
                     }
                     Ok(SourceDependency { spec: m }.into())
                 }

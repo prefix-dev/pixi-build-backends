@@ -145,10 +145,9 @@ impl RattlerBuild {
             .path
             .parent()
             .map(|parent| parent.join(VARIANTS_CONFIG_FILE))
+            && variant_path.is_file()
         {
-            if variant_path.is_file() {
-                variant_config_paths.push(variant_path);
-            }
+            variant_config_paths.push(variant_path);
         };
 
         variant_config_paths.extend(variant_files.iter().cloned());

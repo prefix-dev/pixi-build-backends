@@ -155,26 +155,24 @@ impl PyIntermediateRecipe {
             serde_yaml::from_str(&yaml).map_err(PyPixiBuildBackendError::YamlSerialization)?;
 
         // Navigate to build.script.content
-        if let Value::Mapping(ref mut map) = value {
-            if let Some(Value::Mapping(build_map)) = map.get_mut("build") {
-                if let Some(Value::Mapping(script_map)) = build_map.get_mut("script") {
-                    if let Some(content_value) = script_map.get_mut("content") {
-                        // If content is a sequence (Vec), convert to String
-                        if let &mut Value::Sequence(ref content_seq) = content_value {
-                            let content_strings: Vec<String> = content_seq
-                                .iter()
-                                .filter_map(|v| match v {
-                                    Value::String(s) => Some(s.clone()),
-                                    _ => None,
-                                })
-                                .collect();
+        if let Value::Mapping(ref mut map) = value
+            && let Some(Value::Mapping(build_map)) = map.get_mut("build")
+            && let Some(Value::Mapping(script_map)) = build_map.get_mut("script")
+            && let Some(content_value) = script_map.get_mut("content")
+        {
+            // If content is a sequence (Vec), convert to String
+            if let &mut Value::Sequence(ref content_seq) = content_value {
+                let content_strings: Vec<String> = content_seq
+                    .iter()
+                    .filter_map(|v| match v {
+                        Value::String(s) => Some(s.clone()),
+                        _ => None,
+                    })
+                    .collect();
 
-                            *content_value = Value::String(content_strings.join("\n"));
-                        }
-                        // If it's already a String, leave it as is
-                    }
-                }
+                *content_value = Value::String(content_strings.join("\n"));
             }
+            // If it's already a String, leave it as is
         }
 
         Ok(serde_yaml::to_string(&value).map_err(PyPixiBuildBackendError::YamlSerialization)?)

@@ -5,6 +5,7 @@ use std::{
 };
 
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use ordermap::OrderMap;
 use pixi_build_types::{
@@ -20,11 +21,12 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
+    NormalizedKey,
     build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
+    recipe::{ParsingError, Recipe, parser::find_outputs_from_src},
     selectors::SelectorConfig,
     source_code::Source,
     tool_configuration::Configuration,
@@ -44,7 +46,10 @@ use crate::{
     },
     generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
-    specs_conversion::from_build_v1_args_to_finalized_dependencies,
+    specs_conversion::{
+        convert_variant_from_pixi_build_types, convert_variant_to_pixi_build_types,
+        from_build_v1_args_to_finalized_dependencies,
+    },
     tools::{OneOrMultipleOutputs, output_directory},
 };
 
@@ -438,12 +443,21 @@ where
                     variant: variant
                         .iter()
                         .map(|(key, value)| {
-                            (
+                            Ok((
                                 key.0.clone(),
-                                pixi_build_types::VariantValue::from(value.to_string()),
-                            )
+                                convert_variant_to_pixi_build_types(value.clone()).into_diagnostic()
+                                    .with_context(|| {
+                                        format!("the output {}/{}={}={} contains a variant for '{}' which cannot be converted to pixi types: {}",
+                                            discovered_output.target_platform,
+                                            discovered_output.name,
+                                            discovered_output.version,
+                                            discovered_output.build_string,
+                                            key.0,
+                                            value)
+                                    })?
+                            ))
                         })
-                        .collect(),
+                        .collect::<miette::Result<_>>()?,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -563,7 +577,7 @@ where
             .map(|(k, v)| {
                 (
                     k.as_str().into(),
-                    vec![Variable::from_string(&v.to_string())],
+                    vec![convert_variant_from_pixi_build_types(v.clone())],
                 )
             })
             .collect();
@@ -755,23 +769,60 @@ where
 
 pub fn find_matching_output(
     expected_output: &CondaBuildV1Output,
-    discovered_outputs: IndexSet<DiscoveredOutput>,
+    mut discovered_outputs: IndexSet<DiscoveredOutput>,
 ) -> miette::Result<DiscoveredOutput> {
-    // Find the only output that matches the request.
-    let discovered_output = discovered_outputs
+    // Filter all outputs that are skipped or dont match the name
+    discovered_outputs.retain(|output| {
+        !output.recipe.build.skip() && output.name == expected_output.name.as_normalized()
+    });
+
+    if discovered_outputs.is_empty() {
+        // There is no output with the expected name
+        return Err(miette::miette!(
+            "there is no output defined for the package '{}'",
+            expected_output.name.as_source(),
+        ));
+    }
+
+    // Check if there is a output that has matching variant keys.
+    let expected_used_vars: BTreeMap<NormalizedKey, _> = expected_output
+        .variant
+        .iter()
+        .map(|(k, v)| {
+            (
+                k.as_str().into(),
+                convert_variant_from_pixi_build_types(v.clone()),
+            )
+        })
+        .collect();
+    if let Ok((output_idx, _)) = discovered_outputs
+        .iter()
+        .enumerate()
+        .filter(|(_idx, output)| {
+            expected_used_vars
+                .iter()
+                .all(|(key, value)| output.used_vars.get(key) == Some(value))
+        })
+        .exactly_one()
+    {
+        return Ok(discovered_outputs
+            .swap_remove_index(output_idx)
+            .expect("index must exist"));
+    }
+
+    // Otherwise, match on version, build and subdir.
+    discovered_outputs
         .into_iter()
         .find(|output| {
-            expected_output.name.as_normalized() == output.name
-                && expected_output
-                    .build
-                    .as_ref()
-                    .is_none_or(|build_string| build_string == &output.build_string)
+            expected_output
+                .build
+                .as_ref()
+                .is_none_or(|build_string| build_string == &output.build_string)
                 && expected_output
                     .version
                     .as_ref()
                     .is_none_or(|version| version == &output.recipe.package.version)
                 && expected_output.subdir == output.target_platform
-                && !output.recipe.build.skip()
         })
         .ok_or_else(|| {
             miette::miette!(
@@ -784,8 +835,7 @@ pub fn find_matching_output(
                 expected_output.build.as_deref().unwrap_or("??"),
                 expected_output.subdir
             )
-        })?;
-    Ok(discovered_output)
+        })
 }
 
 pub fn conda_build_v1_directories(

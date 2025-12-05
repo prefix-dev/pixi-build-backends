@@ -24,7 +24,10 @@ use rattler_conda_types::{
 };
 use thiserror::Error;
 
-use crate::{specs_conversion::from_source_url_to_source_package, traits::PackageSpec};
+use crate::{
+    specs_conversion::{convert_variant_from_pixi_build_types, from_source_url_to_source_package},
+    traits::PackageSpec,
+};
 
 /// A helper struct to extract match specs from a manifest.
 #[derive(Default)]
@@ -138,7 +141,7 @@ pub fn convert_input_variant_configuration(
                 (
                     k.into(),
                     v.into_iter()
-                        .map(|v| Variable::from_string(&v.to_string()))
+                        .map(convert_variant_from_pixi_build_types)
                         .collect(),
                 )
             })

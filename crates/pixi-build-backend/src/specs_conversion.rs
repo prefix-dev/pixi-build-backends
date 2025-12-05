@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use minijinja::Value;
 use ordermap::OrderMap;
 use pixi_build_types::{
     BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetSelectorV1, TargetV1, TargetsV1,
@@ -8,9 +9,12 @@ use pixi_build_types::{
         CondaBuildV1RunExports,
     },
 };
-use rattler_build::render::resolved_dependencies::{
-    DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
-    RunExportDependency, SourceDependency,
+use rattler_build::{
+    recipe::variable::Variable,
+    render::resolved_dependencies::{
+        DependencyInfo, FinalizedDependencies, FinalizedRunDependencies, ResolvedDependencies,
+        RunExportDependency, SourceDependency,
+    },
 };
 use rattler_conda_types::{
     Channel, MatchSpec, PackageName, PackageNameMatcher, package::RunExportsJson,
@@ -20,6 +24,7 @@ use recipe_stage0::{
     recipe::{Conditional, ConditionalList, ConditionalRequirements, Item, ListOrItem},
     requirements::PackageSpecDependencies,
 };
+use serde::Deserialize;
 use url::Url;
 
 use crate::encoded_source_spec_url::EncodedSourceSpecUrl;
@@ -53,6 +58,21 @@ impl std::fmt::Display for PlatformKind {
             PlatformKind::Target => write!(f, "target"),
         }
     }
+}
+
+pub fn convert_variant_from_pixi_build_types(variant: pixi_build_types::VariantValue) -> Variable {
+    match variant {
+        pixi_build_types::VariantValue::String(s) => Variable::from(s),
+        pixi_build_types::VariantValue::Int(i) => Variable::from(i),
+        pixi_build_types::VariantValue::Bool(b) => Variable::from(b),
+    }
+}
+
+pub fn convert_variant_to_pixi_build_types(
+    variant: Variable,
+) -> Result<pixi_build_types::VariantValue, minijinja::Error> {
+    let value = Value::from(variant);
+    pixi_build_types::VariantValue::deserialize(value)
 }
 
 pub fn to_rattler_build_selector(

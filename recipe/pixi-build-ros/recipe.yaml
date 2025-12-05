@@ -24,7 +24,6 @@ requirements:
     - py-rattler
     - typing-extensions
     - py-pixi-build-backend
-    - pixi-build-api-version >=2,<3
 
 build:
   number: 0

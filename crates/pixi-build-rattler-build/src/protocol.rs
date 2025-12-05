@@ -166,7 +166,12 @@ impl Protocol for RattlerBuildBackend {
                     python_site_packages_path: None,
                     variant: variant
                         .iter()
-                        .map(|(k, v)| (k.0.clone(), v.to_string()))
+                        .map(|(k, v)| {
+                            (
+                                k.0.clone(),
+                                pixi_build_types::VariantValue::from(v.to_string()),
+                            )
+                        })
                         .collect(),
                 },
                 build_dependencies: Some(CondaOutputDependencies {
@@ -284,7 +289,12 @@ impl Protocol for RattlerBuildBackend {
                 .output
                 .variant
                 .iter()
-                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+                .map(|(k, v)| {
+                    (
+                        k.as_str().into(),
+                        vec![Variable::from_string(&v.to_string())],
+                    )
+                })
                 .collect(),
             pin_run_as_build: None,
             zip_keys: None,
@@ -604,7 +614,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
-    use pixi_build_types::procedures::initialize::InitializeParams;
+    use pixi_build_types::{VariantValue, procedures::initialize::InitializeParams};
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;
 
@@ -714,7 +724,7 @@ mod tests {
             .variant
             .get("python")
             .expect("python variant present");
-        assert_eq!(python_value, "3.9");
+        assert_eq!(python_value, &VariantValue::from("3.9"));
     }
 
     #[tokio::test]
@@ -726,7 +736,7 @@ mod tests {
             .expect("Failed to write recipe");
 
         let mut variant_configuration = BTreeMap::new();
-        variant_configuration.insert("python".to_string(), vec!["3.11".to_string()]);
+        variant_configuration.insert("python".to_string(), vec![VariantValue::from("3.11")]);
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -755,11 +765,13 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            result.outputs[0].metadata.variant["python"], "3.11",
+            result.outputs[0].metadata.variant["python"],
+            VariantValue::from("3.11"),
             "Python variant should come from the provided configuration"
         );
         assert_eq!(
-            result.outputs[0].metadata.variant["target_platform"], "linux-64",
+            result.outputs[0].metadata.variant["target_platform"],
+            VariantValue::from("linux-64"),
             "Target platform should match the requested platform"
         );
     }
@@ -785,7 +797,7 @@ numpy:
         .expect("Failed to write shared variants");
 
         let mut variant_configuration = BTreeMap::new();
-        variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
+        variant_configuration.insert("python".to_string(), vec![VariantValue::from("3.10")]);
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
@@ -819,14 +831,14 @@ numpy:
             .variant
             .get("python")
             .expect("python variant present");
-        assert_eq!(python_value, "3.10");
+        assert_eq!(python_value, &VariantValue::from("3.10"));
         assert_eq!(
             result.outputs[0]
                 .metadata
                 .variant
                 .get("numpy")
                 .expect("numpy variant present from variant file"),
-            "1.22"
+            &VariantValue::from("1.22")
         );
     }
 
@@ -892,13 +904,13 @@ numpy:
             variant
                 .get("python")
                 .expect("python variant present after override"),
-            "3.10"
+            &VariantValue::from("3.10")
         );
         assert_eq!(
             variant
                 .get("numpy")
                 .expect("numpy variant present from auto-discovered file"),
-            "1.22"
+            &VariantValue::from("1.22")
         );
     }
 

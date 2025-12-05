@@ -6,13 +6,9 @@ edition.workspace = true
 [features]
 default = ["rustls-tls"]
 # Use rustls for TLS (pure Rust implementation)
-rustls-tls = [
-  "reqwest/rustls-tls",
-  "reqwest/rustls-tls-native-roots",
-  "rattler-build/rustls-tls",
-]
+rustls-tls = ["rattler-build/rustls-tls"]
 # Use native-tls/OpenSSL for TLS
-native-tls = ["reqwest/native-tls", "rattler-build/native-tls"]
+native-tls = ["rattler-build/native-tls"]
 
 [dependencies]
 async-trait = { workspace = true }
@@ -33,8 +29,6 @@ rattler_package_streaming = { workspace = true }
 rattler_virtual_packages = { workspace = true }
 rattler-build = { workspace = true }
 rattler_digest = { workspace = true }
-reqwest = { workspace = true }
-reqwest-middleware = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }

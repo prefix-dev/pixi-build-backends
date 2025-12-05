@@ -1,8 +1,11 @@
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
-use pixi_build_types::procedures::{
-    conda_outputs::{CondaOutputsParams, CondaOutputsResult},
-    initialize::InitializeParams,
+use pixi_build_types::{
+    VariantValue,
+    procedures::{
+        conda_outputs::{CondaOutputsParams, CondaOutputsResult},
+        initialize::InitializeParams,
+    },
 };
 use rattler_build::console_utils::LoggingOutputHandler;
 use rattler_conda_types::Platform;
@@ -47,7 +50,7 @@ pub async fn intermediate_conda_outputs<T>(
     project_model: Option<pixi_build_types::ProjectModelV1>,
     source_dir: Option<PathBuf>,
     host_platform: Platform,
-    variant_configuration: Option<BTreeMap<String, Vec<String>>>,
+    variant_configuration: Option<BTreeMap<String, Vec<VariantValue>>>,
     variant_files: Option<Vec<PathBuf>>,
 ) -> CondaOutputsResult
 where

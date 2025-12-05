@@ -11,7 +11,7 @@
 use std::{fmt::Debug, sync::Arc};
 
 use pixi_build_types::{self as pbt};
-use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName};
+use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName, PackageNameMatcher};
 
 /// Get the * version for the version type, that is currently being used
 pub trait AnyVersion {
@@ -87,12 +87,15 @@ impl PackageSpec for pbt::PackageSpecV1 {
         match self {
             pbt::PackageSpecV1::Binary(binary_spec) => {
                 // Always use to_nameless() to preserve all fields including build constraints
-                let match_spec = MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name));
+                let match_spec = MatchSpec::from_nameless(
+                    binary_spec.to_nameless(),
+                    Some(PackageNameMatcher::Exact(name)),
+                );
                 Ok((match_spec, None))
             }
             pbt::PackageSpecV1::Source(source_spec) => Ok((
                 MatchSpec {
-                    name: Some(name),
+                    name: Some(PackageNameMatcher::Exact(name)),
                     ..MatchSpec::default()
                 },
                 Some(source_spec.clone()),
@@ -125,6 +128,7 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
             license: self.license.clone(),
             extras: None,
             namespace: None,
+            condition: None,
         }
     }
 }
@@ -164,7 +168,12 @@ mod tests {
         let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
 
         // Verify the build constraint is preserved
-        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(
+            match_spec.name,
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("tk").unwrap()
+            ))
+        );
         assert_eq!(match_spec.version, Some(VersionSpec::Any));
         assert_eq!(match_spec.build, Some(build_matcher));
     }
@@ -194,7 +203,12 @@ mod tests {
         let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
 
         // Verify both version and build constraint are preserved
-        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(
+            match_spec.name,
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("tk").unwrap()
+            ))
+        );
         assert_eq!(match_spec.version, Some(version));
         assert_eq!(match_spec.build, Some(build_matcher));
     }
@@ -224,7 +238,9 @@ mod tests {
         // Verify the match spec is correct
         assert_eq!(
             match_spec.name,
-            Some(PackageName::try_from("python").unwrap())
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("python").unwrap()
+            ))
         );
         assert_eq!(match_spec.version, Some(VersionSpec::Any));
         assert_eq!(match_spec.build, None);

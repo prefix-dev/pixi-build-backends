@@ -289,6 +289,7 @@ mod tests {
 
     use indexmap::IndexMap;
     use pixi_build_backend::utils::test::intermediate_conda_outputs;
+    use pixi_build_types::VariantValue;
     use recipe_stage0::recipe::{Item, Value};
     use tokio::fs;
 
@@ -369,8 +370,10 @@ version = "0.1.0"
         .await
         .expect("Failed to write pixi.toml");
 
-        let variant_configuration =
-            BTreeMap::from([("boltons".to_string(), Vec::from(["==1.0.0".to_string()]))]);
+        let variant_configuration = BTreeMap::from([(
+            "boltons".to_string(),
+            Vec::from([VariantValue::from("==1.0.0")]),
+        )]);
 
         let result = intermediate_conda_outputs::<PythonGenerator>(
             Some(project_model),
@@ -381,10 +384,13 @@ version = "0.1.0"
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==1.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "noarch"
+            VariantValue::from("noarch")
         );
     }
 
@@ -446,10 +452,13 @@ version = "0.1.0"
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==2.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "noarch"
+            VariantValue::from("noarch")
         );
     }
 

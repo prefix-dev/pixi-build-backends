@@ -173,14 +173,14 @@ pub async fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{collections::BTreeMap, path::PathBuf};
 
     use indexmap::IndexMap;
     use pixi_build_backend::{
         protocol::ProtocolInstantiator, utils::test::intermediate_conda_outputs,
     };
     use pixi_build_types::{
-        ProjectModelV1,
+        ProjectModelV1, VariantValue,
         procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
     };
     use rattler_build::console_utils::LoggingOutputHandler;
@@ -409,12 +409,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            outputs.outputs[0]
-                .metadata
-                .variant
-                .get("cxx_compiler")
-                .map(String::as_str),
-            Some("vs2019"),
+            outputs.outputs[0].metadata.variant.get("cxx_compiler"),
+            Some(&VariantValue::from("vs2019")),
             "On windows the default cxx_compiler variant should be vs2019"
         );
     }
@@ -439,8 +435,10 @@ mod tests {
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
 
-        let variant_configuration =
-            BTreeMap::from([("boltons".to_string(), Vec::from(["==1.0.0".to_string()]))]);
+        let variant_configuration = BTreeMap::from([(
+            "boltons".to_string(),
+            Vec::from([VariantValue::from("==1.0.0")]),
+        )]);
 
         let result = intermediate_conda_outputs::<CMakeGenerator>(
             Some(project_model),
@@ -451,10 +449,13 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==1.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "linux-64"
+            VariantValue::from("linux-64")
         );
     }
 
@@ -497,10 +498,13 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==2.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "linux-64"
+            VariantValue::from("linux-64")
         );
     }
 

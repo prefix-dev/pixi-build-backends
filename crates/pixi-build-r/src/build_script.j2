@@ -1,0 +1,48 @@
+{%- set is_cmd_exe = build_platform == "windows" -%}
+{%- macro env(key) -%}
+{%- if is_cmd_exe %}{{ "%" ~ key ~ "%" }}{% else %}{{ "$" ~ key }}{% endif -%}
+{% endmacro -%}
+
+{# Platform-specific variables #}
+{%- if is_cmd_exe -%}
+{%- set R_CMD = "%R% CMD" -%}
+{%- set LIBRARY_DIR = "%LIBRARY_PREFIX%\\R\\library" -%}
+{%- set LINE_CONT = "^" -%}
+{%- else -%}
+{%- set R_CMD = "$R CMD" -%}
+{%- set LIBRARY_DIR = "$PREFIX/lib/R/library" -%}
+{%- set LINE_CONT = "\\" -%}
+{%- endif -%}
+
+{# Set up R CMD INSTALL arguments #}
+{%- set install_args = [
+    "--library=" ~ LIBRARY_DIR,
+    "--no-lock",
+] + extra_args + [source_dir]
+-%}
+
+{# Output version information for debugging #}
+{{ R_CMD }} --version
+{% if is_cmd_exe -%}
+@if errorlevel 1 exit 1
+{% endif %}
+
+{# Create library directory if it doesn't exist #}
+{% if is_cmd_exe -%}
+if not exist "{{ LIBRARY_DIR }}" mkdir "{{ LIBRARY_DIR }}"
+@if errorlevel 1 exit 1
+{% else -%}
+mkdir -p "{{ LIBRARY_DIR }}"
+{% endif %}
+
+{# Run R CMD INSTALL #}
+{{ R_CMD }} INSTALL {{ install_args | join(" " ~ LINE_CONT ~ "\n    ") }}
+
+{# Check for errors #}
+{% if is_cmd_exe -%}
+@if errorlevel 1 exit 1
+{% else -%}
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+{% endif %}

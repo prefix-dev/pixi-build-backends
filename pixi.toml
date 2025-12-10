@@ -63,7 +63,7 @@ ruff = ">=0.14,<0.15"
 
 [feature.build.dependencies]
 rattler-build = ">=0.46.0,<1"
-rattler-index = ">=0.25.2,<0.26"
+rattler-index = ">=0.27.6,<0.28"
 python = "*"
 sccache = ">=0.11.0,<0.12"
 

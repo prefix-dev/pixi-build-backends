@@ -4410,6 +4410,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi-build-r"
+version = "0.1.0"
+dependencies = [
+ "fs-err",
+ "indexmap 2.12.1",
+ "insta",
+ "miette",
+ "minijinja",
+ "once_cell",
+ "pixi-build-backend",
+ "pixi_build_types",
+ "rattler-build",
+ "rattler_conda_types",
+ "recipe-stage0",
+ "rstest",
+ "serde",
+ "serde_json",
+ "strum",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+]
+
+[[package]]
 name = "pixi-build-rattler-build"
 version = "0.3.4"
 dependencies = [

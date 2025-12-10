@@ -288,13 +288,13 @@ LinkingTo: Rcpp
         let host_reqs = &generated_recipe.recipe.requirements.host;
         let has_r_base_host = host_reqs
             .iter()
-            .any(|item| matches!(item, Item::Value(Value::String(s)) if s == "r-base"));
+            .any(|req| req.to_string().starts_with("r-base"));
         assert!(has_r_base_host, "Should have r-base in host requirements");
 
         let run_reqs = &generated_recipe.recipe.requirements.run;
         let has_r_base_run = run_reqs
             .iter()
-            .any(|item| matches!(item, Item::Value(Value::String(s)) if s == "r-base"));
+            .any(|req| req.to_string().starts_with("r-base"));
         assert!(has_r_base_run, "Should have r-base in run requirements");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {

@@ -12,7 +12,7 @@ use pixi_build_backend::{
     traits::ProjectModel,
 };
 use pixi_build_types::{ProjectModelV1, SourcePackageName};
-use rattler_build::{recipe::variable::Variable, NormalizedKey};
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -66,12 +66,12 @@ impl GenerateRecipe for RGenerator {
     ) -> miette::Result<GeneratedRecipe> {
         // Determine the manifest root
         let manifest_root = if manifest_path.is_file() {
-            manifest_path.parent().ok_or_else(|| {
-                miette::miette!(
-                    "Manifest path {} has no parent",
-                    manifest_path.display()
-                )
-            })?.to_path_buf()
+            manifest_path
+                .parent()
+                .ok_or_else(|| {
+                    miette::miette!("Manifest path {} has no parent", manifest_path.display())
+                })?
+                .to_path_buf()
         } else {
             manifest_path.clone()
         };
@@ -79,8 +79,7 @@ impl GenerateRecipe for RGenerator {
         let mut metadata_provider = DescriptionMetadataProvider::new(&manifest_root);
 
         let mut generated_recipe =
-            GeneratedRecipe::from_model(model.clone(), &mut metadata_provider)
-                .into_diagnostic()?;
+            GeneratedRecipe::from_model(model.clone(), &mut metadata_provider).into_diagnostic()?;
 
         let requirements = &mut generated_recipe.recipe.requirements;
         let model_dependencies = model.dependencies(Some(host_platform));
@@ -107,14 +106,34 @@ impl GenerateRecipe for RGenerator {
         // Add R runtime to host requirements
         let r_pkg = SourcePackageName::from("r-base");
         if !model_dependencies.host.contains_key(&r_pkg) {
-            requirements
-                .host
-                .push("r-base".parse().into_diagnostic()?);
+            requirements.host.push("r-base".parse().into_diagnostic()?);
         }
 
         // Add R runtime to run requirements
         if !model_dependencies.run.contains_key(&r_pkg) {
             requirements.run.push("r-base".parse().into_diagnostic()?);
+        }
+
+        // Add R package dependencies from DESCRIPTION (Imports + Depends)
+        let r_dependencies = metadata_provider.runtime_dependencies().into_diagnostic()?;
+
+        for dep in r_dependencies {
+            // Convert R package name to conda package name
+            let conda_name = metadata::r_package_to_conda(&dep.name);
+
+            // Build the dependency spec string
+            let dep_spec = if let Some(version) = &dep.version {
+                let conda_version = metadata::r_version_to_conda(version);
+                format!("{} {}", conda_name, conda_version)
+            } else {
+                conda_name
+            };
+
+            // Add to host requirements (runtime dependencies)
+            requirements.host.push(dep_spec.parse().into_diagnostic()?);
+
+            // Also add to run requirements
+            requirements.run.push(dep_spec.parse().into_diagnostic()?);
         }
 
         // Generate build script
@@ -250,9 +269,7 @@ LinkingTo: Rcpp
         .unwrap();
 
         // Create src directory to trigger native code detection
-        fs::create_dir(temp_dir.path().join("src"))
-            .await
-            .unwrap();
+        fs::create_dir(temp_dir.path().join("src")).await.unwrap();
 
         let project_model = project_fixture!({
             "name": "r-testpkg",
@@ -276,13 +293,10 @@ LinkingTo: Rcpp
 
         // Verify compilers were added
         let build_reqs = &generated_recipe.recipe.requirements.build;
-        let has_compilers = build_reqs.iter().any(|item| {
-            matches!(item, Item::Value(Value::Template(t)) if t.contains("compiler"))
-        });
-        assert!(
-            has_compilers,
-            "Native code package should have compilers"
-        );
+        let has_compilers = build_reqs
+            .iter()
+            .any(|item| matches!(item, Item::Value(Value::Template(t)) if t.contains("compiler")));
+        assert!(has_compilers, "Native code package should have compilers");
 
         // Verify r-base is in host and run requirements
         let host_reqs = &generated_recipe.recipe.requirements.host;
@@ -336,13 +350,10 @@ LinkingTo: Rcpp
 
         // Verify no compilers were added for pure R package
         let build_reqs = &generated_recipe.recipe.requirements.build;
-        let has_compilers = build_reqs.iter().any(|item| {
-            matches!(item, Item::Value(Value::Template(t)) if t.contains("compiler"))
-        });
-        assert!(
-            !has_compilers,
-            "Pure R package should not have compilers"
-        );
+        let has_compilers = build_reqs
+            .iter()
+            .any(|item| matches!(item, Item::Value(Value::Template(t)) if t.contains("compiler")));
+        assert!(!has_compilers, "Pure R package should not have compilers");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
             ".source[0].path" => "[path]",
@@ -385,6 +396,113 @@ LinkingTo: Rcpp
     }
 
     #[tokio::test]
+    async fn test_r_package_with_dependencies() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create DESCRIPTION file with dependencies
+        fs::write(
+            temp_dir.path().join("DESCRIPTION"),
+            r#"Package: webmockr
+Version: 2.2.1.92
+Depends:
+    R(>= 4.1.0)
+Imports:
+    curl,
+    jsonlite,
+    magrittr (>= 1.5),
+    R6 (>= 2.1.3),
+    urltools (>= 1.6.0)
+"#,
+        )
+        .await
+        .unwrap();
+
+        let project_model = project_fixture!({
+            "name": "r-webmockr",
+            "version": "2.2.1.92",
+            "targets": {
+                "defaultTarget": {}
+            }
+        });
+
+        let generated_recipe = RGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RBackendConfig::default(),
+                temp_dir.path().to_path_buf(),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+                vec![],
+            )
+            .expect("Failed to generate recipe");
+
+        // Verify r-base is in host and run requirements
+        let host_reqs = &generated_recipe.recipe.requirements.host;
+        let run_reqs = &generated_recipe.recipe.requirements.run;
+
+        // Check for r-base
+        assert!(
+            host_reqs
+                .iter()
+                .any(|req| req.to_string().starts_with("r-base")),
+            "Should have r-base in host requirements"
+        );
+
+        // Check for r-curl
+        assert!(
+            host_reqs
+                .iter()
+                .any(|req| req.to_string().starts_with("r-curl")),
+            "Should have r-curl in host requirements"
+        );
+
+        // Check for r-jsonlite
+        assert!(
+            host_reqs
+                .iter()
+                .any(|req| req.to_string().starts_with("r-jsonlite")),
+            "Should have r-jsonlite in host requirements"
+        );
+
+        // Check for r-magrittr with version constraint
+        let has_magrittr = host_reqs.iter().any(|req| {
+            let s = req.to_string();
+            s.contains("r-magrittr") && s.contains(">=1.5")
+        });
+        assert!(
+            has_magrittr,
+            "Should have r-magrittr >=1.5 in host requirements"
+        );
+
+        // Check for r-r6 (R6 -> r-r6)
+        let has_r6 = host_reqs.iter().any(|req| {
+            let s = req.to_string();
+            s.contains("r-r6") && s.contains(">=2.1.3")
+        });
+        assert!(has_r6, "Should have r-r6 >=2.1.3 in host requirements");
+
+        // Verify same dependencies are in run requirements
+        assert!(
+            run_reqs
+                .iter()
+                .any(|req| req.to_string().starts_with("r-curl")),
+            "Should have r-curl in run requirements"
+        );
+        assert!(
+            run_reqs
+                .iter()
+                .any(|req| req.to_string().starts_with("r-jsonlite")),
+            "Should have r-jsonlite in run requirements"
+        );
+
+        insta::assert_yaml_snapshot!(generated_recipe.recipe, {
+            ".source[0].path" => "[path]",
+            ".build.script.content" => "[build_script]",
+        });
+    }
+
+    #[tokio::test]
     async fn test_explicit_compilers_override() {
         let temp_dir = TempDir::new().unwrap();
 
@@ -396,9 +514,7 @@ LinkingTo: Rcpp
         .unwrap();
 
         // Create src directory (would normally trigger auto-detection)
-        fs::create_dir(temp_dir.path().join("src"))
-            .await
-            .unwrap();
+        fs::create_dir(temp_dir.path().join("src")).await.unwrap();
 
         let project_model = project_fixture!({
             "name": "r-testpkg",

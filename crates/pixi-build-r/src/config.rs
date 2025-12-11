@@ -83,9 +83,7 @@ impl RBackendConfig {
 
     /// Returns the channels to use, falling back to defaults
     pub fn channels(&self) -> Vec<String> {
-        self.channels
-            .clone()
-            .unwrap_or_else(Self::default_channels)
+        self.channels.clone().unwrap_or_else(Self::default_channels)
     }
 }
 
@@ -116,8 +114,14 @@ mod tests {
         let config: RBackendConfig = serde_json::from_value(json_data).unwrap();
         assert_eq!(config.extra_args, vec!["--no-multiarch", "--no-test-load"]);
         assert_eq!(config.env.len(), 1);
-        assert_eq!(config.compilers, Some(vec!["c".to_string(), "cxx".to_string()]));
-        assert_eq!(config.channels, Some(vec!["conda-forge".to_string(), "r".to_string()]));
+        assert_eq!(
+            config.compilers,
+            Some(vec!["c".to_string(), "cxx".to_string()])
+        );
+        assert_eq!(
+            config.channels,
+            Some(vec!["conda-forge".to_string(), "r".to_string()])
+        );
     }
 
     #[test]
@@ -140,7 +144,9 @@ mod tests {
             channels: None,
         };
 
-        let merged = base_config.merge_with_target_config(&target_config).unwrap();
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // Target extra_args should replace base
         assert_eq!(merged.extra_args, vec!["--no-multiarch"]);
@@ -151,7 +157,10 @@ mod tests {
         assert_eq!(merged.env.get("TARGET_VAR").unwrap(), "target");
 
         // Target compilers should override
-        assert_eq!(merged.compilers, Some(vec!["c".to_string(), "cxx".to_string()]));
+        assert_eq!(
+            merged.compilers,
+            Some(vec!["c".to_string(), "cxx".to_string()])
+        );
 
         // Base channels should be used (target is None)
         assert_eq!(merged.channels, Some(vec!["conda-forge".to_string()]));
@@ -170,7 +179,9 @@ mod tests {
 
         let target_config = RBackendConfig::default();
 
-        let merged = base_config.merge_with_target_config(&target_config).unwrap();
+        let merged = base_config
+            .merge_with_target_config(&target_config)
+            .unwrap();
 
         // Base config should be preserved
         assert_eq!(merged.extra_args, vec!["--no-lock"]);
@@ -189,10 +200,12 @@ mod tests {
 
         let result = base_config.merge_with_target_config(&target_config);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("debug_dir` cannot have a target specific value"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("debug_dir` cannot have a target specific value")
+        );
     }
 
     #[test]
@@ -207,6 +220,9 @@ mod tests {
             channels: Some(vec!["conda-forge".to_string(), "r".to_string()]),
             ..Default::default()
         };
-        assert_eq!(config.channels(), vec!["conda-forge".to_string(), "r".to_string()]);
+        assert_eq!(
+            config.channels(),
+            vec!["conda-forge".to_string(), "r".to_string()]
+        );
     }
 }

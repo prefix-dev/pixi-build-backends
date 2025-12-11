@@ -6,6 +6,148 @@ use pixi_build_backend::generated_recipe::MetadataProvider;
 use rattler_conda_types::{ParseVersionError, Version};
 use std::str::FromStr;
 
+/// Parsed R license expression
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParsedLicense {
+    /// The license identifier(s) (e.g., "MIT", "GPL-3", "GPL-2 | GPL-3")
+    pub license: Option<String>,
+    /// The license file path if specified (e.g., "LICENSE", "LICENCE")
+    pub license_file: Option<String>,
+}
+
+/// Parse R DESCRIPTION license field
+///
+/// R packages use various license formats:
+/// - "MIT + file LICENSE" -> license: MIT, file: LICENSE
+/// - "GPL-3" -> license: GPL-3, file: None
+/// - "GPL (>= 2)" -> license: GPL (>= 2), file: None
+/// - "BSD_3_clause + file LICENSE" -> license: BSD-3-Clause, file: LICENSE
+/// - "file LICENSE" -> license: None, file: LICENSE
+/// - "GPL-2 | GPL-3" -> license: GPL-2 | GPL-3, file: None
+pub fn parse_r_license(license_str: &str) -> ParsedLicense {
+    let license_str = license_str.trim();
+
+    // Check for "file" keyword
+    if let Some(file_pos) = license_str.to_lowercase().find(" + file ") {
+        // Format: "LICENSE + file FILENAME"
+        let license_part = license_str[..file_pos].trim();
+        let file_part = license_str[file_pos + 8..].trim(); // Skip " + file "
+
+        ParsedLicense {
+            license: if license_part.is_empty() {
+                None
+            } else {
+                Some(normalize_license_name(license_part))
+            },
+            license_file: Some(file_part.to_string()),
+        }
+    } else if license_str.to_lowercase().starts_with("file ") {
+        // Format: "file FILENAME"
+        let file_part = license_str[5..].trim();
+        ParsedLicense {
+            license: None,
+            license_file: Some(file_part.to_string()),
+        }
+    } else {
+        // No file specified, just the license
+        ParsedLicense {
+            license: Some(normalize_license_name(license_str)),
+            license_file: None,
+        }
+    }
+}
+
+/// Normalize R license names to standard SPDX identifiers where possible
+fn normalize_license_name(license: &str) -> String {
+    let license = license.trim();
+
+    // Common R license name mappings to SPDX identifiers
+    match license {
+        "BSD_3_clause" | "BSD 3 clause" => "BSD-3-Clause".to_string(),
+        "BSD_2_clause" | "BSD 2 clause" => "BSD-2-Clause".to_string(),
+        "Apache License 2.0" | "Apache License (== 2.0)" => "Apache-2.0".to_string(),
+        "Apache License" => "Apache-2.0".to_string(),
+        _ => license.to_string(),
+    }
+}
+
+/// Parsed R package dependency
+#[derive(Debug, Clone, PartialEq)]
+pub struct RDependency {
+    /// Package name (e.g., "curl", "jsonlite")
+    pub name: String,
+    /// Optional version constraint (e.g., ">= 1.5", "(>= 2.1.3)")
+    pub version: Option<String>,
+}
+
+/// Parse R dependency list from DESCRIPTION fields like Imports, Depends, Suggests
+///
+/// R dependencies are comma-separated with optional version constraints in parentheses:
+/// - "curl, jsonlite, magrittr (>= 1.5)"
+/// - "R (>= 4.1.0)"
+/// - "testthat (>= 3.0.0), xml2, crul"
+pub fn parse_r_dependencies(deps_str: &str) -> Vec<RDependency> {
+    let mut dependencies = Vec::new();
+
+    for dep in deps_str.split(',') {
+        let dep = dep.trim();
+        if dep.is_empty() {
+            continue;
+        }
+
+        // Check for version constraint in parentheses
+        if let Some(paren_pos) = dep.find('(') {
+            let name = dep[..paren_pos].trim().to_string();
+            let version_part = dep[paren_pos..].trim();
+
+            // Extract version constraint (remove parentheses)
+            let version = if version_part.starts_with('(') && version_part.ends_with(')') {
+                Some(version_part[1..version_part.len() - 1].trim().to_string())
+            } else {
+                Some(version_part.to_string())
+            };
+
+            dependencies.push(RDependency { name, version });
+        } else {
+            // No version constraint
+            dependencies.push(RDependency {
+                name: dep.to_string(),
+                version: None,
+            });
+        }
+    }
+
+    dependencies
+}
+
+/// Convert R package name to conda package name
+///
+/// R packages in conda typically use lowercase with 'r-' prefix:
+/// - "curl" -> "r-curl"
+/// - "jsonlite" -> "r-jsonlite"
+/// - "R6" -> "r-r6"
+pub fn r_package_to_conda(name: &str) -> String {
+    // Special case: "R" refers to the R language itself, which is r-base
+    if name == "R" {
+        return "r-base".to_string();
+    }
+
+    format!("r-{}", name.to_lowercase())
+}
+
+/// Convert R version constraint to conda version constraint
+///
+/// R uses slightly different syntax:
+/// - ">= 1.5" -> ">=1.5"
+/// - "(>= 2.1.3)" -> ">=2.1.3"
+pub fn r_version_to_conda(version: &str) -> String {
+    version
+        .trim()
+        .replace("(", "")
+        .replace(")", "")
+        .replace(" ", "")
+}
+
 #[derive(Debug, thiserror::Error, Diagnostic)]
 pub enum MetadataError {
     // #[error("failed to parse DESCRIPTION file: {0}")]
@@ -154,6 +296,39 @@ impl DescriptionMetadataProvider {
 
         globs
     }
+
+    /// Get R package dependencies from Imports field
+    pub fn imports(&self) -> Result<Vec<RDependency>, MetadataError> {
+        Ok(self
+            .ensure_data()?
+            .imports
+            .as_ref()
+            .map(|s| parse_r_dependencies(s))
+            .unwrap_or_default())
+    }
+
+    /// Get R package dependencies from Depends field
+    pub fn depends(&self) -> Result<Vec<RDependency>, MetadataError> {
+        Ok(self
+            .ensure_data()?
+            .depends
+            .as_ref()
+            .map(|s| parse_r_dependencies(s))
+            .unwrap_or_default())
+    }
+
+    /// Get all runtime dependencies (Imports + Depends, excluding R itself)
+    pub fn runtime_dependencies(&self) -> Result<Vec<RDependency>, MetadataError> {
+        let mut deps = Vec::new();
+
+        // Add Imports
+        deps.extend(self.imports()?);
+
+        // Add Depends (but filter out R itself as it's handled separately)
+        deps.extend(self.depends()?.into_iter().filter(|d| d.name != "R"));
+
+        Ok(deps)
+    }
 }
 
 impl MetadataProvider for DescriptionMetadataProvider {
@@ -180,7 +355,11 @@ impl MetadataProvider for DescriptionMetadataProvider {
     }
 
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
-        Ok(self.ensure_data()?.license.clone())
+        let data = self.ensure_data()?;
+        Ok(data.license.as_ref().map(|l| {
+            let parsed = parse_r_license(l);
+            parsed.license.unwrap_or_else(|| l.clone())
+        }))
     }
 
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {
@@ -192,8 +371,11 @@ impl MetadataProvider for DescriptionMetadataProvider {
     }
 
     fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
-        // R packages typically don't specify license files in DESCRIPTION
-        Ok(None)
+        let data = self.ensure_data()?;
+        Ok(data.license.as_ref().and_then(|l| {
+            let parsed = parse_r_license(l);
+            parsed.license_file
+        }))
     }
 
     fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
@@ -227,10 +409,7 @@ License: GPL-3
         let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
 
         assert_eq!(provider.name().unwrap(), Some("testpkg".to_string()));
-        assert_eq!(
-            provider.version().unwrap().unwrap().to_string(),
-            "1.0.0"
-        );
+        assert_eq!(provider.version().unwrap().unwrap().to_string(), "1.0.0");
         assert_eq!(provider.license().unwrap(), Some("GPL-3".to_string()));
         assert_eq!(
             provider.summary().unwrap(),
@@ -279,10 +458,7 @@ Imports: ggplot2, tidyr
         let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
 
         assert_eq!(provider.name().unwrap(), Some("fullpkg".to_string()));
-        assert_eq!(
-            provider.version().unwrap().unwrap().to_string(),
-            "2.1.3"
-        );
+        assert_eq!(provider.version().unwrap().unwrap().to_string(), "2.1.3");
         assert_eq!(
             provider.summary().unwrap(),
             Some("Full Package Example".to_string())
@@ -359,10 +535,7 @@ Version: 0.1.0
         let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
 
         assert_eq!(provider.name().unwrap(), Some("minimalpkg".to_string()));
-        assert_eq!(
-            provider.version().unwrap().unwrap().to_string(),
-            "0.1.0"
-        );
+        assert_eq!(provider.version().unwrap().unwrap().to_string(), "0.1.0");
         assert_eq!(provider.description().unwrap(), None);
         assert_eq!(provider.license().unwrap(), None);
         assert_eq!(provider.homepage().unwrap(), None);
@@ -381,5 +554,521 @@ Version: 1.0.0
 
         let globs = provider.input_globs();
         assert!(globs.contains("DESCRIPTION"));
+    }
+
+    #[test]
+    fn test_license_mit_with_file() {
+        let content = r#"Package: testpkg
+Version: 1.0.0
+License: MIT + file LICENSE
+"#;
+        let temp_dir = create_test_description(content);
+        let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), Some("MIT".to_string()));
+        assert_eq!(
+            provider.license_file().unwrap(),
+            Some("LICENSE".to_string())
+        );
+    }
+
+    #[test]
+    fn test_license_gpl_simple() {
+        let content = r#"Package: testpkg
+Version: 1.0.0
+License: GPL-3
+"#;
+        let temp_dir = create_test_description(content);
+        let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), Some("GPL-3".to_string()));
+        assert_eq!(provider.license_file().unwrap(), None);
+    }
+
+    #[test]
+    fn test_license_bsd_with_file() {
+        let content = r#"Package: testpkg
+Version: 1.0.0
+License: BSD_3_clause + file LICENSE
+"#;
+        let temp_dir = create_test_description(content);
+        let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
+
+        assert_eq!(
+            provider.license().unwrap(),
+            Some("BSD-3-Clause".to_string())
+        );
+        assert_eq!(
+            provider.license_file().unwrap(),
+            Some("LICENSE".to_string())
+        );
+    }
+
+    #[test]
+    fn test_license_file_only() {
+        let content = r#"Package: testpkg
+Version: 1.0.0
+License: file LICENSE
+"#;
+        let temp_dir = create_test_description(content);
+        let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
+
+        // When only "file LICENSE" is specified, license() should return the original string
+        assert_eq!(
+            provider.license().unwrap(),
+            Some("file LICENSE".to_string())
+        );
+        assert_eq!(
+            provider.license_file().unwrap(),
+            Some("LICENSE".to_string())
+        );
+    }
+
+    mod license_parser_tests {
+        use super::*;
+
+        #[test]
+        fn test_mit_with_file() {
+            let parsed = parse_r_license("MIT + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MIT".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_mit_with_licence_british_spelling() {
+            let parsed = parse_r_license("MIT + file LICENCE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MIT".to_string()),
+                    license_file: Some("LICENCE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_bsd_3_clause_with_file() {
+            let parsed = parse_r_license("BSD_3_clause + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("BSD-3-Clause".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_bsd_2_clause_with_file() {
+            let parsed = parse_r_license("BSD_2_clause + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("BSD-2-Clause".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_apache_2_with_file() {
+            let parsed = parse_r_license("Apache License 2.0 + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("Apache-2.0".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_gpl_3_simple() {
+            let parsed = parse_r_license("GPL-3");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("GPL-3".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_gpl_version_range() {
+            let parsed = parse_r_license("GPL (>= 2)");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("GPL (>= 2)".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_gpl_dual_license() {
+            let parsed = parse_r_license("GPL-2 | GPL-3");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("GPL-2 | GPL-3".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_file_only() {
+            let parsed = parse_r_license("file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: None,
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_file_only_with_extension() {
+            let parsed = parse_r_license("file LICENSE.txt");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: None,
+                    license_file: Some("LICENSE.txt".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_case_insensitive_file() {
+            let parsed = parse_r_license("MIT + FILE LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MIT".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_lgpl_with_file() {
+            let parsed = parse_r_license("LGPL-3 + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("LGPL-3".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_cc_by_4_with_file() {
+            let parsed = parse_r_license("CC BY 4.0 + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("CC BY 4.0".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_complex_apache_expression() {
+            let parsed = parse_r_license("Apache License (== 2.0) + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("Apache-2.0".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_whitespace_handling() {
+            let parsed = parse_r_license("  MIT  + file   LICENSE  ");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MIT".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_mozilla_public_license() {
+            let parsed = parse_r_license("MPL-2.0");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MPL-2.0".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_artistic_license() {
+            let parsed = parse_r_license("Artistic-2.0");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("Artistic-2.0".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_unlicense() {
+            let parsed = parse_r_license("Unlicense");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("Unlicense".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_triple_license() {
+            let parsed = parse_r_license("GPL-2 | GPL-3 | MIT");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("GPL-2 | GPL-3 | MIT".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_agpl_with_file() {
+            let parsed = parse_r_license("AGPL-3 + file LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("AGPL-3".to_string()),
+                    license_file: Some("LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_custom_license_file_path() {
+            let parsed = parse_r_license("MIT + file inst/LICENSE");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("MIT".to_string()),
+                    license_file: Some("inst/LICENSE".to_string()),
+                }
+            );
+        }
+
+        #[test]
+        fn test_normalize_bsd_3_space() {
+            let parsed = parse_r_license("BSD 3 clause");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("BSD-3-Clause".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+
+        #[test]
+        fn test_normalize_apache() {
+            let parsed = parse_r_license("Apache License");
+            assert_eq!(
+                parsed,
+                ParsedLicense {
+                    license: Some("Apache-2.0".to_string()),
+                    license_file: None,
+                }
+            );
+        }
+    }
+
+    mod dependency_parser_tests {
+        use super::*;
+
+        #[test]
+        fn test_parse_simple_dependencies() {
+            let deps = parse_r_dependencies("curl, jsonlite, magrittr");
+            assert_eq!(deps.len(), 3);
+            assert_eq!(
+                deps[0],
+                RDependency {
+                    name: "curl".to_string(),
+                    version: None
+                }
+            );
+            assert_eq!(
+                deps[1],
+                RDependency {
+                    name: "jsonlite".to_string(),
+                    version: None
+                }
+            );
+            assert_eq!(
+                deps[2],
+                RDependency {
+                    name: "magrittr".to_string(),
+                    version: None
+                }
+            );
+        }
+
+        #[test]
+        fn test_parse_dependencies_with_versions() {
+            let deps =
+                parse_r_dependencies("magrittr (>= 1.5), R6 (>= 2.1.3), urltools (>= 1.6.0)");
+            assert_eq!(deps.len(), 3);
+            assert_eq!(
+                deps[0],
+                RDependency {
+                    name: "magrittr".to_string(),
+                    version: Some(">= 1.5".to_string())
+                }
+            );
+            assert_eq!(
+                deps[1],
+                RDependency {
+                    name: "R6".to_string(),
+                    version: Some(">= 2.1.3".to_string())
+                }
+            );
+            assert_eq!(
+                deps[2],
+                RDependency {
+                    name: "urltools".to_string(),
+                    version: Some(">= 1.6.0".to_string())
+                }
+            );
+        }
+
+        #[test]
+        fn test_parse_r_version_constraint() {
+            let deps = parse_r_dependencies("R(>= 4.1.0)");
+            assert_eq!(deps.len(), 1);
+            assert_eq!(
+                deps[0],
+                RDependency {
+                    name: "R".to_string(),
+                    version: Some(">= 4.1.0".to_string())
+                }
+            );
+        }
+
+        #[test]
+        fn test_parse_mixed_dependencies() {
+            let deps = parse_r_dependencies("curl, jsonlite, magrittr (>= 1.5), R6");
+            assert_eq!(deps.len(), 4);
+            assert_eq!(
+                deps[0],
+                RDependency {
+                    name: "curl".to_string(),
+                    version: None
+                }
+            );
+            assert_eq!(
+                deps[2],
+                RDependency {
+                    name: "magrittr".to_string(),
+                    version: Some(">= 1.5".to_string())
+                }
+            );
+        }
+
+        #[test]
+        fn test_parse_empty_dependencies() {
+            let deps = parse_r_dependencies("");
+            assert_eq!(deps.len(), 0);
+        }
+
+        #[test]
+        fn test_parse_multiline_dependencies() {
+            let deps = parse_r_dependencies(
+                "curl,\n    jsonlite,\n    magrittr (>= 1.5),\n    R6 (>= 2.1.3)",
+            );
+            assert_eq!(deps.len(), 4);
+        }
+
+        #[test]
+        fn test_r_package_to_conda() {
+            assert_eq!(r_package_to_conda("curl"), "r-curl");
+            assert_eq!(r_package_to_conda("jsonlite"), "r-jsonlite");
+            assert_eq!(r_package_to_conda("R6"), "r-r6");
+            assert_eq!(r_package_to_conda("magrittr"), "r-magrittr");
+            assert_eq!(r_package_to_conda("R"), "r-base");
+        }
+
+        #[test]
+        fn test_r_version_to_conda() {
+            assert_eq!(r_version_to_conda(">= 1.5"), ">=1.5");
+            assert_eq!(r_version_to_conda("(>= 2.1.3)"), ">=2.1.3");
+            assert_eq!(r_version_to_conda("> 3.0.0"), ">3.0.0");
+            assert_eq!(r_version_to_conda("== 1.0.0"), "==1.0.0");
+        }
+
+        #[test]
+        fn test_complex_version_constraints() {
+            let deps = parse_r_dependencies("testthat (>= 3.0.0), xml2, crul");
+            assert_eq!(deps.len(), 3);
+            assert_eq!(
+                deps[0],
+                RDependency {
+                    name: "testthat".to_string(),
+                    version: Some(">= 3.0.0".to_string())
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn test_imports_and_depends_extraction() {
+        let content = r#"Package: webmockr
+Version: 2.2.1.92
+Depends:
+    R(>= 4.1.0)
+Imports:
+    curl,
+    jsonlite,
+    magrittr (>= 1.5),
+    R6 (>= 2.1.3)
+"#;
+        let temp_dir = create_test_description(content);
+        let provider = DescriptionMetadataProvider::new(temp_dir.path());
+
+        let imports = provider.imports().unwrap();
+        assert_eq!(imports.len(), 4);
+        assert_eq!(imports[0].name, "curl");
+        assert_eq!(imports[2].name, "magrittr");
+        assert_eq!(imports[2].version, Some(">= 1.5".to_string()));
+
+        let depends = provider.depends().unwrap();
+        assert_eq!(depends.len(), 1);
+        assert_eq!(depends[0].name, "R");
+        assert_eq!(depends[0].version, Some(">= 4.1.0".to_string()));
+
+        // Test runtime_dependencies (should exclude R)
+        let runtime = provider.runtime_dependencies().unwrap();
+        assert_eq!(runtime.len(), 4); // Only Imports, not R from Depends
+        assert!(runtime.iter().all(|d| d.name != "R"));
     }
 }

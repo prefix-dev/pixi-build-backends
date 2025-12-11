@@ -12,6 +12,7 @@ The repository provides the following build backends:
 2. **pixi-build-cmake**: A backend designed for projects utilizing CMake as their build system.
 3. **pixi-build-rattler-build**: A backend for building [`recipe.yaml`](https://rattler.build/latest/) directly
 4. **pixi-build-rust**: A backend for building Rust projects.
+5. **pixi-build-r**: A backend for building R packages from source using R CMD INSTALL.
 
 
 These backends are located in the `crates/*` directory of the repository.

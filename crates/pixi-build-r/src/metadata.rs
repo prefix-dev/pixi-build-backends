@@ -8,8 +8,8 @@ use std::str::FromStr;
 
 #[derive(Debug, thiserror::Error, Diagnostic)]
 pub enum MetadataError {
-    #[error("failed to parse DESCRIPTION file: {0}")]
-    ParseDescription(String),
+    // #[error("failed to parse DESCRIPTION file: {0}")]
+    // ParseDescription(String),
     #[error("failed to parse version from DESCRIPTION: {0}")]
     ParseVersion(#[from] ParseVersionError),
     #[error(transparent)]

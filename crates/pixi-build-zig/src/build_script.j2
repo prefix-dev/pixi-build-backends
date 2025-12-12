@@ -1,0 +1,10 @@
+{%- macro env(key) -%}
+{%- if is_bash %}{{ "$" ~key }}{% else %}{{ "%" ~ key ~ "%" }}{% endif -%}
+{%- endmacro -%}
+{%- set install_prefix = env("LIBRARY_PREFIX") if not is_bash else env("PREFIX") -%}
+
+zig build --prefix {{ install_prefix }}{% if extra_args | length > 0 %} {{ extra_args | join(" ") }}{% endif %}
+{%- if not is_bash %}
+
+if errorlevel 1 exit 1
+{%- endif %}

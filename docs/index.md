@@ -33,6 +33,7 @@ The repository currently provides the following specialized build backends:
 | [**`pixi-build-ros`**](./backends/pixi-build-ros.md) | ROS (Robot Operating System) packages |
 | [**`pixi-build-rust`**](./backends/pixi-build-rust.md) |  Cargo-based Rust applications and libraries |
 | [**`pixi-build-mojo`**](./backends/pixi-build-mojo.md) |  Mojo applications and packages |
+| [**`pixi-build-zig`**](./backends/pixi-build-zig.md) |  Zig (with build.zig) applications and libraries |
 
 All backends are available through the [prefix.dev/conda-forge](https://prefix.dev/channels/conda-forge) conda channel and work across multiple platforms (Linux, macOS, Windows).
 For the latest backend versions, you can extend the channel list with the [prefix.dev/pixi-build-backends](https://prefix.dev/channels/pixi-build-backends) conda channel, here we push the latest versions of the backends.

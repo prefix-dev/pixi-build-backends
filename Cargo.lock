@@ -4459,6 +4459,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi-build-zig"
+version = "0.1.0"
+dependencies = [
+ "fs-err",
+ "indexmap 2.11.4",
+ "insta",
+ "miette",
+ "minijinja",
+ "pixi-build-backend",
+ "pixi_build_types",
+ "rattler_conda_types",
+ "recipe-stage0",
+ "rstest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+]
+
+[[package]]
 name = "pixi_build_type_conversions"
 version = "0.1.0"
 source = "git+https://github.com/prefix-dev/pixi?branch=main#76267eeac7dcaa508a4e8fd1871fe7b1729b62ea"

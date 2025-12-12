@@ -24,7 +24,7 @@ use rattler_conda_types::{GenericVirtualPackage, Platform, package::ArchiveType}
 use rattler_virtual_packages::VirtualPackageOverrides;
 use url::Url;
 
-use crate::source::Source;
+use crate::{source::Source, specs_conversion::convert_variant_from_pixi_build_types};
 
 /// A `recipe.yaml` file might be accompanied by a `variants.toml` file from
 /// which we can read variant configuration for that specific recipe..
@@ -98,16 +98,14 @@ impl LoadedVariantConfig {
 
     pub fn extend_with_input_variants(
         mut self,
-        input_variant_configuration: &BTreeMap<String, Vec<pixi_build_types::VariantValue>>,
+        input_variant_configuration: BTreeMap<String, Vec<pixi_build_types::VariantValue>>,
     ) -> Self {
         for (k, v) in input_variant_configuration {
             let variables = v
-                .iter()
-                .map(|v| rattler_build::recipe::variable::Variable::from_string(&v.to_string()))
+                .into_iter()
+                .map(convert_variant_from_pixi_build_types)
                 .collect();
-            self.variant_config
-                .variants
-                .insert(k.as_str().into(), variables);
+            self.variant_config.variants.insert(k.into(), variables);
         }
         self
     }

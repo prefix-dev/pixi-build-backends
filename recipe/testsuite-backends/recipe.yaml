@@ -46,7 +46,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
 
     tests:
       - script:
@@ -62,7 +62,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
 
     tests:
       - script:
@@ -78,7 +78,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
 
     tests:
       - script:
@@ -94,7 +94,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
 
     tests:
       - script:
@@ -110,7 +110,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
 
     tests:
       - script:
@@ -133,7 +133,7 @@ outputs:
         - py-rattler
         - typing-extensions
         - py-pixi-build-backend
-        - pixi-build-api-version >=2,<3
+        - pixi-build-api-version >=2,<4
     build:
       script:
         - if: win

@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, path::PathBuf, str::FromStr};
+use std::{cell::RefCell, collections::BTreeSet, path::PathBuf, str::FromStr};
 
 use miette::Diagnostic;
 use once_cell::unsync::OnceCell;
@@ -22,6 +22,7 @@ pub struct PyprojectMetadataProvider {
     manifest_root: PathBuf,
     pyproject_manifest: OnceCell<PyProjectToml>,
     ignore_pyproject_manifest: bool,
+    warnings: RefCell<Vec<String>>,
 }
 
 impl PyprojectMetadataProvider {
@@ -37,7 +38,22 @@ impl PyprojectMetadataProvider {
             manifest_root: manifest_root.into(),
             pyproject_manifest: OnceCell::default(),
             ignore_pyproject_manifest,
+            warnings: RefCell::new(Vec::new()),
         }
+    }
+
+    /// Returns all warnings collected during metadata extraction.
+    ///
+    /// This includes warnings about invalid SPDX license expressions and other
+    /// metadata parsing issues that don't cause errors but may indicate problems.
+    #[allow(dead_code)]
+    pub fn warnings(&self) -> Vec<String> {
+        self.warnings.borrow().clone()
+    }
+
+    /// Adds a warning message to the warning collection.
+    fn add_warning(&self, warning: impl Into<String>) {
+        self.warnings.borrow_mut().push(warning.into());
     }
 
     /// Ensures that the manifest is loaded and returns the project metadata.
@@ -145,7 +161,8 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// Returns the package license from the pyproject.toml manifest.
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
-    /// the license from the project section.
+    /// the license from the project section. If the license text is not a valid
+    /// SPDX expression, a warning is added and `None` is returned.
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
@@ -153,37 +170,74 @@ impl MetadataProvider for PyprojectMetadataProvider {
         Ok(self
             .ensure_manifest_project()?
             .and_then(|proj| match proj.license.as_ref() {
-                Some(pyproject_toml::License::Spdx(spdx)) => spdx
-                    .parse::<spdx::Expression>()
-                    .ok()
-                    .map(|expr| expr.to_string())
-                    .or(None),
-                Some(pyproject_toml::License::Text { text }) => text
-                    .parse::<spdx::Expression>()
-                    .ok()
-                    .map(|expr| expr.to_string())
-                    .or(None),
+                Some(pyproject_toml::License::Spdx(spdx)) => {
+                    match spdx.parse::<spdx::Expression>() {
+                        Ok(expr) => Some(expr.to_string()),
+                        Err(err) => {
+                            self.add_warning(format!(
+                                "License '{}' is not a valid SPDX expression: {}. \
+                                 Consider using a valid SPDX identifier (e.g., 'MIT', 'Apache-2.0'). \
+                                 See <https://spdx.org/licenses> for the list of valid licenses.",
+                                spdx, err
+                            ));
+                            None
+                        }
+                    }
+                }
+                Some(pyproject_toml::License::Text { text }) => {
+                    match text.parse::<spdx::Expression>() {
+                        Ok(expr) => Some(expr.to_string()),
+                        Err(err) => {
+                            self.add_warning(format!(
+                                "License text '{}' is not a valid SPDX expression: {}. \
+                                 Consider using a valid SPDX identifier (e.g., 'MIT', 'Apache-2.0'). \
+                                 See <https://spdx.org/licenses> for the list of valid licenses.",
+                                text, err
+                            ));
+                            None
+                        }
+                    }
+                }
                 _ => None,
             }))
     }
 
-    /// Returns the package license file path from the pyproject.toml manifest.
+    /// Returns the package license file path(s) from the pyproject.toml manifest.
     ///
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
-    /// the license file path from the project section if the license is specified
-    /// as a file reference.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    /// the license file path from the project section. This method checks:
+    /// 1. `license.file` - if specified as a file reference
+    /// 2. `license-files` - if specified as a list of file paths
+    ///
+    /// If both are present, they are combined with commas. If multiple files are
+    /// present in `license-files`, they are joined with commas.
+    fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         if self.ignore_pyproject_manifest {
             return Ok(None);
         }
-        Ok(self
-            .ensure_manifest_project()?
-            .and_then(|proj| proj.license.as_ref())
-            .and_then(|license| match license {
-                pyproject_toml::License::File { file } => Some(file.to_string_lossy().to_string()),
-                pyproject_toml::License::Text { text: _ } => None,
-                pyproject_toml::License::Spdx(_) => None,
-            }))
+
+        let project = match self.ensure_manifest_project()? {
+            Some(proj) => proj,
+            None => return Ok(None),
+        };
+
+        let mut license_files = Vec::new();
+
+        // Check for license.file
+        if let Some(pyproject_toml::License::File { file }) = project.license.as_ref() {
+            license_files.push(file.to_string_lossy().to_string());
+        }
+
+        // Check for license-files
+        if let Some(files) = project.license_files.as_ref() {
+            license_files.extend(files.iter().cloned());
+        }
+
+        if license_files.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(license_files))
+        }
     }
 
     /// Returns the package summary from the pyproject.toml manifest.
@@ -328,8 +382,70 @@ license = {file = "LICENSE.txt"}
 
         assert_eq!(provider.license().unwrap(), None);
         assert_eq!(
-            provider.license_file().unwrap(),
-            Some("LICENSE.txt".to_string())
+            provider.license_files().unwrap(),
+            Some(vec!["LICENSE.txt".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_license_files_field() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license-files = ["LICENSE.txt", "COPYING.txt"]
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), None);
+        assert_eq!(
+            provider.license_files().unwrap(),
+            Some(vec!["LICENSE.txt".to_string(), "COPYING.txt".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_license_file_and_license_files_combined() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license = {file = "LICENSE"}
+license-files = ["NOTICE.txt", "AUTHORS.txt"]
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), None);
+        assert_eq!(
+            provider.license_files().unwrap(),
+            Some(vec![
+                "LICENSE".to_string(),
+                "NOTICE.txt".to_string(),
+                "AUTHORS.txt".to_string()
+            ])
+        );
+    }
+
+    #[test]
+    fn test_single_license_file_in_license_files() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license-files = ["LICENSE"]
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), None);
+        assert_eq!(
+            provider.license_files().unwrap(),
+            Some(vec!["LICENSE".to_string()])
         );
     }
 
@@ -346,7 +462,11 @@ license = {text = "MIT"}
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), Some("MIT".to_string()));
-        assert_eq!(provider.license_file().unwrap(), None,);
+        assert_eq!(provider.license_files().unwrap(), None);
+
+        // Verify that no warnings were generated for valid SPDX
+        let warnings = provider.warnings();
+        assert_eq!(warnings.len(), 0);
     }
 
     #[test]
@@ -362,7 +482,13 @@ license = {text = "BLABLA"}
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
-        assert_eq!(provider.license_file().unwrap(), None,);
+        assert_eq!(provider.license_files().unwrap(), None);
+
+        // Verify that a warning was generated
+        let warnings = provider.warnings();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("BLABLA"));
+        assert!(warnings[0].contains("not a valid SPDX expression"));
     }
 
     #[test]
@@ -419,7 +545,7 @@ description = "Test description"
         assert_eq!(provider.homepage().unwrap(), None);
         assert_eq!(provider.repository().unwrap(), None);
         assert_eq!(provider.documentation().unwrap(), None);
-        assert_eq!(provider.license_file().unwrap(), None);
+        assert_eq!(provider.license_files().unwrap(), None);
         assert_eq!(provider.summary().unwrap(), None);
         assert_eq!(provider.requires_python().unwrap(), None);
     }

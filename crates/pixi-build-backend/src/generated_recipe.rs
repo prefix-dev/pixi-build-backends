@@ -186,11 +186,11 @@ impl GeneratedRecipe {
             license_file: match model.license_file {
                 Some(v) => Some(Value::Concrete(v.display().to_string())),
                 None => provider
-                    .license_file()
+                    .license_files()
                     .map_err(|e| {
-                        GenerateRecipeError::MetadataProviderError(String::from("license-file"), e)
+                        GenerateRecipeError::MetadataProviderError(String::from("license-files"), e)
                     })?
-                    .map(Value::Concrete),
+                    .map(|files| Value::Concrete(files.join(", "))),
             },
             summary: provider
                 .summary()
@@ -242,7 +242,7 @@ pub trait MetadataProvider {
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         Ok(None)
     }
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {

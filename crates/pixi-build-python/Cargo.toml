@@ -26,6 +26,7 @@ pixi-build-backend = { workspace = true }
 pixi_build_types = { workspace = true }
 
 recipe-stage0 = { workspace = true }
+spdx = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true, features = ["yaml", "redactions", "filters"] }

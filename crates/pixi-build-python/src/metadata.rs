@@ -152,11 +152,18 @@ impl MetadataProvider for PyprojectMetadataProvider {
         }
         Ok(self
             .ensure_manifest_project()?
-            .and_then(|proj| proj.license.as_ref())
-            .map(|license| match license {
-                pyproject_toml::License::Text { text } => text.clone(),
-                pyproject_toml::License::File { file } => file.to_string_lossy().to_string(),
-                pyproject_toml::License::Spdx(spdx) => spdx.clone(),
+            .and_then(|proj| match proj.license.as_ref() {
+                Some(pyproject_toml::License::Spdx(spdx)) => spdx
+                    .parse::<spdx::Expression>()
+                    .ok()
+                    .map(|expr| expr.to_string())
+                    .or(None),
+                Some(pyproject_toml::License::Text { text }) => text
+                    .parse::<spdx::Expression>()
+                    .ok()
+                    .map(|expr| expr.to_string())
+                    .or(None),
+                _ => None,
             }))
     }
 
@@ -275,7 +282,7 @@ mod tests {
 name = "test-package"
 version = "1.0.0"
 description = "A test package"
-license = {text = "MIT"}
+license = "MIT"
 
 [project.urls]
 Homepage = "https://example.com"
@@ -319,11 +326,43 @@ license = {file = "LICENSE.txt"}
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
         let mut provider = create_metadata_provider(temp_dir.path());
 
-        assert_eq!(provider.license().unwrap(), Some("LICENSE.txt".to_string()));
+        assert_eq!(provider.license().unwrap(), None);
         assert_eq!(
             provider.license_file().unwrap(),
             Some("LICENSE.txt".to_string())
         );
+    }
+
+    #[test]
+    fn test_license_from_text() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license = {text = "MIT"}
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), Some("MIT".to_string()));
+        assert_eq!(provider.license_file().unwrap(), None,);
+    }
+
+    #[test]
+    fn test_license_from_non_spdx_text() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license = {text = "BLABLA"}
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(provider.license().unwrap(), None);
+        assert_eq!(provider.license_file().unwrap(), None,);
     }
 
     #[test]

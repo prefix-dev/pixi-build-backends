@@ -35,7 +35,7 @@ serde = "1.0"
 serde_yaml = "0.9"
 serde_json = "1.0"
 tempfile = "3.16.0"
-toml_edit = "0.23.0"
+toml = "0.9.8"
 tokio = "1.43.0"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
@@ -51,40 +51,28 @@ jsonrpc-stdio-server = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-core = "18.0.0"
 
+# Rattler build
 rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false }
 
+# Rattler crates
 file_url = "0.2.5"
 rattler_conda_types = { version = "0.42.0", default-features = false }
 rattler_digest = { version = "1.2.0", default-features = false }
 rattler_package_streaming = { version = "0.23.1", default-features = false }
 rattler_virtual_packages = { version = "2.3.2", default-features = false }
 
-pixi_build_types = { version = "*" }
-pixi_consts = { version = "*" }
-pixi_spec = { version = "*" }
-pixi_build_type_conversions = { version = "*" }
+# Pixi crates
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
+# Workspace crates
 pixi-build-backend = { path = "crates/pixi-build-backend" }
-
-
 recipe-stage0 = { path = "crates/recipe-stage0" }
 
-
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_consts = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-
 # This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
 reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
-reqwest-retry = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
-version-ranges = { git = "https://github.com/astral-sh/pubgrub", rev = "d8efd77673c9a90792da9da31b6c0da7ea8a324b" }
 
 #pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
-#pixi_consts = { path = "../pixi/crates/pixi_consts" }
-#pixi_spec = { path = "../pixi/crates/pixi_spec" }
-#pixi_build_type_conversions = { path = "../pixi/crates/pixi_build_type_conversions" }
 
 #rattler_cache = { path = "../rattler/crates/rattler_cache" }
 #rattler_conda_types = { path = "../rattler/crates/rattler_conda_types" }

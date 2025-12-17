@@ -52,6 +52,7 @@ pub trait GenerateRecipe {
     ///   influence how the recipe is generated.
     /// * `channels` - The channels that are being used for this build. This can be
     ///   used for backend-specific logic that depends on which channels are available.
+    /// * `cache_dir` - Optional cache directory for storing cached data (e.g., HTTP responses).
     #[allow(clippy::too_many_arguments)]
     fn generate_recipe(
         &self,
@@ -62,6 +63,7 @@ pub trait GenerateRecipe {
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         channels: Vec<ChannelUrl>,
+        cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files

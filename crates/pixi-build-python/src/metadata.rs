@@ -239,6 +239,21 @@ impl PyprojectMetadataProvider {
             .and_then(|proj| proj.requires_python.as_ref())
             .map(|req_py| req_py.to_string()))
     }
+
+    /// Returns the project dependencies from the pyproject.toml manifest.
+    ///
+    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
+    /// the dependencies from the `[project.dependencies]` section.
+    pub fn project_dependencies(
+        &self,
+    ) -> Result<Option<&Vec<pep508_rs::Requirement<pep508_rs::VerbatimUrl>>>, MetadataError> {
+        if self.ignore_pyproject_manifest {
+            return Ok(None);
+        }
+        Ok(self
+            .ensure_manifest_project()?
+            .and_then(|proj| proj.dependencies.as_ref()))
+    }
 }
 
 #[cfg(test)]
@@ -563,6 +578,7 @@ Documentation = "https://docs.example.com"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -609,6 +625,7 @@ requires-python = ">=3.13"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 

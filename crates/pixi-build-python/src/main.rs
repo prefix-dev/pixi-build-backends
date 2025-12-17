@@ -1,6 +1,7 @@
 mod build_script;
 mod config;
 mod metadata;
+mod pypi_mapping;
 
 use build_script::{BuildPlatform, BuildScriptContext, Installer};
 use config::PythonBackendConfig;
@@ -12,6 +13,7 @@ use pixi_build_backend::{
     traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
+use pypi_mapping::PyPiToCondaMapper;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{ChannelUrl, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
@@ -61,6 +63,7 @@ impl GenerateRecipe for PythonGenerator {
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
 
@@ -133,6 +136,37 @@ impl GenerateRecipe for PythonGenerator {
         }
         if !model_dependencies.run.contains_key(&python_pkg) {
             requirements.run.push(get_python_requirement()?);
+        }
+
+        // Map PyPI dependencies from pyproject.toml to conda dependencies
+        if let Some(pypi_deps) = pyproject_metadata_provider.project_dependencies()? {
+            let mapper = PyPiToCondaMapper::new(cache_dir);
+
+            // Use a blocking runtime to run the async mapping
+            let rt = tokio::runtime::Handle::try_current().ok().map(|h| {
+                // We're already in an async context, use block_in_place
+                h
+            });
+
+            let mapped_deps = if let Some(handle) = rt {
+                tokio::task::block_in_place(|| handle.block_on(mapper.map_requirements(pypi_deps)))?
+            } else {
+                // Create a new runtime if we're not in an async context
+                let rt = tokio::runtime::Runtime::new().into_diagnostic()?;
+                rt.block_on(mapper.map_requirements(pypi_deps))?
+            };
+
+            // Add mapped dependencies to run requirements, avoiding duplicates
+            for dep in mapped_deps {
+                let pkg_name_str: &str = dep.name.as_normalized();
+                let pkg_name = pixi_build_types::SourcePackageName::from(pkg_name_str);
+                if !model_dependencies.run.contains_key(&pkg_name) {
+                    let match_spec = dep.to_match_spec();
+                    requirements
+                        .run
+                        .push(match_spec.to_string().parse().into_diagnostic()?);
+                }
+            }
         }
 
         // Get the list of compilers from config, defaulting to no compilers for pure
@@ -489,6 +523,7 @@ version = "0.1.0"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -532,6 +567,7 @@ version = "0.1.0"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -574,6 +610,7 @@ version = "0.1.0"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -614,6 +651,7 @@ version = "0.1.0"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -680,6 +718,7 @@ version = "0.1.0"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -724,6 +763,7 @@ version = "0.1.0"
             None,
             &std::collections::HashSet::<pixi_build_backend::variants::NormalizedKey>::new(),
             vec![],
+            None,
         )?)
     }
 

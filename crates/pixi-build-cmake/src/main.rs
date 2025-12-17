@@ -36,6 +36,7 @@ impl GenerateRecipe for CMakeGenerator {
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Determine the manifest root, because `manifest_path` can be
         // either a direct file path or a directory path.
@@ -239,6 +240,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -280,6 +282,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -316,6 +319,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -362,6 +366,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -527,6 +532,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -581,6 +587,7 @@ mod tests {
                 None,
                 &HashSet::default(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -625,6 +632,7 @@ mod tests {
                 None,
                 &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 

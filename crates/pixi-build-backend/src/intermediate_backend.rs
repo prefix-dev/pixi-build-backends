@@ -277,6 +277,7 @@ where
             Some(PythonParams { editable: false }),
             &variant_config.variants.keys().cloned().collect(),
             params.channels,
+            self.cache_dir.clone(),
         )?;
 
         // Convert the recipe to source code.
@@ -593,6 +594,7 @@ where
             }),
             &variants.keys().cloned().collect(),
             params.channels,
+            self.cache_dir.clone(),
         )?;
 
         // Convert the recipe to source code.

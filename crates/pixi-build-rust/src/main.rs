@@ -41,6 +41,7 @@ impl GenerateRecipe for RustGenerator {
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.
@@ -284,6 +285,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -327,6 +329,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -369,6 +372,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -414,6 +418,7 @@ mod tests {
                     None,
                     &HashSet::new(),
                     vec![],
+                    None,
                 )
                 .expect("Failed to generate recipe")
         });
@@ -439,6 +444,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -536,6 +542,7 @@ mod tests {
             None,
             &std::collections::HashSet::new(),
             vec![],
+            None,
         );
 
         // Should fail when trying to read Cargo.toml from non-existent path
@@ -564,6 +571,7 @@ mod tests {
             None,
             &std::collections::HashSet::new(),
             vec![],
+            None,
         );
 
         assert!(result.is_err());
@@ -602,6 +610,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -668,6 +677,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -743,6 +753,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 
@@ -838,6 +849,7 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
             .expect("Failed to generate recipe");
 

@@ -13,10 +13,14 @@ indexmap = { workspace = true }
 miette = { workspace = true }
 minijinja = { workspace = true }
 rattler_conda_types = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 toml = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
+tracing = { workspace = true }
 pyproject-toml = { workspace = true }
+pep508_rs = { workspace = true }
 fs-err = { workspace = true }
 once_cell = { workspace = true }
 thiserror = { workspace = true }

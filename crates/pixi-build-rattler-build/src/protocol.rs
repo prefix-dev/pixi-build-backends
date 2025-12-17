@@ -6,7 +6,10 @@ use std::{
 
 use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::specs_conversion::from_build_v1_args_to_finalized_dependencies;
+use pixi_build_backend::specs_conversion::{
+    convert_variant_from_pixi_build_types, convert_variant_to_pixi_build_types,
+    from_build_v1_args_to_finalized_dependencies,
+};
 use pixi_build_backend::{
     dependencies::{convert_binary_dependencies, convert_dependencies},
     intermediate_backend::{conda_build_v1_directories, find_matching_output},
@@ -30,7 +33,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
+    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src},
     selectors::SelectorConfig,
     tool_configuration::Configuration,
     types::{PackageIdentifier, PackagingSettings},
@@ -79,7 +82,7 @@ impl Protocol for RattlerBuildBackend {
             &selector_config_for_variants,
             params.variant_files.iter().flatten().map(PathBuf::as_path),
         )?
-        .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
+        .extend_with_input_variants(params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
@@ -163,16 +166,25 @@ impl Protocol for RattlerBuildBackend {
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
-                    python_site_packages_path: None,
+                    python_site_packages_path: recipe.build.python.site_packages_path.clone(),
                     variant: variant
                         .iter()
-                        .map(|(k, v)| {
-                            (
-                                k.0.clone(),
-                                pixi_build_types::VariantValue::from(v.to_string()),
-                            )
+                        .map(|(key, value)| {
+                            Ok((
+                                key.0.clone(),
+                                convert_variant_to_pixi_build_types(value.clone()).into_diagnostic()
+                                    .with_context(|| {
+                                        format!("the output {}/{}={}={} contains a variant for '{}' which cannot be converted to pixi types: {}",
+                                            discovered_output.target_platform,
+                                            discovered_output.name,
+                                            discovered_output.version,
+                                            discovered_output.build_string,
+                                            key.0,
+                                            value)
+                                    })?
+                            ))
                         })
-                        .collect(),
+                        .collect::<miette::Result<_>>()?,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -292,7 +304,7 @@ impl Protocol for RattlerBuildBackend {
                 .map(|(k, v)| {
                     (
                         k.as_str().into(),
-                        vec![Variable::from_string(&v.to_string())],
+                        vec![convert_variant_from_pixi_build_types(v.clone())],
                     )
                 })
                 .collect(),

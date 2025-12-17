@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 context:
   name: pixi-build-api-version
-  version: "2"
+  version: "3"
 
 package:
   name: ${{ name }}

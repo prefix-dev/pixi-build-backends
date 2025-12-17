@@ -29,7 +29,7 @@ class MetadataProvider(Protocol):
         """Return the package license or None if not available."""
         return None
 
-    def license_file(self) -> Optional[str]:
+    def license_files(self) -> Optional[str]:
         """Return the path to the license file or None if not available."""
         return None
 

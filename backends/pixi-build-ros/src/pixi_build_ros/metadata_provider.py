@@ -150,7 +150,7 @@ class PackageXmlMetadataProvider(MetadataProvider):  # type: ignore[misc]  # Met
         # TODO: Handle License parsing to conform to SPDX standards,
         return None
 
-    def license_file(self) -> str | None:
+    def license_files(self) -> list[str] | None:
         """Return package.xml as the license files, relative to manifest_root."""
         # TODO: This does not work currently, so return None
         return None

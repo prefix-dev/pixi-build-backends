@@ -21,19 +21,14 @@ pyo3 = { version = "0.26", features = [
   "py-clone",
   "experimental-async",
 ] }
-
 pyo3-async-runtimes = { version = "0.26.0", features = ["tokio-runtime"] }
 
 # Core pixi-build dependencies (local crates)
 pixi-build-backend = { path = "../crates/pixi-build-backend" }
 recipe-stage0 = { path = "../crates/recipe-stage0" }
 
-
 # Pixi types
-pixi_build_types = "*"
-pixi_manifest = "*"
-pixi_spec = "*"
-pixi_build_type_conversions = "*"
+pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 # Core serialization and async support
 serde = { version = "1.0", features = ["derive"] }
@@ -42,7 +37,8 @@ serde_yaml = "0.9"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "rt"] }
 rattler_conda_types = { version = "0.42.0", default-features = false }
 
-rattler-build = "*"
+# Rattler-build
+rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main", default-features = false }
 
 # Error handling
 miette = "7.5.0"
@@ -68,10 +64,8 @@ strip = false
 
 
 [patch.crates-io]
-pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_manifest = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_spec = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
-pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
+# This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
+reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
 
 # Local path overrides for development
 #pixi_build_types = { path = "../../pixi_build_types/crates/pixi_build_types" }
@@ -79,10 +73,3 @@ pixi_build_type_conversions = { git = "https://github.com/prefix-dev/pixi", bran
 #pixi_manifest = { path = "../../pixi/crates/pixi_manifest" }
 #pixi_spec = { path = "../../pixi/crates/pixi_spec" }
 #pixi_build_type_conversions = { path = "../../pixi/crates/pixi_build_type_conversions" }
-
-rattler-build = { git = "https://github.com/prefix-dev/rattler-build", branch = "main" }
-
-# This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
-reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
-reqwest-retry = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
-version-ranges = { git = "https://github.com/astral-sh/pubgrub", rev = "d8efd77673c9a90792da9da31b6c0da7ea8a324b" }

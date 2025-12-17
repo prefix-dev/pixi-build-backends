@@ -20,6 +20,7 @@ indexmap = { workspace = true }
 ordermap = { workspace = true }
 itertools = { workspace = true }
 miette = { workspace = true }
+minijinja = { workspace = true }
 rattler_conda_types = { workspace = true }
 rattler_virtual_packages = { workspace = true }
 rattler-build = { workspace = true }

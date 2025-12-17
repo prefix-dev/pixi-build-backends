@@ -46,7 +46,6 @@ impl PyprojectMetadataProvider {
     ///
     /// This includes warnings about invalid SPDX license expressions and other
     /// metadata parsing issues that don't cause errors but may indicate problems.
-    #[allow(dead_code)]
     pub fn warnings(&self) -> Vec<String> {
         self.warnings.borrow().clone()
     }

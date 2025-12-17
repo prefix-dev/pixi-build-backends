@@ -218,6 +218,11 @@ impl GenerateRecipe for PythonGenerator {
             .metadata_input_globs
             .extend(pyproject_metadata_provider.input_globs());
 
+        // Log any warnings collected during metadata extraction
+        for warning in pyproject_metadata_provider.warnings() {
+            tracing::warn!("{}", warning);
+        }
+
         Ok(generated_recipe)
     }
 

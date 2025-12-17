@@ -31,7 +31,7 @@ PIP_REQUIRE_VIRTUALENV = "false"
 [feature.build.dependencies]
 python = "*"
 maturin = "~=1.10.2"
-pip = "~=25.2.0"
+pip = "~=25.3.0"
 rust = "~=1.89.0"
 
 [feature.build.target.linux-64.dependencies]

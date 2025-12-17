@@ -194,7 +194,7 @@ impl GenerateRecipe for PythonGenerator {
             let contents = std::fs::read_to_string(&pyproject_manifest_path).into_diagnostic()?;
             generated_recipe.build_input_globs =
                 BTreeSet::from([pyproject_manifest_path.to_string_lossy().to_string()]);
-            Some(toml_edit::de::from_str(&contents).into_diagnostic()?)
+            Some(toml::from_str(&contents).into_diagnostic()?)
         } else {
             None
         };

@@ -9,7 +9,7 @@ use rattler_conda_types::{ParseVersionError, Version};
 #[derive(Debug, thiserror::Error, Diagnostic)]
 pub enum MetadataError {
     #[error("failed to parse pyproject.toml, {0}")]
-    PyProjectToml(#[from] toml_edit::de::Error),
+    PyProjectToml(#[from] toml::de::Error),
     #[error("failed to parse version from pyproject.toml, {0}")]
     ParseVersion(ParseVersionError),
     #[error(transparent)]
@@ -50,7 +50,7 @@ impl PyprojectMetadataProvider {
         self.pyproject_manifest.get_or_try_init(move || {
             let pyproject_toml_content =
                 fs_err::read_to_string(self.manifest_root.join("pyproject.toml"))?;
-            toml_edit::de::from_str(&pyproject_toml_content).map_err(MetadataError::PyProjectToml)
+            toml::from_str(&pyproject_toml_content).map_err(MetadataError::PyProjectToml)
         })
     }
 

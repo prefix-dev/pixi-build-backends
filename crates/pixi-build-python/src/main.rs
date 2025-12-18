@@ -171,6 +171,7 @@ impl GenerateRecipe for PythonGenerator {
 
         // Get PyPI dependencies and input globs before the async call to avoid Send issues
         let pypi_deps = pyproject_metadata_provider.project_dependencies()?;
+        let build_system_deps = pyproject_metadata_provider.build_system_requires()?;
         let metadata_input_globs = pyproject_metadata_provider.input_globs();
 
         // Map PyPI dependencies from pyproject.toml to conda dependencies
@@ -219,6 +220,56 @@ impl GenerateRecipe for PythonGenerator {
             for match_spec in filtered_deps {
                 requirements
                     .run
+                    .push(match_spec.to_string().parse().into_diagnostic()?);
+            }
+        }
+
+        // Map build-system.requires from pyproject.toml to conda host dependencies
+        if let Some(build_system_deps) = build_system_deps {
+            // Try each channel until we find one with a mapping
+            let mut mapped_deps = Vec::new();
+            for channel in &channels {
+                if let Some(channel_name) = extract_channel_name(channel) {
+                    let mapper =
+                        PyPiToCondaMapper::new(cache_dir.clone(), channel_name.to_string());
+                    match mapper.map_requirements(build_system_deps).await {
+                        Ok(deps) if !deps.is_empty() => {
+                            tracing::debug!(
+                                "Using PyPI-to-conda mapping for build-system from channel '{}'",
+                                channel_name
+                            );
+                            mapped_deps = deps;
+                            break;
+                        }
+                        Ok(_) => {
+                            tracing::debug!(
+                                "No PyPI-to-conda mapping found for build-system in channel '{}'",
+                                channel_name
+                            );
+                        }
+                        Err(e) => {
+                            tracing::debug!(
+                                "Failed to get PyPI-to-conda mapping for build-system in channel '{}': {}",
+                                channel_name,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+
+            // Build set of package names to skip (those already specified by Pixi in host)
+            let skip_packages: HashSet<pixi_build_types::SourcePackageName> = model_dependencies
+                .host
+                .keys()
+                .map(|k| (*k).clone())
+                .collect();
+
+            // Filter mapped dependencies, keeping only those not already in Pixi host deps
+            let filtered_deps = filter_mapped_pypi_deps(&mapped_deps, &skip_packages);
+            for match_spec in filtered_deps {
+                requirements
+                    .host
                     .push(match_spec.to_string().parse().into_diagnostic()?);
             }
         }

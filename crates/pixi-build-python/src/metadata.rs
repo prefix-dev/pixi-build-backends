@@ -254,6 +254,23 @@ impl PyprojectMetadataProvider {
             .ensure_manifest_project()?
             .and_then(|proj| proj.dependencies.as_ref()))
     }
+
+    /// Returns the build system requirements from the pyproject.toml manifest.
+    ///
+    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
+    /// the requirements from the `[build-system].requires` section.
+    pub fn build_system_requires(
+        &self,
+    ) -> Result<Option<&Vec<pep508_rs::Requirement<pep508_rs::VerbatimUrl>>>, MetadataError> {
+        if self.ignore_pyproject_manifest {
+            return Ok(None);
+        }
+        Ok(self
+            .ensure_manifest()?
+            .build_system
+            .as_ref()
+            .map(|bs| &bs.requires))
+    }
 }
 
 #[cfg(test)]
@@ -532,6 +549,71 @@ requires-python = ">=3.13"
         let provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
 
         assert_eq!(provider.requires_python().unwrap(), None);
+    }
+
+    #[test]
+    fn test_build_system_requires_extraction() {
+        let pyproject_toml_content = r#"
+[build-system]
+requires = ["flit_core<4", "setuptools>=42"]
+
+[project]
+name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = create_metadata_provider(temp_dir.path());
+
+        let requires = provider
+            .build_system_requires()
+            .expect("Should parse build-system.requires");
+        assert!(requires.is_some(), "build-system.requires should exist");
+        let requires = requires.unwrap();
+        assert_eq!(requires.len(), 2);
+        assert_eq!(requires[0].name.as_ref(), "flit-core");
+        assert_eq!(
+            requires[0].version_or_url.as_ref().unwrap().to_string(),
+            "<4"
+        );
+        assert_eq!(requires[1].name.as_ref(), "setuptools");
+    }
+
+    #[test]
+    fn test_build_system_requires_with_ignore_flag() {
+        let pyproject_toml_content = r#"
+[build-system]
+requires = ["flit_core<4"]
+
+[project]
+name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
+
+        assert_eq!(provider.build_system_requires().unwrap(), None);
+    }
+
+    #[test]
+    fn test_build_system_requires_missing() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = create_metadata_provider(temp_dir.path());
+
+        let requires = provider
+            .build_system_requires()
+            .expect("Should not error when build-system is missing");
+        assert!(
+            requires.is_none(),
+            "build-system.requires should be None when section is missing"
+        );
     }
 
     #[tokio::test]

@@ -51,10 +51,11 @@ mod imp {
         }
     }
 
+    #[async_trait::async_trait]
     impl GenerateRecipe for TestGenerateRecipe {
         type Config = TestBackendConfig;
 
-        fn generate_recipe(
+        async fn generate_recipe(
             &self,
             model: &pixi_build_types::ProjectModelV1,
             _config: &Self::Config,

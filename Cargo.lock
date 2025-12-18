@@ -3845,6 +3845,7 @@ dependencies = [
 name = "pixi-build-cmake"
 version = "0.3.5"
 dependencies = [
+ "async-trait",
  "fs-err",
  "indexmap 2.12.1",
  "insta",
@@ -3867,6 +3868,7 @@ dependencies = [
 name = "pixi-build-mojo"
 version = "0.1.5"
 dependencies = [
+ "async-trait",
  "indexmap 2.12.1",
  "insta",
  "miette",
@@ -3887,6 +3889,7 @@ dependencies = [
 name = "pixi-build-python"
 version = "0.4.2"
 dependencies = [
+ "async-trait",
  "fs-err",
  "indexmap 2.12.1",
  "insta",
@@ -3937,6 +3940,7 @@ dependencies = [
 name = "pixi-build-rust"
 version = "0.4.2"
 dependencies = [
+ "async-trait",
  "cargo_toml",
  "fs-err",
  "indexmap 2.12.1",

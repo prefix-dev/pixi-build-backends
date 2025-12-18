@@ -161,10 +161,11 @@ impl PyGenerateRecipe {
     }
 }
 
+#[async_trait::async_trait]
 impl GenerateRecipe for PyGenerateRecipe {
     type Config = PyBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,

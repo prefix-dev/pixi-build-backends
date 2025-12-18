@@ -21,10 +21,11 @@ use std::{collections::BTreeSet, path::Path, sync::Arc};
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
 
+#[async_trait::async_trait]
 impl GenerateRecipe for MojoGenerator {
     type Config = MojoBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
@@ -177,8 +178,8 @@ mod tests {
         };
     }
 
-    #[test]
-    fn test_mojo_bin_is_set() {
+    #[tokio::test]
+    async fn test_mojo_bin_is_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -213,6 +214,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -220,8 +222,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_mojo_pkg_is_set() {
+    #[tokio::test]
+    async fn test_mojo_pkg_is_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -261,6 +263,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -268,8 +271,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_compiler_is_in_build_requirements() {
+    #[tokio::test]
+    async fn test_compiler_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -301,6 +304,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -309,8 +313,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_env_vars_are_set() {
+    #[tokio::test]
+    async fn test_env_vars_are_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -347,6 +351,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
@@ -355,8 +360,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_compiler_is_not_added_if_compiler_is_already_present() {
+    #[tokio::test]
+    async fn test_compiler_is_not_added_if_compiler_is_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -395,6 +400,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -403,8 +409,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_mojo_with_additional_compilers() {
+    #[tokio::test]
+    async fn test_mojo_with_additional_compilers() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -439,6 +445,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have both the mojo-compiler package and the additional compilers
@@ -477,8 +484,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_default_mojo_compiler_behavior() {
+    #[tokio::test]
+    async fn test_default_mojo_compiler_behavior() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -513,6 +520,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have only the mojo-compiler package by default
@@ -535,8 +543,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_opt_out_of_mojo_compiler() {
+    #[tokio::test]
+    async fn test_opt_out_of_mojo_compiler() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -571,6 +579,7 @@ mod tests {
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that mojo-compiler is NOT present when user opts out

@@ -534,8 +534,8 @@ requires-python = ">=3.13"
         assert_eq!(provider.requires_python().unwrap(), None);
     }
 
-    #[test]
-    fn test_generated_recipe_contains_pyproject_values() {
+    #[tokio::test]
+    async fn test_generated_recipe_contains_pyproject_values() {
         let pyproject_toml_content = r#"
 [project]
 name = "test-package"
@@ -580,6 +580,7 @@ Documentation = "https://docs.example.com"
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -588,8 +589,8 @@ Documentation = "https://docs.example.com"
         });
     }
 
-    #[test]
-    fn test_generated_recipe_respects_requires_python() {
+    #[tokio::test]
+    async fn test_generated_recipe_respects_requires_python() {
         let pyproject_toml_content = r#"
 [project]
 name = "test-package"
@@ -627,6 +628,7 @@ requires-python = ">=3.13"
                 vec![],
                 None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that Python requirements include the version constraint

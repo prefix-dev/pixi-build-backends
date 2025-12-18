@@ -32,6 +32,7 @@ pub struct PythonParams {
 ///
 /// An instance of this trait is used by the [`IntermediateBackend`]
 /// in order to generate the recipe.
+#[async_trait::async_trait]
 pub trait GenerateRecipe {
     type Config: BackendConfig;
 
@@ -54,7 +55,7 @@ pub trait GenerateRecipe {
     ///   used for backend-specific logic that depends on which channels are available.
     /// * `cache_dir` - Optional cache directory for storing cached data (e.g., HTTP responses).
     #[allow(clippy::too_many_arguments)]
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,

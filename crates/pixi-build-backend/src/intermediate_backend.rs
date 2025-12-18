@@ -269,16 +269,19 @@ where
         variant_config.variants.append(&mut param_variants);
 
         // Construct the intermediate recipe
-        let generated_recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            params.host_platform,
-            Some(PythonParams { editable: false }),
-            &variant_config.variants.keys().cloned().collect(),
-            params.channels,
-            self.cache_dir.clone(),
-        )?;
+        let generated_recipe = self
+            .generate_recipe
+            .generate_recipe(
+                &self.project_model,
+                &config,
+                self.source_dir.clone(),
+                params.host_platform,
+                Some(PythonParams { editable: false }),
+                &variant_config.variants.keys().cloned().collect(),
+                params.channels,
+                self.cache_dir.clone(),
+            )
+            .await?;
 
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just
@@ -584,18 +587,21 @@ where
             .collect();
 
         // Construct the intermediate recipe
-        let mut recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            host_platform,
-            Some(PythonParams {
-                editable: params.editable.unwrap_or_default(),
-            }),
-            &variants.keys().cloned().collect(),
-            params.channels,
-            self.cache_dir.clone(),
-        )?;
+        let mut recipe = self
+            .generate_recipe
+            .generate_recipe(
+                &self.project_model,
+                &config,
+                self.source_dir.clone(),
+                host_platform,
+                Some(PythonParams {
+                    editable: params.editable.unwrap_or_default(),
+                }),
+                &variants.keys().cloned().collect(),
+                params.channels,
+                self.cache_dir.clone(),
+            )
+            .await?;
 
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just

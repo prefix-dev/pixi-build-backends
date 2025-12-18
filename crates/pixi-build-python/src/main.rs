@@ -49,6 +49,14 @@ pub(crate) fn filter_mapped_pypi_deps(
         .collect()
 }
 
+/// Extract the channel name from a channel URL.
+///
+/// Returns the last path segment (e.g., "conda-forge" from
+/// "https://prefix.dev/conda-forge").
+fn extract_channel_name(channel: &ChannelUrl) -> Option<&str> {
+    channel.as_str().trim_end_matches('/').rsplit('/').next()
+}
+
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
 
@@ -84,7 +92,7 @@ impl GenerateRecipe for PythonGenerator {
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
-        _channels: Vec<ChannelUrl>,
+        channels: Vec<ChannelUrl>,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         let params = python_params.unwrap_or_default();
@@ -167,8 +175,37 @@ impl GenerateRecipe for PythonGenerator {
 
         // Map PyPI dependencies from pyproject.toml to conda dependencies
         if let Some(pypi_deps) = pypi_deps {
-            let mapper = PyPiToCondaMapper::new(cache_dir);
-            let mapped_deps = mapper.map_requirements(pypi_deps).await?;
+            // Try each channel until we find one with a mapping
+            let mut mapped_deps = Vec::new();
+            for channel in &channels {
+                if let Some(channel_name) = extract_channel_name(channel) {
+                    let mapper =
+                        PyPiToCondaMapper::new(cache_dir.clone(), channel_name.to_string());
+                    match mapper.map_requirements(pypi_deps).await {
+                        Ok(deps) if !deps.is_empty() => {
+                            tracing::debug!(
+                                "Using PyPI-to-conda mapping from channel '{}'",
+                                channel_name
+                            );
+                            mapped_deps = deps;
+                            break;
+                        }
+                        Ok(_) => {
+                            tracing::debug!(
+                                "No PyPI-to-conda mapping found for channel '{}'",
+                                channel_name
+                            );
+                        }
+                        Err(e) => {
+                            tracing::debug!(
+                                "Failed to get PyPI-to-conda mapping for channel '{}': {}",
+                                channel_name,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
 
             // Build set of package names to skip (those already specified by Pixi)
             let skip_packages: HashSet<pixi_build_types::SourcePackageName> = model_dependencies
@@ -969,5 +1006,20 @@ version = "0.1.0"
         let result = filter_mapped_pypi_deps(&mapped_deps, &skip_packages);
 
         assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_extract_channel_name() {
+        use url::Url;
+
+        // Test extracting channel name from various URL formats
+        let url1 = ChannelUrl::from(Url::parse("https://prefix.dev/conda-forge").unwrap());
+        assert_eq!(extract_channel_name(&url1), Some("conda-forge"));
+
+        let url2 = ChannelUrl::from(Url::parse("https://conda.anaconda.org/conda-forge/").unwrap());
+        assert_eq!(extract_channel_name(&url2), Some("conda-forge"));
+
+        let url3 = ChannelUrl::from(Url::parse("https://example.com/my-channel").unwrap());
+        assert_eq!(extract_channel_name(&url3), Some("my-channel"));
     }
 }

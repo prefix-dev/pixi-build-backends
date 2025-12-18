@@ -4,11 +4,12 @@
 //! corresponding conda-forge package names using the parselmouth mapping service.
 
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
     time::{Duration, SystemTime},
 };
+
+use indexmap::IndexMap;
 
 use miette::Diagnostic;
 use pep508_rs;
@@ -16,11 +17,11 @@ use rattler_conda_types::{MatchSpec, PackageName, ParseStrictness, VersionSpec};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Base URL for the PyPI to conda mapping API.
-const MAPPING_BASE_URL: &str = "https://conda-mapping.prefix.dev/pypi-to-conda-v1/conda-forge";
+/// Base URL for the PyPI to conda mapping API (without channel suffix).
+const MAPPING_BASE_URL: &str = "https://conda-mapping.prefix.dev/pypi-to-conda-v1";
 
-/// Subdirectory within the cache for storing mapping files.
-const CACHE_SUBDIR: &str = "pypi-conda-mapping/conda-forge";
+/// Base subdirectory within the cache for storing mapping files.
+const CACHE_SUBDIR: &str = "pypi-conda-mapping";
 
 /// Cache validity duration (24 hours).
 const CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
@@ -65,7 +66,8 @@ pub struct PyPiPackageLookup {
 
     /// Mapping of PyPI versions to conda package names.
     /// Key is PyPI version string, value is list of conda package names.
-    pub conda_versions: HashMap<String, Vec<String>>,
+    /// Uses IndexMap to preserve insertion order from the API (latest version is last).
+    pub conda_versions: IndexMap<String, Vec<String>>,
 }
 
 /// A successfully mapped conda dependency.
@@ -95,17 +97,20 @@ impl MappedCondaDependency {
 pub struct PyPiToCondaMapper {
     cache_dir: Option<PathBuf>,
     client: reqwest::Client,
+    /// The channel name to use for mapping (e.g., "conda-forge").
+    channel_name: String,
     /// Inline mappings for testing (bypasses cache and API).
     #[cfg(test)]
-    inline_mappings: Option<HashMap<String, PyPiPackageLookup>>,
+    inline_mappings: Option<IndexMap<String, PyPiPackageLookup>>,
 }
 
 impl PyPiToCondaMapper {
-    /// Create a new mapper with the given cache directory.
-    pub fn new(cache_dir: Option<PathBuf>) -> Self {
+    /// Create a new mapper with the given cache directory and channel name.
+    pub fn new(cache_dir: Option<PathBuf>, channel_name: String) -> Self {
         Self {
             cache_dir,
             client: reqwest::Client::new(),
+            channel_name,
             #[cfg(test)]
             inline_mappings: None,
         }
@@ -114,10 +119,11 @@ impl PyPiToCondaMapper {
     /// Create a mapper with inline mappings for testing.
     /// This bypasses the cache and API, using only the provided mappings.
     #[cfg(test)]
-    pub fn with_inline_mappings(mappings: HashMap<String, PyPiPackageLookup>) -> Self {
+    pub fn with_inline_mappings(mappings: IndexMap<String, PyPiPackageLookup>) -> Self {
         Self {
             cache_dir: None,
             client: reqwest::Client::new(),
+            channel_name: "test".to_string(),
             inline_mappings: Some(mappings),
         }
     }
@@ -134,6 +140,7 @@ impl PyPiToCondaMapper {
     fn cache_path(&self, normalized_name: &str) -> Option<PathBuf> {
         self.cache_dir.as_ref().map(|dir| {
             dir.join(CACHE_SUBDIR)
+                .join(&self.channel_name)
                 .join(format!("{}.json", normalized_name))
         })
     }
@@ -182,7 +189,10 @@ impl PyPiToCondaMapper {
         &self,
         normalized_name: &str,
     ) -> Result<Option<PyPiPackageLookup>, MappingError> {
-        let url = format!("{}/{}.json", MAPPING_BASE_URL, normalized_name);
+        let url = format!(
+            "{}/{}/{}.json",
+            MAPPING_BASE_URL, self.channel_name, normalized_name
+        );
 
         let response = self
             .client
@@ -237,16 +247,29 @@ impl PyPiToCondaMapper {
 
     /// Extract conda package names from a lookup.
     ///
-    /// Returns the first (most common) conda package name found across all versions.
+    /// Returns the conda package name most similar to the PyPI name.
+    /// Prefers exact matches (after normalization), otherwise uses Levenshtein distance.
     fn extract_conda_name(lookup: &PyPiPackageLookup) -> Option<String> {
-        // Get all unique conda package names across all versions
-        let mut all_names: Vec<&String> = lookup.conda_versions.values().flatten().collect();
+        // With the current API implementation, the last entry is the latest version.
+        // Take the conda names from that version.
+        let all_names: Vec<&String> = lookup.conda_versions.values().last()?.iter().collect();
 
-        all_names.sort();
-        all_names.dedup();
+        let normalized_pypi = Self::normalize_pypi_name(&lookup.pypi_name);
 
-        // Return the first one (typically there's only one)
-        all_names.first().map(|s| (*s).clone())
+        // First check for exact match (after normalization)
+        for name in &all_names {
+            if Self::normalize_pypi_name(name) == normalized_pypi {
+                return Some((*name).clone());
+            }
+        }
+
+        // Otherwise select the name with smallest Levenshtein distance
+        all_names
+            .into_iter()
+            .min_by_key(|name| {
+                strsim::levenshtein(&Self::normalize_pypi_name(name), &normalized_pypi)
+            })
+            .cloned()
     }
 
     /// Convert PEP 440 version specifiers to conda VersionSpec.
@@ -420,7 +443,7 @@ mod tests {
             format_version: "1".to_string(),
             channel: "conda-forge".to_string(),
             pypi_name: "requests".to_string(),
-            conda_versions: HashMap::from([
+            conda_versions: IndexMap::from([
                 ("2.31.0".to_string(), vec!["requests".to_string()]),
                 ("2.32.0".to_string(), vec!["requests".to_string()]),
             ]),
@@ -438,22 +461,61 @@ mod tests {
             format_version: "1".to_string(),
             channel: "conda-forge".to_string(),
             pypi_name: "unknown".to_string(),
-            conda_versions: HashMap::new(),
+            conda_versions: IndexMap::new(),
         };
 
         assert_eq!(PyPiToCondaMapper::extract_conda_name(&lookup), None);
     }
 
+    #[test]
+    fn test_extract_conda_name_prefers_similar_name() {
+        // When multiple conda packages exist, prefer the one most similar to pypi_name
+        let lookup = PyPiPackageLookup {
+            format_version: "1.0".to_string(),
+            channel: "conda-forge".to_string(),
+            pypi_name: "jinja2".to_string(),
+            conda_versions: IndexMap::from([(
+                "3.1.3".to_string(),
+                vec!["jinja2".to_string(), "jupyter-sphinx".to_string()],
+            )]),
+        };
+
+        assert_eq!(
+            PyPiToCondaMapper::extract_conda_name(&lookup),
+            Some("jinja2".to_string())
+        );
+    }
+
+    #[test]
+    fn test_extract_conda_name_uses_levenshtein_when_no_exact_match() {
+        // When no exact match exists, use Levenshtein distance
+        let lookup = PyPiPackageLookup {
+            format_version: "1.0".to_string(),
+            channel: "conda-forge".to_string(),
+            pypi_name: "some-package".to_string(),
+            conda_versions: IndexMap::from([(
+                "1.0.0".to_string(),
+                vec!["some-pkg".to_string(), "totally-different".to_string()],
+            )]),
+        };
+
+        // "some-pkg" is closer to "some-package" than "totally-different"
+        assert_eq!(
+            PyPiToCondaMapper::extract_conda_name(&lookup),
+            Some("some-pkg".to_string())
+        );
+    }
+
     #[tokio::test]
     async fn test_map_requirements_with_inline_mappings() {
-        let mappings = HashMap::from([
+        let mappings = IndexMap::from([
             (
                 "requests".to_string(),
                 PyPiPackageLookup {
                     format_version: "1".to_string(),
                     channel: "conda-forge".to_string(),
                     pypi_name: "requests".to_string(),
-                    conda_versions: HashMap::from([(
+                    conda_versions: IndexMap::from([(
                         "2.31.0".to_string(),
                         vec!["requests".to_string()],
                     )]),
@@ -465,7 +527,7 @@ mod tests {
                     format_version: "1".to_string(),
                     channel: "conda-forge".to_string(),
                     pypi_name: "flask".to_string(),
-                    conda_versions: HashMap::from([(
+                    conda_versions: IndexMap::from([(
                         "2.0.0".to_string(),
                         vec!["flask".to_string()],
                     )]),

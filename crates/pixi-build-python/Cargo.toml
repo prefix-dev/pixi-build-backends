@@ -17,6 +17,7 @@ rattler_conda_types = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+strsim = { workspace = true }
 toml = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
@@ -36,3 +37,4 @@ recipe-stage0 = { workspace = true }
 insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+url = { workspace = true }

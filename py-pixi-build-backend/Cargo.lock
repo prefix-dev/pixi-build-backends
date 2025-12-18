@@ -3682,6 +3682,7 @@ dependencies = [
  "jsonrpc-http-server",
  "jsonrpc-stdio-server",
  "miette",
+ "minijinja",
  "ordermap",
  "pathdiff",
  "pixi_build_types",

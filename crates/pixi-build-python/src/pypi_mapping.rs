@@ -49,7 +49,7 @@ pub enum MappingError {
 }
 
 /// Response format from the PyPI to conda mapping API.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PyPiPackageLookup {
     /// Format version of the response.
     #[allow(dead_code)]
@@ -95,6 +95,9 @@ impl MappedCondaDependency {
 pub struct PyPiToCondaMapper {
     cache_dir: Option<PathBuf>,
     client: reqwest::Client,
+    /// Inline mappings for testing (bypasses cache and API).
+    #[cfg(test)]
+    inline_mappings: Option<HashMap<String, PyPiPackageLookup>>,
 }
 
 impl PyPiToCondaMapper {
@@ -103,6 +106,19 @@ impl PyPiToCondaMapper {
         Self {
             cache_dir,
             client: reqwest::Client::new(),
+            #[cfg(test)]
+            inline_mappings: None,
+        }
+    }
+
+    /// Create a mapper with inline mappings for testing.
+    /// This bypasses the cache and API, using only the provided mappings.
+    #[cfg(test)]
+    pub fn with_inline_mappings(mappings: HashMap<String, PyPiPackageLookup>) -> Self {
+        Self {
+            cache_dir: None,
+            client: reqwest::Client::new(),
+            inline_mappings: Some(mappings),
         }
     }
 
@@ -196,6 +212,12 @@ impl PyPiToCondaMapper {
         pypi_name: &str,
     ) -> Result<Option<PyPiPackageLookup>, MappingError> {
         let normalized_name = Self::normalize_pypi_name(pypi_name);
+
+        // Check inline mappings first (test-only)
+        #[cfg(test)]
+        if let Some(ref mappings) = self.inline_mappings {
+            return Ok(mappings.get(&normalized_name).cloned());
+        }
 
         // Try cache first
         if let Some(cached) = self.read_from_cache(&normalized_name) {
@@ -420,5 +442,53 @@ mod tests {
         };
 
         assert_eq!(PyPiToCondaMapper::extract_conda_name(&lookup), None);
+    }
+
+    #[tokio::test]
+    async fn test_map_requirements_with_inline_mappings() {
+        let mappings = HashMap::from([
+            (
+                "requests".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "requests".to_string(),
+                    conda_versions: HashMap::from([(
+                        "2.31.0".to_string(),
+                        vec!["requests".to_string()],
+                    )]),
+                },
+            ),
+            (
+                "flask".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "flask".to_string(),
+                    conda_versions: HashMap::from([(
+                        "2.0.0".to_string(),
+                        vec!["flask".to_string()],
+                    )]),
+                },
+            ),
+        ]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("requests>=2.0").unwrap(),
+            pep508_rs::Requirement::from_str("flask").unwrap(),
+        ];
+
+        let mapped = mapper.map_requirements(&requirements).await.unwrap();
+
+        assert_eq!(mapped.len(), 2);
+        assert_eq!(mapped[0].name.as_normalized(), "requests");
+        assert_eq!(
+            mapped[0].version_spec.as_ref().unwrap().to_string(),
+            ">=2.0"
+        );
+        assert_eq!(mapped[1].name.as_normalized(), "flask");
+        assert!(mapped[1].version_spec.is_none());
     }
 }

@@ -422,6 +422,53 @@ pub fn extract_channel_name(channel: &ChannelUrl) -> Option<&str> {
     channel.as_str().trim_end_matches('/').rsplit('/').next()
 }
 
+/// Map PyPI requirements to conda dependencies using the first channel that provides a valid mapping.
+///
+/// Tries each channel in order and returns the mapped dependencies from the first
+/// channel that successfully maps at least one dependency. Returns an empty Vec
+/// if no channel provides a mapping.
+///
+/// The `context` parameter is used for logging (e.g., "project dependencies" or
+/// "build-system requirements").
+pub async fn map_requirements_with_channels(
+    requirements: &[pep508_rs::Requirement<pep508_rs::VerbatimUrl>],
+    channels: &[ChannelUrl],
+    cache_dir: &Option<PathBuf>,
+    context: &str,
+) -> Vec<MappedCondaDependency> {
+    for channel in channels {
+        if let Some(channel_name) = extract_channel_name(channel) {
+            let mapper = PyPiToCondaMapper::new(cache_dir.clone(), channel_name.to_string());
+            match mapper.map_requirements(requirements).await {
+                Ok(deps) if !deps.is_empty() => {
+                    tracing::debug!(
+                        "Using PyPI-to-conda mapping for {} from channel '{}'",
+                        context,
+                        channel_name
+                    );
+                    return deps;
+                }
+                Ok(_) => {
+                    tracing::debug!(
+                        "No PyPI-to-conda mapping found for {} in channel '{}'",
+                        context,
+                        channel_name
+                    );
+                }
+                Err(e) => {
+                    tracing::debug!(
+                        "Failed to get PyPI-to-conda mapping for {} in channel '{}': {}",
+                        context,
+                        channel_name,
+                        e
+                    );
+                }
+            }
+        }
+    }
+    Vec::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

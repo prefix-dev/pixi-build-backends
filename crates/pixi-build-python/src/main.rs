@@ -25,7 +25,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::metadata::PyprojectMetadataProvider;
+use crate::metadata::{PyprojectManifestMode, PyprojectMetadataProvider};
 use crate::pypi_mapping::{
     detect_compilers_from_build_requirements, filter_mapped_pypi_deps,
     map_requirements_with_channels,
@@ -87,12 +87,15 @@ impl GenerateRecipe for PythonGenerator {
             manifest_path.clone()
         };
 
-        let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(
-            &manifest_root,
-            config
-                .ignore_pyproject_manifest
-                .is_some_and(|ignore| ignore),
-        );
+        let mode = if config
+            .ignore_pyproject_manifest
+            .is_some_and(|ignore| ignore)
+        {
+            PyprojectManifestMode::Ignore
+        } else {
+            PyprojectManifestMode::Read
+        };
+        let mut pyproject_metadata_provider = PyprojectMetadataProvider::new(&manifest_root, mode);
 
         let mut generated_recipe =
             GeneratedRecipe::from_model(model.clone(), &mut pyproject_metadata_provider)

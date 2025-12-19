@@ -30,19 +30,19 @@ const CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
 #[derive(Debug, Error, Diagnostic)]
 pub enum MappingError {
     /// Failed to fetch mapping from the API.
-    #[error("Failed to fetch conda mapping for '{0}'")]
+    #[error("failed to fetch conda mapping for '{0}'")]
     FetchError(String, #[source] reqwest::Error),
 
     /// Failed to parse the mapping response.
-    #[error("Failed to parse mapping response for '{0}'")]
+    #[error("failed to parse mapping response for '{0}'")]
     ParseError(String, #[source] serde_json::Error),
 
     /// Invalid version specifier conversion.
-    #[error("Failed to convert version specifier '{0}' to conda format: {1}")]
+    #[error("failed to convert version specifier '{0}' to conda format: {1}")]
     VersionConversionError(String, String),
 
     /// Invalid package name.
-    #[error("Invalid conda package name '{0}'")]
+    #[error("invalid conda package name '{0}'")]
     InvalidPackageName(
         String,
         #[source] rattler_conda_types::InvalidPackageNameError,
@@ -226,7 +226,7 @@ impl PyPiToCondaMapper {
             return Ok(mappings.get(&normalized_name).cloned());
         }
 
-        // Try cache first
+        // Try cache
         if let Some(cached) = self.read_from_cache(&normalized_name) {
             return Ok(Some(cached));
         }

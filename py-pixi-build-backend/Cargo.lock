@@ -3669,7 +3669,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-backend"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3682,6 +3682,7 @@ dependencies = [
  "jsonrpc-http-server",
  "jsonrpc-stdio-server",
  "miette",
+ "minijinja",
  "ordermap",
  "pathdiff",
  "pixi_build_types",
@@ -3872,7 +3873,7 @@ dependencies = [
 
 [[package]]
 name = "py-pixi-build-backend"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "indexmap 2.12.1",
  "miette",
@@ -4764,7 +4765,7 @@ dependencies = [
 
 [[package]]
 name = "recipe-stage0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hashlink",
  "indexmap 2.12.1",

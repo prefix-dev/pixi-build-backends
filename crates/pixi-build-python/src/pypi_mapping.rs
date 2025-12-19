@@ -1020,6 +1020,94 @@ mod tests {
             "Should exclude because we can't check python_version, even though sys_platform == 'win32' is true"
         );
     }
+
+    #[tokio::test]
+    async fn test_all_system_marker_styles() {
+        // Test all supported system marker types in a compact table-driven test
+        let mappings = IndexMap::from([(
+            "test-pkg".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "test-pkg".to_string(),
+                conda_versions: IndexMap::from([(
+                    "1.0.0".to_string(),
+                    vec!["test-pkg".to_string()],
+                )]),
+            },
+        )]);
+
+        let test_cases = vec![
+            // (marker_expression, platform, should_include)
+            // sys_platform markers
+            ("sys_platform == 'linux'", Platform::Linux64, true),
+            ("sys_platform == 'linux'", Platform::LinuxAarch64, true),
+            ("sys_platform == 'linux'", Platform::Win64, false),
+            ("sys_platform == 'linux'", Platform::Osx64, false),
+            ("sys_platform == 'win32'", Platform::Win64, true),
+            ("sys_platform == 'win32'", Platform::Win32, true),
+            ("sys_platform == 'win32'", Platform::WinArm64, true),
+            ("sys_platform == 'win32'", Platform::Linux64, false),
+            ("sys_platform == 'darwin'", Platform::Osx64, true),
+            ("sys_platform == 'darwin'", Platform::OsxArm64, true),
+            ("sys_platform == 'darwin'", Platform::Linux64, false),
+            // platform_system markers
+            ("platform_system == 'Linux'", Platform::Linux64, true),
+            ("platform_system == 'Linux'", Platform::LinuxAarch64, true),
+            ("platform_system == 'Linux'", Platform::Win64, false),
+            ("platform_system == 'Windows'", Platform::Win64, true),
+            ("platform_system == 'Windows'", Platform::Win32, true),
+            ("platform_system == 'Windows'", Platform::Linux64, false),
+            ("platform_system == 'Darwin'", Platform::Osx64, true),
+            ("platform_system == 'Darwin'", Platform::OsxArm64, true),
+            ("platform_system == 'Darwin'", Platform::Linux64, false),
+            // os_name markers
+            ("os_name == 'posix'", Platform::Linux64, true),
+            ("os_name == 'posix'", Platform::Osx64, true),
+            ("os_name == 'posix'", Platform::Win64, false),
+            ("os_name == 'nt'", Platform::Win64, true),
+            ("os_name == 'nt'", Platform::Linux64, false),
+            // platform_machine markers
+            ("platform_machine == 'x86_64'", Platform::Linux64, true),
+            ("platform_machine == 'x86_64'", Platform::Osx64, true),
+            (
+                "platform_machine == 'x86_64'",
+                Platform::LinuxAarch64,
+                false,
+            ),
+            (
+                "platform_machine == 'aarch64'",
+                Platform::LinuxAarch64,
+                true,
+            ),
+            ("platform_machine == 'aarch64'", Platform::Linux64, false),
+            ("platform_machine == 'arm64'", Platform::OsxArm64, true),
+            ("platform_machine == 'arm64'", Platform::Osx64, false),
+            ("platform_machine == 'AMD64'", Platform::Win64, true),
+            ("platform_machine == 'AMD64'", Platform::Win32, false),
+        ];
+
+        for (marker, platform, should_include) in test_cases {
+            let mapper = PyPiToCondaMapper::with_inline_mappings(mappings.clone());
+            let requirement_str = format!("test-pkg; {}", marker);
+            let requirements = vec![pep508_rs::Requirement::from_str(&requirement_str).unwrap()];
+
+            let mapped = mapper
+                .map_requirements(&requirements, platform)
+                .await
+                .unwrap();
+
+            let expected_len = if should_include { 1 } else { 0 };
+            assert_eq!(
+                mapped.len(),
+                expected_len,
+                "Marker '{}' on {:?} should {} the package",
+                marker,
+                platform,
+                if should_include { "include" } else { "exclude" }
+            );
+        }
+    }
     #[test]
     fn test_detect_compilers_maturin() {
         let requirements = vec![pep508_rs::Requirement::from_str("maturin>=1.0,<2.0").unwrap()];

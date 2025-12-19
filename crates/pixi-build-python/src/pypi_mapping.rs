@@ -125,14 +125,6 @@ impl PyPiToCondaMapper {
         }
     }
 
-    /// Normalize a PyPI package name according to PEP 503.
-    ///
-    /// PyPI package names are case-insensitive and treat `-`, `_`, and `.` as equivalent.
-    /// The normalized form uses lowercase with hyphens.
-    fn normalize_pypi_name(name: &str) -> String {
-        name.to_lowercase().replace(['_', '.'], "-")
-    }
-
     /// Get the cache file path for a normalized package name.
     fn cache_path(&self, normalized_name: &str) -> Option<PathBuf> {
         self.cache_dir.as_ref().map(|dir| {
@@ -184,11 +176,11 @@ impl PyPiToCondaMapper {
     /// Fetch a mapping from the API.
     async fn fetch_from_api(
         &self,
-        normalized_name: &str,
+        pypi_name: &str,
     ) -> Result<Option<PyPiPackageLookup>, MappingError> {
         let url = format!(
             "{}/{}/{}.json",
-            MAPPING_BASE_URL, self.channel_name, normalized_name
+            MAPPING_BASE_URL, self.channel_name, pypi_name
         );
 
         let response = self
@@ -196,7 +188,7 @@ impl PyPiToCondaMapper {
             .get(&url)
             .send()
             .await
-            .map_err(|e| MappingError::FetchError(normalized_name.to_string(), e))?;
+            .map_err(|e| MappingError::FetchError(pypi_name.to_string(), e))?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(None);
@@ -205,10 +197,10 @@ impl PyPiToCondaMapper {
         let text = response
             .text()
             .await
-            .map_err(|e| MappingError::FetchError(normalized_name.to_string(), e))?;
+            .map_err(|e| MappingError::FetchError(pypi_name.to_string(), e))?;
 
         let lookup: PyPiPackageLookup = serde_json::from_str(&text)
-            .map_err(|e| MappingError::ParseError(normalized_name.to_string(), e))?;
+            .map_err(|e| MappingError::ParseError(pypi_name.to_string(), e))?;
 
         Ok(Some(lookup))
     }
@@ -218,25 +210,23 @@ impl PyPiToCondaMapper {
         &self,
         pypi_name: &str,
     ) -> Result<Option<PyPiPackageLookup>, MappingError> {
-        let normalized_name = Self::normalize_pypi_name(pypi_name);
-
         // Check inline mappings first (test-only)
         #[cfg(test)]
         if let Some(ref mappings) = self.inline_mappings {
-            return Ok(mappings.get(&normalized_name).cloned());
+            return Ok(mappings.get(pypi_name).cloned());
         }
 
         // Try cache
-        if let Some(cached) = self.read_from_cache(&normalized_name) {
+        if let Some(cached) = self.read_from_cache(pypi_name) {
             return Ok(Some(cached));
         }
 
         // Fetch from API
-        let lookup = self.fetch_from_api(&normalized_name).await?;
+        let lookup = self.fetch_from_api(pypi_name).await?;
 
         // Write to cache if successful
         if let Some(ref lookup) = lookup {
-            self.write_to_cache(&normalized_name, lookup);
+            self.write_to_cache(pypi_name, lookup);
         }
 
         Ok(lookup)
@@ -245,17 +235,17 @@ impl PyPiToCondaMapper {
     /// Extract conda package names from a lookup.
     ///
     /// Returns the conda package name most similar to the PyPI name.
-    /// Prefers exact matches (after normalization), otherwise uses Levenshtein distance.
+    /// Prefers exact matches, otherwise uses Levenshtein distance.
     fn extract_conda_name(lookup: &PyPiPackageLookup) -> Option<String> {
         // With the current API implementation, the last entry is the latest version.
         // Take the conda names from that version.
         let all_names: Vec<&String> = lookup.conda_versions.values().last()?.iter().collect();
 
-        let normalized_pypi = Self::normalize_pypi_name(&lookup.pypi_name);
+        let pypi_name = &lookup.pypi_name;
 
-        // First check for exact match (after normalization)
+        // First check for exact match
         for name in &all_names {
-            if Self::normalize_pypi_name(name) == normalized_pypi {
+            if name == &pypi_name {
                 return Some((*name).clone());
             }
         }
@@ -263,9 +253,7 @@ impl PyPiToCondaMapper {
         // Otherwise select the name with smallest Levenshtein distance
         all_names
             .into_iter()
-            .min_by_key(|name| {
-                strsim::levenshtein(&Self::normalize_pypi_name(name), &normalized_pypi)
-            })
+            .min_by_key(|name| strsim::levenshtein(name, pypi_name))
             .cloned()
     }
 
@@ -456,7 +444,7 @@ pub async fn map_requirements_with_channels(
                     );
                 }
                 Err(e) => {
-                    tracing::debug!(
+                    tracing::info!(
                         "Failed to get PyPI-to-conda mapping for {} in channel '{}': {}",
                         context,
                         channel_name,
@@ -472,26 +460,6 @@ pub async fn map_requirements_with_channels(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_normalize_pypi_name() {
-        assert_eq!(
-            PyPiToCondaMapper::normalize_pypi_name("Requests"),
-            "requests"
-        );
-        assert_eq!(
-            PyPiToCondaMapper::normalize_pypi_name("my_package"),
-            "my-package"
-        );
-        assert_eq!(
-            PyPiToCondaMapper::normalize_pypi_name("My.Package"),
-            "my-package"
-        );
-        assert_eq!(
-            PyPiToCondaMapper::normalize_pypi_name("SOME_PACKAGE.NAME"),
-            "some-package-name"
-        );
-    }
 
     #[test]
     fn test_convert_pep440_operators() {

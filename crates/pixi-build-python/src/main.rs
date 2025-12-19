@@ -26,36 +26,7 @@ use std::{
 };
 
 use crate::metadata::PyprojectMetadataProvider;
-use crate::pypi_mapping::MappedCondaDependency;
-use rattler_conda_types::MatchSpec;
-
-/// Filter mapped PyPI dependencies, returning only those not already specified
-/// in Pixi's run dependencies.
-///
-/// This implements the merging behavior where Pixi dependencies take precedence
-/// over inferred pyproject.toml dependencies. Dependencies not specified in
-/// `skip_packages` are returned as MatchSpecs ready to be added to requirements.
-pub(crate) fn filter_mapped_pypi_deps(
-    mapped_deps: &[MappedCondaDependency],
-    skip_packages: &HashSet<pixi_build_types::SourcePackageName>,
-) -> Vec<MatchSpec> {
-    mapped_deps
-        .iter()
-        .filter(|dep| {
-            let pkg_name = pixi_build_types::SourcePackageName::from(dep.name.as_normalized());
-            !skip_packages.contains(&pkg_name)
-        })
-        .map(|dep| dep.to_match_spec())
-        .collect()
-}
-
-/// Extract the channel name from a channel URL.
-///
-/// Returns the last path segment (e.g., "conda-forge" from
-/// "https://prefix.dev/conda-forge").
-fn extract_channel_name(channel: &ChannelUrl) -> Option<&str> {
-    channel.as_str().trim_end_matches('/').rsplit('/').next()
-}
+use crate::pypi_mapping::{extract_channel_name, filter_mapped_pypi_deps};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -984,93 +955,5 @@ version = "0.1.0"
         let generator = PythonGenerator::default();
         let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
         insta::assert_debug_snapshot!(result);
-    }
-
-    fn make_mapped_dep(
-        name: &str,
-        version_spec: Option<&str>,
-    ) -> pypi_mapping::MappedCondaDependency {
-        use rattler_conda_types::{PackageName, ParseStrictness, VersionSpec};
-        use std::str::FromStr;
-
-        pypi_mapping::MappedCondaDependency {
-            name: PackageName::from_str(name).unwrap(),
-            version_spec: version_spec
-                .map(|s| VersionSpec::from_str(s, ParseStrictness::Lenient).unwrap()),
-        }
-    }
-
-    #[test]
-    fn test_filter_mapped_pypi_deps_without_pixi_deps() {
-        // When no Pixi deps are specified, all mapped deps should pass through
-        let mapped_deps = vec![
-            make_mapped_dep("requests", Some(">=2.0")),
-            make_mapped_dep("flask", None),
-        ];
-
-        let skip_packages: HashSet<pixi_build_types::SourcePackageName> = HashSet::new();
-
-        let result = filter_mapped_pypi_deps(&mapped_deps, &skip_packages);
-
-        assert_eq!(result.len(), 2);
-        assert!(result.iter().any(|r| r.to_string().contains("requests")));
-        assert!(result.iter().any(|r| r.to_string().contains("flask")));
-    }
-
-    #[test]
-    fn test_filter_mapped_pypi_deps_override_but_others_preserved() {
-        // When Pixi specifies some deps, those should be filtered out
-        // but other deps should still pass through
-        let mapped_deps = vec![
-            make_mapped_dep("requests", Some(">=2.0")),
-            make_mapped_dep("flask", Some(">=1.0")),
-            make_mapped_dep("numpy", None),
-        ];
-
-        // Pixi specifies "requests" - it should be filtered out
-        let skip_packages: HashSet<pixi_build_types::SourcePackageName> =
-            HashSet::from([pixi_build_types::SourcePackageName::from("requests")]);
-
-        let result = filter_mapped_pypi_deps(&mapped_deps, &skip_packages);
-
-        // requests should NOT be in result (filtered by Pixi override)
-        // flask and numpy should be in result
-        assert_eq!(result.len(), 2);
-        assert!(!result.iter().any(|r| r.to_string().contains("requests")));
-        assert!(result.iter().any(|r| r.to_string().contains("flask")));
-        assert!(result.iter().any(|r| r.to_string().contains("numpy")));
-    }
-
-    #[test]
-    fn test_filter_mapped_pypi_deps_all_filtered_when_all_in_pixi() {
-        // When all mapped deps are already in Pixi, nothing should pass through
-        let mapped_deps = vec![
-            make_mapped_dep("requests", Some(">=2.0")),
-            make_mapped_dep("flask", None),
-        ];
-
-        let skip_packages: HashSet<pixi_build_types::SourcePackageName> = HashSet::from([
-            pixi_build_types::SourcePackageName::from("requests"),
-            pixi_build_types::SourcePackageName::from("flask"),
-        ]);
-
-        let result = filter_mapped_pypi_deps(&mapped_deps, &skip_packages);
-
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn test_extract_channel_name() {
-        use url::Url;
-
-        // Test extracting channel name from various URL formats
-        let url1 = ChannelUrl::from(Url::parse("https://prefix.dev/conda-forge").unwrap());
-        assert_eq!(extract_channel_name(&url1), Some("conda-forge"));
-
-        let url2 = ChannelUrl::from(Url::parse("https://conda.anaconda.org/conda-forge/").unwrap());
-        assert_eq!(extract_channel_name(&url2), Some("conda-forge"));
-
-        let url3 = ChannelUrl::from(Url::parse("https://example.com/my-channel").unwrap());
-        assert_eq!(extract_channel_name(&url3), Some("my-channel"));
     }
 }

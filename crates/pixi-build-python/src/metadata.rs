@@ -6,6 +6,16 @@ use pixi_build_backend::generated_recipe::MetadataProvider;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{ParseVersionError, Version};
 
+/// Controls how the `PyprojectMetadataProvider` handles the pyproject.toml manifest.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PyprojectManifestMode {
+    /// Read metadata from the pyproject.toml file.
+    #[default]
+    Read,
+    /// Ignore the pyproject.toml file; all metadata methods will return `None`.
+    Ignore,
+}
+
 #[derive(Debug, thiserror::Error, Diagnostic)]
 pub enum MetadataError {
     #[error("failed to parse pyproject.toml, {0}")]
@@ -21,7 +31,7 @@ pub enum MetadataError {
 pub struct PyprojectMetadataProvider {
     manifest_root: PathBuf,
     pyproject_manifest: OnceCell<PyProjectToml>,
-    ignore_pyproject_manifest: bool,
+    mode: PyprojectManifestMode,
 }
 
 impl PyprojectMetadataProvider {
@@ -30,13 +40,12 @@ impl PyprojectMetadataProvider {
     /// # Arguments
     ///
     /// * `manifest_root` - The directory that contains the `pyproject.toml` file
-    /// * `ignore_pyproject_manifest` - If `true`, all metadata methods will return
-    ///   `None`, effectively disabling pyproject.toml metadata extraction
-    pub fn new(manifest_root: impl Into<PathBuf>, ignore_pyproject_manifest: bool) -> Self {
+    /// * `mode` - Controls whether to read metadata from or ignore the pyproject.toml
+    pub fn new(manifest_root: impl Into<PathBuf>, mode: PyprojectManifestMode) -> Self {
         Self {
             manifest_root: manifest_root.into(),
             pyproject_manifest: OnceCell::default(),
-            ignore_pyproject_manifest,
+            mode,
         }
     }
 
@@ -87,7 +96,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the name from the project section of the pyproject.toml file.
     fn name(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -101,7 +110,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// the version from the project section. The version string is parsed into a
     /// `rattler_conda_types::Version`.
     fn version(&mut self) -> Result<Option<Version>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         let Some(project) = self.ensure_manifest_project()? else {
@@ -120,7 +129,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the description from the project section.
     fn description(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -133,7 +142,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the homepage from the project.urls section.
     fn homepage(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -147,7 +156,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the license from the project section.
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -166,7 +175,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// the license file path from the project section if the license is specified
     /// as a file reference.
     fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -192,7 +201,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the documentation URL from the project.urls section.
     fn documentation(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -210,7 +219,7 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the repository URL from the project.urls section.
     fn repository(&mut self) -> Result<Option<String>, Self::Error> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
@@ -231,13 +240,45 @@ impl PyprojectMetadataProvider {
     /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
     /// the requires-python from the project section.
     pub fn requires_python(&self) -> Result<Option<String>, MetadataError> {
-        if self.ignore_pyproject_manifest {
+        if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
         }
         Ok(self
             .ensure_manifest_project()?
             .and_then(|proj| proj.requires_python.as_ref())
             .map(|req_py| req_py.to_string()))
+    }
+
+    /// Returns the project dependencies from the pyproject.toml manifest.
+    ///
+    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
+    /// the dependencies from the `[project.dependencies]` section.
+    pub fn project_dependencies(
+        &self,
+    ) -> Result<Option<&Vec<pep508_rs::Requirement<pep508_rs::VerbatimUrl>>>, MetadataError> {
+        if self.mode == PyprojectManifestMode::Ignore {
+            return Ok(None);
+        }
+        Ok(self
+            .ensure_manifest_project()?
+            .and_then(|proj| proj.dependencies.as_ref()))
+    }
+
+    /// Returns the build system requirements from the pyproject.toml manifest.
+    ///
+    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
+    /// the requirements from the `[build-system].requires` section.
+    pub fn build_system_requires(
+        &self,
+    ) -> Result<Option<&Vec<pep508_rs::Requirement<pep508_rs::VerbatimUrl>>>, MetadataError> {
+        if self.mode == PyprojectManifestMode::Ignore {
+            return Ok(None);
+        }
+        Ok(self
+            .ensure_manifest()?
+            .build_system
+            .as_ref()
+            .map(|bs| &bs.requires))
     }
 }
 
@@ -265,7 +306,7 @@ mod tests {
 
     /// Helper function to create a PyprojectMetadataProvider for testing
     fn create_metadata_provider(manifest_root: &std::path::Path) -> PyprojectMetadataProvider {
-        PyprojectMetadataProvider::new(manifest_root, false)
+        PyprojectMetadataProvider::new(manifest_root, PyprojectManifestMode::Read)
     }
 
     #[test]
@@ -370,9 +411,10 @@ description = "Test description"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let mut provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
+        let mut provider =
+            PyprojectMetadataProvider::new(temp_dir.path(), PyprojectManifestMode::Ignore);
 
-        // All methods should return None when ignore_pyproject_manifest is true
+        // All methods should return None when mode is Ignore
         assert_eq!(provider.name().unwrap(), None);
         assert_eq!(provider.version().unwrap(), None);
         assert_eq!(provider.description().unwrap(), None);
@@ -514,16 +556,87 @@ requires-python = ">=3.13"
 "#;
 
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
-        let provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
+        let provider =
+            PyprojectMetadataProvider::new(temp_dir.path(), PyprojectManifestMode::Ignore);
 
         assert_eq!(provider.requires_python().unwrap(), None);
     }
 
     #[test]
-    fn test_generated_recipe_contains_pyproject_values() {
+    fn test_build_system_requires_extraction() {
+        let pyproject_toml_content = r#"
+[build-system]
+requires = ["flit_core<4", "setuptools>=42"]
+
+[project]
+name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = create_metadata_provider(temp_dir.path());
+
+        let requires = provider
+            .build_system_requires()
+            .expect("Should parse build-system.requires");
+        assert!(requires.is_some(), "build-system.requires should exist");
+        let requires = requires.unwrap();
+        assert_eq!(requires.len(), 2);
+        assert_eq!(requires[0].name.as_ref(), "flit-core");
+        assert_eq!(
+            requires[0].version_or_url.as_ref().unwrap().to_string(),
+            "<4"
+        );
+        assert_eq!(requires[1].name.as_ref(), "setuptools");
+        assert_eq!(
+            requires[1].version_or_url.as_ref().unwrap().to_string(),
+            ">=42"
+        );
+    }
+
+    #[test]
+    fn test_build_system_requires_with_ignore_flag() {
+        let pyproject_toml_content = r#"
+[build-system]
+requires = ["flit_core<4"]
+
+[project]
+name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider =
+            PyprojectMetadataProvider::new(temp_dir.path(), PyprojectManifestMode::Ignore);
+
+        assert_eq!(provider.build_system_requires().unwrap(), None);
+    }
+
+    #[test]
+    fn test_build_system_requires_missing() {
         let pyproject_toml_content = r#"
 [project]
 name = "test-package"
+version = "1.0.0"
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let provider = create_metadata_provider(temp_dir.path());
+
+        let requires = provider
+            .build_system_requires()
+            .expect("Should not error when build-system is missing");
+        assert!(
+            requires.is_none(),
+            "build-system.requires should be None when section is missing"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_generated_recipe_contains_pyproject_values() {
+        let pyproject_toml_content = r#"
+[project]
+name = "Test-package"
 version = "99.0.0"
 description = "A test package"
 license = {text = "MIT"}
@@ -539,7 +652,6 @@ Documentation = "https://docs.example.com"
 
         // Now create project model and generate a recipe from it
         let project_model = project_fixture!({
-            "name": "foobar",
             "targets": {
                 "defaultTarget": {
                     "runDependencies": {
@@ -563,7 +675,9 @@ Documentation = "https://docs.example.com"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -572,8 +686,8 @@ Documentation = "https://docs.example.com"
         });
     }
 
-    #[test]
-    fn test_generated_recipe_respects_requires_python() {
+    #[tokio::test]
+    async fn test_generated_recipe_respects_requires_python() {
         let pyproject_toml_content = r#"
 [project]
 name = "test-package"
@@ -609,7 +723,9 @@ requires-python = ">=3.13"
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that Python requirements include the version constraint

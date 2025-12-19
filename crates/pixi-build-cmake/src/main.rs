@@ -24,10 +24,11 @@ use std::{
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
 
+#[async_trait::async_trait]
 impl GenerateRecipe for CMakeGenerator {
     type Config = CMakeBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
@@ -36,6 +37,7 @@ impl GenerateRecipe for CMakeGenerator {
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Determine the manifest root, because `manifest_path` can be
         // either a direct file path or a directory path.
@@ -213,8 +215,8 @@ mod tests {
         };
     }
 
-    #[test]
-    fn test_cxx_is_in_build_requirements() {
+    #[tokio::test]
+    async fn test_cxx_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -240,7 +242,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -249,8 +253,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_env_vars_are_set() {
+    #[tokio::test]
+    async fn test_env_vars_are_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -281,7 +285,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
@@ -290,8 +296,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_has_python_is_set_in_build_script() {
+    #[tokio::test]
+    async fn test_has_python_is_set_in_build_script() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -317,7 +323,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // we want to check that
@@ -336,8 +344,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_cxx_is_not_added_if_gcc_is_already_present() {
+    #[tokio::test]
+    async fn test_cxx_is_not_added_if_gcc_is_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -363,7 +371,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -509,8 +519,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_multiple_compilers_configuration() {
+    #[tokio::test]
+    async fn test_multiple_compilers_configuration() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -528,7 +538,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers
@@ -563,8 +575,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_default_compiler_when_not_specified() {
+    #[tokio::test]
+    async fn test_default_compiler_when_not_specified() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -582,7 +594,9 @@ mod tests {
                 None,
                 &HashSet::default(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers and build tools
@@ -607,8 +621,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_stdlib_is_added() {
+    #[tokio::test]
+    async fn test_stdlib_is_added() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -626,7 +640,9 @@ mod tests {
                 None,
                 &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers and build tools

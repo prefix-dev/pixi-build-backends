@@ -51,8 +51,8 @@ You can add these to your [`host-dependencies`](https://pixi.sh/latest/build/dep
 python = "3.11"
 ```
 
-You'll also need to specify your Python build backend (like `hatchling`, `setuptools`, etc.) in your `package.host-dependencies`:
-
+The backend will be automatically selected by the automatic PyPI dependency mapping feature if you have `pyproject.toml` in your source directory.
+Otherwise, you need to explicitly add it to your package definition in the `[host-dependencies]`:
 ```toml
 [package.host-dependencies]
 hatchling = "*"
@@ -307,7 +307,8 @@ This allows you to:
 
 ### Limitations
 
-- **Environment markers** (e.g., `requests>=2.28; python_version >= "3.8"`) are only partially supported. At the moment, only `sys.platform` is currently checked.
+- **Environment markers** (e.g., `requests>=2.28; python_version >= "3.8"`) are only partially supported.
+At the moment, only `platform_system`, `os_name`, `platform_machine` and `sys_platforms` are currently checked.
 - **URL-based dependencies** (e.g., `package @ https://...`) are skipped
 - Packages without a conda-forge mapping are logged as warnings and skipped
 

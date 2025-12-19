@@ -145,6 +145,9 @@ impl GeneratedRecipe {
                 .ok_or(GenerateRecipeError::NoNameDefined)?,
         };
 
+        // Recipes only allow lowercase names
+        let name = name.to_lowercase();
+
         // If the version is not defined in the model, we try to get it from the
         // provider. If the provider cannot provide a version, we return an
         // error.

@@ -3875,6 +3875,7 @@ dependencies = [
 name = "py-pixi-build-backend"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "indexmap 2.12.1",
  "miette",
  "paste",

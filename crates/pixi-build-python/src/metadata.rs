@@ -636,7 +636,7 @@ version = "1.0.0"
     async fn test_generated_recipe_contains_pyproject_values() {
         let pyproject_toml_content = r#"
 [project]
-name = "test-package"
+name = "Test-package"
 version = "99.0.0"
 description = "A test package"
 license = {text = "MIT"}
@@ -652,7 +652,6 @@ Documentation = "https://docs.example.com"
 
         // Now create project model and generate a recipe from it
         let project_model = project_fixture!({
-            "name": "foobar",
             "targets": {
                 "defaultTarget": {
                     "runDependencies": {

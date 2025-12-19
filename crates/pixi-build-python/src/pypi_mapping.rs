@@ -455,6 +455,35 @@ pub async fn map_requirements_with_channels(
     Vec::new()
 }
 
+/// Build tools that require specific compilers.
+///
+/// Maps PyPI package names to the compilers they require. This is used to
+/// automatically detect compilers from `build-system.requires` in pyproject.toml.
+const BUILD_TOOL_COMPILER_MAPPINGS: &[(&str, &[&str])] =
+    &[("maturin", &["rust"]), ("setuptools-rust", &["rust"])];
+
+/// Detect compilers required by build tools in `build-system.requires`.
+///
+/// Examines the list of PEP 508 requirements and returns any compilers that
+/// should be automatically added based on the detected build tools.
+pub fn detect_compilers_from_build_requirements(
+    requirements: &[pep508_rs::Requirement<pep508_rs::VerbatimUrl>],
+) -> Vec<String> {
+    let mut detected_compilers = HashSet::new();
+
+    for req in requirements {
+        let package_name = req.name.as_ref();
+
+        for (tool_name, compilers) in BUILD_TOOL_COMPILER_MAPPINGS {
+            if package_name == *tool_name {
+                detected_compilers.extend(compilers.iter().map(|s| s.to_string()));
+            }
+        }
+    }
+
+    detected_compilers.into_iter().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -672,5 +701,48 @@ mod tests {
 
         let url3 = ChannelUrl::from(Url::parse("https://example.com/my-channel").unwrap());
         assert_eq!(extract_channel_name(&url3), Some("my-channel"));
+    }
+
+    #[test]
+    fn test_detect_compilers_maturin() {
+        let requirements = vec![pep508_rs::Requirement::from_str("maturin>=1.0,<2.0").unwrap()];
+
+        let compilers = detect_compilers_from_build_requirements(&requirements);
+
+        assert_eq!(compilers, vec!["rust"]);
+    }
+
+    #[test]
+    fn test_detect_compilers_setuptools_rust() {
+        let requirements = vec![pep508_rs::Requirement::from_str("setuptools-rust>=1.0").unwrap()];
+
+        let compilers = detect_compilers_from_build_requirements(&requirements);
+
+        assert_eq!(compilers, vec!["rust"]);
+    }
+
+    #[test]
+    fn test_detect_compilers_no_special_tools() {
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("setuptools>=42").unwrap(),
+            pep508_rs::Requirement::from_str("wheel").unwrap(),
+        ];
+
+        let compilers = detect_compilers_from_build_requirements(&requirements);
+
+        assert!(compilers.is_empty());
+    }
+
+    #[test]
+    fn test_detect_compilers_deduplicates() {
+        // Both maturin and setuptools-rust require rust - should only appear once
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("maturin>=1.0").unwrap(),
+            pep508_rs::Requirement::from_str("setuptools-rust>=1.0").unwrap(),
+        ];
+
+        let compilers = detect_compilers_from_build_requirements(&requirements);
+
+        assert_eq!(compilers, vec!["rust"]);
     }
 }

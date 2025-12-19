@@ -26,7 +26,10 @@ use std::{
 };
 
 use crate::metadata::PyprojectMetadataProvider;
-use crate::pypi_mapping::{filter_mapped_pypi_deps, map_requirements_with_channels};
+use crate::pypi_mapping::{
+    detect_compilers_from_build_requirements, filter_mapped_pypi_deps,
+    map_requirements_with_channels,
+};
 
 #[derive(Default, Clone)]
 pub struct PythonGenerator {}
@@ -179,9 +182,20 @@ impl GenerateRecipe for PythonGenerator {
             }
         }
 
-        // Get the list of compilers from config, defaulting to no compilers for pure
-        // Python packages and add them to the build requirements.
-        let compilers = config.compilers.clone().unwrap_or_default();
+        // Detect compilers from build-system.requires (e.g., maturin -> rust)
+        let auto_detected_compilers = pyproject_metadata_provider
+            .build_system_requires()?
+            .map(|reqs| detect_compilers_from_build_requirements(reqs))
+            .unwrap_or_default();
+
+        // Merge explicit config compilers with auto-detected ones
+        let mut compilers = config.compilers.clone().unwrap_or_default();
+        for compiler in auto_detected_compilers {
+            if !compilers.contains(&compiler) {
+                compilers.push(compiler);
+            }
+        }
+
         pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
             &mut requirements.build,

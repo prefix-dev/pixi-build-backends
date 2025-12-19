@@ -12,7 +12,6 @@ use std::{
 use indexmap::IndexMap;
 
 use miette::Diagnostic;
-use pep508_rs;
 use rattler_conda_types::{MatchSpec, PackageName, ParseStrictness, VersionSpec};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -53,15 +52,12 @@ pub enum MappingError {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PyPiPackageLookup {
     /// Format version of the response.
-    #[allow(dead_code)]
     pub format_version: String,
 
     /// Channel (e.g., "conda-forge").
-    #[allow(dead_code)]
     pub channel: String,
 
     /// The PyPI package name.
-    #[allow(dead_code)]
     pub pypi_name: String,
 
     /// Mapping of PyPI versions to conda package names.
@@ -147,13 +143,13 @@ impl PyPiToCondaMapper {
 
     /// Check if a cached file is still valid.
     fn is_cache_valid(path: &Path) -> bool {
-        if let Ok(metadata) = std::fs::metadata(path) {
-            if let Ok(modified) = metadata.modified() {
-                if let Ok(elapsed) = SystemTime::now().duration_since(modified) {
-                    return elapsed < CACHE_TTL;
-                }
-            }
+        if let Ok(metadata) = std::fs::metadata(path)
+            && let Ok(modified) = metadata.modified()
+            && let Ok(elapsed) = SystemTime::now().duration_since(modified)
+        {
+            return elapsed < CACHE_TTL;
         }
+
         false
     }
 

@@ -3905,10 +3905,12 @@ dependencies = [
  "recipe-stage0",
  "serde",
  "serde_json",
+ "spdx",
  "tempfile",
  "thiserror 2.0.17",
  "tokio",
  "toml",
+ "tracing",
 ]
 
 [[package]]
@@ -5878,9 +5880,9 @@ dependencies = [
 
 [[package]]
 name = "spdx"
-version = "0.13.3"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afd765179d12cdd06192e02b1d8c6b0d46bd26de9bf16ce04c881428ca2cc7ed"
+checksum = "35107b1c818f4e9cb9e6c4444ca560ba03b4ee1288dcecc6d7830c2023a7609e"
 dependencies = [
  "smallvec",
 ]

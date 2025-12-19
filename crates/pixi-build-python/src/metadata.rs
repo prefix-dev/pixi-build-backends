@@ -153,10 +153,10 @@ impl MetadataProvider for PyprojectMetadataProvider {
         Ok(self
             .ensure_manifest_project()?
             .and_then(|proj| proj.license.as_ref())
-            .map(|license| match license {
-                pyproject_toml::License::Text { text } => text.clone(),
-                pyproject_toml::License::File { file } => file.to_string_lossy().to_string(),
-                pyproject_toml::License::Spdx(spdx) => spdx.clone(),
+            .and_then(|license| match license {
+                pyproject_toml::License::Text { text } => Some(text.clone()),
+                pyproject_toml::License::File { file: _ } => None,
+                pyproject_toml::License::Spdx(spdx) => Some(spdx.clone()),
             }))
     }
 
@@ -319,7 +319,8 @@ license = {file = "LICENSE.txt"}
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
         let mut provider = create_metadata_provider(temp_dir.path());
 
-        assert_eq!(provider.license().unwrap(), Some("LICENSE.txt".to_string()));
+        // File licenses should only appear in license_file, not in license
+        assert_eq!(provider.license().unwrap(), None);
         assert_eq!(
             provider.license_file().unwrap(),
             Some("LICENSE.txt".to_string())

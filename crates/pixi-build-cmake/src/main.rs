@@ -148,11 +148,12 @@ impl GenerateRecipe for CMakeGenerator {
         let mut variants = BTreeMap::new();
 
         if host_platform.is_windows() {
-            // Default to the Visual Studio 2019 compiler on Windows
-            //
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
             // rattler-build will default to vs2017 which for most github runners is too
             // old.
-            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()]);
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
         }
 
         Ok(variants)
@@ -410,8 +411,8 @@ mod tests {
 
         assert_eq!(
             outputs.outputs[0].metadata.variant.get("cxx_compiler"),
-            Some(&VariantValue::from("vs2019")),
-            "On windows the default cxx_compiler variant should be vs2019"
+            Some(&VariantValue::from("vs2022")),
+            "On windows the default cxx_compiler variant should be vs2022"
         );
     }
 

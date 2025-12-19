@@ -13,7 +13,9 @@ use std::{
 use indexmap::IndexMap;
 
 use miette::Diagnostic;
-use rattler_conda_types::{ChannelUrl, MatchSpec, PackageName, ParseStrictness, VersionSpec};
+use rattler_conda_types::{
+    ChannelUrl, MatchSpec, PackageName, ParseStrictness, Platform, VersionSpec,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -288,6 +290,125 @@ impl PyPiToCondaMapper {
         spec_str.replace("===", "==")
     }
 
+    /// Create a marker environment for the given platform and Python version.
+    ///
+    /// This converts a rattler Platform to a pep508_rs MarkerEnvironment that can be used
+    /// to evaluate PEP 508 environment markers.
+    fn create_marker_environment(platform: Platform) -> pep508_rs::MarkerEnvironment {
+        // Map Platform to Python's sys.platform and other marker values
+        let (sys_platform, os_name, platform_system, platform_machine) = match platform {
+            Platform::Linux64 => ("linux", "posix", "Linux", "x86_64"),
+            Platform::LinuxAarch64 => ("linux", "posix", "Linux", "aarch64"),
+            Platform::LinuxPpc64le => ("linux", "posix", "Linux", "ppc64le"),
+            Platform::LinuxS390X => ("linux", "posix", "Linux", "s390x"),
+            Platform::LinuxArmV6l => ("linux", "posix", "Linux", "armv6l"),
+            Platform::LinuxArmV7l => ("linux", "posix", "Linux", "armv7l"),
+            Platform::Linux32 => ("linux", "posix", "Linux", "i686"),
+            Platform::Osx64 => ("darwin", "posix", "Darwin", "x86_64"),
+            Platform::OsxArm64 => ("darwin", "posix", "Darwin", "arm64"),
+            Platform::Win64 => ("win32", "nt", "Windows", "AMD64"),
+            Platform::Win32 => ("win32", "nt", "Windows", "x86"),
+            Platform::WinArm64 => ("win32", "nt", "Windows", "ARM64"),
+            Platform::NoArch => ("linux", "posix", "Linux", "x86_64"),
+            _ => ("linux", "posix", "Linux", "x86_64"), // Default to linux x86_64 for unknown platforms
+        };
+
+        // Use builder pattern to create MarkerEnvironment
+        // Note: Python version fields are set to dummy values since we strip non-system fields
+        // from markers before evaluation. Only system fields (os_name, platform_*, sys_platform) matter.
+        pep508_rs::MarkerEnvironment::try_from(pep508_rs::MarkerEnvironmentBuilder {
+            implementation_name: "cpython",
+            implementation_version: "1.0.0",
+            os_name,
+            platform_machine,
+            platform_python_implementation: "CPython",
+            platform_release: "",
+            platform_system,
+            platform_version: "",
+            python_full_version: "1.0.0",
+            python_version: "1.0.0",
+            sys_platform,
+        })
+        .expect("Failed to create MarkerEnvironment")
+    }
+
+    /// Check if a marker contains any non-system fields.
+    ///
+    /// Non-system fields include python_version, python_full_version, implementation_*,
+    /// platform_python_implementation, platform_release, platform_version, and extra.
+    fn contains_non_system_fields(marker: &pep508_rs::MarkerTree) -> bool {
+        // Check for both snake_case and PascalCase variants to handle different
+        // pep508_rs versions and Debug format variations
+        // Fields can be found here: https://peps.python.org/pep-0508/#environment-markers
+        let non_system_fields = [
+            "python_version",
+            "PythonVersion",
+            "python_full_version",
+            "PythonFullVersion",
+            "implementation_name",
+            "ImplementationName",
+            "implementation_version",
+            "ImplementationVersion",
+            "platform_python_implementation",
+            "PlatformPythonImplementation",
+            "platform_release",
+            "PlatformRelease",
+            "platform_version",
+            "PlatformVersion",
+            "extra",
+            "Extra",
+        ];
+
+        let marker_str = format!("{:?}", marker);
+        non_system_fields.iter().any(|f| marker_str.contains(f))
+    }
+
+    /// Check if a requirement should be included for the given platform.
+    ///
+    /// Returns true if the requirement has no markers, or if the markers are pure system
+    /// markers that evaluate to true for the given platform.
+    ///
+    /// If a marker contains ANY non-system fields (python_version, python_full_version,
+    /// implementation details, extras, etc.), the dependency is excluded entirely.
+    /// This conservative approach prevents incorrectly including dependencies with
+    /// version constraints we cannot evaluate at recipe generation time.
+    fn should_include_requirement(
+        req: &pep508_rs::Requirement<pep508_rs::VerbatimUrl>,
+        platform: Platform,
+    ) -> bool {
+        // If there are no markers, always include
+        if req.marker == pep508_rs::MarkerTree::default() {
+            return true;
+        }
+
+        // If the marker contains any non-system fields, exclude it entirely
+        // This is conservative: better to exclude and let users add manually
+        // than to include incorrectly and cause build failures
+        if Self::contains_non_system_fields(&req.marker) {
+            tracing::debug!(
+                "Excluding dependency '{}' because marker {:?} contains non-system fields (python_version, etc.)",
+                req.name,
+                req.marker
+            );
+            return false;
+        }
+
+        // At this point, marker contains only system fields
+        // Evaluate against the platform
+        let marker_env = Self::create_marker_environment(platform);
+        let result = req.marker.evaluate(&marker_env, &[]);
+
+        tracing::debug!(
+            "Dependency '{}' with system-only marker {:?} evaluates to {} for platform {}",
+            req.name,
+            req.marker,
+            result,
+            platform
+        );
+
+        result
+    }
+
     /// Map a list of PEP 508 requirements to conda MatchSpecs.
     ///
     /// Returns a list of successfully mapped dependencies. Unmapped packages
@@ -295,15 +416,15 @@ impl PyPiToCondaMapper {
     pub async fn map_requirements(
         &self,
         requirements: &[pep508_rs::Requirement<pep508_rs::VerbatimUrl>],
+        platform: Platform,
     ) -> Result<Vec<MappedCondaDependency>, MappingError> {
         let mut mapped = Vec::new();
 
         for req in requirements {
-            // Skip requirements with environment markers for now
-            // A full implementation would evaluate markers against the target platform
-            if req.marker != pep508_rs::MarkerTree::default() {
+            // Evaluate markers against the target platform
+            if !Self::should_include_requirement(req, platform) {
                 tracing::debug!(
-                    "Skipping dependency '{}' with environment marker: {:?}",
+                    "Skipping dependency '{}' due to environment marker evaluation: {:?}",
                     req.name,
                     req.marker
                 );
@@ -406,11 +527,12 @@ pub async fn map_requirements_with_channels(
     channels: &[ChannelUrl],
     cache_dir: &Option<PathBuf>,
     context: &str,
+    platform: Platform,
 ) -> Vec<MappedCondaDependency> {
     for channel in channels {
         if let Some(channel_name) = extract_channel_name(channel) {
             let mapper = PyPiToCondaMapper::new(cache_dir.clone(), channel_name.to_string());
-            match mapper.map_requirements(requirements).await {
+            match mapper.map_requirements(requirements, platform).await {
                 Ok(deps) if !deps.is_empty() => {
                     tracing::debug!(
                         "Using PyPI-to-conda mapping for {} from channel '{}'",
@@ -594,7 +716,10 @@ mod tests {
             pep508_rs::Requirement::from_str("flask").unwrap(),
         ];
 
-        let mapped = mapper.map_requirements(&requirements).await.unwrap();
+        let mapped = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
 
         assert_eq!(mapped.len(), 2);
         assert_eq!(mapped[0].name.as_normalized(), "requests");
@@ -688,6 +813,213 @@ mod tests {
         assert_eq!(extract_channel_name(&url3), Some("my-channel"));
     }
 
+    #[tokio::test]
+    async fn test_marker_evaluation_linux() {
+        let mappings = IndexMap::from([(
+            "typing-extensions".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "typing-extensions".to_string(),
+                conda_versions: IndexMap::from([(
+                    "4.0.0".to_string(),
+                    vec!["typing-extensions".to_string()],
+                )]),
+            },
+        )]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Requirement with sys_platform == "linux" marker - should be included on Linux
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("typing-extensions; sys_platform == 'linux'").unwrap(),
+        ];
+
+        let mapped_linux = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_linux.len(), 1, "Should include on Linux64");
+
+        let mapped_win = mapper
+            .map_requirements(&requirements, Platform::Win64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_win.len(), 0, "Should exclude on Win64");
+    }
+
+    #[tokio::test]
+    async fn test_marker_evaluation_windows() {
+        let mappings = IndexMap::from([(
+            "colorama".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "colorama".to_string(),
+                conda_versions: IndexMap::from([(
+                    "0.4.6".to_string(),
+                    vec!["colorama".to_string()],
+                )]),
+            },
+        )]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Requirement with sys_platform == "win32" marker - should be included on Windows
+        let requirements =
+            vec![pep508_rs::Requirement::from_str("colorama; sys_platform == 'win32'").unwrap()];
+
+        let mapped_win = mapper
+            .map_requirements(&requirements, Platform::Win64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_win.len(), 1, "Should include on Win64");
+
+        let mapped_linux = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_linux.len(), 0, "Should exclude on Linux64");
+    }
+
+    #[tokio::test]
+    async fn test_marker_evaluation_darwin() {
+        let mappings = IndexMap::from([(
+            "pyobjc-core".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "pyobjc-core".to_string(),
+                conda_versions: IndexMap::from([(
+                    "9.0".to_string(),
+                    vec!["pyobjc-core".to_string()],
+                )]),
+            },
+        )]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Requirement with sys_platform == "darwin" marker - should be included on macOS
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("pyobjc-core; sys_platform == 'darwin'").unwrap(),
+        ];
+
+        let mapped_osx = mapper
+            .map_requirements(&requirements, Platform::Osx64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_osx.len(), 1, "Should include on Osx64");
+
+        let mapped_linux = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
+        assert_eq!(mapped_linux.len(), 0, "Should exclude on Linux64");
+    }
+
+    #[tokio::test]
+    async fn test_marker_evaluation_no_marker() {
+        let mapper = PyPiToCondaMapper::with_inline_mappings(IndexMap::from([(
+            "requests".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "requests".to_string(),
+                conda_versions: IndexMap::from([(
+                    "2.31.0".to_string(),
+                    vec!["requests".to_string()],
+                )]),
+            },
+        )]));
+
+        let requirements = vec![pep508_rs::Requirement::from_str("requests").unwrap()];
+
+        for &platform in &[Platform::Linux64, Platform::Win64, Platform::Osx64] {
+            let mapped = mapper
+                .map_requirements(&requirements, platform)
+                .await
+                .unwrap();
+            assert_eq!(mapped.len(), 1, "Should include on {:?}", platform);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_marker_python_full_version_excluded() {
+        let mappings = IndexMap::from([(
+            "importlib-metadata".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "importlib-metadata".to_string(),
+                conda_versions: IndexMap::from([(
+                    "6.0.0".to_string(),
+                    vec!["importlib-metadata".to_string()],
+                )]),
+            },
+        )]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Requirement with python_full_version marker
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("importlib-metadata; python_full_version < '3.10.0'")
+                .unwrap(),
+        ];
+
+        let mapped = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
+        assert_eq!(
+            mapped.len(),
+            0,
+            "Should exclude dependency with python_full_version marker (non-system field)"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_marker_combined_python_and_system() {
+        let mappings = IndexMap::from([(
+            "pywin32".to_string(),
+            PyPiPackageLookup {
+                format_version: "1".to_string(),
+                channel: "conda-forge".to_string(),
+                pypi_name: "pywin32".to_string(),
+                conda_versions: IndexMap::from([("306".to_string(), vec!["pywin32".to_string()])]),
+            },
+        )]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Requirement with both Python version AND system marker
+        // The python_version part is stripped, leaving only sys_platform == 'win32' to evaluate
+        let requirements = vec![
+            pep508_rs::Requirement::from_str(
+                "pywin32; sys_platform == 'win32' and python_version >= '3.8'",
+            )
+            .unwrap(),
+        ];
+
+        let mapped_linux = mapper
+            .map_requirements(&requirements, Platform::Linux64)
+            .await
+            .unwrap();
+        assert_eq!(
+            mapped_linux.len(),
+            0,
+            "Should exclude on Linux because sys_platform == 'win32' evaluates to false (after stripping python_version)"
+        );
+
+        let mapped_win = mapper
+            .map_requirements(&requirements, Platform::Win64)
+            .await
+            .unwrap();
+        assert_eq!(
+            mapped_win.len(),
+            0,
+            "Should exclude because we can't check python_version, even though sys_platform == 'win32' is true"
+        );
+    }
     #[test]
     fn test_detect_compilers_maturin() {
         let requirements = vec![pep508_rs::Requirement::from_str("maturin>=1.0,<2.0").unwrap()];

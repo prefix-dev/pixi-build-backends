@@ -146,8 +146,14 @@ impl GenerateRecipe for PythonGenerator {
 
         // Map PyPI dependencies from pyproject.toml to conda dependencies
         if let Some(pypi_deps) = pyproject_metadata_provider.project_dependencies()? {
-            let mapped_deps =
-                map_requirements_with_channels(pypi_deps, &channels, &cache_dir, "project").await;
+            let mapped_deps = map_requirements_with_channels(
+                pypi_deps,
+                &channels,
+                &cache_dir,
+                "project",
+                host_platform,
+            )
+            .await;
 
             let skip_packages: HashSet<pixi_build_types::SourcePackageName> = model_dependencies
                 .run
@@ -169,6 +175,7 @@ impl GenerateRecipe for PythonGenerator {
                 &channels,
                 &cache_dir,
                 "build-system",
+                host_platform,
             )
             .await;
 

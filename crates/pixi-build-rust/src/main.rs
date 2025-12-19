@@ -8,6 +8,7 @@ use metadata::CargoMetadataProvider;
 use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
+    Variable,
     cache::{sccache_envs, sccache_tools},
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
@@ -21,7 +22,7 @@ use recipe_stage0::{
 };
 use std::collections::HashSet;
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -197,6 +198,24 @@ impl GenerateRecipe for RustGenerator {
         .map(|s| s.to_string())
         .chain(config.extra_input_globs.clone())
         .collect())
+    }
+
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        let mut variants = BTreeMap::new();
+
+        if host_platform.is_windows() {
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
+            // rattler-build will default to vs2017 which for most github runners is too
+            // old.
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
+        }
+
+        Ok(variants)
     }
 }
 

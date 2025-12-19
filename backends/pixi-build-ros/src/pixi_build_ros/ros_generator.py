@@ -182,5 +182,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
         """Get the default variants for the generator."""
         variants = {}
         if host_platform.is_windows:
-            variants["cxx_compiler"] = ["vs2019"]
+            # Default to Visual Studio 2022 on Windows as it's the one conda-forge uses.
+            variants["cxx_compiler"] = ["vs2022"]
+            variants["c_compiler"] = ["vs2022"]
         return variants

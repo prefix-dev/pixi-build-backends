@@ -11,12 +11,16 @@ use pixi_build_backend::{
     traits::ProjectModel,
 };
 use pixi_build_types::ProjectModelV1;
-use rattler_build::NormalizedKey;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::{collections::BTreeSet, path::Path, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
@@ -116,6 +120,24 @@ impl GenerateRecipe for MojoGenerator {
         Ok(Self::globs()
             .chain(config.extra_input_globs.clone())
             .collect())
+    }
+
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        let mut variants = BTreeMap::new();
+
+        if host_platform.is_windows() {
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
+            // rattler-build will default to vs2017 which for most github runners is too
+            // old.
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
+        }
+
+        Ok(variants)
     }
 }
 

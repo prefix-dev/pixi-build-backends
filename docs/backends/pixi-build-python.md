@@ -17,6 +17,8 @@ The `pixi-build-python` backend is designed for building Python projects using s
 This backend automatically generates conda packages from Python projects by:
 
 - **PEP 517/518 compliance**: Works with modern Python packaging standards including `pyproject.toml`
+- **Automatic PyPI-to-conda mapping**: Automatically maps `project.dependencies` and `build-system.requires` from `pyproject.toml` to conda packages
+- **Automatic compiler detection**: Detects build tools like `maturin` or `setuptools-rust` and automatically adds required compilers
 - **Cross-platform support**: Works consistently across Linux, macOS, and Windows
 - **Flexible installation**: Automatically selects between `pip` and `uv` for package installation
 
@@ -180,6 +182,14 @@ compilers = ["c", "cxx"]
     compilers = ["c", "cxx"]
     ```
 
+!!! info "Automatic Compiler Detection"
+    The backend automatically detects compilers required by certain build tools in your `build-system.requires`. For example:
+
+    - `maturin` → "rust"
+    - `setuptools-rust` → "rust"
+
+    These detected compilers are merged with any explicitly configured compilers. You only need to manually specify compilers if your package uses build tools that aren't auto-detected.
+
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
 
@@ -246,6 +256,61 @@ ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
     - **documentation**: From `project.urls.Documentation` or `project.urls.Docs`
 
     This metadata is automatically included in the generated conda recipe. The `pyproject.toml` file itself is also added to the input globs for incremental build detection.
+
+## Automatic PyPI Dependency Mapping
+
+The Python backend automatically maps PyPI dependencies from your `pyproject.toml` to their corresponding conda packages. This means you don't need to manually duplicate your dependencies in both `pyproject.toml` and `pixi.toml`.
+
+### How It Works
+
+The backend reads dependencies from two sources in your `pyproject.toml`:
+
+1. **`project.dependencies`** → Added to conda **run** dependencies
+2. **`build-system.requires`** → Added to conda **host** dependencies
+
+For each PyPI package, the backend queries a mapping service to find the corresponding conda-forge package name. The mapping is cached locally for 24 hours to improve performance.
+
+### Example
+
+Given this `pyproject.toml`:
+
+```toml
+[project]
+name = "my-package"
+version = "1.0.0"
+dependencies = [
+    "requests>=2.28",
+    "pydantic>=2.0,<3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+```
+
+The backend automatically adds:
+
+- `requests >=2.28` and `pydantic >=2.0,<3.0` to run dependencies
+- `hatchling` to host dependencies
+
+### Precedence Rules
+
+Dependencies specified in your `pixi.toml` take precedence over those inferred from `pyproject.toml`:
+
+- If you specify `requests = ">=2.30"` in `[package.run-dependencies]`, it will override the `requests>=2.28` from `pyproject.toml`
+- Dependencies not in `pixi.toml` are added from `pyproject.toml`
+
+This allows you to:
+
+- Use `pyproject.toml` as the single source of truth for most dependencies
+- Override specific packages in `pixi.toml` when you need different versions or conda-specific packages
+
+### Limitations
+
+- **Environment markers** (e.g., `requests>=2.28; python_version >= "3.8"`) are only partially supported. At the moment, only `sys.platform` is currently checked.
+- **URL-based dependencies** (e.g., `package @ https://...`) are skipped
+- Packages without a conda-forge mapping are logged as warnings and skipped
+
 
 ## Build Process
 

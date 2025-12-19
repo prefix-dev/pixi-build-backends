@@ -3904,7 +3904,7 @@ dependencies = [
  "recipe-stage0",
  "serde",
  "serde_json",
- "spdx 0.13.2",
+ "spdx",
  "tempfile",
  "thiserror 2.0.17",
  "tokio",
@@ -5875,15 +5875,6 @@ checksum = "17129e116933cf371d018bb80ae557e889637989d8638274fb25622827b03881"
 dependencies = [
  "libc",
  "windows-sys 0.60.2",
-]
-
-[[package]]
-name = "spdx"
-version = "0.13.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afd765179d12cdd06192e02b1d8c6b0d46bd26de9bf16ce04c881428ca2cc7ed"
-dependencies = [
- "smallvec",
 ]
 
 [[package]]

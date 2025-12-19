@@ -260,7 +260,7 @@ impl PyPiToCondaMapper {
     /// Convert PEP 440 version specifiers to conda VersionSpec.
     ///
     /// This handles common specifiers directly and transforms PEP 440-specific
-    /// syntax like `~=` (compatible release) to conda equivalents.
+    /// syntax like `===` (arbitrary equality) to conda equivalents.
     fn convert_version_specifiers(
         specifiers: &pep508_rs::VersionOrUrl<pep508_rs::VerbatimUrl>,
     ) -> Result<Option<VersionSpec>, MappingError> {
@@ -284,23 +284,8 @@ impl PyPiToCondaMapper {
 
     /// Convert PEP 440-specific operators to conda-compatible equivalents.
     fn convert_pep440_operators(spec_str: &str) -> String {
-        let mut result = spec_str.to_string();
-
-        // Handle ~= (compatible release): ~=1.4.2 becomes >=1.4.2,<1.5.0
-        // This is a simplified conversion - full implementation would parse versions properly
-        if result.contains("~=") {
-            // For now, convert ~=X.Y.Z to >=X.Y.Z (lose the upper bound constraint)
-            // A more complete implementation would compute the proper upper bound
-            result = result.replace("~=", ">=");
-            tracing::debug!(
-                "Converted compatible release operator ~= to >= (upper bound not enforced)"
-            );
-        }
-
         // Handle === (arbitrary equality): ===1.0.0 becomes ==1.0.0
-        result = result.replace("===", "==");
-
-        result
+        spec_str.replace("===", "==")
     }
 
     /// Map a list of PEP 508 requirements to conda MatchSpecs.
@@ -500,7 +485,7 @@ mod tests {
         );
         assert_eq!(
             PyPiToCondaMapper::convert_pep440_operators("~=1.4.2"),
-            ">=1.4.2"
+            "~=1.4.2"
         );
     }
 

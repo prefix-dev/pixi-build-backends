@@ -246,7 +246,7 @@ impl PyPiToCondaMapper {
         // First check for exact match
         for name in &all_names {
             if name == &pypi_name {
-                return Some((*name).clone());
+                return Some(name.to_string());
             }
         }
 
@@ -273,10 +273,8 @@ impl PyPiToCondaMapper {
             return Ok(None);
         }
 
-        // Convert specifiers to string and attempt conda parsing
-        let spec_str = specs.to_string();
-
         // Handle PEP 440-specific operators that conda doesn't understand
+        let spec_str = specs.to_string();
         let converted = Self::convert_pep440_operators(&spec_str);
 
         VersionSpec::from_str(&converted, ParseStrictness::Lenient)

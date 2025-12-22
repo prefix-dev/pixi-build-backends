@@ -22,9 +22,11 @@
 -%}
 
 {# Output version information for debugging #}
-{{ R_CMD }} --version
 {% if is_cmd_exe -%}
+R.exe --version
 @if errorlevel 1 exit 1
+{% else -%}
+R --version
 {% endif %}
 
 {# Create library directory if it doesn't exist #}

@@ -20,6 +20,7 @@ requirements:
     - "${{ compiler('fortran') }}"
   host:
     - r-base
+    - r-rcpp
   run:
     - r-base
   run_constraints: []

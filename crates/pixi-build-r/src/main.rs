@@ -118,6 +118,11 @@ impl GenerateRecipe for RGenerator {
         let r_dependencies = metadata_provider.runtime_dependencies().into_diagnostic()?;
 
         for dep in r_dependencies {
+            // Skip packages that are built into r-base (base + recommended packages)
+            if metadata::is_builtin_package(&dep.name) {
+                continue;
+            }
+
             // Convert R package name to conda package name
             let conda_name = metadata::r_package_to_conda(&dep.name);
 
@@ -134,6 +139,30 @@ impl GenerateRecipe for RGenerator {
 
             // Also add to run requirements
             requirements.run.push(dep_spec.parse().into_diagnostic()?);
+        }
+
+        // Add LinkingTo dependencies (packages providing headers for C/C++ compilation)
+        let linking_to_deps = metadata_provider.linking_to().into_diagnostic()?;
+
+        for dep in linking_to_deps {
+            // Skip packages that are built into r-base
+            if metadata::is_builtin_package(&dep.name) {
+                continue;
+            }
+
+            // Convert R package name to conda package name
+            let conda_name = metadata::r_package_to_conda(&dep.name);
+
+            // Build the dependency spec string
+            let dep_spec = if let Some(version) = &dep.version {
+                let conda_version = metadata::r_version_to_conda(version);
+                format!("{} {}", conda_name, conda_version)
+            } else {
+                conda_name
+            };
+
+            // Add to host requirements only (LinkingTo packages provide headers at compile time)
+            requirements.host.push(dep_spec.parse().into_diagnostic()?);
         }
 
         // Generate build script

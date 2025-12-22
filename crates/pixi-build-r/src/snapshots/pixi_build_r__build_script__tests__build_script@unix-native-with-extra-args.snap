@@ -2,7 +2,7 @@
 source: crates/pixi-build-r/src/build_script.rs
 expression: script
 ---
-R CMD --version
+R --version
 
 
 

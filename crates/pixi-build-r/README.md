@@ -61,29 +61,26 @@ package/
 └── data/           # Optional: data files
 ```
 
+## System Dependencies
+
+Some R packages require system libraries (e.g., `libcurl`, `libxml2`, `openssl`). These are typically listed in the `SystemRequirements` field of the DESCRIPTION file, but the format is not standardized and varies widely between packages.
+
+To add system dependencies, use the `[package.host-dependencies]` table in your `pixi.toml`:
+
+```toml
+[package]
+name = "r-curl"
+version = "1.0.0"
+
+[package.host-dependencies]
+curl = "*"
+```
+
 ## Installation Path
 
 Packages are installed to:
 - Unix: `$PREFIX/lib/R/library/`
 - Windows: `%LIBRARY_PREFIX%\R\library\`
-
-## Example DESCRIPTION
-
-```
-Package: mypackage
-Version: 1.0.0
-Title: My R Package
-Description: A comprehensive description of the package
-    that can span multiple lines.
-License: GPL-3
-Author: Your Name <your.email@example.com>
-Maintainer: Your Name <your.email@example.com>
-URL: https://github.com/yourusername/mypackage
-BugReports: https://github.com/yourusername/mypackage/issues
-Depends: R (>= 3.5.0)
-Imports: dplyr, ggplot2
-LinkingTo: Rcpp
-```
 
 ## Usage
 

@@ -13,6 +13,53 @@ static CRAN_SPDX_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     serde_json::from_str(json_str).expect("Failed to parse cran_spdx_licenses.json")
 });
 
+/// R packages that are built into r-base and should not be listed as separate dependencies.
+///
+/// This includes:
+/// - Base packages (14): ship with every R installation
+/// - Recommended packages (15): included in all binary distributions of R
+///
+/// See: https://cran.r-project.org/doc/FAQ/R-FAQ.html
+pub const R_BUILTIN_PACKAGES: &[&str] = &[
+    // Base packages (Priority: base)
+    "base",
+    "compiler",
+    "datasets",
+    "graphics",
+    "grDevices",
+    "grid",
+    "methods",
+    "parallel",
+    "splines",
+    "stats",
+    "stats4",
+    "tcltk",
+    "tools",
+    "utils",
+    // Recommended packages (Priority: recommended)
+    // These are included in all binary distributions of R
+    "KernSmooth",
+    "MASS",
+    "Matrix",
+    "boot",
+    "class",
+    "cluster",
+    "codetools",
+    "foreign",
+    "lattice",
+    "mgcv",
+    "nlme",
+    "nnet",
+    "rpart",
+    "spatial",
+    "survival",
+];
+
+/// Check if an R package is built into r-base
+pub fn is_builtin_package(name: &str) -> bool {
+    R_BUILTIN_PACKAGES.iter().any(|&pkg| pkg.eq_ignore_ascii_case(name))
+}
+
 /// Parsed R license expression
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedLicense {
@@ -292,6 +339,16 @@ impl DescriptionMetadataProvider {
     /// Check if package has LinkingTo dependencies (indicates C++ code)
     pub fn has_linking_to(&self) -> Result<bool, MetadataError> {
         Ok(self.ensure_data()?.linking_to.is_some())
+    }
+
+    /// Get LinkingTo dependencies (packages needed for C/C++ headers at compile time)
+    pub fn linking_to(&self) -> Result<Vec<RDependency>, MetadataError> {
+        Ok(self
+            .ensure_data()?
+            .linking_to
+            .as_ref()
+            .map(|s| parse_r_dependencies(s))
+            .unwrap_or_default())
     }
 
     /// Returns input globs for R package files
@@ -1034,6 +1091,34 @@ License: file LICENSE
             assert_eq!(r_version_to_conda("(>= 2.1.3)"), ">=2.1.3");
             assert_eq!(r_version_to_conda("> 3.0.0"), ">3.0.0");
             assert_eq!(r_version_to_conda("== 1.0.0"), "==1.0.0");
+        }
+
+        #[test]
+        fn test_is_builtin_package() {
+            // Base packages
+            assert!(is_builtin_package("stats"));
+            assert!(is_builtin_package("graphics"));
+            assert!(is_builtin_package("utils"));
+            assert!(is_builtin_package("methods"));
+            assert!(is_builtin_package("base"));
+
+            // Recommended packages
+            assert!(is_builtin_package("MASS"));
+            assert!(is_builtin_package("Matrix"));
+            assert!(is_builtin_package("lattice"));
+            assert!(is_builtin_package("nlme"));
+            assert!(is_builtin_package("survival"));
+
+            // Case insensitive
+            assert!(is_builtin_package("Stats"));
+            assert!(is_builtin_package("STATS"));
+            assert!(is_builtin_package("mass"));
+
+            // Non-builtin packages
+            assert!(!is_builtin_package("curl"));
+            assert!(!is_builtin_package("jsonlite"));
+            assert!(!is_builtin_package("ggplot2"));
+            assert!(!is_builtin_package("dplyr"));
         }
 
         #[test]

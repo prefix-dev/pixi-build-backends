@@ -2,7 +2,7 @@
 source: crates/pixi-build-r/src/build_script.rs
 expression: script
 ---
-R.exe CMD --version
+R.exe --version
 @if errorlevel 1 exit 1
 
 

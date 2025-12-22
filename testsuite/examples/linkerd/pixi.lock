@@ -1,0 +1,35 @@
+version: 6
+environments:
+  default:
+    channels:
+    - url: https://prefix.dev/conda-forge/
+    packages:
+      linux-64:
+      - conda: ./recipes/linkerd
+        build: hb0f4dca_0
+      osx-arm64:
+      - conda: ./recipes/linkerd
+        build: h60d57d3_0
+packages:
+- conda: ./recipes/linkerd
+  name: linkerd
+  version: 25.5.2
+  build: h60d57d3_0
+  subdir: osx-arm64
+  license: Apache-2.0
+  input:
+    hash: 02dfaaeb24ff87a13a08bb9b5267b12196b0437269e7302f040e4b507cd0a94d
+    globs:
+    - recipe.yaml
+    - variants.yaml
+- conda: ./recipes/linkerd
+  name: linkerd
+  version: 25.5.2
+  build: hb0f4dca_0
+  subdir: linux-64
+  license: Apache-2.0
+  input:
+    hash: 02dfaaeb24ff87a13a08bb9b5267b12196b0437269e7302f040e4b507cd0a94d
+    globs:
+    - recipe.yaml
+    - variants.yaml

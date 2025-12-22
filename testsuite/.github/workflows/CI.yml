@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+      - opened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
+  XDG_CACHE_HOME: ${{ github.workspace }}/.cache
+  PYTEST_ADDOPTS: "--color=yes"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  test-linux-x86_64:
+    timeout-minutes: 10
+    name: Build test Linux x86_64
+    runs-on: 8core_ubuntu_latest_runner
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@main
+        with:
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+
+      - name: Download artifacts
+        run: pixi run download-artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests
+        run: pixi run --locked test-slow
+
+  test-windows-x86_64:
+    timeout-minutes: 10
+    name: Build test Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Create Dev Drive
+        run: ${{ github.workspace }}/.github/workflows/setup-dev-drive.ps1
+
+      - name: Copy Git Repo to Dev Drive
+        run: Copy-Item -Path "${{ github.workspace }}" -Destination "${{ env.PIXI_WORKSPACE }}" -Recurse
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@main
+        with:
+          manifest-path: ${{ env.PIXI_WORKSPACE }}/pixi.toml
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+
+      - name: Download artifacts
+        working-directory: ${{ env.PIXI_WORKSPACE }}
+        run: pixi run download-artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests
+        run: pixi run --locked test-slow
+        working-directory: ${{ env.PIXI_WORKSPACE }}
+
+  test-macos-aarch64:
+    timeout-minutes: 10
+    name: Build test macOS aarch64
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@main
+        with:
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+
+      - name: Download artifacts
+        run: pixi run download-artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests
+        run: pixi run --locked test-slow

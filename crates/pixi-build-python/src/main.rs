@@ -144,6 +144,46 @@ impl GenerateRecipe for PythonGenerator {
             requirements.run.push(python_requirement);
         }
 
+        // Detect compilers from build-system.requires (e.g., maturin -> rust)
+        // This needs to happen early so we can determine the correct platform for mapping
+        let auto_detected_compilers = pyproject_metadata_provider
+            .build_system_requires()?
+            .map(|reqs| detect_compilers_from_build_requirements(reqs))
+            .unwrap_or_default();
+
+        // Merge explicit config compilers with auto-detected ones
+        let mut compilers = config.compilers.clone().unwrap_or_default();
+        for compiler in auto_detected_compilers {
+            if !compilers.contains(&compiler) {
+                compilers.push(compiler);
+            }
+        }
+
+        // Determine whether the package should be built as a noarch package.
+        // This needs to be determined early so we can use the correct platform for PyPI mapping.
+        let has_compilers = !compilers.is_empty();
+        let is_noarch = if config.noarch == Some(true) {
+            // The user explicitly requested a noarch package.
+            true
+        } else if config.noarch == Some(false) {
+            // The user explicitly requested a non-noarch package.
+            false
+        } else if has_compilers {
+            // No specific user request, but we have compilers, not a noarch package.
+            false
+        } else {
+            // Otherwise, default to a noarch package.
+            // This is the default behavior for pure Python packages.
+            true
+        };
+
+        // Use NoArch platform for mapping if this is a noarch package
+        let mapping_platform = if is_noarch {
+            Platform::NoArch
+        } else {
+            host_platform
+        };
+
         // Map PyPI dependencies from pyproject.toml to conda dependencies
         if let Some(pypi_deps) = pyproject_metadata_provider.project_dependencies()? {
             let mapped_deps = map_requirements_with_channels(
@@ -151,7 +191,7 @@ impl GenerateRecipe for PythonGenerator {
                 &channels,
                 &cache_dir,
                 "project",
-                host_platform,
+                mapping_platform,
             )
             .await;
 
@@ -175,7 +215,7 @@ impl GenerateRecipe for PythonGenerator {
                 &channels,
                 &cache_dir,
                 "build-system",
-                host_platform,
+                mapping_platform,
             )
             .await;
 
@@ -189,20 +229,6 @@ impl GenerateRecipe for PythonGenerator {
                 requirements
                     .host
                     .push(match_spec.to_string().parse().into_diagnostic()?);
-            }
-        }
-
-        // Detect compilers from build-system.requires (e.g., maturin -> rust)
-        let auto_detected_compilers = pyproject_metadata_provider
-            .build_system_requires()?
-            .map(|reqs| detect_compilers_from_build_requirements(reqs))
-            .unwrap_or_default();
-
-        // Merge explicit config compilers with auto-detected ones
-        let mut compilers = config.compilers.clone().unwrap_or_default();
-        for compiler in auto_detected_compilers {
-            if !compilers.contains(&compiler) {
-                compilers.push(compiler);
             }
         }
 
@@ -238,22 +264,11 @@ impl GenerateRecipe for PythonGenerator {
         }
         .render();
 
-        // Determine whether the package should be built as a noarch package or as a
-        // generic package.
-        let has_compilers = !compilers.is_empty();
-        let noarch_kind = if config.noarch == Some(true) {
-            // The user explicitly requested a noarch package.
+        // Convert the is_noarch boolean to the NoArchKind enum
+        let noarch_kind = if is_noarch {
             Some(NoArchKind::Python)
-        } else if config.noarch == Some(false) {
-            // The user explicitly requested a non-noarch package.
-            None
-        } else if has_compilers {
-            // No specific user request, but we have compilers, not a noarch package.
-            None
         } else {
-            // Otherwise, default to a noarch package.
-            // This is the default behavior for pure Python packages.
-            Some(NoArchKind::Python)
+            None
         };
 
         // read pyproject.toml content if it exists

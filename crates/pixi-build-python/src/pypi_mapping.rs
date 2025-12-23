@@ -368,6 +368,9 @@ impl PyPiToCondaMapper {
     /// Returns true if the requirement has no markers, or if the markers are pure system
     /// markers that evaluate to true for the given platform.
     ///
+    /// For NoArch platforms, ALL dependencies with markers (system or non-system) are excluded
+    /// because noarch packages must be platform-independent.
+    ///
     /// If a marker contains ANY non-system fields (python_version, python_full_version,
     /// implementation details, extras, etc.), the dependency is excluded entirely.
     /// This conservative approach prevents incorrectly including dependencies with
@@ -379,6 +382,17 @@ impl PyPiToCondaMapper {
         // If there are no markers, always include
         if req.marker == pep508_rs::MarkerTree::default() {
             return true;
+        }
+
+        // For NoArch platform, exclude ALL dependencies with markers
+        // NoArch packages must be platform-independent
+        if platform == Platform::NoArch {
+            tracing::debug!(
+                "Excluding dependency '{}' for NoArch platform because it has marker {:?}",
+                req.name,
+                req.marker
+            );
+            return false;
         }
 
         // If the marker contains any non-system fields, exclude it entirely
@@ -1149,5 +1163,194 @@ mod tests {
         let compilers = detect_compilers_from_build_requirements(&requirements);
 
         assert_eq!(compilers, vec!["rust"]);
+    }
+
+    #[tokio::test]
+    async fn test_noarch_excludes_all_marker_dependencies() {
+        let mappings = IndexMap::from([
+            (
+                "requests".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "requests".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "2.31.0".to_string(),
+                        vec!["requests".to_string()],
+                    )]),
+                },
+            ),
+            (
+                "colorama".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "colorama".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "0.4.6".to_string(),
+                        vec!["colorama".to_string()],
+                    )]),
+                },
+            ),
+            (
+                "importlib-metadata".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "importlib-metadata".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "6.0.0".to_string(),
+                        vec!["importlib-metadata".to_string()],
+                    )]),
+                },
+            ),
+        ]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Test with various marker types - all should be excluded for NoArch
+        let requirements = vec![
+            // No marker - should be included
+            pep508_rs::Requirement::from_str("requests").unwrap(),
+            // System marker - should be excluded for NoArch
+            pep508_rs::Requirement::from_str("colorama; sys_platform == 'win32'").unwrap(),
+            // Non-system marker - should be excluded for NoArch
+            pep508_rs::Requirement::from_str("importlib-metadata; python_full_version < '3.10.0'")
+                .unwrap(),
+        ];
+
+        let mapped = mapper
+            .map_requirements(&requirements, Platform::NoArch)
+            .await
+            .unwrap();
+
+        // Only the dependency without markers should be included
+        assert_eq!(
+            mapped.len(),
+            1,
+            "NoArch should only include dependencies without markers"
+        );
+        assert_eq!(
+            mapped[0].name.as_normalized(),
+            "requests",
+            "NoArch should include the unmarked dependency"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_noarch_excludes_system_markers() {
+        let mappings = IndexMap::from([
+            (
+                "typing-extensions".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "typing-extensions".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "4.0.0".to_string(),
+                        vec!["typing-extensions".to_string()],
+                    )]),
+                },
+            ),
+            (
+                "pyobjc-core".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "pyobjc-core".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "9.0".to_string(),
+                        vec!["pyobjc-core".to_string()],
+                    )]),
+                },
+            ),
+        ]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Test various system markers - all should be excluded for NoArch
+        let test_cases = vec![
+            ("typing-extensions; sys_platform == 'linux'", "sys_platform"),
+            (
+                "typing-extensions; platform_system == 'Linux'",
+                "platform_system",
+            ),
+            ("typing-extensions; os_name == 'posix'", "os_name"),
+            (
+                "typing-extensions; platform_machine == 'x86_64'",
+                "platform_machine",
+            ),
+            (
+                "pyobjc-core; sys_platform == 'darwin'",
+                "sys_platform darwin",
+            ),
+        ];
+
+        for (req_str, marker_desc) in test_cases {
+            let requirements = vec![pep508_rs::Requirement::from_str(req_str).unwrap()];
+
+            let mapped = mapper
+                .map_requirements(&requirements, Platform::NoArch)
+                .await
+                .unwrap();
+
+            assert_eq!(
+                mapped.len(),
+                0,
+                "NoArch should exclude dependency with {} marker",
+                marker_desc
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_noarch_includes_no_marker_dependencies() {
+        let mappings = IndexMap::from([
+            (
+                "requests".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "requests".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "2.31.0".to_string(),
+                        vec!["requests".to_string()],
+                    )]),
+                },
+            ),
+            (
+                "flask".to_string(),
+                PyPiPackageLookup {
+                    format_version: "1".to_string(),
+                    channel: "conda-forge".to_string(),
+                    pypi_name: "flask".to_string(),
+                    conda_versions: IndexMap::from([(
+                        "2.0.0".to_string(),
+                        vec!["flask".to_string()],
+                    )]),
+                },
+            ),
+        ]);
+
+        let mapper = PyPiToCondaMapper::with_inline_mappings(mappings);
+
+        // Dependencies without markers should be included for NoArch
+        let requirements = vec![
+            pep508_rs::Requirement::from_str("requests>=2.0").unwrap(),
+            pep508_rs::Requirement::from_str("flask").unwrap(),
+        ];
+
+        let mapped = mapper
+            .map_requirements(&requirements, Platform::NoArch)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            mapped.len(),
+            2,
+            "NoArch should include all dependencies without markers"
+        );
+        assert_eq!(mapped[0].name.as_normalized(), "requests");
+        assert_eq!(mapped[1].name.as_normalized(), "flask");
     }
 }

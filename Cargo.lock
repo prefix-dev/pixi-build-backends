@@ -3889,6 +3889,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixi-build-pixi"
+version = "0.3.3"
+dependencies = [
+ "indexmap 2.11.4",
+ "insta",
+ "miette",
+ "minijinja",
+ "pixi-build-backend",
+ "pixi_build_types",
+ "rattler-build",
+ "rattler_conda_types",
+ "recipe-stage0",
+ "rstest",
+ "serde",
+ "serde_json",
+ "strum",
+ "tokio",
+]
+
+[[package]]
 name = "pixi-build-python"
 version = "0.4.3"
 dependencies = [

@@ -1,0 +1,36 @@
+---
+source: crates/pixi-build-r/src/main.rs
+expression: generated_recipe.recipe
+---
+context: {}
+package:
+  name: r-testpkg
+  version: 1.0.0
+source: []
+build:
+  number: ~
+  script:
+    content: "[build_script]"
+    env: {}
+    secrets: []
+requirements:
+  build:
+    - "${{ compiler('c') }}"
+    - "${{ compiler('cxx') }}"
+    - "${{ compiler('fortran') }}"
+  host:
+    - r-base
+    - r-rcpp
+  run:
+    - r-base
+  run_constraints: []
+tests: []
+about:
+  homepage: ~
+  license: GPL-3.0-only
+  license_file: ~
+  summary: Test Package
+  description: A test package
+  documentation: ~
+  repository: ~
+extra: ~

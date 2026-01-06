@@ -46,7 +46,7 @@ recipe-stage0 = { workspace = true }
 
 [dev-dependencies]
 insta = { version = "1.42.1", features = ["yaml", "redactions", "filters"] }
-toml_edit = { version = "0.23.0" }
+toml_edit = { version = "0.24.0" }
 toml = { version = "0.9.0" }
 
 [package.metadata.cargo-shear]

@@ -187,7 +187,7 @@ jobs:
 
   test-macos-aarch64:
     name: Test macOS aarch64
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build-binary-macos-aarch64
     timeout-minutes: 20
     steps:

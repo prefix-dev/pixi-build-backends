@@ -17,7 +17,7 @@ The `pixi-build-python` backend is designed for building Python projects using s
 This backend automatically generates conda packages from Python projects by:
 
 - **PEP 517/518 compliance**: Works with modern Python packaging standards including `pyproject.toml`
-- **Automatic PyPI-to-conda mapping**: Automatically maps `project.dependencies` and `build-system.requires` from `pyproject.toml` to conda packages
+- **PyPI-to-conda mapping** (opt-in): Maps `project.dependencies` and `build-system.requires` from `pyproject.toml` to conda packages (see [`ignore-pypi-mapping`](#ignore-pypi-mapping))
 - **Automatic compiler detection**: Detects build tools like `maturin` or `setuptools-rust` and automatically adds required compilers
 - **Cross-platform support**: Works consistently across Linux, macOS, and Windows
 - **Flexible installation**: Automatically selects between `pip` and `uv` for package installation
@@ -257,9 +257,49 @@ ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
 
     This metadata is automatically included in the generated conda recipe. The `pyproject.toml` file itself is also added to the input globs for incremental build detection.
 
+### `ignore-pypi-mapping`
+
+- **Type**: `Boolean`
+- **Default**: `true`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific setting takes precedence over base
+
+Controls whether to ignore the automatic PyPI-to-conda dependency mapping feature.
+When set to `true` (the default), dependencies from `pyproject.toml` will not be automatically mapped to conda packages. 
+Set to `false` to enable automatic mapping.
+
+```toml
+[package.build.config]
+ignore-pypi-mapping = false  # Enable automatic PyPI-to-conda mapping
+```
+
+!!! note "Default Behavior"
+    This option currently defaults to `true` (mapping disabled) to avoid breaking existing setups. 
+    In a future release, the default will change to `false` (mapping enabled).
+    If you want to opt-in to automatic dependency mapping now, explicitly set `ignore-pypi-mapping = false`.
+
+For target-specific configuration, platform-specific setting overrides the base:
+
+```toml
+[package.build.config]
+ignore-pypi-mapping = false
+
+[package.build.target.win-64.config]
+ignore-pypi-mapping = true  # Disable mapping on Windows only
+# Result for win-64: true
+```
+
 ## Automatic PyPI Dependency Mapping
 
-The Python backend automatically maps PyPI dependencies from your `pyproject.toml` to their corresponding conda packages. This means you don't need to manually duplicate your dependencies in both `pyproject.toml` and `pixi.toml`.
+The Python backend can automatically map PyPI dependencies from your `pyproject.toml` to their corresponding conda packages.
+This means you don't need to manually duplicate your dependencies in both `pyproject.toml` and `pixi.toml`.
+
+!!! warning "Opt-in Feature"
+    This feature is currently disabled by default. To enable automatic PyPI-to-conda dependency mapping, set `ignore-pypi-mapping = false` in your build configuration:
+
+    ```toml
+    [package.build.config]
+    ignore-pypi-mapping = false
+    ```
 
 ### How It Works
 

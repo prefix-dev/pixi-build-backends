@@ -186,50 +186,54 @@ impl GenerateRecipe for PythonGenerator {
         };
 
         // Map PyPI dependencies from pyproject.toml to conda dependencies
-        if let Some(pypi_deps) = pyproject_metadata_provider.project_dependencies()? {
-            let mapped_deps = map_requirements_with_channels(
-                pypi_deps,
-                &channels,
-                &cache_dir,
-                "project",
-                mapping_platform,
-            )
-            .await;
+        if !config.ignore_pypi_mapping() {
+            if let Some(pypi_deps) = pyproject_metadata_provider.project_dependencies()? {
+                let mapped_deps = map_requirements_with_channels(
+                    pypi_deps,
+                    &channels,
+                    &cache_dir,
+                    "project",
+                    mapping_platform,
+                )
+                .await;
 
-            let skip_packages: HashSet<pixi_build_types::SourcePackageName> = model_dependencies
-                .run
-                .keys()
-                .map(|k| (*k).clone())
-                .collect();
+                let skip_packages: HashSet<pixi_build_types::SourcePackageName> =
+                    model_dependencies
+                        .run
+                        .keys()
+                        .map(|k| (*k).clone())
+                        .collect();
 
-            for match_spec in filter_mapped_pypi_deps(&mapped_deps, &skip_packages) {
-                requirements
-                    .run
-                    .push(match_spec.to_string().parse().into_diagnostic()?);
+                for match_spec in filter_mapped_pypi_deps(&mapped_deps, &skip_packages) {
+                    requirements
+                        .run
+                        .push(match_spec.to_string().parse().into_diagnostic()?);
+                }
             }
-        }
 
-        // Map build-system.requires from pyproject.toml to conda host dependencies
-        if let Some(build_system_deps) = pyproject_metadata_provider.build_system_requires()? {
-            let mapped_deps = map_requirements_with_channels(
-                build_system_deps,
-                &channels,
-                &cache_dir,
-                "build-system",
-                mapping_platform,
-            )
-            .await;
+            // Map build-system.requires from pyproject.toml to conda host dependencies
+            if let Some(build_system_deps) = pyproject_metadata_provider.build_system_requires()? {
+                let mapped_deps = map_requirements_with_channels(
+                    build_system_deps,
+                    &channels,
+                    &cache_dir,
+                    "build-system",
+                    mapping_platform,
+                )
+                .await;
 
-            let skip_packages: HashSet<pixi_build_types::SourcePackageName> = model_dependencies
-                .host
-                .keys()
-                .map(|k| (*k).clone())
-                .collect();
+                let skip_packages: HashSet<pixi_build_types::SourcePackageName> =
+                    model_dependencies
+                        .host
+                        .keys()
+                        .map(|k| (*k).clone())
+                        .collect();
 
-            for match_spec in filter_mapped_pypi_deps(&mapped_deps, &skip_packages) {
-                requirements
-                    .host
-                    .push(match_spec.to_string().parse().into_diagnostic()?);
+                for match_spec in filter_mapped_pypi_deps(&mapped_deps, &skip_packages) {
+                    requirements
+                        .host
+                        .push(match_spec.to_string().parse().into_diagnostic()?);
+                }
             }
         }
 
@@ -952,5 +956,94 @@ version = "0.1.0"
         let generator = PythonGenerator::default();
         let result = generator.extract_input_globs_from_build(&config, PathBuf::new(), false);
         insta::assert_debug_snapshot!(result);
+    }
+
+    #[tokio::test]
+    async fn test_ignore_pypi_mapping_skips_dependency_mapping() {
+        let project_model = project_fixture!({
+            "name": "foobar",
+            "version": "0.1.0",
+        });
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+        // Create a pyproject.toml with dependencies that would be mapped
+        fs::write(
+            temp_dir.path().join("pyproject.toml"),
+            r#"[project]
+name = "foobar"
+version = "0.1.0"
+dependencies = ["requests>=2.28", "flask"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+"#,
+        )
+        .await
+        .expect("Failed to write pyproject.toml");
+
+        // Test with ignore_pypi_mapping = true
+        let config = PythonBackendConfig {
+            ignore_pypi_mapping: Some(true),
+            ..Default::default()
+        };
+
+        let generated_recipe = PythonGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &config,
+                temp_dir.path().to_path_buf(),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+                vec![ChannelUrl::from(
+                    url::Url::parse("https://prefix.dev/conda-forge").unwrap(),
+                )],
+                None,
+            )
+            .await
+            .expect("Failed to generate recipe");
+
+        // With ignore_pypi_mapping = true, the pypi dependencies should NOT be mapped
+        // Run requirements should only contain python (auto-added)
+        let run_deps: Vec<String> = generated_recipe
+            .recipe
+            .requirements
+            .run
+            .iter()
+            .map(|item| item.to_string())
+            .collect();
+
+        assert_eq!(
+            run_deps,
+            vec!["python"],
+            "run deps should only contain python when ignore_pypi_mapping=true"
+        );
+
+        // Host requirements should only contain pip (auto-added installer) and python
+        let host_deps: Vec<String> = generated_recipe
+            .recipe
+            .requirements
+            .host
+            .iter()
+            .map(|item| item.to_string())
+            .collect();
+
+        assert_eq!(
+            host_deps,
+            vec!["pip", "python"],
+            "host deps should only contain pip and python when ignore_pypi_mapping=true"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_ignore_pypi_mapping_default_is_true() {
+        // Verify that the default value for ignore_pypi_mapping is true
+        let config = PythonBackendConfig::default();
+        assert!(
+            config.ignore_pypi_mapping(),
+            "ignore_pypi_mapping should default to true"
+        );
     }
 }

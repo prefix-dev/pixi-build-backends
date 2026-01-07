@@ -102,9 +102,9 @@ class ProjectModelV1:
         return self._inner.license
 
     @property
-    def license_file(self) -> Optional[str]:
+    def license_files(self) -> Optional[str]:
         """Get the project license file path."""
-        return self._inner.license_file
+        return self._inner.license_files
 
     @property
     def readme(self) -> Optional[str]:

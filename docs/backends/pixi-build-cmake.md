@@ -194,6 +194,26 @@ For example, to switch from the default Release build to Debug mode:
 extra-args = ["-DCMAKE_BUILD_TYPE=Debug"]
 ```
 
+## Default variants
+
+On Windows platforms, the backend automatically sets the following default variants:
+
+- `c_compiler`: `vs2022` - Visual Studio 2022 C compiler
+- `cxx_compiler`: `vs2022` - Visual Studio 2022 C++ compiler
+
+These variants are used when you specify compilers in your [`[package.build.config.compilers]`](#compilers) configuration.
+Only `cxx_compiler` will be installed by default, the `c_compiler` is set to help when you would add that compiler.
+
+This default is set to align with conda-forge's switch to Visual Studio 2022 and because [mainstream support for Visual Studio 2019 ended in 2024](https://learn.microsoft.com/en-us/lifecycle/products/visual-studio-2019).
+The `vs2022` compiler is more widely supported on modern GitHub runners and build environments.
+
+You can override these defaults by explicitly setting variants using [`[workspace.build-variants]`](https://pixi.sh/latest/reference/pixi_manifest/#build-variants-optional) in your `pixi.toml`:
+
+```toml
+[workspace.build-variants]
+c_compiler = ["vs2019"]
+cxx_compiler = ["vs2019"]
+```
 
 ## Limitations
 

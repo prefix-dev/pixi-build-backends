@@ -305,6 +305,27 @@ Additional command-line arguments to pass to the Mojo compiler when building thi
 extra-args = ["-I", "special-thing"]
 ```
 
+## Default Variants
+
+On Windows platforms, the backend automatically sets the following default variants:
+
+- `c_compiler`: `vs2022` - Visual Studio 2022 C compiler
+- `cxx_compiler`: `vs2022` - Visual Studio 2022 C++ compiler
+
+These variants are used when you specify compilers in your [`[package.build.config.compilers]`](#compilers) configuration.
+Note that setting these default variants does not automatically add compilers to your build - you still need to explicitly configure which compilers to use.
+
+This default is set to align with conda-forge's switch to Visual Studio 2022 and because [mainstream support for Visual Studio 2019 ended in 2024](https://learn.microsoft.com/en-us/lifecycle/products/visual-studio-2019).
+The `vs2022` compiler is more widely supported on modern GitHub runners and build environments.
+
+You can override these defaults by explicitly setting variants using [`[workspace.build-variants]`](https://pixi.sh/latest/reference/pixi_manifest/#build-variants-optional) in your `pixi.toml`:
+
+```toml
+[workspace.build-variants]
+c_compiler = ["vs2019"]
+cxx_compiler = ["vs2019"]
+```
+
 ## See Also
 
 - [Mojo Pixi Basic](https://docs.modular.com/pixi/)

@@ -1,5 +1,5 @@
 use miette::Diagnostic;
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::ProjectModel;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform, Version};
 use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
@@ -22,7 +22,7 @@ pub struct PythonParams {
     pub editable: bool,
 }
 
-/// The trait is responsible of converting a certain [`ProjectModelV1`] (or
+/// The trait is responsible of converting a certain [`ProjectModel`] (or
 /// others in the future) into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
@@ -36,7 +36,7 @@ pub struct PythonParams {
 pub trait GenerateRecipe {
     type Config: BackendConfig;
 
-    /// Generates an [`IntermediateRecipe`] from a [`ProjectModelV1`].
+    /// Generates an [`IntermediateRecipe`] from a [`ProjectModel`].
     ///
     /// # Parameters
     ///
@@ -57,7 +57,7 @@ pub trait GenerateRecipe {
     #[allow(clippy::too_many_arguments)]
     async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
@@ -122,11 +122,11 @@ pub struct GeneratedRecipe {
 }
 
 impl GeneratedRecipe {
-    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
+    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModel`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
     pub fn from_model<M: MetadataProvider>(
-        model: ProjectModelV1,
+        model: ProjectModel,
         provider: &mut M,
     ) -> Result<Self, GenerateRecipeError<M::Error>> {
         // If the name is not defined in the model, we try to get it from the provider.

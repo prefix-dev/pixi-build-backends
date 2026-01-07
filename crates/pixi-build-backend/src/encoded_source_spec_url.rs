@@ -1,6 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
-use pixi_build_types::{GitReferenceV1, GitSpecV1, SourcePackageSpecV1, UrlSpecV1};
+use pixi_build_types::{GitReference, GitSpec, SourcePackageSpec, UrlSpec};
 use url::Url;
 
 /// An internal type that supports converting a source dependency into a valid
@@ -24,15 +24,16 @@ impl From<Url> for EncodedSourceSpecUrl {
     }
 }
 
-impl From<EncodedSourceSpecUrl> for SourcePackageSpecV1 {
+impl From<EncodedSourceSpecUrl> for SourcePackageSpec {
     fn from(value: EncodedSourceSpecUrl) -> Self {
         let url = value.0;
         assert_eq!(url.scheme(), "source", "URL must be a file URL");
         let mut pairs: HashMap<_, _> = url.query_pairs().collect();
         if let Some(path) = pairs.remove("path") {
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+            pixi_build_types::PathSpec {
                 path: path.into_owned(),
-            })
+            }
+            .into()
         } else if let Some(url) = pairs.remove("url") {
             let url = Url::from_str(&url).expect("must be a valid URL");
             let md5 = pairs
@@ -41,64 +42,75 @@ impl From<EncodedSourceSpecUrl> for SourcePackageSpecV1 {
             let sha256 = pairs
                 .remove("sha256")
                 .and_then(|s| rattler_digest::parse_digest_from_hex::<rattler_digest::Sha256>(&s));
-            SourcePackageSpecV1::Url(UrlSpecV1 { url, md5, sha256 })
+            let subdirectory = pairs.remove("subdirectory").map(|s| s.into_owned());
+            UrlSpec {
+                url,
+                md5,
+                sha256,
+                subdirectory,
+            }
+            .into()
         } else if let Some(git) = pairs.remove("git") {
             let git_url = Url::from_str(&git).expect("must be a valid URL");
             let rev = if let Some(rev) = pairs.remove("rev") {
-                Some(GitReferenceV1::Rev(rev.into_owned()))
+                Some(GitReference::Rev(rev.into_owned()))
             } else if let Some(branch) = pairs.remove("branch") {
-                Some(GitReferenceV1::Branch(branch.into_owned()))
+                Some(GitReference::Branch(branch.into_owned()))
             } else {
                 pairs
                     .remove("tag")
-                    .map(|tag| GitReferenceV1::Tag(tag.into_owned()))
+                    .map(|tag| GitReference::Tag(tag.into_owned()))
             };
 
             let subdirectory = pairs.remove("subdirectory").map(|s| s.into_owned());
-            SourcePackageSpecV1::Git(GitSpecV1 {
+            GitSpec {
                 git: git_url,
                 rev,
                 subdirectory,
-            })
+            }
+            .into()
         } else {
             panic!("URL must contain either 'path', 'url', or 'git' query parameters");
         }
     }
 }
 
-impl From<SourcePackageSpecV1> for EncodedSourceSpecUrl {
-    fn from(value: SourcePackageSpecV1) -> Self {
+impl From<SourcePackageSpec> for EncodedSourceSpecUrl {
+    fn from(value: SourcePackageSpec) -> Self {
         let mut url = Url::from_str("source://").expect("must be a valid URL");
         let mut query_pairs = url.query_pairs_mut();
-        match value {
-            SourcePackageSpecV1::Url(url) => {
-                query_pairs.append_pair("url", url.url.as_str());
-                if let Some(md5) = &url.md5 {
+        match value.location {
+            pixi_build_types::SourcePackageLocationSpec::Url(url_spec) => {
+                query_pairs.append_pair("url", url_spec.url.as_str());
+                if let Some(md5) = &url_spec.md5 {
                     query_pairs.append_pair("md5", &format!("{md5:x}"));
                 }
-                if let Some(sha256) = &url.sha256 {
+                if let Some(sha256) = &url_spec.sha256 {
                     query_pairs.append_pair("sha256", &format!("{sha256:x}"));
                 }
+                if let Some(subdirectory) = &url_spec.subdirectory {
+                    query_pairs.append_pair("subdirectory", subdirectory);
+                }
             }
-            SourcePackageSpecV1::Git(git) => {
+            pixi_build_types::SourcePackageLocationSpec::Git(git) => {
                 query_pairs.append_pair("git", git.git.as_str());
                 if let Some(subdirectory) = &git.subdirectory {
                     query_pairs.append_pair("subdirectory", subdirectory);
                 }
                 match &git.rev {
-                    Some(GitReferenceV1::Branch(branch)) => {
+                    Some(GitReference::Branch(branch)) => {
                         query_pairs.append_pair("branch", branch);
                     }
-                    Some(GitReferenceV1::Rev(rev)) => {
+                    Some(GitReference::Rev(rev)) => {
                         query_pairs.append_pair("rev", rev);
                     }
-                    Some(GitReferenceV1::Tag(tag)) => {
+                    Some(GitReference::Tag(tag)) => {
                         query_pairs.append_pair("tag", tag);
                     }
                     _ => {}
                 }
             }
-            SourcePackageSpecV1::Path(path) => {
+            pixi_build_types::SourcePackageLocationSpec::Path(path) => {
                 query_pairs.append_pair("path", &path.path);
             }
         };
@@ -115,28 +127,34 @@ mod test {
 
     #[test]
     fn test_conversion() {
-        for spec in [
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+        let specs: Vec<SourcePackageSpec> = vec![
+            pixi_build_types::PathSpec {
                 path: "..\\test\\path".into(),
-            }),
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+            }
+            .into(),
+            pixi_build_types::PathSpec {
                 path: "../test/path".into(),
-            }),
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+            }
+            .into(),
+            pixi_build_types::PathSpec {
                 path: "test/path".into(),
-            }),
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+            }
+            .into(),
+            pixi_build_types::PathSpec {
                 path: "/absolute/test/path".into(),
-            }),
-            SourcePackageSpecV1::Path(pixi_build_types::PathSpecV1 {
+            }
+            .into(),
+            pixi_build_types::PathSpec {
                 path: "C://absolute/win/path".into(),
-            }),
-            SourcePackageSpecV1::Git(pixi_build_types::GitSpecV1 {
+            }
+            .into(),
+            pixi_build_types::GitSpec {
                 git: "https://github.com/some/repo.git".parse().unwrap(),
-                rev: Some(GitReferenceV1::Rev("1234567890abcdef".into())),
+                rev: Some(GitReference::Rev("1234567890abcdef".into())),
                 subdirectory: Some("subdir".into()),
-            }),
-            SourcePackageSpecV1::Url(pixi_build_types::UrlSpecV1 {
+            }
+            .into(),
+            pixi_build_types::UrlSpec {
                 url: "https://example.com/some/file.tar.gz".parse().unwrap(),
                 md5: Some(
                     rattler_digest::parse_digest_from_hex::<Md5>(
@@ -150,10 +168,14 @@ mod test {
                     )
                     .unwrap(),
                 ),
-            }),
-        ] {
+                subdirectory: None,
+            }
+            .into(),
+        ];
+
+        for spec in specs {
             let url: EncodedSourceSpecUrl = spec.clone().into();
-            let converted_spec: SourcePackageSpecV1 = url.into();
+            let converted_spec: SourcePackageSpec = url.into();
             assert_eq!(spec, converted_spec);
         }
     }

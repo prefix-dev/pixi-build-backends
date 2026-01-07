@@ -1,8 +1,9 @@
-/// This file contains the test model, which is a minimal example of a ProjectModelV1
-/// that can be used to create a ProjectModelV1 from a JSON fixture file.
+/// This file contains the test model, which is a minimal example of a ProjectModel
+/// that can be used to create a ProjectModel from a JSON fixture file.
 use pixi_build_types::{
-    BinaryPackageSpecV1, PackageSpecV1, PathSpecV1, ProjectModelV1, SourcePackageSpecV1,
-    TargetSelectorV1, TargetV1, TargetsV1,
+    BinaryPackageSpec as PbtBinaryPackageSpec, PackageSpec as PbtPackageSpec, PathSpec,
+    ProjectModel, SourcePackageSpec as PbtSourcePackageSpec, Target as PbtTarget,
+    TargetSelector as PbtTargetSelector, Targets as PbtTargets,
 };
 
 use rattler_conda_types::{ParseStrictness, Version, VersionSpec};
@@ -80,7 +81,7 @@ pub enum TargetSelector {
     Platform(String),
 }
 
-/// Helper function to load a test ProjectModelV1 from a JSON fixture file
+/// Helper function to load a test ProjectModel from a JSON fixture file
 pub(crate) fn load_project_model_from_json(filename: &str) -> TestProjectModel {
     let fixture_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -94,14 +95,12 @@ pub(crate) fn load_project_model_from_json(filename: &str) -> TestProjectModel {
         .unwrap_or_else(|e| panic!("Failed to parse JSON fixture '{filename}': {e}"))
 }
 
-/// Converts a TestProjectModel into a ProjectModelV1
-pub(crate) fn convert_test_model_to_project_model_v1(
-    test_model: TestProjectModel,
-) -> ProjectModelV1 {
+/// Converts a TestProjectModel into a ProjectModel
+pub(crate) fn convert_test_model_to_project_model_v1(test_model: TestProjectModel) -> ProjectModel {
     use std::str::FromStr;
 
     // Convert the targets
-    let targets_v1 = TargetsV1 {
+    let targets_v1 = PbtTargets {
         default_target: Some(convert_target_to_v1(&test_model.targets.default_target)),
         targets: Some(
             test_model
@@ -118,7 +117,7 @@ pub(crate) fn convert_test_model_to_project_model_v1(
         ),
     };
 
-    ProjectModelV1 {
+    ProjectModel {
         name: Some(test_model.name),
         version: Some(Version::from_str(&test_model.version).unwrap()),
         description: test_model.description,
@@ -135,9 +134,9 @@ pub(crate) fn convert_test_model_to_project_model_v1(
     }
 }
 
-/// Converts a test Target to TargetV1
-fn convert_target_to_v1(target: &Target) -> TargetV1 {
-    TargetV1 {
+/// Converts a test Target to Target
+fn convert_target_to_v1(target: &Target) -> PbtTarget {
+    PbtTarget {
         build_dependencies: Some(
             target
                 .build_dependencies
@@ -162,26 +161,26 @@ fn convert_target_to_v1(target: &Target) -> TargetV1 {
     }
 }
 
-/// Converts a test TargetSelector to TargetSelectorV1
-fn convert_target_selector_to_v1(selector: TargetSelector) -> TargetSelectorV1 {
+/// Converts a test TargetSelector to TargetSelector
+fn convert_target_selector_to_v1(selector: TargetSelector) -> PbtTargetSelector {
     match selector {
-        TargetSelector::Unix => TargetSelectorV1::Unix,
-        TargetSelector::Linux => TargetSelectorV1::Linux,
-        TargetSelector::Win => TargetSelectorV1::Win,
-        TargetSelector::MacOs => TargetSelectorV1::MacOs,
-        TargetSelector::Platform(p) => TargetSelectorV1::Platform(p),
+        TargetSelector::Unix => PbtTargetSelector::Unix,
+        TargetSelector::Linux => PbtTargetSelector::Linux,
+        TargetSelector::Win => PbtTargetSelector::Win,
+        TargetSelector::MacOs => PbtTargetSelector::MacOs,
+        TargetSelector::Platform(p) => PbtTargetSelector::Platform(p),
     }
 }
 
-/// Converts a test PackageSpec to PackageSpecV1
-fn convert_package_spec_to_v1(spec: &PackageSpec) -> PackageSpecV1 {
+/// Converts a test PackageSpec to PackageSpec
+fn convert_package_spec_to_v1(spec: &PackageSpec) -> PbtPackageSpec {
     match spec {
         PackageSpec::Binary(binary_spec) => {
             let version_spec =
                 VersionSpec::from_str(&binary_spec.binary.version, ParseStrictness::Lenient)
                     .unwrap_or(VersionSpec::Any);
 
-            PackageSpecV1::Binary(Box::new(BinaryPackageSpecV1 {
+            PbtPackageSpec::Binary(PbtBinaryPackageSpec {
                 version: Some(version_spec),
                 build: None,
                 build_number: None,
@@ -192,13 +191,12 @@ fn convert_package_spec_to_v1(spec: &PackageSpec) -> PackageSpecV1 {
                 sha256: None,
                 url: None,
                 license: None,
-            }))
+            })
         }
         PackageSpec::Source(source_spec) => {
             let inside_source = source_spec.source.clone();
             if let Some(path) = inside_source.path {
-                let source_package_spec = SourcePackageSpecV1::Path(PathSpecV1 { path });
-                PackageSpecV1::Source(source_package_spec)
+                PbtPackageSpec::Source(PathSpec { path }.into())
             } else {
                 unimplemented!("Only path source specs are supported for now");
             }

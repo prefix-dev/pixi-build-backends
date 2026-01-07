@@ -3,7 +3,7 @@ use std::sync::Arc;
 use minijinja::Value;
 use ordermap::OrderMap;
 use pixi_build_types::{
-    BinaryPackageSpecV1, PackageSpecV1, SourcePackageSpecV1, TargetSelectorV1, TargetV1, TargetsV1,
+    BinaryPackageSpec, PackageSpec, SourcePackageSpec, Target, TargetSelector, Targets,
     procedures::conda_build_v1::{
         CondaBuildV1Dependency, CondaBuildV1DependencySource, CondaBuildV1Prefix,
         CondaBuildV1RunExports,
@@ -29,7 +29,7 @@ use url::Url;
 
 use crate::encoded_source_spec_url::EncodedSourceSpecUrl;
 
-pub fn from_source_url_to_source_package(source_url: Url) -> Option<SourcePackageSpecV1> {
+pub fn from_source_url_to_source_package(source_url: Url) -> Option<SourcePackageSpec> {
     match source_url.scheme() {
         "source" => Some(EncodedSourceSpecUrl::from(source_url).into()),
         _ => None,
@@ -38,7 +38,7 @@ pub fn from_source_url_to_source_package(source_url: Url) -> Option<SourcePackag
 
 pub fn from_source_matchspec_into_package_spec(
     source_matchspec: SourceMatchSpec,
-) -> miette::Result<SourcePackageSpecV1> {
+) -> miette::Result<SourcePackageSpec> {
     from_source_url_to_source_package(source_matchspec.location)
         .ok_or_else(|| miette::miette!("Only file, http/https and git are supported for now"))
 }
@@ -75,17 +75,14 @@ pub fn convert_variant_to_pixi_build_types(
     pixi_build_types::VariantValue::deserialize(value)
 }
 
-pub fn to_rattler_build_selector(
-    selector: &TargetSelectorV1,
-    platform_kind: PlatformKind,
-) -> String {
+pub fn to_rattler_build_selector(selector: &TargetSelector, platform_kind: PlatformKind) -> String {
     match selector {
-        TargetSelectorV1::Platform(p) => format!("{platform_kind}_platform == '{p}'"),
+        TargetSelector::Platform(p) => format!("{platform_kind}_platform == '{p}'"),
         _ => selector.to_string(),
     }
 }
 
-pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> ConditionalRequirements {
+pub fn from_targets_v1_to_conditional_requirements(targets: &Targets) -> ConditionalRequirements {
     let mut build_items = ConditionalList::new();
     let mut host_items = ConditionalList::new();
     let mut run_items = ConditionalList::new();
@@ -184,7 +181,7 @@ pub fn from_targets_v1_to_conditional_requirements(targets: &TargetsV1) -> Condi
 
 pub(crate) fn source_package_spec_to_package_dependency(
     name: PackageName,
-    source_spec: SourcePackageSpecV1,
+    source_spec: SourcePackageSpec,
 ) -> miette::Result<SourceMatchSpec> {
     let spec = MatchSpec {
         name: Some(PackageNameMatcher::Exact(name)),
@@ -199,9 +196,9 @@ pub(crate) fn source_package_spec_to_package_dependency(
 
 fn binary_package_spec_to_package_dependency(
     name: PackageName,
-    binary_spec: BinaryPackageSpecV1,
+    binary_spec: BinaryPackageSpec,
 ) -> PackageDependency {
-    let BinaryPackageSpecV1 {
+    let BinaryPackageSpec {
         version,
         build,
         build_number,
@@ -238,21 +235,23 @@ fn binary_package_spec_to_package_dependency(
 
 fn package_spec_to_package_dependency(
     name: PackageName,
-    spec: PackageSpecV1,
+    spec: PackageSpec,
 ) -> miette::Result<PackageDependency> {
     match spec {
-        PackageSpecV1::Binary(binary_spec) => Ok(binary_package_spec_to_package_dependency(
-            name,
-            *binary_spec,
-        )),
-        PackageSpecV1::Source(source_spec) => Ok(PackageDependency::Source(
+        PackageSpec::Binary(binary_spec) => {
+            Ok(binary_package_spec_to_package_dependency(name, binary_spec))
+        }
+        PackageSpec::Source(source_spec) => Ok(PackageDependency::Source(
             source_package_spec_to_package_dependency(name, source_spec)?,
         )),
+        PackageSpec::PinCompatible(_) => {
+            miette::bail!("PinCompatible package specs are not yet supported in this context")
+        }
     }
 }
 
 pub(crate) fn package_specs_to_package_dependency(
-    specs: OrderMap<String, PackageSpecV1>,
+    specs: OrderMap<String, PackageSpec>,
 ) -> miette::Result<Vec<PackageDependency>> {
     specs
         .into_iter()
@@ -263,7 +262,7 @@ pub(crate) fn package_specs_to_package_dependency(
 }
 
 // TODO: Should it be a From implementation?
-pub fn target_to_package_spec(target: &TargetV1) -> PackageSpecDependencies<PackageDependency> {
+pub fn target_to_package_spec(target: &Target) -> PackageSpecDependencies<PackageDependency> {
     let build_reqs = target
         .clone()
         .build_dependencies
@@ -403,9 +402,9 @@ mod test {
     #[test]
     fn test_binary_package_conversion() {
         let name = PackageName::new_unchecked("foobar");
-        let spec = BinaryPackageSpecV1 {
+        let spec = BinaryPackageSpec {
             version: Some("3.12.*".parse().unwrap()),
-            ..BinaryPackageSpecV1::default()
+            ..BinaryPackageSpec::default()
         };
         let match_spec = binary_package_spec_to_package_dependency(name, spec);
         assert_eq!(match_spec.to_string(), "foobar 3.12.*");
@@ -414,9 +413,9 @@ mod test {
     #[test]
     fn test_binary_package_conversion_any_is_treated_as_none() {
         let name = PackageName::new_unchecked("python");
-        let spec = BinaryPackageSpecV1 {
+        let spec = BinaryPackageSpec {
             version: Some("*".parse().unwrap()),
-            ..BinaryPackageSpecV1::default()
+            ..BinaryPackageSpec::default()
         };
         let match_spec = binary_package_spec_to_package_dependency(name, spec);
         assert_eq!(match_spec.to_string(), "python");

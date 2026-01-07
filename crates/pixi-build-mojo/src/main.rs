@@ -10,7 +10,6 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
@@ -31,7 +30,7 @@ impl GenerateRecipe for MojoGenerator {
 
     async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
@@ -172,7 +171,6 @@ mod tests {
 
     use crate::config::{MojoBinConfig, MojoPkgConfig};
     use indexmap::IndexMap;
-    use pixi_build_types::ProjectModelV1;
     use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
@@ -194,7 +192,7 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };

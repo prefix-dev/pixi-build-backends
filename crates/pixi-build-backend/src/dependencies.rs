@@ -5,7 +5,8 @@ use std::{
 
 use miette::{Context, Diagnostic, IntoDiagnostic};
 use pixi_build_types as pbt;
-use pixi_build_types::{BinaryPackageSpecV1, NamedSpecV1};
+use pixi_build_types::{BinaryPackageSpec, NamedSpec};
+use rattler_build::render::pin::PinBound;
 use rattler_build::{
     NormalizedKey,
     recipe::{parser::Dependency, variable::Variable},
@@ -164,8 +165,8 @@ pub enum ConvertDependencyError {
     PinApplyError(PinError),
 }
 
-fn convert_nameless_matchspec(spec: NamelessMatchSpec) -> pbt::BinaryPackageSpecV1 {
-    pbt::BinaryPackageSpecV1 {
+fn convert_nameless_matchspec(spec: NamelessMatchSpec) -> pbt::BinaryPackageSpec {
+    pbt::BinaryPackageSpec {
         version: spec.version,
         build: spec.build,
         build_number: spec.build_number,
@@ -207,7 +208,7 @@ fn can_apply_variant(spec: &MatchSpec) -> Option<&PackageName> {
 fn apply_variant_and_convert(
     spec: &MatchSpec,
     variant: &BTreeMap<NormalizedKey, Variable>,
-) -> Result<Option<NamedSpecV1<BinaryPackageSpecV1>>, ConvertDependencyError> {
+) -> Result<Option<NamedSpec<BinaryPackageSpec>>, ConvertDependencyError> {
     let Some(name) = can_apply_variant(spec) else {
         return Ok(None);
     };
@@ -230,7 +231,7 @@ fn apply_variant_and_convert(
         .parse()
         .map_err(|e| ConvertDependencyError::VariantSpecParseError(variant.clone(), e))?;
 
-    Ok(Some(pbt::NamedSpecV1 {
+    Ok(Some(pbt::NamedSpec {
         name: name.as_source().to_owned(),
         spec: convert_nameless_matchspec(spec),
     }))
@@ -240,8 +241,8 @@ fn convert_dependency(
     dependency: Dependency,
     variant: &BTreeMap<NormalizedKey, Variable>,
     subpackages: &HashMap<PackageName, PackageIdentifier>,
-    sources: &HashMap<String, pbt::SourcePackageSpecV1>,
-) -> Result<pbt::NamedSpecV1<pbt::PackageSpecV1>, ConvertDependencyError> {
+    sources: &HashMap<String, pbt::SourcePackageSpec>,
+) -> Result<pbt::NamedSpec<pbt::PackageSpec>, ConvertDependencyError> {
     let match_spec = match dependency {
         Dependency::Spec(spec) => {
             // Convert back to source spec if it is a source spec.
@@ -254,17 +255,17 @@ fn convert_dependency(
                 let Some(name) = name_matcher.as_exact() else {
                     return Err(ConvertDependencyError::MissingName);
                 };
-                return Ok(pbt::NamedSpecV1 {
+                return Ok(pbt::NamedSpec {
                     name: name.as_source().into(),
-                    spec: pbt::PackageSpecV1::Source(source_package),
+                    spec: pbt::PackageSpec::Source(source_package),
                 });
             }
 
             // Apply a variant if it is applicable.
-            if let Some(NamedSpecV1 { name, spec }) = apply_variant_and_convert(&spec, variant)? {
-                return Ok(pbt::NamedSpecV1 {
+            if let Some(NamedSpec { name, spec }) = apply_variant_and_convert(&spec, variant)? {
+                return Ok(pbt::NamedSpec {
                     name,
-                    spec: pbt::PackageSpecV1::Binary(Box::new(spec)),
+                    spec: pbt::PackageSpec::Binary(spec),
                 });
             }
             spec
@@ -278,7 +279,20 @@ fn convert_dependency(
                 .apply(&subpackage.version, &subpackage.build_string)
                 .map_err(ConvertDependencyError::PinApplyError)?
         }
-        _ => todo!("Handle other dependency types"),
+        Dependency::PinCompatible(pin) => {
+            let pin = pin.pin_value();
+            let name = &pin.name;
+            let args = &pin.args;
+            return Ok(pbt::NamedSpec {
+                name: name.as_source().to_owned(),
+                spec: pbt::PackageSpec::PinCompatible(pbt::PinCompatibleSpec {
+                    lower_bound: args.lower_bound.clone().map(convert_pin_bound),
+                    upper_bound: args.upper_bound.clone().map(convert_pin_bound),
+                    exact: args.exact,
+                    build: args.build.clone(),
+                }),
+            });
+        }
     };
 
     let (Some(name_matcher), spec) = match_spec.into_nameless() else {
@@ -288,32 +302,52 @@ fn convert_dependency(
         return Err(ConvertDependencyError::MissingName);
     };
 
-    if let Some(source) = sources
+    if let Some(source_spec) = sources
         .get(name.as_source())
         .or_else(|| sources.get(name.as_normalized()))
     {
-        Ok(pbt::NamedSpecV1 {
+        let mut source_spec = source_spec.clone();
+        // Merge in the spec details
+        source_spec.version = spec.version.or(source_spec.version);
+        source_spec.build = spec.build.or(source_spec.build);
+        source_spec.build_number = spec.build_number.or(source_spec.build_number);
+        source_spec.subdir = spec.subdir.or(source_spec.subdir);
+        source_spec.license = spec.license.or(source_spec.license);
+
+        Ok(pbt::NamedSpec {
             name: name.as_source().to_owned(),
-            spec: pbt::PackageSpecV1::Source(source.clone()),
+            spec: pbt::PackageSpec::Source(source_spec),
         })
     } else {
-        Ok(pbt::NamedSpecV1 {
+        Ok(pbt::NamedSpec {
             name: name.as_source().to_owned(),
-            spec: pbt::PackageSpecV1::Binary(Box::new(convert_nameless_matchspec(spec))),
+            spec: pbt::PackageSpec::Binary(convert_nameless_matchspec(spec)),
         })
     }
 }
 
-fn convert_binary_dependency(
+fn convert_pin_bound(pin_bound: PinBound) -> pbt::PinBound {
+    match pin_bound {
+        PinBound::Expression(expr) => {
+            pbt::PinBound::Expression(pbt::PinExpression(expr.to_string()))
+        }
+        PinBound::Version(v) => pbt::PinBound::Version(v),
+    }
+}
+
+fn convert_constraint_dependency(
     dependency: Dependency,
     variant: &BTreeMap<NormalizedKey, Variable>,
     subpackages: &HashMap<PackageName, PackageIdentifier>,
-) -> Result<pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>, ConvertDependencyError> {
+) -> Result<pbt::NamedSpec<pbt::ConstraintSpec>, ConvertDependencyError> {
     let match_spec = match dependency {
         Dependency::Spec(spec) => {
             // Apply a variant if it is applicable.
-            if let Some(spec) = apply_variant_and_convert(&spec, variant)? {
-                return Ok(spec);
+            if let Some(NamedSpec { spec, name }) = apply_variant_and_convert(&spec, variant)? {
+                return Ok(NamedSpec {
+                    spec: pbt::ConstraintSpec::Binary(spec),
+                    name,
+                });
             }
             spec
         }
@@ -330,8 +364,11 @@ fn convert_binary_dependency(
     };
 
     // Apply a variant if it is applicable.
-    if let Some(spec) = apply_variant_and_convert(&match_spec, variant)? {
-        return Ok(spec);
+    if let Some(NamedSpec { spec, name }) = apply_variant_and_convert(&match_spec, variant)? {
+        return Ok(NamedSpec {
+            spec: pbt::ConstraintSpec::Binary(spec),
+            name,
+        });
     }
 
     let (Some(name_matcher), spec) = match_spec.into_nameless() else {
@@ -341,9 +378,9 @@ fn convert_binary_dependency(
         return Err(ConvertDependencyError::MissingName);
     };
 
-    Ok(pbt::NamedSpecV1 {
+    Ok(pbt::NamedSpec {
         name: name.as_source().to_owned(),
-        spec: convert_nameless_matchspec(spec),
+        spec: pbt::ConstraintSpec::Binary(convert_nameless_matchspec(spec)),
     })
 }
 
@@ -351,22 +388,22 @@ pub fn convert_dependencies(
     dependencies: Vec<Dependency>,
     variant: &BTreeMap<NormalizedKey, Variable>,
     subpackages: &HashMap<PackageName, PackageIdentifier>,
-    sources: &HashMap<String, pbt::SourcePackageSpecV1>,
-) -> Result<Vec<pbt::NamedSpecV1<pbt::PackageSpecV1>>, ConvertDependencyError> {
+    sources: &HashMap<String, pbt::SourcePackageSpec>,
+) -> Result<Vec<pbt::NamedSpec<pbt::PackageSpec>>, ConvertDependencyError> {
     dependencies
         .into_iter()
         .map(|spec| convert_dependency(spec, variant, subpackages, sources))
         .collect()
 }
 
-pub fn convert_binary_dependencies(
+pub fn convert_constraint_dependencies(
     dependencies: Vec<Dependency>,
     variant: &BTreeMap<NormalizedKey, Variable>,
     subpackages: &HashMap<PackageName, PackageIdentifier>,
-) -> Result<Vec<pbt::NamedSpecV1<pbt::BinaryPackageSpecV1>>, ConvertDependencyError> {
+) -> Result<Vec<pbt::NamedSpec<pbt::ConstraintSpec>>, ConvertDependencyError> {
     dependencies
         .into_iter()
-        .map(|spec| convert_binary_dependency(spec, variant, subpackages))
+        .map(|spec| convert_constraint_dependency(spec, variant, subpackages))
         .collect()
 }
 

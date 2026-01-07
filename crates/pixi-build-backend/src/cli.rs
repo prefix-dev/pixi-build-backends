@@ -73,10 +73,6 @@ pub(crate) async fn main_impl<T: ProtocolInstantiator, F: FnOnce(LoggingOutputHa
                 pixi_build_types::procedures::conda_build_v1::METHOD_NAME,
                 backend_capabilities.provides_conda_build_v1()
             );
-            eprintln!(
-                "Highest project model: {}",
-                backend_capabilities.highest_supported_project_model()
-            );
             Ok(())
         }
     }

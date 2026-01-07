@@ -41,8 +41,8 @@ pub trait ProjectModel {
     fn version(&self) -> &Option<Version>;
 }
 
-impl ProjectModel for pbt::ProjectModelV1 {
-    type Targets = pbt::TargetsV1;
+impl ProjectModel for pbt::ProjectModel {
+    type Targets = pbt::Targets;
 
     fn targets(&self) -> Option<&Self::Targets> {
         self.targets.as_ref()

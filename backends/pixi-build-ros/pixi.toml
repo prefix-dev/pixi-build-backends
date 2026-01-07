@@ -1,8 +1,5 @@
 [workspace]
-channels = [
-  "https://prefix.dev/pixi-build-backends",
-  "https://prefix.dev/conda-forge",
-]
+channels = ["https://prefix.dev/pixi-build-backends", "https://prefix.dev/conda-forge"]
 platforms = ["osx-arm64", "win-64", "linux-64", "linux-aarch64"]
 preview = ["pixi-build"]
 
@@ -76,7 +73,7 @@ pydantic = ">=2.8.2,<3"
 py_rattler = ">=0.15.0,<0.16"
 catkin_pkg = "*"
 pyyaml = "*"
-pixi-build-api-version = ">=2,<3"
+pixi-build-api-version = ">=4,<5"
 # should be added to `py-pixi-build-backend`
 typing-extensions = "*"
 # this depends has to match the test dependency, so switch comments if needed

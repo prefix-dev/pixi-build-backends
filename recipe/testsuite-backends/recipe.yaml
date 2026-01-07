@@ -43,7 +43,6 @@ outputs:
     build:
       script:
 
-
   - package:
       name: pixi-build-cmake
 

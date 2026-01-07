@@ -17,9 +17,7 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(
-        cls, model: ProjectModel, metadata_provider: Optional[MetadataProvider] = None
-    ) -> "GeneratedRecipe":
+    def from_model(cls, model: ProjectModel, metadata_provider: Optional[MetadataProvider] = None) -> "GeneratedRecipe":
         """Create a GeneratedRecipe from a ProjectModel."""
         instance = cls()
         if metadata_provider is not None:

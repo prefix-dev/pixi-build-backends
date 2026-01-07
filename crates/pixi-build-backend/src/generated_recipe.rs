@@ -111,7 +111,12 @@ pub enum GenerateRecipeError<MetadataProviderError: Diagnostic + 'static> {
     #[error("There was no version defined for the recipe")]
     NoVersionDefined,
     #[error("An error occurred while querying the {0}")]
-    MetadataProviderError(String, #[diagnostic_source] #[source] MetadataProviderError),
+    MetadataProviderError(
+        String,
+        #[diagnostic_source]
+        #[source]
+        MetadataProviderError,
+    ),
 }
 
 #[derive(Default, Clone)]

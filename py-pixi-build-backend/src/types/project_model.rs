@@ -42,9 +42,7 @@ impl PyProjectModel {
     #[staticmethod]
     pub fn from_json(json: &str) -> PyResult<Self> {
         let project: ProjectModel = from_str(json).map_err(|err| {
-            PyErr::new::<PyValueError, _>(format!(
-                "Failed to parse ProjectModel from JSON: {err}"
-            ))
+            PyErr::new::<PyValueError, _>(format!("Failed to parse ProjectModel from JSON: {err}"))
         })?;
 
         Ok(PyProjectModel { inner: project })

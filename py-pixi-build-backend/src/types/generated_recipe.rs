@@ -15,10 +15,10 @@ use pixi_build_backend::generated_recipe::{
 use pixi_build_backend::{NormalizedKey, Variable};
 use pixi_build_types::ProjectModel;
 use pyo3::{
+    Py, PyAny, PyErr, PyResult, Python,
     exceptions::PyRuntimeError,
     pyclass, pymethods,
     types::{PyAnyMethods, PyList, PyString},
-    Py, PyAny, PyErr, PyResult, Python,
 };
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::IntermediateRecipe;

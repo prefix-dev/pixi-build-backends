@@ -70,7 +70,7 @@ where
         workspace_directory: None,
         source_directory: source_dir,
         manifest_path,
-        project_model: project_model.map(Into::into),
+        project_model,
         configuration: None,
         target_configuration: None,
         cache_directory: None,

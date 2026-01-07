@@ -47,9 +47,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
           {
             "name": "my-package",
             "source": {
-              "Path": {
+              "path": {
                 "path": "."
-              }
+              },
+              "version": "==0.1.0",
+              "build": "py38hb368f13_0"
             }
           }
         ]
@@ -97,9 +99,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
           {
             "name": "my-package",
             "source": {
-              "Path": {
+              "path": {
                 "path": "."
-              }
+              },
+              "version": "==0.1.0",
+              "build": "py39h6a44458_0"
             }
           }
         ]
@@ -147,9 +151,11 @@ input_file: tests/recipe/pin-subpackage-variants/recipe.yaml
           {
             "name": "my-package",
             "source": {
-              "Path": {
+              "path": {
                 "path": "."
-              }
+              },
+              "version": "==0.1.0",
+              "build": "py310hbede2c2_0"
             }
           }
         ]

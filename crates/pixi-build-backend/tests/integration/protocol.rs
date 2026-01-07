@@ -57,7 +57,7 @@ mod imp {
 
         async fn generate_recipe(
             &self,
-            model: &pixi_build_types::ProjectModelV1,
+            model: &pixi_build_types::ProjectModel,
             _config: &Self::Config,
             _manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,

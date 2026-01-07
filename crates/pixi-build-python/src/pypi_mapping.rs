@@ -39,6 +39,10 @@ pub enum MappingError {
     #[error("failed to parse mapping response for '{0}'")]
     ParseError(String, #[source] serde_json::Error),
 
+    /// Package not found in the mapping.
+    #[error("PyPI package '{0}' has no conda mapping")]
+    PackageNotFound(String),
+
     /// Invalid version specifier conversion.
     #[error("failed to convert version specifier '{0}' to conda format: {1}")]
     VersionConversionError(String, String),
@@ -176,10 +180,7 @@ impl PyPiToCondaMapper {
     }
 
     /// Fetch a mapping from the API.
-    async fn fetch_from_api(
-        &self,
-        pypi_name: &str,
-    ) -> Result<Option<PyPiPackageLookup>, MappingError> {
+    async fn fetch_from_api(&self, pypi_name: &str) -> Result<PyPiPackageLookup, MappingError> {
         let url = format!(
             "{}/{}/{}.json",
             MAPPING_BASE_URL, self.channel_name, pypi_name
@@ -193,7 +194,7 @@ impl PyPiToCondaMapper {
             .map_err(|e| MappingError::FetchError(pypi_name.to_string(), e))?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Ok(None);
+            return Err(MappingError::PackageNotFound(pypi_name.to_string()));
         }
 
         let text = response
@@ -204,32 +205,30 @@ impl PyPiToCondaMapper {
         let lookup: PyPiPackageLookup = serde_json::from_str(&text)
             .map_err(|e| MappingError::ParseError(pypi_name.to_string(), e))?;
 
-        Ok(Some(lookup))
+        Ok(lookup)
     }
 
     /// Get the mapping for a PyPI package, using cache if available.
-    pub async fn get_mapping(
-        &self,
-        pypi_name: &str,
-    ) -> Result<Option<PyPiPackageLookup>, MappingError> {
+    pub async fn get_mapping(&self, pypi_name: &str) -> Result<PyPiPackageLookup, MappingError> {
         // Check inline mappings first (test-only)
         #[cfg(test)]
         if let Some(ref mappings) = self.inline_mappings {
-            return Ok(mappings.get(pypi_name).cloned());
+            return mappings
+                .get(pypi_name)
+                .cloned()
+                .ok_or_else(|| MappingError::PackageNotFound(pypi_name.to_string()));
         }
 
         // Try cache
         if let Some(cached) = self.read_from_cache(pypi_name) {
-            return Ok(Some(cached));
+            return Ok(cached);
         }
 
         // Fetch from API
         let lookup = self.fetch_from_api(pypi_name).await?;
 
-        // Write to cache if successful
-        if let Some(ref lookup) = lookup {
-            self.write_to_cache(pypi_name, lookup);
-        }
+        // Write to cache
+        self.write_to_cache(pypi_name, &lookup);
 
         Ok(lookup)
     }
@@ -446,15 +445,16 @@ impl PyPiToCondaMapper {
             }
 
             // Get the mapping
-            let lookup = match self.get_mapping(req.name.as_ref()).await? {
-                Some(l) => l,
-                None => {
+            let lookup = match self.get_mapping(req.name.as_ref()).await {
+                Ok(l) => l,
+                Err(MappingError::PackageNotFound(_)) => {
                     tracing::warn!(
                         "PyPI package '{}' has no conda-forge mapping, skipping",
                         req.name
                     );
                     continue;
                 }
+                Err(e) => return Err(e),
             };
 
             // Extract the conda package name

@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     create_py_wrap,
+    error::pretty_print_error,
     recipe_stage0::recipe::PyIntermediateRecipe,
     types::metadata_provider::get_input_globs_from_provider,
     types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModel, PyPythonParams},
@@ -14,10 +15,10 @@ use pixi_build_backend::generated_recipe::{
 use pixi_build_backend::{NormalizedKey, Variable};
 use pixi_build_types::ProjectModel;
 use pyo3::{
-    Py, PyAny, PyErr, PyResult, Python,
-    exceptions::PyValueError,
+    exceptions::PyRuntimeError,
     pyclass, pymethods,
     types::{PyAnyMethods, PyList, PyString},
+    Py, PyAny, PyErr, PyResult, Python,
 };
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::IntermediateRecipe;
@@ -52,7 +53,7 @@ impl PyGeneratedRecipe {
     pub fn from_model(py: Python, model: PyProjectModel) -> PyResult<Self> {
         let generated_recipe =
             GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+                .map_err(|e| PyErr::new::<PyRuntimeError, _>(pretty_print_error(&e)))?;
 
         let py_recipe = Py::new(
             py,
@@ -92,7 +93,7 @@ impl PyGeneratedRecipe {
     ) -> PyResult<Self> {
         let mut provider = PyMetadataProvider::new(metadata_provider.clone());
         let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+            .map_err(|e| PyErr::new::<PyRuntimeError, _>(pretty_print_error(&e)))?;
 
         // Get additional input globs from the metadata provider if available
         let mut metadata_input_globs = generated_recipe.metadata_input_globs;

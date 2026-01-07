@@ -17,7 +17,9 @@ version = "*"
 
 [package.build.config]
 compilers = ["rust"]
-env = { "CARGO_HOME" = "f:/ch" }
+
+[package.build-dependencies]
+rust = ">=1.90.0,<1.91"
 
 [package.host-dependencies]
 maturin = "*"
@@ -72,7 +74,7 @@ lint-python = "ruff check ."
 lint-rust = "cargo clippy --all -- -D warnings"
 
 [environments]
-# Development environment with all tools (including rust-src for IDE support)  
+# Development environment with all tools (including rust-src for IDE support)
 default = { features = ["build", "dev"], solve-group = "main" }
 
 # Minimal CI environment for automated testing and checks

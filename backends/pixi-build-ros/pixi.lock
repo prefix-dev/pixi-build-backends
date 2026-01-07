@@ -1917,8 +1917,6 @@ packages:
   - pixi-build-api-version >=4,<5
   - python >=3.8
   - python_abi 3.12.* *_cp312
-  constrains:
-  - __osx >=11.0
   license: BSD-3-Clause
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend

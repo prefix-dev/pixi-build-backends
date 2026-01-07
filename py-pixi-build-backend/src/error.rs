@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use pyo3::{PyErr, create_exception, exceptions::PyException};
+use pyo3::{create_exception, exceptions::PyException, PyErr};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -16,7 +16,7 @@ pub enum PyPixiBuildBackendError {
     YamlSerialization(#[from] serde_yaml::Error),
 }
 
-fn pretty_print_error(mut err: &dyn Error) -> String {
+pub(crate) fn pretty_print_error(mut err: &dyn Error) -> String {
     let mut result = err.to_string();
     while let Some(source) = err.source() {
         result.push_str(&format!("\nCaused by: {source}"));

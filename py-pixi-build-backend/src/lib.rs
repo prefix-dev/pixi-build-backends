@@ -74,7 +74,7 @@ macro_rules! create_py_wrap {
 fn pixi_build_backend(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add core types
     m.add_class::<types::PyPlatform>()?;
-    m.add_class::<types::PyProjectModelV1>()?;
+    m.add_class::<types::PyProjectModel>()?;
     m.add_class::<types::PyGeneratedRecipe>()?;
     m.add_class::<types::PyGenerateRecipe>()?;
     m.add_class::<types::PyPythonParams>()?;

@@ -1,6 +1,6 @@
 use std::{fs, str::FromStr};
 
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::ProjectModel;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use pythonize::depythonize;
 use rattler_conda_types::Version;
@@ -8,17 +8,17 @@ use serde_json::from_str;
 
 #[pyclass]
 #[derive(Clone)]
-pub struct PyProjectModelV1 {
-    pub(crate) inner: ProjectModelV1,
+pub struct PyProjectModel {
+    pub(crate) inner: ProjectModel,
 }
 
 #[pymethods]
-impl PyProjectModelV1 {
+impl PyProjectModel {
     #[new]
     #[pyo3(signature = (name, version=None))]
     pub fn new(name: Option<String>, version: Option<String>) -> Self {
-        PyProjectModelV1 {
-            inner: ProjectModelV1 {
+        PyProjectModel {
+            inner: ProjectModel {
                 name,
                 version: version.map(|v| {
                     v.parse()
@@ -33,32 +33,34 @@ impl PyProjectModelV1 {
                 homepage: None,
                 repository: None,
                 documentation: None,
+                build_number: None,
+                build_string: None,
             },
         }
     }
 
     #[staticmethod]
     pub fn from_json(json: &str) -> PyResult<Self> {
-        let project: ProjectModelV1 = from_str(json).map_err(|err| {
+        let project: ProjectModel = from_str(json).map_err(|err| {
             PyErr::new::<PyValueError, _>(format!(
-                "Failed to parse ProjectModelV1 from JSON: {err}"
+                "Failed to parse ProjectModel from JSON: {err}"
             ))
         })?;
 
-        Ok(PyProjectModelV1 { inner: project })
+        Ok(PyProjectModel { inner: project })
     }
 
     #[staticmethod]
     pub fn from_dict(value: &Bound<PyAny>) -> PyResult<Self> {
-        let project: ProjectModelV1 = depythonize(value)?;
-        Ok(PyProjectModelV1 { inner: project })
+        let project: ProjectModel = depythonize(value)?;
+        Ok(PyProjectModel { inner: project })
     }
 
     #[staticmethod]
     pub fn from_json_file(path: &str) -> PyResult<Self> {
         let content = fs::read_to_string(path).map_err(|err| {
             PyErr::new::<PyValueError, _>(format!(
-                "Failed to read ProjectModelV1 JSON file '{path}': {err}"
+                "Failed to read ProjectModel JSON file '{path}': {err}"
             ))
         })?;
 
@@ -126,22 +128,22 @@ impl PyProjectModelV1 {
     }
 }
 
-impl From<ProjectModelV1> for PyProjectModelV1 {
-    fn from(model: ProjectModelV1) -> Self {
-        PyProjectModelV1 { inner: model }
+impl From<ProjectModel> for PyProjectModel {
+    fn from(model: ProjectModel) -> Self {
+        PyProjectModel { inner: model }
     }
 }
 
-impl From<&ProjectModelV1> for PyProjectModelV1 {
-    fn from(model: &ProjectModelV1) -> Self {
-        PyProjectModelV1 {
+impl From<&ProjectModel> for PyProjectModel {
+    fn from(model: &ProjectModel) -> Self {
+        PyProjectModel {
             inner: model.clone(),
         }
     }
 }
 
-impl From<PyProjectModelV1> for ProjectModelV1 {
-    fn from(py_model: PyProjectModelV1) -> Self {
+impl From<PyProjectModel> for ProjectModel {
+    fn from(py_model: PyProjectModel) -> Self {
         py_model.inner
     }
 }

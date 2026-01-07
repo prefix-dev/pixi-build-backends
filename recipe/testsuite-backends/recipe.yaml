@@ -37,6 +37,14 @@ cache:
 
 outputs:
   - package:
+      name: pixi-build-api-version
+      version: 4
+
+    build:
+      script:
+
+
+  - package:
       name: pixi-build-cmake
 
     build:
@@ -133,7 +141,6 @@ outputs:
         - py-rattler
         - typing-extensions
         - py-pixi-build-backend
-        - pixi-build-api-version >=4,<5
     build:
       script:
         - if: win
@@ -170,6 +177,7 @@ outputs:
         - pip
       run:
         - python >=3.8
+        - pixi-build-api-version >=4,<5
       ignore_run_exports:
         from_package:
           - cross-python_${{ target_platform }}

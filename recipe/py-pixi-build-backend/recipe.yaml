@@ -14,8 +14,8 @@ requirements:
   build:
     - if: build_platform != target_platform
       then:
-        - python ${{ python_min }}
-        - cross-python_${{ target_platform }} ${{ python_min }}
+        - python ${{ python_min }}.*
+        - cross-python_${{ target_platform }} ${{ python_min }}.*
         - maturin >=1.2.2,<2
     - ${{ compiler('rust') }}
   host:

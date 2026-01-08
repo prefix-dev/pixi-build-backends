@@ -128,11 +128,11 @@ outputs:
 
     requirements:
       host:
-        - python
+        - python ${{ python_min }}.*
         - hatchling
         - pip
       run:
-        - python
+        - python >=${{ python_min }}
         - rosdistro
         - catkin_pkg
         - pydantic
@@ -164,18 +164,18 @@ outputs:
       build:
         - if: build_platform != target_platform
           then:
-            - python
+            - python ${{ python_min }}.*
             - cross-python_${{ target_platform }}
             - maturin >=1.2.2,<2
         - ${{ compiler('rust') }}
         - ${{ stdlib('c') }}
       host:
-        - python
+        - python ${{ python_min }}.*
         - python-abi3
         - maturin >=1.2.2,<2
         - pip
       run:
-        - python >=3.8
+        - python >=${{ python_min }}
         - pixi-build-api-version >=4,<5
       ignore_run_exports:
         from_package:

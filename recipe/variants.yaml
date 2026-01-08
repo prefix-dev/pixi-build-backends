@@ -41,8 +41,11 @@ cxx_compiler_version:
     then: 14
   - if: osx
     then: 19
+
 python:
   - 3.13
+python_min:
+  - 3.10
 
 # Pin the compiler used
 rust_compiler_version:

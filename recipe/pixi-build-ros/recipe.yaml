@@ -12,11 +12,11 @@ source:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.9
+    - python >=${{ python_min }}
     - rosdistro
     - catkin_pkg
     - pydantic

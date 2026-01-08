@@ -13,6 +13,7 @@ rustls-tls = ["pixi-build-backend/rustls-tls"]
 native-tls = ["pixi-build-backend/native-tls"]
 
 [dependencies]
+async-trait = { workspace = true }
 fs-err = { workspace = true }
 indexmap = { workspace = true }
 miette = { workspace = true }

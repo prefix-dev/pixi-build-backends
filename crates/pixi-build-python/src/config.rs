@@ -29,12 +29,23 @@ pub struct PythonBackendConfig {
     /// Ignore the pyproject.toml manifest and rely only on the project model.
     #[serde(default)]
     pub ignore_pyproject_manifest: Option<bool>,
+    /// Ignore the PyPI-to-conda mapping. When enabled, dependencies from
+    /// pyproject.toml will not be automatically mapped to conda packages.
+    /// Defaults to `true` (mapping disabled).
+    #[serde(default)]
+    pub ignore_pypi_mapping: Option<bool>,
 }
 
 impl PythonBackendConfig {
     /// Whether to build a noarch package or a platform-specific package.
     pub fn noarch(&self) -> bool {
         self.noarch.unwrap_or(true)
+    }
+
+    /// Whether to ignore the PyPI-to-conda mapping.
+    /// Defaults to `true` (mapping disabled).
+    pub fn ignore_pypi_mapping(&self) -> bool {
+        self.ignore_pypi_mapping.unwrap_or(true)
     }
 
     /// Creates a new [`PythonBackendConfig`] with default values and
@@ -90,6 +101,9 @@ impl BackendConfig for PythonBackendConfig {
             ignore_pyproject_manifest: target_config
                 .ignore_pyproject_manifest
                 .or(self.ignore_pyproject_manifest),
+            ignore_pypi_mapping: target_config
+                .ignore_pypi_mapping
+                .or(self.ignore_pypi_mapping),
         })
     }
 }
@@ -121,6 +135,7 @@ mod tests {
             extra_input_globs: vec!["*.base".to_string()],
             compilers: Some(vec!["c".to_string()]),
             ignore_pyproject_manifest: Some(true),
+            ignore_pypi_mapping: Some(true),
         };
 
         let mut target_env = indexmap::IndexMap::new();
@@ -135,6 +150,7 @@ mod tests {
             extra_input_globs: vec!["*.target".to_string()],
             compilers: Some(vec!["cxx".to_string(), "rust".to_string()]),
             ignore_pyproject_manifest: Some(false),
+            ignore_pypi_mapping: Some(false),
         };
 
         let merged = base_config
@@ -168,6 +184,8 @@ mod tests {
         );
         // ignore_pyproject_manifest should use target value
         assert_eq!(merged.ignore_pyproject_manifest, Some(false));
+        // ignore_pypi_mapping should use target value
+        assert_eq!(merged.ignore_pypi_mapping, Some(false));
     }
 
     #[test]
@@ -183,6 +201,7 @@ mod tests {
             extra_input_globs: vec!["*.base".to_string()],
             compilers: None,
             ignore_pyproject_manifest: Some(true),
+            ignore_pypi_mapping: Some(true),
         };
 
         let empty_target_config = PythonBackendConfig::default();
@@ -198,6 +217,7 @@ mod tests {
         assert_eq!(merged.extra_input_globs, vec!["*.base".to_string()]);
         assert_eq!(merged.compilers, None);
         assert_eq!(merged.ignore_pyproject_manifest, Some(true));
+        assert_eq!(merged.ignore_pypi_mapping, Some(true));
     }
 
     #[test]

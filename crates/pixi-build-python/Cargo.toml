@@ -9,23 +9,24 @@ rustls-tls = ["pixi-build-backend/rustls-tls"]
 native-tls = ["pixi-build-backend/native-tls"]
 
 [dependencies]
+async-trait = { workspace = true }
 indexmap = { workspace = true }
 miette = { workspace = true }
 minijinja = { workspace = true }
 rattler_conda_types = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 toml = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
+tracing = { workspace = true }
 pyproject-toml = { workspace = true }
+pep508_rs = { workspace = true }
 fs-err = { workspace = true }
 once_cell = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-
 pixi-build-backend = { workspace = true }
-
 pixi_build_types = { workspace = true }
-
 recipe-stage0 = { workspace = true }
 spdx = { workspace = true }
 
@@ -33,3 +34,4 @@ spdx = { workspace = true }
 insta = { workspace = true, features = ["yaml", "redactions", "filters"] }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+url = { workspace = true }

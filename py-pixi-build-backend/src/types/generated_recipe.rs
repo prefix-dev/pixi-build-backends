@@ -161,10 +161,11 @@ impl PyGenerateRecipe {
     }
 }
 
+#[async_trait::async_trait]
 impl GenerateRecipe for PyGenerateRecipe {
     type Config = PyBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
         model: &ProjectModelV1,
         config: &Self::Config,
@@ -173,6 +174,7 @@ impl GenerateRecipe for PyGenerateRecipe {
         python_params: Option<PythonParams>,
         _variants: &HashSet<NormalizedKey>,
         channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         let recipe: GeneratedRecipe = Python::attach(|py| {
             let manifest_str = manifest_root.to_string_lossy().to_string();

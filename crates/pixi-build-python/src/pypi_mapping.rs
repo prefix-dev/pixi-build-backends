@@ -346,10 +346,9 @@ impl PyPiToCondaMapper {
         non_system_fields.iter().any(|f| marker_str.contains(f))
     }
 
-    /// Check if a requirement should be included for the given platform.
+    /// Check if a requirement should be skipped for the given platform.
     ///
-    /// Returns true if the requirement has no markers, or if the markers are pure system
-    /// markers that evaluate to true for the given platform.
+    /// Returns true if the requirement should be skipped (excluded), false if it should be included.
     ///
     /// For NoArch platforms, ALL dependencies with markers (system or non-system) are excluded
     /// because noarch packages must be platform-independent.
@@ -362,15 +361,15 @@ impl PyPiToCondaMapper {
         req: &pep508_rs::Requirement<pep508_rs::VerbatimUrl>,
         platform: Platform,
     ) -> bool {
-        // If there are no markers, always include
+        // If there are no markers, always include (don't skip)
         if req.marker == pep508_rs::MarkerTree::default() {
-            return true;
+            return false;
         }
 
         // For NoArch platform, exclude ALL dependencies with markers
         // NoArch packages must be platform-independent
         if platform == Platform::NoArch {
-            return false;
+            return true;
         }
 
         // If the marker contains any non-system fields, exclude it entirely
@@ -382,7 +381,7 @@ impl PyPiToCondaMapper {
                 req.name,
                 req.marker
             );
-            return false;
+            return true;
         }
 
         // At this point, marker contains only system fields
@@ -398,7 +397,8 @@ impl PyPiToCondaMapper {
             platform
         );
 
-        result
+        // Skip if marker evaluates to false (requirement not applicable to this platform)
+        !result
     }
 
     /// Map a list of PEP 508 requirements to conda MatchSpecs.

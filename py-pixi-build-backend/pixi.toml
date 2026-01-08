@@ -18,12 +18,15 @@ version = "*"
 [package.build.config]
 compilers = ["rust"]
 
+[package.build-dependencies]
+rust = ">=1.90.0,<1.91"
+
 [package.host-dependencies]
 maturin = "*"
 
 [package.run-dependencies]
 typing-extensions = "*"
-pixi-build-api-version = ">=2,<3"
+pixi-build-api-version = ">=4,<5"
 
 [activation.env]
 PIP_REQUIRE_VIRTUALENV = "false"
@@ -32,7 +35,7 @@ PIP_REQUIRE_VIRTUALENV = "false"
 python = "*"
 maturin = "~=1.10.2"
 pip = "~=25.3.0"
-rust = "~=1.89.0"
+rust = ">=1.90.0,<1.91"
 
 [feature.build.target.linux-64.dependencies]
 patchelf = "~=0.18.0"
@@ -53,7 +56,7 @@ ruff = ">=0.14,<0.15"
 
 [feature.dev.dependencies]
 # Development tools (IDE support)
-rust-src = "~=1.89.0"
+rust-src = ">=1.90.0,<1.91"
 
 [tasks]
 build = "maturin develop"
@@ -71,7 +74,7 @@ lint-python = "ruff check ."
 lint-rust = "cargo clippy --all -- -D warnings"
 
 [environments]
-# Development environment with all tools (including rust-src for IDE support)  
+# Development environment with all tools (including rust-src for IDE support)
 default = { features = ["build", "dev"], solve-group = "main" }
 
 # Minimal CI environment for automated testing and checks

@@ -1,6 +1,6 @@
 [package]
 name = "py-pixi-build-backend"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 
 [lib]
@@ -69,6 +69,9 @@ strip = false
 [patch.crates-io]
 # This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
 reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
+
+[patch."https://github.com/prefix-dev/pixi"]
+#pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 # Local path overrides for development
 #pixi_build_types = { path = "../../pixi_build_types/crates/pixi_build_types" }

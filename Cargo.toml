@@ -75,7 +75,8 @@ recipe-stage0 = { path = "crates/recipe-stage0" }
 # This is a temporary patch to get `cargo vendor` to work with the `uv` and pep508_rs` crates.
 reqwest-middleware = { git = "https://github.com/astral-sh/reqwest-middleware", rev = "7650ed76215a962a96d94a79be71c27bffde7ab2" }
 
-#pixi_build_types = { path = "../pixi/crates/pixi_build_types" }
+[patch."https://github.com/prefix-dev/pixi"]
+#pixi_build_types = { git = "https://github.com/prefix-dev/pixi", branch = "main" }
 
 #rattler_cache = { path = "../rattler/crates/rattler_cache" }
 #rattler_conda_types = { path = "../rattler/crates/rattler_conda_types" }

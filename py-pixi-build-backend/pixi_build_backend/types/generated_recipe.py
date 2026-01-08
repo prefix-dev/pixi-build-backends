@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Protocol, List
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 from pixi_build_backend.pixi_build_backend import PyGeneratedRecipe, PyGenerateRecipe
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 from pixi_build_backend.types.python_params import PythonParams
 from pixi_build_backend.types.metadata_provider import MetadataProvider
 
@@ -17,10 +17,8 @@ class GeneratedRecipe:
         self._inner = PyGeneratedRecipe()
 
     @classmethod
-    def from_model(
-        cls, model: ProjectModelV1, metadata_provider: Optional[MetadataProvider] = None
-    ) -> "GeneratedRecipe":
-        """Create a GeneratedRecipe from a ProjectModelV1."""
+    def from_model(cls, model: ProjectModel, metadata_provider: Optional[MetadataProvider] = None) -> "GeneratedRecipe":
+        """Create a GeneratedRecipe from a ProjectModel."""
         instance = cls()
         if metadata_provider is not None:
             instance._inner = PyGeneratedRecipe().from_model_with_provider(model._inner, metadata_provider)
@@ -66,7 +64,7 @@ class GenerateRecipeProtocol(Protocol):
 
     def generate_recipe(
         self,
-        model: ProjectModelV1,
+        model: ProjectModel,
         config: Dict[str, Any],
         manifest_path: str,
         host_platform: Platform,

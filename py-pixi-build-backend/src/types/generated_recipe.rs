@@ -3,19 +3,20 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     create_py_wrap,
+    error::pretty_print_error,
     recipe_stage0::recipe::PyIntermediateRecipe,
     types::metadata_provider::get_input_globs_from_provider,
-    types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModelV1, PyPythonParams},
+    types::{PyBackendConfig, PyMetadataProvider, PyPlatform, PyProjectModel, PyPythonParams},
 };
 use miette::IntoDiagnostic;
 use pixi_build_backend::generated_recipe::{
     DefaultMetadataProvider, GenerateRecipe, GeneratedRecipe, PythonParams,
 };
 use pixi_build_backend::{NormalizedKey, Variable};
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::ProjectModel;
 use pyo3::{
     Py, PyAny, PyErr, PyResult, Python,
-    exceptions::PyValueError,
+    exceptions::PyRuntimeError,
     pyclass, pymethods,
     types::{PyAnyMethods, PyList, PyString},
 };
@@ -49,10 +50,10 @@ impl PyGeneratedRecipe {
     }
 
     #[staticmethod]
-    pub fn from_model(py: Python, model: PyProjectModelV1) -> PyResult<Self> {
+    pub fn from_model(py: Python, model: PyProjectModel) -> PyResult<Self> {
         let generated_recipe =
             GeneratedRecipe::from_model(model.inner.clone(), &mut DefaultMetadataProvider)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+                .map_err(|e| PyErr::new::<PyRuntimeError, _>(pretty_print_error(&e)))?;
 
         let py_recipe = Py::new(
             py,
@@ -87,12 +88,12 @@ impl PyGeneratedRecipe {
     #[staticmethod]
     pub fn from_model_with_provider(
         py: Python,
-        model: PyProjectModelV1,
+        model: PyProjectModel,
         metadata_provider: Py<PyAny>,
     ) -> PyResult<Self> {
         let mut provider = PyMetadataProvider::new(metadata_provider.clone());
         let generated_recipe = GeneratedRecipe::from_model(model.inner.clone(), &mut provider)
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+            .map_err(|e| PyErr::new::<PyRuntimeError, _>(pretty_print_error(&e)))?;
 
         // Get additional input globs from the metadata provider if available
         let mut metadata_input_globs = generated_recipe.metadata_input_globs;
@@ -167,7 +168,7 @@ impl GenerateRecipe for PyGenerateRecipe {
 
     async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &ProjectModel,
         config: &Self::Config,
         manifest_root: PathBuf,
         host_platform: Platform,
@@ -187,11 +188,11 @@ impl GenerateRecipe for PyGenerateRecipe {
             let project_model_class = py
                 .import("pixi_build_backend.types.project_model")
                 .into_diagnostic()?
-                .getattr("ProjectModelV1")
+                .getattr("ProjectModel")
                 .into_diagnostic()?;
 
             let project_model = project_model_class
-                .call_method1("_from_py", (PyProjectModelV1::from(model),))
+                .call_method1("_from_py", (PyProjectModel::from(model),))
                 .into_diagnostic()?;
 
             let platform_model_class = py

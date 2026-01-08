@@ -351,7 +351,6 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{PythonGenerator, config::PythonBackendConfig, project_fixture};
-    use pixi_build_types::ProjectModelV1;
 
     use super::*;
 

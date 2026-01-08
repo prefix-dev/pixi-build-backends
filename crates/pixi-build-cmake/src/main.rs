@@ -9,7 +9,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::{ProjectModelV1, SourcePackageName};
+use pixi_build_types::SourcePackageName;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
@@ -30,7 +30,7 @@ impl GenerateRecipe for CMakeGenerator {
 
     async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
@@ -183,7 +183,7 @@ mod tests {
         protocol::ProtocolInstantiator, utils::test::intermediate_conda_outputs,
     };
     use pixi_build_types::{
-        ProjectModelV1, VariantValue,
+        ProjectModel, VariantValue,
         procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
     };
     use rattler_build::console_utils::LoggingOutputHandler;
@@ -209,7 +209,7 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };
@@ -394,10 +394,10 @@ mod tests {
             Arc::default(),
         )
         .initialize(InitializeParams {
-            workspace_root: None,
-            source_dir: None,
+            workspace_directory: None,
+            source_directory: None,
             manifest_path: PathBuf::from("pixi.toml"),
-            project_model: Some(project_model.into()),
+            project_model: Some(project_model),
             configuration: None,
             target_configuration: None,
             cache_directory: None,

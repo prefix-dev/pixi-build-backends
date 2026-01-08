@@ -7,7 +7,7 @@
 //! * [`Dependencies`] - A wrapper struct that contains all dependencies for a target.
 use indexmap::IndexMap;
 use itertools::{Either, Itertools};
-use pixi_build_types::{PackageSpecV1, SourcePackageName};
+use pixi_build_types::SourcePackageName;
 use rattler_conda_types::Platform;
 
 use crate::PackageSpec;
@@ -132,73 +132,73 @@ pub trait Targets {
 }
 
 // === Below here are the implementations for v1 ===
-impl TargetSelector for pbt::TargetSelectorV1 {
+impl TargetSelector for pbt::TargetSelector {
     fn matches(&self, platform: Platform) -> bool {
         match self {
-            pbt::TargetSelectorV1::Platform(p) => p == &platform.to_string(),
-            pbt::TargetSelectorV1::Linux => platform.is_linux(),
-            pbt::TargetSelectorV1::Unix => platform.is_unix(),
-            pbt::TargetSelectorV1::Win => platform.is_windows(),
-            pbt::TargetSelectorV1::MacOs => platform.is_osx(),
+            pbt::TargetSelector::Platform(p) => p == &platform.to_string(),
+            pbt::TargetSelector::Linux => platform.is_linux(),
+            pbt::TargetSelector::Unix => platform.is_unix(),
+            pbt::TargetSelector::Win => platform.is_windows(),
+            pbt::TargetSelector::MacOs => platform.is_osx(),
         }
     }
 }
 
-impl Targets for pbt::TargetsV1 {
-    type Selector = pbt::TargetSelectorV1;
-    type Target = pbt::TargetV1;
+impl Targets for pbt::Targets {
+    type Selector = pbt::TargetSelector;
+    type Target = pbt::Target;
 
-    type Spec = pbt::PackageSpecV1;
+    type Spec = pbt::PackageSpec;
 
-    fn default_target(&self) -> Option<&pbt::TargetV1> {
+    fn default_target(&self) -> Option<&pbt::Target> {
         self.default_target.as_ref()
     }
 
-    fn targets(&self) -> impl Iterator<Item = (&pbt::TargetSelectorV1, &pbt::TargetV1)> {
+    fn targets(&self) -> impl Iterator<Item = (&pbt::TargetSelector, &pbt::Target)> {
         self.targets.iter().flatten()
     }
 
-    fn empty_spec() -> PackageSpecV1 {
-        pbt::PackageSpecV1::Binary(Box::new(rattler_conda_types::VersionSpec::Any.into()))
+    fn empty_spec() -> pbt::PackageSpec {
+        pbt::PackageSpec::Binary(rattler_conda_types::VersionSpec::Any.into())
     }
 
     fn run_dependencies(
         &self,
         platform: Option<Platform>,
-    ) -> IndexMap<&SourcePackageName, &PackageSpecV1> {
+    ) -> IndexMap<&SourcePackageName, &pbt::PackageSpec> {
         let targets = self.resolve(platform).collect_vec();
 
         targets
             .iter()
             .flat_map(|t| t.run_dependencies.iter())
             .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>()
+            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpec>>()
     }
 
     fn host_dependencies(
         &self,
         platform: Option<Platform>,
-    ) -> IndexMap<&SourcePackageName, &PackageSpecV1> {
+    ) -> IndexMap<&SourcePackageName, &pbt::PackageSpec> {
         let targets = self.resolve(platform).collect_vec();
 
         targets
             .iter()
             .flat_map(|t| t.host_dependencies.iter())
             .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>()
+            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpec>>()
     }
 
     fn build_dependencies(
         &self,
         platform: Option<Platform>,
-    ) -> IndexMap<&SourcePackageName, &PackageSpecV1> {
+    ) -> IndexMap<&SourcePackageName, &pbt::PackageSpec> {
         let targets = self.resolve(platform).collect_vec();
 
         targets
             .iter()
             .flat_map(|t| t.build_dependencies.iter())
             .flatten()
-            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpecV1>>()
+            .collect::<IndexMap<&pbt::SourcePackageName, &pbt::PackageSpec>>()
     }
 
     fn dependencies(&self, platform: Option<Platform>) -> Dependencies<'_, Self::Spec> {

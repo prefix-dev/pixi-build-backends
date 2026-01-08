@@ -3,7 +3,7 @@ import tempfile
 
 from pixi_build_backend.types.intermediate_recipe import Script
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 
 from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator
@@ -20,8 +20,8 @@ def test_generate_recipe_with_versions(package_xmls: Path, test_data_dir: Path, 
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
+        # Create a minimal ProjectModel instance
+        model = ProjectModel()
 
         # Create config for ROS backend
         config = {
@@ -82,7 +82,7 @@ def test_generate_recipe_with_mutex_version(package_xmls: Path, test_data_dir: P
                 "targets": {},
             },
         }
-        model = ProjectModelV1.from_dict(model_payload)
+        model = ProjectModel.from_dict(model_payload)
 
         # Create host platform
         host_platform = Platform("linux-64")
@@ -138,7 +138,7 @@ def test_generate_recipe_with_versions_in_model_and_package(
                 "targets": {},
             },
         }
-        model = ProjectModelV1.from_dict(model_payload)
+        model = ProjectModel.from_dict(model_payload)
 
         # Create host platform
         host_platform = Platform("linux-64")
@@ -173,8 +173,8 @@ def test_generate_recipe_with_explicit_package_xml_path(
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
+        # Create a minimal ProjectModel instance
+        model = ProjectModel()
 
         # Create config for ROS backend
         config = {

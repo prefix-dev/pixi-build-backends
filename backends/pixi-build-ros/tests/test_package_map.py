@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 import pytest
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 
 from pixi_build_ros.distro import Distro
 from pixi_build_ros.ros_generator import ROSGenerator, ROSBackendConfig
@@ -62,8 +62,8 @@ def test_generate_recipe_with_custom_ros(package_xmls: Path, test_data_dir: Path
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
+        # Create a minimal ProjectModel instance
+        model = ProjectModel()
 
         # Create config for ROS backend
         config = {
@@ -106,7 +106,7 @@ def test_generate_recipe_with_inline_package_mappings(package_xmls: Path, test_d
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        model = ProjectModelV1()
+        model = ProjectModel()
 
         config = {
             "distro": distro_noetic,
@@ -144,8 +144,8 @@ def test_package_map_does_not_exist(package_xmls: Path, test_data_dir: Path, dis
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
+        # Create a minimal ProjectModel instance
+        model = ProjectModel()
 
         # Create config for ROS backend
         config = {

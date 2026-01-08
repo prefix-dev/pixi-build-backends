@@ -9,7 +9,7 @@ use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use ordermap::OrderMap;
 use pixi_build_types::{
-    BackendCapabilities, PathSpecV1, ProjectModelV1, SourcePackageSpecV1, TargetSelectorV1,
+    BackendCapabilities, PathSpec, ProjectModel, SourcePackageSpec, TargetSelector,
     procedures::{
         conda_build_v1::{CondaBuildV1Output, CondaBuildV1Params, CondaBuildV1Result},
         conda_outputs::{
@@ -39,10 +39,9 @@ use serde::Deserialize;
 use tracing::warn;
 
 use crate::{
-    TargetSelector,
     consts::DEBUG_OUTPUT_DIR,
     dependencies::{
-        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+        convert_constraint_dependencies, convert_dependencies, convert_input_variant_configuration,
     },
     generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
@@ -51,6 +50,7 @@ use crate::{
         from_build_v1_args_to_finalized_dependencies,
     },
     tools::{OneOrMultipleOutputs, output_directory},
+    traits::targets::TargetSelector as _,
 };
 
 use fs_err::tokio as tokio_fs;
@@ -85,10 +85,10 @@ pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) source_dir: PathBuf,
     /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
-    pub(crate) project_model: ProjectModelV1,
+    pub(crate) project_model: ProjectModel,
     pub(crate) generate_recipe: Arc<T>,
     pub(crate) config: T::Config,
-    pub(crate) target_config: OrderMap<TargetSelectorV1, T::Config>,
+    pub(crate) target_config: OrderMap<TargetSelector, T::Config>,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 impl<T: GenerateRecipe> IntermediateBackend<T> {
@@ -96,10 +96,10 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
         source_dir: Option<PathBuf>,
-        project_model: ProjectModelV1,
+        project_model: ProjectModel,
         generate_recipe: Arc<T>,
         config: serde_json::Value,
-        target_config: OrderMap<TargetSelectorV1, serde_json::Value>,
+        target_config: OrderMap<TargetSelector, serde_json::Value>,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -182,10 +182,6 @@ where
             .project_model
             .ok_or_else(|| miette::miette!("project model is required"))?;
 
-        let project_model = project_model
-            .into_v1()
-            .ok_or_else(|| miette::miette!("project model v1 is required"))?;
-
         let config = if let Some(config) = params.configuration {
             config
         } else {
@@ -196,7 +192,7 @@ where
 
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
-            params.source_dir,
+            params.source_directory,
             project_model,
             self.generator.clone(),
             config,
@@ -318,14 +314,9 @@ where
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
+        let local_source_packages: HashMap<String, SourcePackageSpec> = discovered_outputs
             .iter()
-            .map(|output| {
-                (
-                    output.name.clone(),
-                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
-                )
-            })
+            .map(|output| (output.name.clone(), PathSpec { path: ".".into() }.into()))
             .collect();
 
         let mut subpackages = HashMap::new();
@@ -488,7 +479,7 @@ where
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    constraints: convert_binary_dependencies(
+                    constraints: convert_constraint_dependencies(
                         recipe.requirements.run_constraints,
                         &BTreeMap::default(), // Variants are not applied to run constraints
                         &subpackages,
@@ -527,12 +518,12 @@ where
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    weak_constrains: convert_binary_dependencies(
+                    weak_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.weak_constraints,
                         &variant,
                         &subpackages,
                     )?,
-                    strong_constrains: convert_binary_dependencies(
+                    strong_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.strong_constraints,
                         &variant,
                         &subpackages,
@@ -882,8 +873,5 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
-        highest_supported_project_model: Some(
-            pixi_build_types::VersionedProjectModel::highest_version(),
-        ),
     }
 }

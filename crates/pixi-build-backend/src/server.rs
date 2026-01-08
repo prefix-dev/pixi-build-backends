@@ -4,7 +4,7 @@ use fs_err::tokio as tokio_fs;
 use jsonrpc_core::{Error, IoHandler, Params, serde_json, to_value};
 use miette::{Context, IntoDiagnostic, JSONReportHandler};
 use pixi_build_types::{
-    VersionedProjectModel,
+    ProjectModel,
     procedures::{
         self,
         conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result},
@@ -223,14 +223,7 @@ fn convert_error(err: miette::Report) -> jsonrpc_core::Error {
     }
 }
 
-async fn log_project_model(
-    debug_dir: &Path,
-    project_model: VersionedProjectModel,
-) -> miette::Result<()> {
-    let project_model = project_model
-        .into_v1()
-        .ok_or_else(|| miette::miette!("project model needs to be v1"))?;
-
+async fn log_project_model(debug_dir: &Path, project_model: ProjectModel) -> miette::Result<()> {
     write_json_file(debug_dir, "project_model.json", &project_model).await
 }
 

@@ -13,7 +13,6 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
 use pyproject_toml::PyProjectToml;
 use rattler_conda_types::{ChannelUrl, Platform, package::EntryPoint};
 use recipe_stage0::matchspec::PackageDependency;
@@ -61,7 +60,7 @@ impl GenerateRecipe for PythonGenerator {
 
     async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
@@ -436,7 +435,7 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<pixi_build_types::ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };
@@ -823,7 +822,7 @@ version = "0.1.0"
     }
 
     // Helper function to create a minimal project fixture
-    fn minimal_project() -> ProjectModelV1 {
+    fn minimal_project() -> pixi_build_types::ProjectModel {
         project_fixture!({
             "name": "foobar",
             "version": "0.1.0",

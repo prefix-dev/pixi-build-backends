@@ -11,13 +11,13 @@ use pixi_build_backend::specs_conversion::{
     from_build_v1_args_to_finalized_dependencies,
 };
 use pixi_build_backend::{
-    dependencies::{convert_binary_dependencies, convert_dependencies},
+    dependencies::{convert_constraint_dependencies, convert_dependencies},
     intermediate_backend::{conda_build_v1_directories, find_matching_output},
     protocol::{Protocol, ProtocolInstantiator},
     tools::LoadedVariantConfig,
 };
 use pixi_build_types::{
-    BackendCapabilities, PathSpecV1, SourcePackageSpecV1, TargetV1,
+    BackendCapabilities, PathSpec, SourcePackageSpec, Target,
     procedures::{
         conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result},
         conda_outputs::{
@@ -96,14 +96,9 @@ impl Protocol for RattlerBuildBackend {
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let mut local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
+        let mut local_source_packages: HashMap<String, SourcePackageSpec> = discovered_outputs
             .iter()
-            .map(|output| {
-                (
-                    output.name.clone(),
-                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
-                )
-            })
+            .map(|output| (output.name.clone(), PathSpec { path: ".".into() }.into()))
             .collect();
 
         // Add workspace dependencies to the source packages mapping.
@@ -211,7 +206,7 @@ impl Protocol for RattlerBuildBackend {
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    constraints: convert_binary_dependencies(
+                    constraints: convert_constraint_dependencies(
                         recipe.requirements.run_constraints,
                         &BTreeMap::default(), // Variants are not applied to run constraints
                         &subpackages,
@@ -250,12 +245,12 @@ impl Protocol for RattlerBuildBackend {
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    weak_constrains: convert_binary_dependencies(
+                    weak_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.weak_constraints,
                         &variant,
                         &subpackages,
                     )?,
-                    strong_constrains: convert_binary_dependencies(
+                    strong_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.strong_constraints,
                         &variant,
                         &subpackages,
@@ -540,14 +535,10 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
 
         let mut workspace_dependencies = HashMap::new();
 
-        if let Some(target) = params
-            .project_model
-            .and_then(|m| m.into_v1())
-            .and_then(|m| m.targets)
-        {
+        if let Some(target) = params.project_model.and_then(|m| m.targets) {
             fn extract_workspace_deps(
-                target: TargetV1,
-                workspace_deps: &mut HashMap<String, SourcePackageSpecV1>,
+                target: Target,
+                workspace_deps: &mut HashMap<String, SourcePackageSpec>,
             ) -> miette::Result<()> {
                 for dep_list in [
                     target.build_dependencies,
@@ -560,14 +551,21 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
 
                     for (name, spec) in deps {
                         match spec {
-                            pixi_build_types::PackageSpecV1::Source(source_spec) => {
+                            pixi_build_types::PackageSpec::Source(source_spec) => {
                                 // Source dependencies are allowed - they represent workspace packages
                                 workspace_deps.insert(name, source_spec);
                             }
-                            pixi_build_types::PackageSpecV1::Binary(_) => {
+                            pixi_build_types::PackageSpec::Binary(_) => {
                                 // Binary dependencies must be specified in the recipe, not here
                                 return Err(miette::miette!(
                                     "Binary dependency '{}' is not allowed in pixi-build-rattler-build. Please specify all binary dependencies in the recipe.",
+                                    name
+                                ));
+                            }
+                            pixi_build_types::PackageSpec::PinCompatible(_) => {
+                                // PinCompatible dependencies are not yet supported
+                                return Err(miette::miette!(
+                                    "PinCompatible dependency '{}' is not yet supported in pixi-build-rattler-build.",
                                     name
                                 ));
                             }
@@ -589,7 +587,7 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         }
 
         let mut instance = RattlerBuildBackend::new(
-            params.source_dir,
+            params.source_directory,
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
@@ -615,9 +613,6 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
-        highest_supported_project_model: Some(
-            pixi_build_types::VersionedProjectModel::highest_version(),
-        ),
     }
 }
 
@@ -641,8 +636,8 @@ mod tests {
             runtime.block_on(async move {
                 let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
                     .initialize(InitializeParams {
-                        workspace_root: None,
-                        source_dir: None,
+                        workspace_directory: None,
+                        source_directory: None,
                         manifest_path: recipe_path.to_path_buf(),
                         project_model: None,
                         configuration: None,
@@ -706,8 +701,8 @@ mod tests {
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
@@ -752,8 +747,8 @@ mod tests {
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path.clone(),
                 project_model: None,
                 configuration: None,
@@ -813,8 +808,8 @@ numpy:
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
@@ -886,8 +881,8 @@ numpy:
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,

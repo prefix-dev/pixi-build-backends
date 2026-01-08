@@ -8,7 +8,7 @@ mod python_params;
 pub use generated_recipe::{PyGenerateRecipe, PyGeneratedRecipe, PyVecString};
 pub use metadata_provider::PyMetadataProvider;
 pub use platform::PyPlatform;
-pub use project_model::PyProjectModelV1;
+pub use project_model::PyProjectModel;
 
 pub use config::PyBackendConfig;
 pub use python_params::PyPythonParams;

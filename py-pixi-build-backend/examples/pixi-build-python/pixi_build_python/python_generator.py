@@ -11,7 +11,7 @@ from pixi_build_backend.types.generated_recipe import (
 )
 from pixi_build_backend.types.intermediate_recipe import NoArchKind, Python, Script
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 from pixi_build_backend.types.python_params import PythonParams
 from pixi_build_backend.types.item import ItemPackageDependency
 
@@ -43,7 +43,7 @@ class PythonGenerator(GenerateRecipeProtocol):
 
     def generate_recipe(
         self,
-        model: ProjectModelV1,
+        model: ProjectModel,
         config: Dict[str, Any],
         manifest_path: str,
         host_platform: Platform,

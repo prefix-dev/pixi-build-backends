@@ -37,6 +37,13 @@ cache:
 
 outputs:
   - package:
+      name: pixi-build-api-version
+      version: 4
+
+    build:
+      script:
+
+  - package:
       name: pixi-build-cmake
 
     build:
@@ -46,7 +53,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<4
+        - pixi-build-api-version >=4,<5
 
     tests:
       - script:
@@ -62,7 +69,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<4
+        - pixi-build-api-version >=4,<5
 
     tests:
       - script:
@@ -78,7 +85,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<4
+        - pixi-build-api-version >=4,<5
 
     tests:
       - script:
@@ -94,7 +101,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<4
+        - pixi-build-api-version >=4,<5
 
     tests:
       - script:
@@ -110,7 +117,7 @@ outputs:
 
     requirements:
       run:
-        - pixi-build-api-version >=2,<4
+        - pixi-build-api-version >=4,<5
 
     tests:
       - script:
@@ -133,7 +140,6 @@ outputs:
         - py-rattler
         - typing-extensions
         - py-pixi-build-backend
-        - pixi-build-api-version >=2,<4
     build:
       script:
         - if: win
@@ -170,6 +176,7 @@ outputs:
         - pip
       run:
         - python >=3.8
+        - pixi-build-api-version >=4,<5
       ignore_run_exports:
         from_package:
           - cross-python_${{ target_platform }}

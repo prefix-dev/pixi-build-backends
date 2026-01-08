@@ -17,7 +17,7 @@ from pixi_build_backend.types.intermediate_recipe import Script
 
 from pixi_build_backend.types.item import ItemPackageDependency
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 from pixi_build_backend.types.python_params import PythonParams
 
 from .build_script import BuildScriptContext, BuildPlatform
@@ -37,7 +37,7 @@ class ROSGenerator(GenerateRecipeProtocol):  # type: ignore[misc]  # MetadatProv
 
     def generate_recipe(
         self,
-        model: ProjectModelV1,
+        model: ProjectModel,
         config: dict[str, Any],
         manifest_path: str,
         host_platform: Platform,

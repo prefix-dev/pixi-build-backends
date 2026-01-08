@@ -2478,7 +2478,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -2498,7 +2498,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
@@ -3805,7 +3805,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-backend"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3843,7 +3843,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-cmake"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "async-trait",
  "fs-err",
@@ -3866,7 +3866,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-mojo"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "async-trait",
  "indexmap 2.12.1",
@@ -3887,7 +3887,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-python"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "async-trait",
  "fs-err",
@@ -3916,31 +3916,27 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-rattler-build"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "async-trait",
  "chrono",
- "fs-err",
  "insta",
- "itertools 0.14.0",
  "miette",
  "pathdiff",
  "pixi-build-backend",
  "pixi_build_types",
  "rattler-build",
  "rattler_conda_types",
- "rattler_virtual_packages",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
  "tracing",
- "url",
 ]
 
 [[package]]
 name = "pixi-build-rust"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "async-trait",
  "cargo_toml",
@@ -3967,7 +3963,7 @@ dependencies = [
 [[package]]
 name = "pixi_build_types"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#76267eeac7dcaa508a4e8fd1871fe7b1729b62ea"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#b2eae1791c2ddbc465ebc4b83a1a409fa0cd3649"
 dependencies = [
  "ordermap",
  "pixi_stable_hash",
@@ -3982,7 +3978,7 @@ dependencies = [
 [[package]]
 name = "pixi_stable_hash"
 version = "0.1.0"
-source = "git+https://github.com/prefix-dev/pixi?branch=main#76267eeac7dcaa508a4e8fd1871fe7b1729b62ea"
+source = "git+https://github.com/prefix-dev/pixi?branch=main#b2eae1791c2ddbc465ebc4b83a1a409fa0cd3649"
 dependencies = [
  "ordermap",
  "rattler_conda_types",
@@ -4187,7 +4183,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -4224,7 +4220,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -4941,11 +4937,9 @@ dependencies = [
  "insta",
  "itertools 0.14.0",
  "marked-yaml",
- "pixi_build_types",
  "rattler-build",
  "rattler_conda_types",
  "serde",
- "serde_json",
  "serde_yaml",
  "url",
 ]

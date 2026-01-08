@@ -3906,7 +3906,6 @@ dependencies = [
  "serde",
  "serde_json",
  "spdx 0.13.3",
- "strsim",
  "tempfile",
  "thiserror 2.0.17",
  "tokio",

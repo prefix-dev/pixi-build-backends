@@ -67,10 +67,11 @@ pub struct PyPiPackageLookup {
     /// The PyPI package name.
     pub pypi_name: String,
 
-    /// Mapping of PyPI versions to conda package names.
-    /// Key is PyPI version string, value is list of conda package names.
+    /// Mapping of PyPI versions to the best-matching conda package name.
+    /// Key is PyPI version string, value is the conda package name (selected server-side
+    /// using Levenshtein distance to the PyPI name).
     /// Uses IndexMap to preserve insertion order from the API (latest version is last).
-    pub conda_versions: IndexMap<String, Vec<String>>,
+    pub conda_versions: IndexMap<String, String>,
 }
 
 /// A successfully mapped conda dependency.
@@ -233,29 +234,12 @@ impl PyPiToCondaMapper {
         Ok(lookup)
     }
 
-    /// Extract conda package names from a lookup.
+    /// Extract the conda package name from a lookup.
     ///
-    /// Returns the conda package name most similar to the PyPI name.
-    /// Prefers exact matches, otherwise uses Levenshtein distance.
+    /// Returns the best-matching conda package name for the latest version.
     fn extract_conda_name(lookup: &PyPiPackageLookup) -> Option<String> {
-        // With the current API implementation, the last entry is the latest version.
-        // Take the conda names from that version.
-        let all_names: Vec<&String> = lookup.conda_versions.values().last()?.iter().collect();
-
-        let pypi_name = &lookup.pypi_name;
-
-        // First check for exact match
-        for name in &all_names {
-            if name == &pypi_name {
-                return Some(name.to_string());
-            }
-        }
-
-        // Otherwise select the name with smallest Levenshtein distance
-        all_names
-            .into_iter()
-            .min_by_key(|name| strsim::levenshtein(name, pypi_name))
-            .cloned()
+        // The last entry is the latest version.
+        lookup.conda_versions.values().last().cloned()
     }
 
     /// Convert PEP 440 version specifiers to conda VersionSpec.
@@ -556,14 +540,14 @@ pub async fn map_requirements_with_channels(
                     return deps;
                 }
                 Ok(_) => {
-                    tracing::debug!(
+                    tracing::warn!(
                         "No PyPI-to-conda mapping found for {} in channel '{}'",
                         context,
                         channel_name
                     );
                 }
                 Err(e) => {
-                    tracing::info!(
+                    tracing::warn!(
                         "Failed to get PyPI-to-conda mapping for {} in channel '{}': {}",
                         context,
                         channel_name,
@@ -632,8 +616,8 @@ mod tests {
             channel: "conda-forge".to_string(),
             pypi_name: "requests".to_string(),
             conda_versions: IndexMap::from([
-                ("2.31.0".to_string(), vec!["requests".to_string()]),
-                ("2.32.0".to_string(), vec!["requests".to_string()]),
+                ("2.31.0".to_string(), "requests".to_string()),
+                ("2.32.0".to_string(), "requests".to_string()),
             ]),
         };
 
@@ -656,41 +640,18 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_conda_name_prefers_similar_name() {
-        // When multiple conda packages exist, prefer the one most similar to pypi_name
+    fn test_extract_conda_name_returns_value() {
+        // The API returns the best-matching conda package directly
         let lookup = PyPiPackageLookup {
             format_version: "1.0".to_string(),
             channel: "conda-forge".to_string(),
             pypi_name: "jinja2".to_string(),
-            conda_versions: IndexMap::from([(
-                "3.1.3".to_string(),
-                vec!["jinja2".to_string(), "jupyter-sphinx".to_string()],
-            )]),
+            conda_versions: IndexMap::from([("3.1.3".to_string(), "jinja2".to_string())]),
         };
 
         assert_eq!(
             PyPiToCondaMapper::extract_conda_name(&lookup),
             Some("jinja2".to_string())
-        );
-    }
-
-    #[test]
-    fn test_extract_conda_name_uses_levenshtein_when_no_exact_match() {
-        // When no exact match exists, use Levenshtein distance
-        let lookup = PyPiPackageLookup {
-            format_version: "1.0".to_string(),
-            channel: "conda-forge".to_string(),
-            pypi_name: "some-package".to_string(),
-            conda_versions: IndexMap::from([(
-                "1.0.0".to_string(),
-                vec!["some-pkg".to_string(), "totally-different".to_string()],
-            )]),
-        };
-
-        // "some-pkg" is closer to "some-package" than "totally-different"
-        assert_eq!(
-            PyPiToCondaMapper::extract_conda_name(&lookup),
-            Some("some-pkg".to_string())
         );
     }
 
@@ -705,7 +666,7 @@ mod tests {
                     pypi_name: "requests".to_string(),
                     conda_versions: IndexMap::from([(
                         "2.31.0".to_string(),
-                        vec!["requests".to_string()],
+                        "requests".to_string(),
                     )]),
                 },
             ),
@@ -715,10 +676,7 @@ mod tests {
                     format_version: "1".to_string(),
                     channel: "conda-forge".to_string(),
                     pypi_name: "flask".to_string(),
-                    conda_versions: IndexMap::from([(
-                        "2.0.0".to_string(),
-                        vec!["flask".to_string()],
-                    )]),
+                    conda_versions: IndexMap::from([("2.0.0".to_string(), "flask".to_string())]),
                 },
             ),
         ]);
@@ -837,7 +795,7 @@ mod tests {
                 pypi_name: "typing-extensions".to_string(),
                 conda_versions: IndexMap::from([(
                     "4.0.0".to_string(),
-                    vec!["typing-extensions".to_string()],
+                    "typing-extensions".to_string(),
                 )]),
             },
         )]);
@@ -870,10 +828,7 @@ mod tests {
                 format_version: "1".to_string(),
                 channel: "conda-forge".to_string(),
                 pypi_name: "colorama".to_string(),
-                conda_versions: IndexMap::from([(
-                    "0.4.6".to_string(),
-                    vec!["colorama".to_string()],
-                )]),
+                conda_versions: IndexMap::from([("0.4.6".to_string(), "colorama".to_string())]),
             },
         )]);
 
@@ -904,10 +859,7 @@ mod tests {
                 format_version: "1".to_string(),
                 channel: "conda-forge".to_string(),
                 pypi_name: "pyobjc-core".to_string(),
-                conda_versions: IndexMap::from([(
-                    "9.0".to_string(),
-                    vec!["pyobjc-core".to_string()],
-                )]),
+                conda_versions: IndexMap::from([("9.0".to_string(), "pyobjc-core".to_string())]),
             },
         )]);
 
@@ -939,10 +891,7 @@ mod tests {
                 format_version: "1".to_string(),
                 channel: "conda-forge".to_string(),
                 pypi_name: "requests".to_string(),
-                conda_versions: IndexMap::from([(
-                    "2.31.0".to_string(),
-                    vec!["requests".to_string()],
-                )]),
+                conda_versions: IndexMap::from([("2.31.0".to_string(), "requests".to_string())]),
             },
         )]));
 
@@ -967,7 +916,7 @@ mod tests {
                 pypi_name: "importlib-metadata".to_string(),
                 conda_versions: IndexMap::from([(
                     "6.0.0".to_string(),
-                    vec!["importlib-metadata".to_string()],
+                    "importlib-metadata".to_string(),
                 )]),
             },
         )]);
@@ -999,7 +948,7 @@ mod tests {
                 format_version: "1".to_string(),
                 channel: "conda-forge".to_string(),
                 pypi_name: "pywin32".to_string(),
-                conda_versions: IndexMap::from([("306".to_string(), vec!["pywin32".to_string()])]),
+                conda_versions: IndexMap::from([("306".to_string(), "pywin32".to_string())]),
             },
         )]);
 
@@ -1044,10 +993,7 @@ mod tests {
                 format_version: "1".to_string(),
                 channel: "conda-forge".to_string(),
                 pypi_name: "test-pkg".to_string(),
-                conda_versions: IndexMap::from([(
-                    "1.0.0".to_string(),
-                    vec!["test-pkg".to_string()],
-                )]),
+                conda_versions: IndexMap::from([("1.0.0".to_string(), "test-pkg".to_string())]),
             },
         )]);
 
@@ -1176,7 +1122,7 @@ mod tests {
                     pypi_name: "requests".to_string(),
                     conda_versions: IndexMap::from([(
                         "2.31.0".to_string(),
-                        vec!["requests".to_string()],
+                        "requests".to_string(),
                     )]),
                 },
             ),
@@ -1186,10 +1132,7 @@ mod tests {
                     format_version: "1".to_string(),
                     channel: "conda-forge".to_string(),
                     pypi_name: "colorama".to_string(),
-                    conda_versions: IndexMap::from([(
-                        "0.4.6".to_string(),
-                        vec!["colorama".to_string()],
-                    )]),
+                    conda_versions: IndexMap::from([("0.4.6".to_string(), "colorama".to_string())]),
                 },
             ),
             (
@@ -1200,7 +1143,7 @@ mod tests {
                     pypi_name: "importlib-metadata".to_string(),
                     conda_versions: IndexMap::from([(
                         "6.0.0".to_string(),
-                        vec!["importlib-metadata".to_string()],
+                        "importlib-metadata".to_string(),
                     )]),
                 },
             ),
@@ -1248,7 +1191,7 @@ mod tests {
                     pypi_name: "typing-extensions".to_string(),
                     conda_versions: IndexMap::from([(
                         "4.0.0".to_string(),
-                        vec!["typing-extensions".to_string()],
+                        "typing-extensions".to_string(),
                     )]),
                 },
             ),
@@ -1260,7 +1203,7 @@ mod tests {
                     pypi_name: "pyobjc-core".to_string(),
                     conda_versions: IndexMap::from([(
                         "9.0".to_string(),
-                        vec!["pyobjc-core".to_string()],
+                        "pyobjc-core".to_string(),
                     )]),
                 },
             ),
@@ -1314,7 +1257,7 @@ mod tests {
                     pypi_name: "requests".to_string(),
                     conda_versions: IndexMap::from([(
                         "2.31.0".to_string(),
-                        vec!["requests".to_string()],
+                        "requests".to_string(),
                     )]),
                 },
             ),
@@ -1324,10 +1267,7 @@ mod tests {
                     format_version: "1".to_string(),
                     channel: "conda-forge".to_string(),
                     pypi_name: "flask".to_string(),
-                    conda_versions: IndexMap::from([(
-                        "2.0.0".to_string(),
-                        vec!["flask".to_string()],
-                    )]),
+                    conda_versions: IndexMap::from([("2.0.0".to_string(), "flask".to_string())]),
                 },
             ),
         ]);

@@ -358,7 +358,7 @@ impl PyPiToCondaMapper {
     /// implementation details, extras, etc.), the dependency is excluded entirely.
     /// This conservative approach prevents incorrectly including dependencies with
     /// version constraints we cannot evaluate at recipe generation time.
-    fn should_include_requirement(
+    fn should_skip_requirement(
         req: &pep508_rs::Requirement<pep508_rs::VerbatimUrl>,
         platform: Platform,
     ) -> bool {
@@ -419,7 +419,7 @@ impl PyPiToCondaMapper {
 
         for req in requirements {
             // Evaluate markers against the target platform
-            if !Self::should_include_requirement(req, platform) {
+            if Self::should_skip_requirement(req, platform) {
                 tracing::debug!(
                     "Skipping dependency '{}' due to environment marker evaluation: {:?}",
                     req.name,

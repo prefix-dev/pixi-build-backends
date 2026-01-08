@@ -370,11 +370,6 @@ impl PyPiToCondaMapper {
         // For NoArch platform, exclude ALL dependencies with markers
         // NoArch packages must be platform-independent
         if platform == Platform::NoArch {
-            tracing::debug!(
-                "Excluding dependency '{}' for NoArch platform because it has marker {:?}",
-                req.name,
-                req.marker
-            );
             return false;
         }
 

@@ -23,7 +23,7 @@ requirements:
     - pyyaml
     - py-rattler
     - typing-extensions
-    - py-pixi-build-backend
+    - py-pixi-build-backend >=0.4.1
 
 build:
   number: 0

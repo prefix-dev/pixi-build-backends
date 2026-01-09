@@ -33,7 +33,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src},
+    recipe::{ParsingError, Recipe, parser::find_outputs_from_src},
     selectors::SelectorConfig,
     tool_configuration::Configuration,
     types::{PackageIdentifier, PackagingSettings},
@@ -137,16 +137,12 @@ impl Protocol for RattlerBuildBackend {
                 continue;
             }
 
-            let jinja = Jinja::new(selector_config);
-            let build_number = recipe.build().number;
-            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
-
             subpackages.insert(
                 recipe.package().name().clone(),
                 PackageIdentifier {
                     name: recipe.package().name().clone(),
                     version: recipe.package().version().version().clone().into(),
-                    build_string: build_string.to_string(),
+                    build_string: discovered_output.build_string.clone(),
                 },
             );
 
@@ -154,8 +150,8 @@ impl Protocol for RattlerBuildBackend {
                 metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
-                    build: build_string.to_string(),
-                    build_number,
+                    build: discovered_output.build_string.clone(),
+                    build_number: recipe.build().number,
                     subdir: discovered_output.target_platform,
                     license: recipe.about.license.map(|l| l.to_string()),
                     license_family: recipe.about.license_family,

@@ -421,9 +421,9 @@ impl MetadataProvider for DescriptionMetadataProvider {
 
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         let data = self.ensure_data()?;
-        Ok(data.license.as_ref().map(|l| {
+        Ok(data.license.as_ref().and_then(|l| {
             let parsed = parse_r_license(l);
-            parsed.license.unwrap_or_else(|| l.clone())
+            parsed.license
         }))
     }
 
@@ -678,10 +678,10 @@ License: file LICENSE
         let temp_dir = create_test_description(content);
         let mut provider = DescriptionMetadataProvider::new(temp_dir.path());
 
-        // When only "file LICENSE" is specified, license() should return the original string
+        // When only "file LICENSE" is specified, license() should return None while license_file() returns the filename
         assert_eq!(
             provider.license().unwrap(),
-            Some("file LICENSE".to_string())
+            None
         );
         assert_eq!(
             provider.license_file().unwrap(),

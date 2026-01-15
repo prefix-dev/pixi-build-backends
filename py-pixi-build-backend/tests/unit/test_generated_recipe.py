@@ -3,13 +3,13 @@ from typing import Any
 from pixi_build_backend.types.conditional import ConditionalPackageDependency, ListOrItemPackageDependency
 from pixi_build_backend.types.generated_recipe import GeneratedRecipe
 from pixi_build_backend.types.item import ItemPackageDependency
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 from pixi_build_backend.types.intermediate_recipe import IntermediateRecipe
 
 
 def test_generated_recipe_from_model(snapshot: Any) -> None:
-    """Test initialization of ProjectModelV1."""
-    model = ProjectModelV1(name="test_project", version="1.0.0")
+    """Test initialization of ProjectModel."""
+    model = ProjectModel(name="test_project", version="1.0.0")
 
     generated_recipe = GeneratedRecipe.from_model(model)
 
@@ -20,8 +20,8 @@ def test_generated_recipe_from_model(snapshot: Any) -> None:
 
 
 def test_setting_package_name_from_generated_recipe() -> None:
-    """Test initialization of ProjectModelV1."""
-    model = ProjectModelV1(name="test_project", version="1.0.0")
+    """Test initialization of ProjectModel."""
+    model = ProjectModel(name="test_project", version="1.0.0")
 
     generated_recipe = GeneratedRecipe.from_model(model)
 
@@ -32,8 +32,8 @@ def test_setting_package_name_from_generated_recipe() -> None:
 
 
 def test_package_dependency_modification() -> None:
-    """Test initialization of ProjectModelV1."""
-    model = ProjectModelV1(name="test_project", version="1.0.0")
+    """Test initialization of ProjectModel."""
+    model = ProjectModel(name="test_project", version="1.0.0")
 
     generated_recipe = GeneratedRecipe.from_model(model)
 
@@ -60,8 +60,8 @@ def test_conditional_item() -> None:
 
 
 def test_generated_recipe_setting_version() -> None:
-    """Test initialization of ProjectModelV1."""
-    model = ProjectModelV1(name="test_project", version="1.0.0")
+    """Test initialization of ProjectModel."""
+    model = ProjectModel(name="test_project", version="1.0.0")
 
     generated_recipe = GeneratedRecipe.from_model(model)
 

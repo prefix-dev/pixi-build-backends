@@ -11,7 +11,7 @@
 use std::{fmt::Debug, sync::Arc};
 
 use pixi_build_types::{self as pbt};
-use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName};
+use rattler_conda_types::{Channel, MatchSpec, NamelessMatchSpec, PackageName, PackageNameMatcher};
 
 /// Get the * version for the version type, that is currently being used
 pub trait AnyVersion {
@@ -43,16 +43,16 @@ pub trait PackageSpec: Send {
 /// A trait that defines the package source spec interface
 pub trait PackageSourceSpec: Debug + Send {
     /// Convert this instance into a v1 instance.
-    fn to_v1(self) -> pbt::SourcePackageSpecV1;
+    fn to_v1(self) -> pbt::SourcePackageSpec;
 }
 
-impl PackageSpec for pbt::PackageSpecV1 {
-    type SourceSpec = pbt::SourcePackageSpecV1;
+impl PackageSpec for pbt::PackageSpec {
+    type SourceSpec = pbt::SourcePackageSpec;
 
     fn can_be_used_as_variant(&self) -> bool {
         match self {
-            pbt::PackageSpecV1::Binary(boxed_spec) => {
-                let pbt::BinaryPackageSpecV1 {
+            pbt::PackageSpec::Binary(spec) => {
+                let pbt::BinaryPackageSpec {
                     version,
                     build,
                     build_number,
@@ -63,7 +63,7 @@ impl PackageSpec for pbt::PackageSpecV1 {
                     sha256,
                     url,
                     license,
-                } = &**boxed_spec;
+                } = spec;
 
                 version == &Some(rattler_conda_types::VersionSpec::Any)
                     && build.is_none()
@@ -85,29 +85,35 @@ impl PackageSpec for pbt::PackageSpecV1 {
         name: PackageName,
     ) -> miette::Result<(MatchSpec, Option<Self::SourceSpec>)> {
         match self {
-            pbt::PackageSpecV1::Binary(binary_spec) => {
+            pbt::PackageSpec::Binary(binary_spec) => {
                 // Always use to_nameless() to preserve all fields including build constraints
-                let match_spec = MatchSpec::from_nameless(binary_spec.to_nameless(), Some(name));
+                let match_spec = MatchSpec::from_nameless(
+                    binary_spec.to_nameless(),
+                    Some(PackageNameMatcher::Exact(name)),
+                );
                 Ok((match_spec, None))
             }
-            pbt::PackageSpecV1::Source(source_spec) => Ok((
+            pbt::PackageSpec::Source(source_spec) => Ok((
                 MatchSpec {
-                    name: Some(name),
+                    name: Some(PackageNameMatcher::Exact(name)),
                     ..MatchSpec::default()
                 },
                 Some(source_spec.clone()),
             )),
+            pbt::PackageSpec::PinCompatible(_) => {
+                miette::bail!("PinCompatible package specs are not yet supported in this context")
+            }
         }
     }
 }
 
-impl AnyVersion for pbt::PackageSpecV1 {
+impl AnyVersion for pbt::PackageSpec {
     fn any() -> Self {
-        pbt::PackageSpecV1::Binary(Box::new(rattler_conda_types::VersionSpec::Any.into()))
+        pbt::PackageSpec::Binary(rattler_conda_types::VersionSpec::Any.into())
     }
 }
 
-impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
+impl BinarySpecExt for pbt::BinaryPackageSpec {
     fn to_nameless(&self) -> NamelessMatchSpec {
         NamelessMatchSpec {
             version: self.version.clone(),
@@ -125,12 +131,13 @@ impl BinarySpecExt for pbt::BinaryPackageSpecV1 {
             license: self.license.clone(),
             extras: None,
             namespace: None,
+            condition: None,
         }
     }
 }
 
-impl PackageSourceSpec for pbt::SourcePackageSpecV1 {
-    fn to_v1(self) -> pbt::SourcePackageSpecV1 {
+impl PackageSourceSpec for pbt::SourcePackageSpec {
+    fn to_v1(self) -> pbt::SourcePackageSpec {
         self
     }
 }
@@ -145,7 +152,7 @@ mod tests {
         // Test case: dependency with wildcard version and build constraint
         // e.g., tk = { build = "xft*" }
         let build_matcher: StringMatcher = "xft*".parse().unwrap();
-        let binary_spec = pbt::BinaryPackageSpecV1 {
+        let binary_spec = pbt::BinaryPackageSpec {
             version: Some(VersionSpec::Any),
             build: Some(build_matcher.clone()),
             build_number: None,
@@ -158,13 +165,18 @@ mod tests {
             license: None,
         };
 
-        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_spec = pbt::PackageSpec::Binary(binary_spec);
         let package_name = PackageName::try_from("tk").unwrap();
 
         let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
 
         // Verify the build constraint is preserved
-        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(
+            match_spec.name,
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("tk").unwrap()
+            ))
+        );
         assert_eq!(match_spec.version, Some(VersionSpec::Any));
         assert_eq!(match_spec.build, Some(build_matcher));
     }
@@ -175,7 +187,7 @@ mod tests {
         // e.g., tk = { version = "8.6.13", build = "xft*" }
         let version = VersionSpec::from_str("8.6.13", ParseStrictness::Lenient).unwrap();
         let build_matcher: StringMatcher = "xft*".parse().unwrap();
-        let binary_spec = pbt::BinaryPackageSpecV1 {
+        let binary_spec = pbt::BinaryPackageSpec {
             version: Some(version.clone()),
             build: Some(build_matcher.clone()),
             build_number: None,
@@ -188,13 +200,18 @@ mod tests {
             license: None,
         };
 
-        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_spec = pbt::PackageSpec::Binary(binary_spec);
         let package_name = PackageName::try_from("tk").unwrap();
 
         let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
 
         // Verify both version and build constraint are preserved
-        assert_eq!(match_spec.name, Some(PackageName::try_from("tk").unwrap()));
+        assert_eq!(
+            match_spec.name,
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("tk").unwrap()
+            ))
+        );
         assert_eq!(match_spec.version, Some(version));
         assert_eq!(match_spec.build, Some(build_matcher));
     }
@@ -203,7 +220,7 @@ mod tests {
     fn test_to_match_spec_without_build_constraint() {
         // Test case: dependency with wildcard version but no build constraint
         // e.g., python = "*"
-        let binary_spec = pbt::BinaryPackageSpecV1 {
+        let binary_spec = pbt::BinaryPackageSpec {
             version: Some(VersionSpec::Any),
             build: None,
             build_number: None,
@@ -216,7 +233,7 @@ mod tests {
             license: None,
         };
 
-        let package_spec = pbt::PackageSpecV1::Binary(Box::new(binary_spec));
+        let package_spec = pbt::PackageSpec::Binary(binary_spec);
         let package_name = PackageName::try_from("python").unwrap();
 
         let (match_spec, _) = package_spec.to_match_spec(package_name).unwrap();
@@ -224,7 +241,9 @@ mod tests {
         // Verify the match spec is correct
         assert_eq!(
             match_spec.name,
-            Some(PackageName::try_from("python").unwrap())
+            Some(PackageNameMatcher::Exact(
+                PackageName::try_from("python").unwrap()
+            ))
         );
         assert_eq!(match_spec.version, Some(VersionSpec::Any));
         assert_eq!(match_spec.build, None);

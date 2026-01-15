@@ -201,9 +201,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.description.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.description",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(description.clone()))
@@ -228,9 +228,7 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.homepage.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
-                        "workspace.package.homepage",
-                    )))
+                    MetadataError::MissingInheritedValue(String::from("workspace.package.homepage"))
                 })?,
         };
         Ok(Some(homepage.clone()))
@@ -255,9 +253,7 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.license.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
-                        "workspace.package.license",
-                    )))
+                    MetadataError::MissingInheritedValue(String::from("workspace.package.license"))
                 })?,
         };
         Ok(Some(license.clone()))
@@ -268,8 +264,9 @@ impl MetadataProvider for CargoMetadataProvider {
     /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
     /// the license-file from the package section, handling workspace
     /// inheritance if needed. The path is converted to a string
-    /// representation.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    /// representation. Since Cargo.toml only supports a single license-file,
+    /// returns a Vec with one element if present.
+    fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         if self.ignore_cargo_manifest {
             return Ok(None);
         }
@@ -283,12 +280,12 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.license_file.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.license-file",
-                    )))
+                    ))
                 })?,
         };
-        Ok(Some(license_file.display().to_string()))
+        Ok(Some(vec![license_file.display().to_string()]))
     }
 
     /// Returns the package summary from the Cargo.toml manifest.
@@ -322,9 +319,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.documentation.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.documentation",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(documentation.clone()))
@@ -349,9 +346,9 @@ impl MetadataProvider for CargoMetadataProvider {
                 .ensure_workspace_manifest()?
                 .and_then(|template| template.repository.as_ref())
                 .ok_or_else(|| {
-                    MetadataError::MissingInheritedValue(String::from(concat!(
+                    MetadataError::MissingInheritedValue(String::from(
                         "workspace.package.repository",
-                    )))
+                    ))
                 })?,
         };
         Ok(Some(repository.clone()))
@@ -576,7 +573,9 @@ license-file.workspace = true
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
         let mut provider = create_metadata_provider(temp_dir.path());
 
-        let result = provider.license_file();
+        let result = provider
+            .license_files()
+            .map(|opt| opt.map(|v| v.join(", ")));
         assert_missing_inherited_value_error(result, "workspace.package.license-file");
     }
 
@@ -818,7 +817,7 @@ description = "Test description"
         assert_eq!(provider.homepage().unwrap(), None);
         assert_eq!(provider.repository().unwrap(), None);
         assert_eq!(provider.documentation().unwrap(), None);
-        assert_eq!(provider.license_file().unwrap(), None);
+        assert_eq!(provider.license_files().unwrap(), None);
         assert_eq!(provider.summary().unwrap(), None);
     }
 

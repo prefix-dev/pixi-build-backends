@@ -1,6 +1,6 @@
 [package]
 name = "pixi-build-rattler-build"
-version = "0.3.4"
+version = "0.3.6"
 edition.workspace = true
 
 [features]
@@ -10,18 +10,14 @@ native-tls = ["pixi-build-backend/native-tls", "rattler-build/native-tls"]
 
 [dependencies]
 async-trait = { workspace = true }
-fs-err = { workspace = true }
 miette = { workspace = true }
 rattler_conda_types = { workspace = true }
-rattler_virtual_packages = { workspace = true }
 rattler-build = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-url = { workspace = true }
 pathdiff = { workspace = true }
-itertools = { workspace = true }
 
 pixi-build-backend = { workspace = true }
 

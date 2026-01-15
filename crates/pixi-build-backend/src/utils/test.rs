@@ -1,8 +1,11 @@
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
-use pixi_build_types::procedures::{
-    conda_outputs::{CondaOutputsParams, CondaOutputsResult},
-    initialize::InitializeParams,
+use pixi_build_types::{
+    VariantValue,
+    procedures::{
+        conda_outputs::{CondaOutputsParams, CondaOutputsResult},
+        initialize::InitializeParams,
+    },
 };
 use rattler_build::console_utils::LoggingOutputHandler;
 use rattler_conda_types::Platform;
@@ -44,10 +47,10 @@ pub(crate) fn remove_empty_values(value: &mut Value) {
 /// Prepares and calls the `conda/outputs` procedure of the `IntermediateBackend` for the
 /// given recipe general and with the given project model.
 pub async fn intermediate_conda_outputs<T>(
-    project_model: Option<pixi_build_types::ProjectModelV1>,
+    project_model: Option<pixi_build_types::ProjectModel>,
     source_dir: Option<PathBuf>,
     host_platform: Platform,
-    variant_configuration: Option<BTreeMap<String, Vec<String>>>,
+    variant_configuration: Option<BTreeMap<String, Vec<VariantValue>>>,
     variant_files: Option<Vec<PathBuf>>,
 ) -> CondaOutputsResult
 where
@@ -64,10 +67,10 @@ where
         Arc::new(T::default()),
     )
     .initialize(InitializeParams {
-        workspace_root: None,
-        source_dir,
+        workspace_directory: None,
+        source_directory: source_dir,
         manifest_path,
-        project_model: project_model.map(Into::into),
+        project_model,
         configuration: None,
         target_configuration: None,
         cache_directory: None,

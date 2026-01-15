@@ -8,12 +8,12 @@ use metadata::CargoMetadataProvider;
 use miette::IntoDiagnostic;
 use pixi_build_backend::variants::NormalizedKey;
 use pixi_build_backend::{
+    Variable,
     cache::{sccache_envs, sccache_tools},
     generated_recipe::{GenerateRecipe, GeneratedRecipe, PythonParams},
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::{
     matchspec::PackageDependency,
@@ -21,7 +21,7 @@ use recipe_stage0::{
 };
 use std::collections::HashSet;
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -29,18 +29,20 @@ use std::{
 #[derive(Default, Clone)]
 pub struct RustGenerator {}
 
+#[async_trait::async_trait]
 impl GenerateRecipe for RustGenerator {
     type Config = RustBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Construct a CargoMetadataProvider to read the Cargo.toml file
         // and extract metadata from it.
@@ -198,6 +200,24 @@ impl GenerateRecipe for RustGenerator {
         .chain(config.extra_input_globs.clone())
         .collect())
     }
+
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        let mut variants = BTreeMap::new();
+
+        if host_platform.is_windows() {
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
+            // rattler-build will default to vs2017 which for most github runners is too
+            // old.
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
+        }
+
+        Ok(variants)
+    }
 }
 
 #[tokio::main]
@@ -251,14 +271,14 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<pixi_build_types::ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };
     }
 
-    #[test]
-    fn test_rust_is_in_build_requirements() {
+    #[tokio::test]
+    async fn test_rust_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -284,7 +304,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -293,8 +315,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_rust_is_not_added_if_already_present() {
+    #[tokio::test]
+    async fn test_rust_is_not_added_if_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -327,7 +349,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -336,8 +360,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_env_vars_are_set() {
+    #[tokio::test]
+    async fn test_env_vars_are_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -369,7 +393,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
@@ -378,8 +404,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_sccache_is_enabled() {
+    #[tokio::test]
+    async fn test_sccache_is_enabled() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -394,29 +420,37 @@ mod tests {
 
         let env = IndexMap::from([("SCCACHE_BUCKET".to_string(), "my-bucket".to_string())]);
 
-        let system_env_vars = [
-            ("SCCACHE_SYSTEM", Some("SOME_VALUE")),
-            // We want to test that config env variable wins over system env variable
-            ("SCCACHE_BUCKET", Some("system-bucket")),
-        ];
+        // Set environment variables manually
+        // SAFETY: We're in a test and controlling the environment for this test only
+        unsafe {
+            std::env::set_var("SCCACHE_SYSTEM", "SOME_VALUE");
+            std::env::set_var("SCCACHE_BUCKET", "system-bucket");
+        }
 
-        let generated_recipe = temp_env::with_vars(system_env_vars, || {
-            RustGenerator::default()
-                .generate_recipe(
-                    &project_model,
-                    &RustBackendConfig {
-                        env,
-                        ignore_cargo_manifest: Some(true),
-                        ..Default::default()
-                    },
-                    PathBuf::from("."),
-                    Platform::Linux64,
-                    None,
-                    &HashSet::new(),
-                    vec![],
-                )
-                .expect("Failed to generate recipe")
-        });
+        let generated_recipe = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig {
+                    env,
+                    ignore_cargo_manifest: Some(true),
+                    ..Default::default()
+                },
+                PathBuf::from("."),
+                Platform::Linux64,
+                None,
+                &HashSet::new(),
+                vec![],
+                None,
+            )
+            .await
+            .expect("Failed to generate recipe");
+
+        // Clean up environment variables
+        // SAFETY: We're in a test and cleaning up the environment after the test
+        unsafe {
+            std::env::remove_var("SCCACHE_SYSTEM");
+            std::env::remove_var("SCCACHE_BUCKET");
+        }
 
         // Verify that sccache is added to the build requirements
         // when some env variables are set
@@ -425,8 +459,9 @@ mod tests {
         ".build.script.content" => "[ ... script ... ]",
         });
     }
-    #[test]
-    fn test_with_cargo_manifest() {
+
+    #[tokio::test]
+    async fn test_with_cargo_manifest() {
         let project_model = project_fixture!({});
 
         let generated_recipe = RustGenerator::default()
@@ -439,7 +474,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Manually load the Cargo manifest to ensure it works
@@ -515,8 +552,8 @@ mod tests {
         "###);
     }
 
-    #[test]
-    fn test_error_handling_missing_cargo_manifest() {
+    #[tokio::test]
+    async fn test_error_handling_missing_cargo_manifest() {
         let project_model = project_fixture!({
             "targets": {
                 "default_target": {
@@ -528,22 +565,25 @@ mod tests {
         });
 
         // Try to generate recipe from a non-existent directory
-        let result = RustGenerator::default().generate_recipe(
-            &project_model,
-            &RustBackendConfig::default(),
-            PathBuf::from("/non/existent/path"),
-            Platform::Linux64,
-            None,
-            &std::collections::HashSet::new(),
-            vec![],
-        );
+        let result = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default(),
+                PathBuf::from("/non/existent/path"),
+                Platform::Linux64,
+                None,
+                &std::collections::HashSet::new(),
+                vec![],
+                None,
+            )
+            .await;
 
         // Should fail when trying to read Cargo.toml from non-existent path
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_empty_name() {
+    #[tokio::test]
+    async fn test_empty_name() {
         let project_model = project_fixture!({
             "version": "0.1.0",
             "targets": {
@@ -556,23 +596,26 @@ mod tests {
         });
 
         // Should fail because name is empty and we're ignoring cargo manifest
-        let result = RustGenerator::default().generate_recipe(
-            &project_model,
-            &RustBackendConfig::default_with_ignore_cargo_manifest(),
-            std::env::current_dir().unwrap(),
-            Platform::Linux64,
-            None,
-            &std::collections::HashSet::new(),
-            vec![],
-        );
+        let result = RustGenerator::default()
+            .generate_recipe(
+                &project_model,
+                &RustBackendConfig::default_with_ignore_cargo_manifest(),
+                std::env::current_dir().unwrap(),
+                Platform::Linux64,
+                None,
+                &std::collections::HashSet::new(),
+                vec![],
+                None,
+            )
+            .await;
 
         assert!(result.is_err());
         let error_message = result.err().unwrap().to_string();
         assert!(error_message.contains("no name defined"));
     }
 
-    #[test]
-    fn test_multiple_compilers_configuration() {
+    #[tokio::test]
+    async fn test_multiple_compilers_configuration() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -602,7 +645,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers
@@ -637,8 +682,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_default_compiler_when_not_specified() {
+    #[tokio::test]
+    async fn test_default_compiler_when_not_specified() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -668,7 +713,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers and build tools
@@ -693,8 +740,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_target_specific_build_dependencies_linux() {
+    #[tokio::test]
+    async fn test_target_specific_build_dependencies_linux() {
         use pixi_build_backend::traits::ProjectModel;
 
         let project_model = project_fixture!({
@@ -743,7 +790,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Verify that conditional build dependencies contain openssl with linux-64 condition
@@ -779,8 +828,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_target_specific_build_dependencies_with_unix_selector() {
+    #[tokio::test]
+    async fn test_target_specific_build_dependencies_with_unix_selector() {
         use pixi_build_backend::traits::ProjectModel;
 
         let project_model = project_fixture!({
@@ -838,7 +887,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Verify that conditional build dependencies contain gcc with unix condition

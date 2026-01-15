@@ -4,7 +4,7 @@ expression: generated_recipe.recipe
 ---
 context: {}
 package:
-  name: foobar
+  name: test-package
   version: 99.0.0
 source: []
 build:

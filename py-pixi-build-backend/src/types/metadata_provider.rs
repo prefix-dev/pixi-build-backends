@@ -93,15 +93,15 @@ impl MetadataProvider for PyMetadataProvider {
         })
     }
 
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         Python::attach(|py| {
-            let result = self.inner.call_method0(py, "license_file")?;
+            let result = self.inner.call_method0(py, "license_files")?;
 
             if result.is_none(py) {
                 Ok(None)
             } else {
                 let license_file: String = result.extract(py)?;
-                Ok(Some(license_file))
+                Ok(Some(vec![license_file]))
             }
         })
     }

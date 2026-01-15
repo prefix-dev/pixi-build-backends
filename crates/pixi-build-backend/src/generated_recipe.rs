@@ -1,5 +1,5 @@
 use miette::Diagnostic;
-use pixi_build_types::ProjectModelV1;
+use pixi_build_types::ProjectModel;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform, Version};
 use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
@@ -22,7 +22,7 @@ pub struct PythonParams {
     pub editable: bool,
 }
 
-/// The trait is responsible of converting a certain [`ProjectModelV1`] (or
+/// The trait is responsible of converting a certain [`ProjectModel`] (or
 /// others in the future) into an [`IntermediateRecipe`].
 /// By implementing this trait, you can create a new backend for `pixi-build`.
 ///
@@ -32,10 +32,11 @@ pub struct PythonParams {
 ///
 /// An instance of this trait is used by the [`IntermediateBackend`]
 /// in order to generate the recipe.
+#[async_trait::async_trait]
 pub trait GenerateRecipe {
     type Config: BackendConfig;
 
-    /// Generates an [`IntermediateRecipe`] from a [`ProjectModelV1`].
+    /// Generates an [`IntermediateRecipe`] from a [`ProjectModel`].
     ///
     /// # Parameters
     ///
@@ -52,16 +53,18 @@ pub trait GenerateRecipe {
     ///   influence how the recipe is generated.
     /// * `channels` - The channels that are being used for this build. This can be
     ///   used for backend-specific logic that depends on which channels are available.
+    /// * `cache_dir` - Optional cache directory for storing cached data (e.g., HTTP responses).
     #[allow(clippy::too_many_arguments)]
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
         python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         channels: Vec<ChannelUrl>,
+        cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe>;
 
     /// Returns a list of globs that should be used to find the input files
@@ -108,7 +111,12 @@ pub enum GenerateRecipeError<MetadataProviderError: Diagnostic + 'static> {
     #[error("There was no version defined for the recipe")]
     NoVersionDefined,
     #[error("An error occurred while querying the {0}")]
-    MetadataProviderError(String, #[source] MetadataProviderError),
+    MetadataProviderError(
+        String,
+        #[diagnostic_source]
+        #[source]
+        MetadataProviderError,
+    ),
 }
 
 #[derive(Default, Clone)]
@@ -119,11 +127,11 @@ pub struct GeneratedRecipe {
 }
 
 impl GeneratedRecipe {
-    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModelV1`].
+    /// Creates a new [`GeneratedRecipe`] from a [`ProjectModel`].
     /// A default implementation that doesn't take into account the
     /// build scripts or other fields.
     pub fn from_model<M: MetadataProvider>(
-        model: ProjectModelV1,
+        model: ProjectModel,
         provider: &mut M,
     ) -> Result<Self, GenerateRecipeError<M::Error>> {
         // If the name is not defined in the model, we try to get it from the provider.
@@ -141,6 +149,9 @@ impl GeneratedRecipe {
                 .map_err(|e| GenerateRecipeError::MetadataProviderError(String::from("name"), e))?
                 .ok_or(GenerateRecipeError::NoNameDefined)?,
         };
+
+        // Recipes only allow lowercase names
+        let name = name.to_lowercase();
 
         // If the version is not defined in the model, we try to get it from the
         // provider. If the provider cannot provide a version, we return an
@@ -186,11 +197,11 @@ impl GeneratedRecipe {
             license_file: match model.license_file {
                 Some(v) => Some(Value::Concrete(v.display().to_string())),
                 None => provider
-                    .license_file()
+                    .license_files()
                     .map_err(|e| {
-                        GenerateRecipeError::MetadataProviderError(String::from("license-file"), e)
+                        GenerateRecipeError::MetadataProviderError(String::from("license-files"), e)
                     })?
-                    .map(Value::Concrete),
+                    .map(|files| Value::Concrete(files.join(", "))),
             },
             summary: provider
                 .summary()
@@ -242,7 +253,7 @@ pub trait MetadataProvider {
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         Ok(None)
     }
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {

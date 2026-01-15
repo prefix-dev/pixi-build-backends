@@ -5,10 +5,11 @@ use std::{
 };
 
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use miette::{Context, IntoDiagnostic};
 use ordermap::OrderMap;
 use pixi_build_types::{
-    BackendCapabilities, PathSpecV1, ProjectModelV1, SourcePackageSpecV1, TargetSelectorV1,
+    BackendCapabilities, PathSpec, ProjectModel, SourcePackageSpec, TargetSelector,
     procedures::{
         conda_build_v1::{CondaBuildV1Output, CondaBuildV1Params, CondaBuildV1Result},
         conda_outputs::{
@@ -20,11 +21,12 @@ use pixi_build_types::{
     },
 };
 use rattler_build::{
+    NormalizedKey,
     build::{WorkingDirectoryBehavior, run_build},
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
+    recipe::{ParsingError, Recipe, parser::find_outputs_from_src},
     selectors::SelectorConfig,
     source_code::Source,
     tool_configuration::Configuration,
@@ -37,15 +39,18 @@ use serde::Deserialize;
 use tracing::warn;
 
 use crate::{
-    TargetSelector,
     consts::DEBUG_OUTPUT_DIR,
     dependencies::{
-        convert_binary_dependencies, convert_dependencies, convert_input_variant_configuration,
+        convert_constraint_dependencies, convert_dependencies, convert_input_variant_configuration,
     },
     generated_recipe::{BackendConfig, GenerateRecipe, PythonParams},
     protocol::{Protocol, ProtocolInstantiator},
-    specs_conversion::from_build_v1_args_to_finalized_dependencies,
+    specs_conversion::{
+        convert_variant_from_pixi_build_types, convert_variant_to_pixi_build_types,
+        from_build_v1_args_to_finalized_dependencies,
+    },
     tools::{OneOrMultipleOutputs, output_directory},
+    traits::targets::TargetSelector as _,
 };
 
 use fs_err::tokio as tokio_fs;
@@ -127,10 +132,10 @@ pub struct IntermediateBackend<T: GenerateRecipe> {
     pub(crate) source_dir: PathBuf,
     /// The path to the manifest file relative to the source directory.
     pub(crate) manifest_rel_path: PathBuf,
-    pub(crate) project_model: ProjectModelV1,
+    pub(crate) project_model: ProjectModel,
     pub(crate) generate_recipe: Arc<T>,
     pub(crate) config: T::Config,
-    pub(crate) target_config: OrderMap<TargetSelectorV1, T::Config>,
+    pub(crate) target_config: OrderMap<TargetSelector, T::Config>,
     pub(crate) cache_dir: Option<PathBuf>,
 }
 impl<T: GenerateRecipe> IntermediateBackend<T> {
@@ -138,10 +143,10 @@ impl<T: GenerateRecipe> IntermediateBackend<T> {
     pub fn new(
         manifest_path: PathBuf,
         source_dir: Option<PathBuf>,
-        project_model: ProjectModelV1,
+        project_model: ProjectModel,
         generate_recipe: Arc<T>,
         config: serde_json::Value,
-        target_config: OrderMap<TargetSelectorV1, serde_json::Value>,
+        target_config: OrderMap<TargetSelector, serde_json::Value>,
         logging_output_handler: LoggingOutputHandler,
         cache_dir: Option<PathBuf>,
     ) -> miette::Result<Self> {
@@ -224,10 +229,6 @@ where
             .project_model
             .ok_or_else(|| miette::miette!("project model is required"))?;
 
-        let project_model = project_model
-            .into_v1()
-            .ok_or_else(|| miette::miette!("project model v1 is required"))?;
-
         let config = if let Some(config) = params.configuration {
             config
         } else {
@@ -238,7 +239,7 @@ where
 
         let instance = IntermediateBackend::<T>::new(
             params.manifest_path,
-            params.source_dir,
+            params.source_directory,
             project_model,
             self.generator.clone(),
             config,
@@ -311,15 +312,19 @@ where
         variant_config.variants.append(&mut param_variants);
 
         // Construct the intermediate recipe
-        let mut generated_recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            params.host_platform,
-            Some(PythonParams { editable: false }),
-            &variant_config.variants.keys().cloned().collect(),
-            params.channels,
-        )?;
+        let mut generated_recipe = self
+            .generate_recipe
+            .generate_recipe(
+                &self.project_model,
+                &config,
+                self.source_dir.clone(),
+                params.host_platform,
+                Some(PythonParams { editable: false }),
+                &variant_config.variants.keys().cloned().collect(),
+                params.channels,
+                self.cache_dir.clone(),
+            )
+            .await?;
 
         // Adjust license file paths when manifest is in a subdirectory of source_dir.
         // License files from pyproject.toml are relative to source_dir, but rattler-build
@@ -370,14 +375,9 @@ where
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
+        let local_source_packages: HashMap<String, SourcePackageSpec> = discovered_outputs
             .iter()
-            .map(|output| {
-                (
-                    output.name.clone(),
-                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
-                )
-            })
+            .map(|output| (output.name.clone(), PathSpec { path: ".".into() }.into()))
             .collect();
 
         let mut subpackages = HashMap::new();
@@ -498,8 +498,22 @@ where
                     python_site_packages_path: None,
                     variant: variant
                         .iter()
-                        .map(|(key, value)| (key.0.clone(), value.to_string()))
-                        .collect(),
+                        .map(|(key, value)| {
+                            Ok((
+                                key.0.clone(),
+                                convert_variant_to_pixi_build_types(value.clone()).into_diagnostic()
+                                    .with_context(|| {
+                                        format!("the output {}/{}={}={} contains a variant for '{}' which cannot be converted to pixi types: {}",
+                                            discovered_output.target_platform,
+                                            discovered_output.name,
+                                            discovered_output.version,
+                                            discovered_output.build_string,
+                                            key.0,
+                                            value)
+                                    })?
+                            ))
+                        })
+                        .collect::<miette::Result<_>>()?,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -526,7 +540,7 @@ where
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    constraints: convert_binary_dependencies(
+                    constraints: convert_constraint_dependencies(
                         recipe.requirements.run_constraints,
                         &BTreeMap::default(), // Variants are not applied to run constraints
                         &subpackages,
@@ -565,12 +579,12 @@ where
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    weak_constrains: convert_binary_dependencies(
+                    weak_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.weak_constraints,
                         &variant,
                         &subpackages,
                     )?,
-                    strong_constrains: convert_binary_dependencies(
+                    strong_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.strong_constraints,
                         &variant,
                         &subpackages,
@@ -616,21 +630,30 @@ where
             .output
             .variant
             .iter()
-            .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+            .map(|(k, v)| {
+                (
+                    k.as_str().into(),
+                    vec![convert_variant_from_pixi_build_types(v.clone())],
+                )
+            })
             .collect();
 
         // Construct the intermediate recipe
-        let mut recipe = self.generate_recipe.generate_recipe(
-            &self.project_model,
-            &config,
-            self.source_dir.clone(),
-            host_platform,
-            Some(PythonParams {
-                editable: params.editable.unwrap_or_default(),
-            }),
-            &variants.keys().cloned().collect(),
-            params.channels,
-        )?;
+        let mut recipe = self
+            .generate_recipe
+            .generate_recipe(
+                &self.project_model,
+                &config,
+                self.source_dir.clone(),
+                host_platform,
+                Some(PythonParams {
+                    editable: params.editable.unwrap_or_default(),
+                }),
+                &variants.keys().cloned().collect(),
+                params.channels,
+                self.cache_dir.clone(),
+            )
+            .await?;
 
         // Adjust license file paths when manifest is in a subdirectory of source_dir.
         // License files from pyproject.toml are relative to source_dir, but rattler-build
@@ -820,23 +843,60 @@ where
 
 pub fn find_matching_output(
     expected_output: &CondaBuildV1Output,
-    discovered_outputs: IndexSet<DiscoveredOutput>,
+    mut discovered_outputs: IndexSet<DiscoveredOutput>,
 ) -> miette::Result<DiscoveredOutput> {
-    // Find the only output that matches the request.
-    let discovered_output = discovered_outputs
+    // Filter all outputs that are skipped or dont match the name
+    discovered_outputs.retain(|output| {
+        !output.recipe.build.skip() && output.name == expected_output.name.as_normalized()
+    });
+
+    if discovered_outputs.is_empty() {
+        // There is no output with the expected name
+        return Err(miette::miette!(
+            "there is no output defined for the package '{}'",
+            expected_output.name.as_source(),
+        ));
+    }
+
+    // Check if there is a output that has matching variant keys.
+    let expected_used_vars: BTreeMap<NormalizedKey, _> = expected_output
+        .variant
+        .iter()
+        .map(|(k, v)| {
+            (
+                k.as_str().into(),
+                convert_variant_from_pixi_build_types(v.clone()),
+            )
+        })
+        .collect();
+    if let Ok((output_idx, _)) = discovered_outputs
+        .iter()
+        .enumerate()
+        .filter(|(_idx, output)| {
+            expected_used_vars
+                .iter()
+                .all(|(key, value)| output.used_vars.get(key) == Some(value))
+        })
+        .exactly_one()
+    {
+        return Ok(discovered_outputs
+            .swap_remove_index(output_idx)
+            .expect("index must exist"));
+    }
+
+    // Otherwise, match on version, build and subdir.
+    discovered_outputs
         .into_iter()
         .find(|output| {
-            expected_output.name.as_normalized() == output.name
-                && expected_output
-                    .build
-                    .as_ref()
-                    .is_none_or(|build_string| build_string == &output.build_string)
+            expected_output
+                .build
+                .as_ref()
+                .is_none_or(|build_string| build_string == &output.build_string)
                 && expected_output
                     .version
                     .as_ref()
                     .is_none_or(|version| version == &output.recipe.package.version)
                 && expected_output.subdir == output.target_platform
-                && !output.recipe.build.skip()
         })
         .ok_or_else(|| {
             miette::miette!(
@@ -849,8 +909,7 @@ pub fn find_matching_output(
                 expected_output.build.as_deref().unwrap_or("??"),
                 expected_output.subdir
             )
-        })?;
-    Ok(discovered_output)
+        })
 }
 
 pub fn conda_build_v1_directories(
@@ -889,9 +948,6 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
-        highest_supported_project_model: Some(
-            pixi_build_types::VersionedProjectModel::highest_version(),
-        ),
     }
 }
 

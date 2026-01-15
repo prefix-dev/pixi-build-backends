@@ -5,7 +5,7 @@
 This repository contains backend implementations designed to facilitate the building of pixi projects directly from their source code. These backends aim to enhance the functionality of Pixi, a cross-platform, multi-language package manager and workflow tool built on the foundation of the conda ecosystem.
 
 ## Available Build Backends
-The idea is that a backend should be able to build a certain type of so
+The idea is that each backend should be able to deal with one kind of build system.
 The repository provides the following build backends:
 
 1. **pixi-build-python**: A backend tailored for building Python-based projects.
@@ -21,10 +21,6 @@ These backends are located in the `crates/*` directory of the repository.
 * **Schema Definitions**: Includes schema definitions to standardize and validate project configurations.
 
 ## Getting Started
-
-**Note**: This project is currently a work in progress. Functionality and documentation are under active development.
-All of these backends are directly uploaded to the [Pixi Build Backends](https://prefix.dev/channels/pixi-build-backends).
-So will be utilized in pixi directly. We want to move these to conda-forge eventually.
 
 For example, this `build-section` will use the python backend to build a python project:
 
@@ -45,7 +41,7 @@ channels = ["https://prefix.dev/conda-forge"]
 
 ### Developing on Backends
 
-Even though binary versions are available on the prefix channels, its also quite easy to get started on developing a new backend or work on an existing one.
+Even though binary versions are available on the prefix channels and conda-forge, its also quite easy to get started on developing a new backend or work on an existing one.
 To start development make sure you have installed [pixi](https://pixi.sh). After which, a number of command should be available:
 
 ```bash

@@ -12,19 +12,18 @@ source:
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - python >=3.9
+    - python >=${{ python_min }}
     - rosdistro
     - catkin_pkg
     - pydantic
     - pyyaml
     - py-rattler
     - typing-extensions
-    - py-pixi-build-backend
-    - pixi-build-api-version >=2,<3
+    - py-pixi-build-backend >=0.4.1,<0.5
 
 build:
   number: 0

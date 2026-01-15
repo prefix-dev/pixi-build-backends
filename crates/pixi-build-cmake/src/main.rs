@@ -9,7 +9,7 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::{ProjectModelV1, SourcePackageName};
+use pixi_build_types::SourcePackageName;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
@@ -24,18 +24,20 @@ use std::{
 #[derive(Default, Clone)]
 pub struct CMakeGenerator {}
 
+#[async_trait::async_trait]
 impl GenerateRecipe for CMakeGenerator {
     type Config = CMakeBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Determine the manifest root, because `manifest_path` can be
         // either a direct file path or a directory path.
@@ -148,11 +150,12 @@ impl GenerateRecipe for CMakeGenerator {
         let mut variants = BTreeMap::new();
 
         if host_platform.is_windows() {
-            // Default to the Visual Studio 2019 compiler on Windows
-            //
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
             // rattler-build will default to vs2017 which for most github runners is too
             // old.
-            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2019".into()]);
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
         }
 
         Ok(variants)
@@ -173,14 +176,14 @@ pub async fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{collections::BTreeMap, path::PathBuf};
 
     use indexmap::IndexMap;
     use pixi_build_backend::{
         protocol::ProtocolInstantiator, utils::test::intermediate_conda_outputs,
     };
     use pixi_build_types::{
-        ProjectModelV1,
+        ProjectModel, VariantValue,
         procedures::{conda_outputs::CondaOutputsParams, initialize::InitializeParams},
     };
     use rattler_build::console_utils::LoggingOutputHandler;
@@ -206,14 +209,14 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };
     }
 
-    #[test]
-    fn test_cxx_is_in_build_requirements() {
+    #[tokio::test]
+    async fn test_cxx_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -239,7 +242,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -248,8 +253,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_env_vars_are_set() {
+    #[tokio::test]
+    async fn test_env_vars_are_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -280,7 +285,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
@@ -289,8 +296,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_has_python_is_set_in_build_script() {
+    #[tokio::test]
+    async fn test_has_python_is_set_in_build_script() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -316,7 +323,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // we want to check that
@@ -335,8 +344,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_cxx_is_not_added_if_gcc_is_already_present() {
+    #[tokio::test]
+    async fn test_cxx_is_not_added_if_gcc_is_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -362,7 +371,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -383,10 +394,10 @@ mod tests {
             Arc::default(),
         )
         .initialize(InitializeParams {
-            workspace_root: None,
-            source_dir: None,
+            workspace_directory: None,
+            source_directory: None,
             manifest_path: PathBuf::from("pixi.toml"),
-            project_model: Some(project_model.into()),
+            project_model: Some(project_model),
             configuration: None,
             target_configuration: None,
             cache_directory: None,
@@ -409,13 +420,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            outputs.outputs[0]
-                .metadata
-                .variant
-                .get("cxx_compiler")
-                .map(String::as_str),
-            Some("vs2019"),
-            "On windows the default cxx_compiler variant should be vs2019"
+            outputs.outputs[0].metadata.variant.get("cxx_compiler"),
+            Some(&VariantValue::from("vs2022")),
+            "On windows the default cxx_compiler variant should be vs2022"
         );
     }
 
@@ -439,8 +446,10 @@ mod tests {
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
 
-        let variant_configuration =
-            BTreeMap::from([("boltons".to_string(), Vec::from(["==1.0.0".to_string()]))]);
+        let variant_configuration = BTreeMap::from([(
+            "boltons".to_string(),
+            Vec::from([VariantValue::from("==1.0.0")]),
+        )]);
 
         let result = intermediate_conda_outputs::<CMakeGenerator>(
             Some(project_model),
@@ -451,10 +460,13 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==1.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==1.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "linux-64"
+            VariantValue::from("linux-64")
         );
     }
 
@@ -497,15 +509,18 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.outputs[0].metadata.variant["boltons"], "==2.0.0");
+        assert_eq!(
+            result.outputs[0].metadata.variant["boltons"],
+            VariantValue::from("==2.0.0")
+        );
         assert_eq!(
             result.outputs[0].metadata.variant["target_platform"],
-            "linux-64"
+            VariantValue::from("linux-64")
         );
     }
 
-    #[test]
-    fn test_multiple_compilers_configuration() {
+    #[tokio::test]
+    async fn test_multiple_compilers_configuration() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -523,7 +538,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers
@@ -558,8 +575,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_default_compiler_when_not_specified() {
+    #[tokio::test]
+    async fn test_default_compiler_when_not_specified() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -577,7 +594,9 @@ mod tests {
                 None,
                 &HashSet::default(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers and build tools
@@ -602,8 +621,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_stdlib_is_added() {
+    #[tokio::test]
+    async fn test_stdlib_is_added() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -621,7 +640,9 @@ mod tests {
                 None,
                 &HashSet::from_iter([NormalizedKey("c_stdlib".into())]),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have exactly the expected compilers and build tools

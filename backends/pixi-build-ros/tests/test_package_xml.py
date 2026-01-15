@@ -16,7 +16,7 @@ from pixi_build_ros.utils import (
     PackageMapEntry,
 )
 from pixi_build_backend.types.platform import Platform
-from pixi_build_backend.types.project_model import ProjectModelV1
+from pixi_build_backend.types.project_model import ProjectModel
 
 
 def test_package_xml_to_recipe_config(package_xmls: Path, package_map: dict[str, PackageMapEntry], distro: Distro):
@@ -112,7 +112,7 @@ def test_package_xml_condition_evaluation(
             "targets": {},
         },
     }
-    model = ProjectModelV1.from_json(json.dumps(model_payload))
+    model = ProjectModel.from_json(json.dumps(model_payload))
     generator = ROSGenerator()
 
     config = {"distro": distro_variant, "noarch": False}
@@ -185,8 +185,8 @@ def test_generate_recipe(package_xmls: Path, distro: Distro):
         package_xml_dest = temp_path / "package.xml"
         package_xml_dest.write_text(package_xml_source.read_text(encoding="utf-8"))
 
-        # Create a minimal ProjectModelV1 instance
-        model = ProjectModelV1()
+        # Create a minimal ProjectModel instance
+        model = ProjectModel()
 
         # Create config for ROS backend
         config = {"distro": distro, "noarch": False}
@@ -269,7 +269,7 @@ def test_recipe_includes_project_run_dependency(package_xmls: Path, distro: Dist
                 "targets": {},
             },
         }
-        model = ProjectModelV1.from_json(json.dumps(model_payload))
+        model = ProjectModel.from_json(json.dumps(model_payload))
 
         config = {"distro": "noetic", "noarch": False}
         host_platform = Platform("linux-64")

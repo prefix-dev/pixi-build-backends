@@ -6,15 +6,18 @@ use std::{
 
 use crate::{config::RattlerBuildBackendConfig, rattler_build::RattlerBuildBackend};
 use miette::{Context, IntoDiagnostic};
-use pixi_build_backend::specs_conversion::from_build_v1_args_to_finalized_dependencies;
+use pixi_build_backend::specs_conversion::{
+    convert_variant_from_pixi_build_types, convert_variant_to_pixi_build_types,
+    from_build_v1_args_to_finalized_dependencies,
+};
 use pixi_build_backend::{
-    dependencies::{convert_binary_dependencies, convert_dependencies},
+    dependencies::{convert_constraint_dependencies, convert_dependencies},
     intermediate_backend::{conda_build_v1_directories, find_matching_output},
     protocol::{Protocol, ProtocolInstantiator},
     tools::LoadedVariantConfig,
 };
 use pixi_build_types::{
-    BackendCapabilities, PathSpecV1, SourcePackageSpecV1, TargetV1,
+    BackendCapabilities, PathSpec, SourcePackageSpec, Target,
     procedures::{
         conda_build_v1::{CondaBuildV1Params, CondaBuildV1Result},
         conda_outputs::{
@@ -30,7 +33,7 @@ use rattler_build::{
     console_utils::LoggingOutputHandler,
     hash::HashInfo,
     metadata::{BuildConfiguration, Debug, Output, PlatformWithVirtualPackages},
-    recipe::{Jinja, ParsingError, Recipe, parser::find_outputs_from_src, variable::Variable},
+    recipe::{ParsingError, Recipe, parser::find_outputs_from_src},
     selectors::SelectorConfig,
     tool_configuration::Configuration,
     types::{PackageIdentifier, PackagingSettings},
@@ -69,7 +72,7 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
             hash: None,
             variant: Default::default(),
-            experimental: false,
+            experimental: self.config.experimental.unwrap_or(false),
             allow_undefined: false,
             recipe_path: Some(self.recipe_source.path.clone()),
         };
@@ -79,7 +82,7 @@ impl Protocol for RattlerBuildBackend {
             &selector_config_for_variants,
             params.variant_files.iter().flatten().map(PathBuf::as_path),
         )?
-        .extend_with_input_variants(&params.variant_configuration.unwrap_or_default());
+        .extend_with_input_variants(params.variant_configuration.unwrap_or_default());
 
         // Find all outputs from the recipe
         let output_nodes = find_outputs_from_src(self.recipe_source.clone())?;
@@ -93,14 +96,9 @@ impl Protocol for RattlerBuildBackend {
         //
         // By default, this includes all the outputs in the recipe. These should all be
         // build from source, in particular from the current source.
-        let mut local_source_packages: HashMap<String, SourcePackageSpecV1> = discovered_outputs
+        let mut local_source_packages: HashMap<String, SourcePackageSpec> = discovered_outputs
             .iter()
-            .map(|output| {
-                (
-                    output.name.clone(),
-                    SourcePackageSpecV1::Path(PathSpecV1 { path: ".".into() }),
-                )
-            })
+            .map(|output| (output.name.clone(), PathSpec { path: ".".into() }.into()))
             .collect();
 
         // Add workspace dependencies to the source packages mapping.
@@ -139,16 +137,12 @@ impl Protocol for RattlerBuildBackend {
                 continue;
             }
 
-            let jinja = Jinja::new(selector_config);
-            let build_number = recipe.build().number;
-            let build_string = recipe.build().string().resolve(&hash, build_number, &jinja);
-
             subpackages.insert(
                 recipe.package().name().clone(),
                 PackageIdentifier {
                     name: recipe.package().name().clone(),
                     version: recipe.package().version().version().clone().into(),
-                    build_string: build_string.to_string(),
+                    build_string: discovered_output.build_string.clone(),
                 },
             );
 
@@ -156,18 +150,32 @@ impl Protocol for RattlerBuildBackend {
                 metadata: CondaOutputMetadata {
                     name: recipe.package().name().clone(),
                     version: recipe.package.version().clone(),
-                    build: build_string.to_string(),
-                    build_number,
+                    build: discovered_output.build_string.clone(),
+                    build_number: recipe.build().number,
                     subdir: discovered_output.target_platform,
                     license: recipe.about.license.map(|l| l.to_string()),
                     license_family: recipe.about.license_family,
                     noarch: recipe.build.noarch,
                     purls: None,
-                    python_site_packages_path: None,
+                    python_site_packages_path: recipe.build.python.site_packages_path.clone(),
                     variant: variant
                         .iter()
-                        .map(|(k, v)| (k.0.clone(), v.to_string()))
-                        .collect(),
+                        .map(|(key, value)| {
+                            Ok((
+                                key.0.clone(),
+                                convert_variant_to_pixi_build_types(value.clone()).into_diagnostic()
+                                    .with_context(|| {
+                                        format!("the output {}/{}={}={} contains a variant for '{}' which cannot be converted to pixi types: {}",
+                                            discovered_output.target_platform,
+                                            discovered_output.name,
+                                            discovered_output.version,
+                                            discovered_output.build_string,
+                                            key.0,
+                                            value)
+                                    })?
+                            ))
+                        })
+                        .collect::<miette::Result<_>>()?,
                 },
                 build_dependencies: Some(CondaOutputDependencies {
                     depends: convert_dependencies(
@@ -194,7 +202,7 @@ impl Protocol for RattlerBuildBackend {
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    constraints: convert_binary_dependencies(
+                    constraints: convert_constraint_dependencies(
                         recipe.requirements.run_constraints,
                         &BTreeMap::default(), // Variants are not applied to run constraints
                         &subpackages,
@@ -233,12 +241,12 @@ impl Protocol for RattlerBuildBackend {
                         &subpackages,
                         &local_source_packages,
                     )?,
-                    weak_constrains: convert_binary_dependencies(
+                    weak_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.weak_constraints,
                         &variant,
                         &subpackages,
                     )?,
-                    strong_constrains: convert_binary_dependencies(
+                    strong_constrains: convert_constraint_dependencies(
                         recipe.requirements.run_exports.strong_constraints,
                         &variant,
                         &subpackages,
@@ -284,7 +292,12 @@ impl Protocol for RattlerBuildBackend {
                 .output
                 .variant
                 .iter()
-                .map(|(k, v)| (k.as_str().into(), vec![Variable::from_string(v)]))
+                .map(|(k, v)| {
+                    (
+                        k.as_str().into(),
+                        vec![convert_variant_from_pixi_build_types(v.clone())],
+                    )
+                })
                 .collect(),
             pin_run_as_build: None,
             zip_keys: None,
@@ -299,7 +312,7 @@ impl Protocol for RattlerBuildBackend {
             build_platform,
             hash: None,
             variant: Default::default(),
-            experimental: false,
+            experimental: self.config.experimental.unwrap_or(false),
             allow_undefined: false,
             recipe_path: Some(self.recipe_source.path.clone()),
         };
@@ -518,14 +531,10 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
 
         let mut workspace_dependencies = HashMap::new();
 
-        if let Some(target) = params
-            .project_model
-            .and_then(|m| m.into_v1())
-            .and_then(|m| m.targets)
-        {
+        if let Some(target) = params.project_model.and_then(|m| m.targets) {
             fn extract_workspace_deps(
-                target: TargetV1,
-                workspace_deps: &mut HashMap<String, SourcePackageSpecV1>,
+                target: Target,
+                workspace_deps: &mut HashMap<String, SourcePackageSpec>,
             ) -> miette::Result<()> {
                 for dep_list in [
                     target.build_dependencies,
@@ -538,14 +547,21 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
 
                     for (name, spec) in deps {
                         match spec {
-                            pixi_build_types::PackageSpecV1::Source(source_spec) => {
+                            pixi_build_types::PackageSpec::Source(source_spec) => {
                                 // Source dependencies are allowed - they represent workspace packages
                                 workspace_deps.insert(name, source_spec);
                             }
-                            pixi_build_types::PackageSpecV1::Binary(_) => {
+                            pixi_build_types::PackageSpec::Binary(_) => {
                                 // Binary dependencies must be specified in the recipe, not here
                                 return Err(miette::miette!(
                                     "Binary dependency '{}' is not allowed in pixi-build-rattler-build. Please specify all binary dependencies in the recipe.",
+                                    name
+                                ));
+                            }
+                            pixi_build_types::PackageSpec::PinCompatible(_) => {
+                                // PinCompatible dependencies are not yet supported
+                                return Err(miette::miette!(
+                                    "PinCompatible dependency '{}' is not yet supported in pixi-build-rattler-build.",
                                     name
                                 ));
                             }
@@ -567,7 +583,7 @@ impl ProtocolInstantiator for RattlerBuildBackendInstantiator {
         }
 
         let mut instance = RattlerBuildBackend::new(
-            params.source_dir,
+            params.source_directory,
             params.manifest_path.as_path(),
             self.logging_output_handler.clone(),
             params.cache_directory,
@@ -593,9 +609,6 @@ pub(crate) fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
-        highest_supported_project_model: Some(
-            pixi_build_types::VersionedProjectModel::highest_version(),
-        ),
     }
 }
 
@@ -604,7 +617,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use pixi_build_backend::utils::test::conda_outputs_snapshot;
-    use pixi_build_types::procedures::initialize::InitializeParams;
+    use pixi_build_types::{VariantValue, procedures::initialize::InitializeParams};
     use rattler_build::console_utils::LoggingOutputHandler;
     use tempfile::tempdir;
 
@@ -619,8 +632,8 @@ mod tests {
             runtime.block_on(async move {
                 let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
                     .initialize(InitializeParams {
-                        workspace_root: None,
-                        source_dir: None,
+                        workspace_directory: None,
+                        source_directory: None,
                         manifest_path: recipe_path.to_path_buf(),
                         project_model: None,
                         configuration: None,
@@ -684,8 +697,8 @@ mod tests {
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
@@ -714,7 +727,7 @@ mod tests {
             .variant
             .get("python")
             .expect("python variant present");
-        assert_eq!(python_value, "3.9");
+        assert_eq!(python_value, &VariantValue::from("3.9"));
     }
 
     #[tokio::test]
@@ -726,12 +739,12 @@ mod tests {
             .expect("Failed to write recipe");
 
         let mut variant_configuration = BTreeMap::new();
-        variant_configuration.insert("python".to_string(), vec!["3.11".to_string()]);
+        variant_configuration.insert("python".to_string(), vec![VariantValue::from("3.11")]);
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path.clone(),
                 project_model: None,
                 configuration: None,
@@ -755,11 +768,13 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            result.outputs[0].metadata.variant["python"], "3.11",
+            result.outputs[0].metadata.variant["python"],
+            VariantValue::from("3.11"),
             "Python variant should come from the provided configuration"
         );
         assert_eq!(
-            result.outputs[0].metadata.variant["target_platform"], "linux-64",
+            result.outputs[0].metadata.variant["target_platform"],
+            VariantValue::from("linux-64"),
             "Target platform should match the requested platform"
         );
     }
@@ -785,12 +800,12 @@ numpy:
         .expect("Failed to write shared variants");
 
         let mut variant_configuration = BTreeMap::new();
-        variant_configuration.insert("python".to_string(), vec!["3.10".to_string()]);
+        variant_configuration.insert("python".to_string(), vec![VariantValue::from("3.10")]);
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
@@ -819,14 +834,14 @@ numpy:
             .variant
             .get("python")
             .expect("python variant present");
-        assert_eq!(python_value, "3.10");
+        assert_eq!(python_value, &VariantValue::from("3.10"));
         assert_eq!(
             result.outputs[0]
                 .metadata
                 .variant
                 .get("numpy")
                 .expect("numpy variant present from variant file"),
-            "1.22"
+            &VariantValue::from("1.22")
         );
     }
 
@@ -862,8 +877,8 @@ numpy:
 
         let factory = RattlerBuildBackendInstantiator::new(LoggingOutputHandler::default())
             .initialize(InitializeParams {
-                workspace_root: None,
-                source_dir: None,
+                workspace_directory: None,
+                source_directory: None,
                 manifest_path: recipe_path,
                 project_model: None,
                 configuration: None,
@@ -892,13 +907,13 @@ numpy:
             variant
                 .get("python")
                 .expect("python variant present after override"),
-            "3.10"
+            &VariantValue::from("3.10")
         );
         assert_eq!(
             variant
                 .get("numpy")
                 .expect("numpy variant present from auto-discovered file"),
-            "1.22"
+            &VariantValue::from("1.22")
         );
     }
 

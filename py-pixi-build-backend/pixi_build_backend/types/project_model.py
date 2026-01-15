@@ -1,17 +1,17 @@
 from typing import Optional, List, Mapping, Dict, Any
 from pathlib import Path
 from pixi_build_backend.pixi_build_backend import (
-    PyProjectModelV1,
+    PyProjectModel,
 )
 
 
-class ProjectModelV1:
-    """A project model version 1."""
+class ProjectModel:
+    """A project model."""
 
-    _inner: PyProjectModelV1
+    _inner: PyProjectModel
 
     def __init__(self, name: Optional[str] = None, version: Optional[str] = None):
-        self._inner = PyProjectModelV1(name, version)
+        self._inner = PyProjectModel(name, version)
 
     @property
     def name(self) -> str:
@@ -21,7 +21,7 @@ class ProjectModelV1:
         Examples
         --------
         ```python
-        >>> model = ProjectModelV1("my-project")
+        >>> model = ProjectModel("my-project")
         >>> model.name
         'my-project'
         >>>
@@ -30,31 +30,31 @@ class ProjectModelV1:
         return self._inner.name
 
     @classmethod
-    def _from_py(cls, model: PyProjectModelV1) -> "ProjectModelV1":
-        """Create a ProjectModelV1 from a FFI PyProjectModelV1."""
+    def _from_py(cls, model: PyProjectModel) -> "ProjectModel":
+        """Create a ProjectModel from a FFI PyProjectModel."""
         instance = cls.__new__(cls)
         instance._inner = model
         return instance
 
     @classmethod
-    def from_json(cls, json: str) -> "ProjectModelV1":
-        """Create a ProjectModelV1 from a JSON document."""
+    def from_json(cls, json: str) -> "ProjectModel":
+        """Create a ProjectModel from a JSON document."""
         instance = cls.__new__(cls)
-        instance._inner = PyProjectModelV1.from_json(json)
+        instance._inner = PyProjectModel.from_json(json)
         return instance
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any] | Dict[str, Any]) -> "ProjectModelV1":
-        """Create a ProjectModelV1 from a Python mapping."""
+    def from_dict(cls, data: Mapping[str, Any] | Dict[str, Any]) -> "ProjectModel":
+        """Create a ProjectModel from a Python mapping."""
         instance = cls.__new__(cls)
-        instance._inner = PyProjectModelV1.from_dict(dict(data))
+        instance._inner = PyProjectModel.from_dict(dict(data))
         return instance
 
     @classmethod
-    def from_json_file(cls, path: Path | str) -> "ProjectModelV1":
-        """Create a ProjectModelV1 from a JSON file."""
+    def from_json_file(cls, path: Path | str) -> "ProjectModel":
+        """Create a ProjectModel from a JSON file."""
         instance = cls.__new__(cls)
-        instance._inner = PyProjectModelV1.from_json_file(str(path))
+        instance._inner = PyProjectModel.from_json_file(str(path))
         return instance
 
     @property
@@ -65,10 +65,10 @@ class ProjectModelV1:
         Examples
         --------
         ```python
-        >>> model = ProjectModelV1("my-project", "1.0.0")
+        >>> model = ProjectModel("my-project", "1.0.0")
         >>> model.version
         '1.0.0'
-        >>> ProjectModelV1("test").version is None
+        >>> ProjectModel("test").version is None
         True
         >>>
         ```
@@ -83,7 +83,7 @@ class ProjectModelV1:
         Examples
         --------
         ```python
-        >>> model = ProjectModelV1("test")
+        >>> model = ProjectModel("test")
         >>> model.description is None
         True
         >>>
@@ -102,9 +102,9 @@ class ProjectModelV1:
         return self._inner.license
 
     @property
-    def license_file(self) -> Optional[str]:
+    def license_files(self) -> Optional[str]:
         """Get the project license file path."""
-        return self._inner.license_file
+        return self._inner.license_files
 
     @property
     def readme(self) -> Optional[str]:
@@ -119,7 +119,7 @@ class ProjectModelV1:
         Examples
         --------
         ```python
-        >>> model = ProjectModelV1("test")
+        >>> model = ProjectModel("test")
         >>> model.homepage is None
         True
         >>>

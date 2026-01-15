@@ -17,6 +17,8 @@ The `pixi-build-python` backend is designed for building Python projects using s
 This backend automatically generates conda packages from Python projects by:
 
 - **PEP 517/518 compliance**: Works with modern Python packaging standards including `pyproject.toml`
+- **PyPI-to-conda mapping** (opt-in): Maps `project.dependencies` and `build-system.requires` from `pyproject.toml` to conda packages (see [`ignore-pypi-mapping`](#ignore-pypi-mapping))
+- **Automatic compiler detection**: Detects build tools like `maturin` or `setuptools-rust` and automatically adds required compilers
 - **Cross-platform support**: Works consistently across Linux, macOS, and Windows
 - **Flexible installation**: Automatically selects between `pip` and `uv` for package installation
 
@@ -49,8 +51,8 @@ You can add these to your [`host-dependencies`](https://pixi.sh/latest/build/dep
 python = "3.11"
 ```
 
-You'll also need to specify your Python build backend (like `hatchling`, `setuptools`, etc.) in your `package.host-dependencies`:
-
+The backend will be automatically selected by the automatic PyPI dependency mapping feature if you have `pyproject.toml` in your source directory.
+Otherwise, you need to explicitly add it to your package definition in the `[host-dependencies]`:
 ```toml
 [package.host-dependencies]
 hatchling = "*"
@@ -180,6 +182,14 @@ compilers = ["c", "cxx"]
     compilers = ["c", "cxx"]
     ```
 
+!!! info "Automatic Compiler Detection"
+    The backend automatically detects compilers required by certain build tools in your `build-system.requires`. For example:
+
+    - `maturin` → "rust"
+    - `setuptools-rust` → "rust"
+
+    These detected compilers are merged with any explicitly configured compilers. You only need to manually specify compilers if your package uses build tools that aren't auto-detected.
+
 !!! info "Comprehensive Compiler Documentation"
     For detailed information about available compilers, platform-specific behavior, and how conda-forge compilers work, see the [Compilers Documentation](../key_concepts/compilers.md).
 
@@ -247,6 +257,102 @@ ignore-pyproject-manifest = true  # Ignore pyproject.toml on Windows only
 
     This metadata is automatically included in the generated conda recipe. The `pyproject.toml` file itself is also added to the input globs for incremental build detection.
 
+### `ignore-pypi-mapping`
+
+- **Type**: `Boolean`
+- **Default**: `true`
+- **Target Merge Behavior**: `Overwrite` - Platform-specific setting takes precedence over base
+
+Controls whether to ignore the automatic PyPI-to-conda dependency mapping feature.
+When set to `true` (the default), dependencies from `pyproject.toml` will not be automatically mapped to conda packages. 
+Set to `false` to enable automatic mapping.
+
+```toml
+[package.build.config]
+ignore-pypi-mapping = false  # Enable automatic PyPI-to-conda mapping
+```
+
+!!! note "Default Behavior"
+    This option currently defaults to `true` (mapping disabled) to avoid breaking existing setups. 
+    In a future release, the default will change to `false` (mapping enabled).
+    If you want to opt-in to automatic dependency mapping now, explicitly set `ignore-pypi-mapping = false`.
+
+For target-specific configuration, platform-specific setting overrides the base:
+
+```toml
+[package.build.config]
+ignore-pypi-mapping = false
+
+[package.build.target.win-64.config]
+ignore-pypi-mapping = true  # Disable mapping on Windows only
+# Result for win-64: true
+```
+
+## Automatic PyPI Dependency Mapping
+
+The Python backend can automatically map PyPI dependencies from your `pyproject.toml` to their corresponding conda packages.
+This means you don't need to manually duplicate your dependencies in both `pyproject.toml` and `pixi.toml`.
+
+!!! warning "Opt-in Feature"
+    This feature is currently disabled by default. To enable automatic PyPI-to-conda dependency mapping, set `ignore-pypi-mapping = false` in your build configuration:
+
+    ```toml
+    [package.build.config]
+    ignore-pypi-mapping = false
+    ```
+
+### How It Works
+
+The backend reads dependencies from two sources in your `pyproject.toml`:
+
+1. **`project.dependencies`** → Added to conda **run** dependencies
+2. **`build-system.requires`** → Added to conda **host** dependencies
+
+For each PyPI package, the backend queries a mapping service to find the corresponding conda-forge package name. The mapping is cached locally for 24 hours to improve performance.
+
+### Example
+
+Given this `pyproject.toml`:
+
+```toml
+[project]
+name = "my-package"
+version = "1.0.0"
+dependencies = [
+    "requests>=2.28",
+    "pydantic>=2.0,<3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+```
+
+The backend automatically adds:
+
+- `requests >=2.28` and `pydantic >=2.0,<3.0` to run dependencies
+- `hatchling` to host dependencies
+
+### Precedence Rules
+
+Dependencies specified in your `pixi.toml` take precedence over those inferred from `pyproject.toml`:
+
+- If you specify `requests = ">=2.30"` in `[package.run-dependencies]`, it will override the `requests>=2.28` from `pyproject.toml`
+- Dependencies not in `pixi.toml` are added from `pyproject.toml`
+
+This allows you to:
+
+- Use `pyproject.toml` as the single source of truth for most dependencies
+- Override specific packages in `pixi.toml` when you need different versions or conda-specific packages
+
+### Limitations
+
+- **Environment markers** (e.g., `requests>=2.28; python_version >= "3.8"`) are only partially supported.
+At the moment, only `platform_system`, `os_name`, `platform_machine` and `sys_platforms` are currently checked.
+- **URL-based dependencies** (e.g., `package @ https://...`) are skipped
+- Packages without a conda-forge mapping are logged as warnings and skipped
+
+
 ## Build Process
 
 The Python backend follows this build process:
@@ -281,6 +387,27 @@ This is the current behaviour:
 - `editable` is `true` when installing the package (e.g. with `pixi install`)
 - `editable` is `false` when building the package (e.g. with `pixi build`)
 - Set environment variable `BUILD_EDITABLE_PYTHON` to `true` or `false` to enforce a certain behavior
+
+## Default Variants
+
+On Windows platforms, the backend automatically sets the following default variants:
+
+- `c_compiler`: `vs2022` - Visual Studio 2022 C compiler
+- `cxx_compiler`: `vs2022` - Visual Studio 2022 C++ compiler
+
+These variants are used when you specify compilers in your [`[package.build.config.compilers]`](#compilers) configuration.
+Note that setting these default variants does not automatically add compilers to your build - you still need to explicitly configure which compilers to use.
+
+This default is set to align with conda-forge's switch to Visual Studio 2022 and because [mainstream support for Visual Studio 2019 ended in 2024](https://learn.microsoft.com/en-us/lifecycle/products/visual-studio-2019).
+The `vs2022` compiler is more widely supported on modern GitHub runners and build environments.
+
+You can override these defaults by explicitly setting variants using [`[workspace.build-variants]`](https://pixi.sh/latest/reference/pixi_manifest/#build-variants-optional) in your `pixi.toml`:
+
+```toml
+[workspace.build-variants]
+c_compiler = ["vs2019"]
+cxx_compiler = ["vs2019"]
+```
 
 ## Limitations
 

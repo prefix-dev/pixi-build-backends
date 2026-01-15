@@ -3,14 +3,14 @@ use rattler_conda_types::VersionSpec;
 
 pub use rattler_build::NormalizedKey;
 
-/// Returns true if the specified [`pbt::PackageSpecV1`] is a valid variant
+/// Returns true if the specified [`pbt::PackageSpec`] is a valid variant
 /// spec.
 ///
 /// At the moment, a spec that allows any version is considered a variant spec.
-pub fn can_be_used_as_variant(spec: &pbt::PackageSpecV1) -> bool {
+pub fn can_be_used_as_variant(spec: &pbt::PackageSpec) -> bool {
     match spec {
-        pbt::PackageSpecV1::Binary(boxed_spec) => {
-            let pbt::BinaryPackageSpecV1 {
+        pbt::PackageSpec::Binary(spec) => {
+            let pbt::BinaryPackageSpec {
                 version,
                 build,
                 build_number,
@@ -21,7 +21,7 @@ pub fn can_be_used_as_variant(spec: &pbt::PackageSpecV1) -> bool {
                 sha256,
                 url,
                 license,
-            } = &**boxed_spec;
+            } = spec;
 
             version == &Some(VersionSpec::Any)
                 && build.is_none()

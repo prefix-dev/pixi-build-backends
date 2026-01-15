@@ -51,18 +51,20 @@ mod imp {
         }
     }
 
+    #[async_trait::async_trait]
     impl GenerateRecipe for TestGenerateRecipe {
         type Config = TestBackendConfig;
 
-        fn generate_recipe(
+        async fn generate_recipe(
             &self,
-            model: &pixi_build_types::ProjectModelV1,
+            model: &pixi_build_types::ProjectModel,
             _config: &Self::Config,
             _manifest_path: PathBuf,
             _host_platform: rattler_conda_types::Platform,
             _python_params: Option<PythonParams>,
             _variants: &HashSet<pixi_build_backend::variants::NormalizedKey>,
             _channels: Vec<ChannelUrl>,
+            _cache_dir: Option<PathBuf>,
         ) -> miette::Result<GeneratedRecipe> {
             GeneratedRecipe::from_model(model.clone(), &mut DefaultMetadataProvider)
                 .into_diagnostic()

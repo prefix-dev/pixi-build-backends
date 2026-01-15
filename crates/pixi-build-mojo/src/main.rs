@@ -10,29 +10,34 @@ use pixi_build_backend::{
     intermediate_backend::IntermediateBackendInstantiator,
     traits::ProjectModel,
 };
-use pixi_build_types::ProjectModelV1;
-use rattler_build::NormalizedKey;
+use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform};
 use recipe_stage0::recipe::Script;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::{collections::BTreeSet, path::Path, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 
 #[derive(Default, Clone)]
 pub struct MojoGenerator {}
 
+#[async_trait::async_trait]
 impl GenerateRecipe for MojoGenerator {
     type Config = MojoBackendConfig;
 
-    fn generate_recipe(
+    async fn generate_recipe(
         &self,
-        model: &ProjectModelV1,
+        model: &pixi_build_types::ProjectModel,
         config: &Self::Config,
         manifest_path: PathBuf,
         host_platform: Platform,
         _python_params: Option<PythonParams>,
         variants: &HashSet<NormalizedKey>,
         _channels: Vec<ChannelUrl>,
+        _cache_dir: Option<PathBuf>,
     ) -> miette::Result<GeneratedRecipe> {
         // Determine the manifest root, because `manifest_path` can be
         // either a direct file path or a directory path.
@@ -75,35 +80,7 @@ impl GenerateRecipe for MojoGenerator {
         // rattler-build selectors with simple string comparison.
         let model_dependencies = model.dependencies(Some(host_platform));
 
-        // Get the list of compilers from config, defaulting to ["mojo"] if not specified
-        let mut compilers = config
-            .compilers
-            .clone()
-            .unwrap_or_else(|| vec!["mojo".to_string()]);
-
-        // Handle mojo compiler specially if it's in the list
-        if let Some(idx) = compilers.iter().position(|name| name == "mojo") {
-            let mojo_compiler_pkg = "mojo-compiler";
-            // All of these packages also contain the mojo compiler and maintain backward compat.
-            // They should be removable at a future point.
-            let alt_names = ["max", "mojo", "modular"];
-
-            let mojo_pkg_name = pixi_build_types::SourcePackageName::from(mojo_compiler_pkg);
-            if !model_dependencies.build.contains_key(&mojo_pkg_name)
-                && !alt_names.iter().any(|alt| {
-                    model_dependencies
-                        .build
-                        .contains_key(&pixi_build_types::SourcePackageName::from(*alt))
-                })
-            {
-                requirements
-                    .build
-                    .push(mojo_compiler_pkg.parse().into_diagnostic()?);
-            }
-
-            // Remove the mojo compiler from the list of compilers.
-            compilers.swap_remove(idx);
-        }
+        let compilers = config.compilers.clone().unwrap_or_default();
 
         pixi_build_backend::compilers::add_compilers_to_requirements(
             &compilers,
@@ -145,6 +122,24 @@ impl GenerateRecipe for MojoGenerator {
             .chain(config.extra_input_globs.clone())
             .collect())
     }
+
+    fn default_variants(
+        &self,
+        host_platform: Platform,
+    ) -> miette::Result<BTreeMap<NormalizedKey, Vec<Variable>>> {
+        let mut variants = BTreeMap::new();
+
+        if host_platform.is_windows() {
+            // Default to the Visual Studio 2022 compiler on Windows
+            // Not 2019 due to Conda-forge switching and the mainstream support dropping in 2024.
+            // rattler-build will default to vs2017 which for most github runners is too
+            // old.
+            variants.insert(NormalizedKey::from("c_compiler"), vec!["vs2022".into()]);
+            variants.insert(NormalizedKey::from("cxx_compiler"), vec!["vs2022".into()]);
+        }
+
+        Ok(variants)
+    }
 }
 
 impl MojoGenerator {
@@ -176,7 +171,6 @@ mod tests {
 
     use crate::config::{MojoBinConfig, MojoPkgConfig};
     use indexmap::IndexMap;
-    use pixi_build_types::ProjectModelV1;
     use recipe_stage0::recipe::{Item, Value};
 
     use super::*;
@@ -198,14 +192,14 @@ mod tests {
     #[macro_export]
     macro_rules! project_fixture {
         ($($json:tt)+) => {
-            serde_json::from_value::<ProjectModelV1>(
+            serde_json::from_value::<pixi_build_types::ProjectModel>(
                 serde_json::json!($($json)+)
             ).expect("Failed to create TestProjectModel from JSON fixture.")
         };
     }
 
-    #[test]
-    fn test_mojo_bin_is_set() {
+    #[tokio::test]
+    async fn test_mojo_bin_is_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -238,7 +232,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -246,8 +242,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_mojo_pkg_is_set() {
+    #[tokio::test]
+    async fn test_mojo_pkg_is_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -285,7 +281,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -293,8 +291,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_compiler_is_in_build_requirements() {
+    #[tokio::test]
+    async fn test_compiler_is_in_build_requirements() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -324,7 +322,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -333,8 +333,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_env_vars_are_set() {
+    #[tokio::test]
+    async fn test_env_vars_are_set() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -369,7 +369,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe.build.script,
@@ -378,8 +380,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_compiler_is_not_added_if_compiler_is_already_present() {
+    #[tokio::test]
+    async fn test_compiler_is_not_added_if_compiler_is_already_present() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -416,7 +418,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         insta::assert_yaml_snapshot!(generated_recipe.recipe, {
@@ -425,8 +429,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_mojo_with_additional_compilers() {
+    #[tokio::test]
+    async fn test_mojo_with_additional_compilers() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -451,7 +455,7 @@ mod tests {
             .generate_recipe(
                 &project_model,
                 &MojoBackendConfig {
-                    compilers: Some(vec!["mojo".to_string(), "c".to_string(), "cxx".to_string()]),
+                    compilers: Some(vec!["c".to_string(), "cxx".to_string()]),
                     ..Default::default()
                 },
                 temp.path().to_path_buf(),
@@ -459,17 +463,13 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have both the mojo-compiler package and the additional compilers
         let build_reqs = &generated_recipe.recipe.requirements.build;
-
-        // Check for mojo-compiler package (should be present)
-        let has_mojo_compiler = build_reqs
-            .iter()
-            .any(|item| format!("{item:?}").contains("mojo-compiler"));
-        assert!(has_mojo_compiler, "Should have mojo-compiler package");
 
         // Check for additional compiler templates
         let compiler_templates: Vec<String> = build_reqs
@@ -504,8 +504,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_default_mojo_compiler_behavior() {
+    #[tokio::test]
+    async fn test_default_mojo_compiler_behavior() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -538,20 +538,13 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that we have only the mojo-compiler package by default
         let build_reqs = &generated_recipe.recipe.requirements.build;
-
-        // Check for mojo-compiler package (should be present by default)
-        let has_mojo_compiler = build_reqs
-            .iter()
-            .any(|item| format!("{item:?}").contains("mojo-compiler"));
-        assert!(
-            has_mojo_compiler,
-            "Should have mojo-compiler package by default"
-        );
 
         // Check that no additional compiler templates are present
         let compiler_templates: Vec<String> = build_reqs
@@ -570,8 +563,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_opt_out_of_mojo_compiler() {
+    #[tokio::test]
+    async fn test_opt_out_of_mojo_compiler() {
         let project_model = project_fixture!({
             "name": "foobar",
             "version": "0.1.0",
@@ -604,7 +597,9 @@ mod tests {
                 None,
                 &HashSet::new(),
                 vec![],
+                None,
             )
+            .await
             .expect("Failed to generate recipe");
 
         // Check that mojo-compiler is NOT present when user opts out

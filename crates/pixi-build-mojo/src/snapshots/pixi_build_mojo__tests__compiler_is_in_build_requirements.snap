@@ -11,8 +11,7 @@ build:
   number: ~
   script: "[ ... script ... ]"
 requirements:
-  build:
-    - mojo-compiler
+  build: []
   host: []
   run:
     - boltons

@@ -1804,8 +1804,8 @@ packages:
   timestamp: 1767791335095
 - pypi: ./
   name: pixi-build-ros
-  version: 0.3.2
-  sha256: 2baf955d1db02bfbf21b4a14fd11b7b76081ebbe9d1420653740cf937e01617c
+  version: 0.3.3
+  sha256: 6592f4247c729ae51fcab7d12d1ac50200765f6faa2668acc892964b00fcf19e
   requires_dist:
   - rosdistro
   - catkin-pkg

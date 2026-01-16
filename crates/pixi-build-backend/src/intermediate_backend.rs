@@ -55,53 +55,6 @@ use crate::{
 
 use fs_err::tokio as tokio_fs;
 
-/// Adjusts license file paths to be relative to the recipe directory.
-///
-/// When the manifest is in a subdirectory of the source directory, license files
-/// from pyproject.toml are relative to the source directory but rattler-build
-/// looks for them relative to the recipe directory (manifest's parent).
-///
-/// This function prefixes the license file paths with the relative path from
-/// the recipe directory back to the source directory.
-fn adjust_license_file_paths(
-    license_file: Option<&str>,
-    manifest_rel_path: &Path,
-) -> Option<String> {
-    let license_file = license_file?;
-    if license_file.is_empty() {
-        return Some(license_file.to_string());
-    }
-
-    // Get the directory containing the manifest (relative to source_dir)
-    let manifest_dir = manifest_rel_path.parent()?;
-
-    // If manifest is directly in source_dir, no adjustment needed
-    if manifest_dir.as_os_str().is_empty() {
-        return Some(license_file.to_string());
-    }
-
-    // Compute the relative path from manifest_dir back to source_dir
-    // For example, if manifest_rel_path is "pixi-packages/default/pixi.toml",
-    // manifest_dir is "pixi-packages/default", and we need "../.."
-    let depth = manifest_dir.components().count();
-    let prefix = (0..depth).map(|_| "..").collect::<Vec<_>>().join("/");
-
-    // Adjust each license file path
-    let adjusted_paths: Vec<String> = license_file
-        .split(", ")
-        .map(|path| {
-            if path.starts_with("../") || path.starts_with('/') {
-                // Already a relative path going up, or absolute - don't adjust
-                path.to_string()
-            } else {
-                format!("{prefix}/{path}")
-            }
-        })
-        .collect();
-
-    Some(adjusted_paths.join(", "))
-}
-
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct IntermediateBackendConfig {
@@ -312,7 +265,7 @@ where
         variant_config.variants.append(&mut param_variants);
 
         // Construct the intermediate recipe
-        let mut generated_recipe = self
+        let generated_recipe = self
             .generate_recipe
             .generate_recipe(
                 &self.project_model,
@@ -325,20 +278,6 @@ where
                 self.cache_dir.clone(),
             )
             .await?;
-
-        // Adjust license file paths when manifest is in a subdirectory of source_dir.
-        // License files from pyproject.toml are relative to source_dir, but rattler-build
-        // looks for them relative to the recipe_dir (manifest's parent directory).
-        if let Some(ref mut about) = generated_recipe.recipe.about {
-            if let Some(ref license_file) = about.license_file {
-                let license_file_str = license_file.to_string();
-                if let Some(adjusted) =
-                    adjust_license_file_paths(Some(&license_file_str), &self.manifest_rel_path)
-                {
-                    about.license_file = Some(recipe_stage0::recipe::Value::Concrete(adjusted));
-                }
-            }
-        }
 
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just
@@ -655,20 +594,6 @@ where
             )
             .await?;
 
-        // Adjust license file paths when manifest is in a subdirectory of source_dir.
-        // License files from pyproject.toml are relative to source_dir, but rattler-build
-        // looks for them relative to the recipe_dir (manifest's parent directory).
-        if let Some(ref mut about) = recipe.recipe.about {
-            if let Some(ref license_file) = about.license_file {
-                let license_file_str = license_file.to_string();
-                if let Some(adjusted) =
-                    adjust_license_file_paths(Some(&license_file_str), &self.manifest_rel_path)
-                {
-                    about.license_file = Some(recipe_stage0::recipe::Value::Concrete(adjusted));
-                }
-            }
-        }
-
         // Convert the recipe to source code.
         // TODO(baszalmstra): In the future it would be great if we could just
         // immediately use the intermediate recipe for some of this rattler-build
@@ -948,78 +873,5 @@ fn default_capabilities() -> BackendCapabilities {
     BackendCapabilities {
         provides_conda_outputs: Some(true),
         provides_conda_build_v1: Some(true),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_adjust_license_file_paths_no_adjustment_needed() {
-        // When manifest is directly in source_dir
-        let manifest_rel_path = Path::new("pixi.toml");
-        let result = adjust_license_file_paths(Some("LICENSE.txt"), manifest_rel_path);
-        assert_eq!(result, Some("LICENSE.txt".to_string()));
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_one_level_deep() {
-        // When manifest is one directory deep
-        let manifest_rel_path = Path::new("subdir/pixi.toml");
-        let result = adjust_license_file_paths(Some("LICENSE.txt"), manifest_rel_path);
-        assert_eq!(result, Some("../LICENSE.txt".to_string()));
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_two_levels_deep() {
-        // When manifest is two directories deep (like numpy's pixi-packages/default)
-        let manifest_rel_path = Path::new("pixi-packages/default/pixi.toml");
-        let result = adjust_license_file_paths(Some("LICENSE.txt"), manifest_rel_path);
-        assert_eq!(result, Some("../../LICENSE.txt".to_string()));
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_multiple_files() {
-        // Multiple license files separated by ", "
-        let manifest_rel_path = Path::new("pixi-packages/default/pixi.toml");
-        let result = adjust_license_file_paths(
-            Some("LICENSE.txt, COPYING, nested/LICENSE.md"),
-            manifest_rel_path,
-        );
-        assert_eq!(
-            result,
-            Some("../../LICENSE.txt, ../../COPYING, ../../nested/LICENSE.md".to_string())
-        );
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_already_relative() {
-        // Paths that already start with ../ should not be double-adjusted
-        let manifest_rel_path = Path::new("subdir/pixi.toml");
-        let result = adjust_license_file_paths(Some("../LICENSE.txt"), manifest_rel_path);
-        assert_eq!(result, Some("../LICENSE.txt".to_string()));
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_absolute() {
-        // Absolute paths should not be adjusted
-        let manifest_rel_path = Path::new("subdir/pixi.toml");
-        let result = adjust_license_file_paths(Some("/absolute/LICENSE.txt"), manifest_rel_path);
-        assert_eq!(result, Some("/absolute/LICENSE.txt".to_string()));
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_none() {
-        let manifest_rel_path = Path::new("subdir/pixi.toml");
-        let result = adjust_license_file_paths(None, manifest_rel_path);
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_adjust_license_file_paths_empty() {
-        let manifest_rel_path = Path::new("subdir/pixi.toml");
-        let result = adjust_license_file_paths(Some(""), manifest_rel_path);
-        assert_eq!(result, Some("".to_string()));
     }
 }

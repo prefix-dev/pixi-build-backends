@@ -236,9 +236,10 @@ impl ToMarkedYaml for About {
         }
 
         if let Some(ref license_file) = self.license_file {
+            let nodes: Vec<MarkedNode> = license_file.iter().map(|f| f.to_marked_yaml()).collect();
             mapping.insert(
                 MarkedScalarNode::new(Span::new_blank(), "license_file"),
-                license_file.to_marked_yaml(),
+                MarkedNode::Sequence(MarkedSequenceNode::new(Span::new_blank(), nodes)),
             );
         }
 

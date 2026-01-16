@@ -1804,8 +1804,8 @@ packages:
   timestamp: 1767791335095
 - pypi: ./
   name: pixi-build-ros
-  version: 0.3.3
-  sha256: 6592f4247c729ae51fcab7d12d1ac50200765f6faa2668acc892964b00fcf19e
+  version: 0.3.4
+  sha256: d051409ec57042f68885a967f738e48adc034c246700de5227dd091fb7e7f433
   requires_dist:
   - rosdistro
   - catkin-pkg
@@ -1907,7 +1907,7 @@ packages:
   timestamp: 1767012412984
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.4.0
+  version: 0.4.2
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -1920,7 +1920,7 @@ packages:
   license: BSD-3-Clause
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.4.0
+  version: 0.4.2
   build: h9490d1a_0
   subdir: win-64
   variants:
@@ -1933,7 +1933,7 @@ packages:
   license: BSD-3-Clause
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.4.0
+  version: 0.4.2
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -1948,7 +1948,7 @@ packages:
   license: BSD-3-Clause
 - conda: ../../py-pixi-build-backend
   name: py-pixi-build-backend
-  version: 0.4.0
+  version: 0.4.2
   build: he8cfe8b_0
   subdir: linux-aarch64
   variants:

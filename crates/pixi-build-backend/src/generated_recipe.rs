@@ -2,7 +2,7 @@ use miette::Diagnostic;
 use pixi_build_types::ProjectModelV1;
 use rattler_build::{NormalizedKey, recipe::variable::Variable};
 use rattler_conda_types::{ChannelUrl, Platform, Version};
-use recipe_stage0::recipe::{About, IntermediateRecipe, Package, Value};
+use recipe_stage0::recipe::{About, IntermediateRecipe, ListOrItem, Package, Value};
 use serde::de::DeserializeOwned;
 use std::collections::HashSet;
 use std::{
@@ -183,14 +183,25 @@ impl GeneratedRecipe {
             description: derive_value!(description).map(Value::Concrete),
             documentation: derive_value!(documentation).map(Value::Concrete),
             repository: derive_value!(repository).map(Value::Concrete),
-            license_file: match model.license_file {
-                Some(v) => Some(Value::Concrete(v.display().to_string())),
-                None => provider
-                    .license_file()
-                    .map_err(|e| {
-                        GenerateRecipeError::MetadataProviderError(String::from("license-file"), e)
-                    })?
-                    .map(Value::Concrete),
+            license_file: {
+                let files: Vec<String> = match &model.license_file {
+                    Some(v) => vec![v.display().to_string()],
+                    None => provider
+                        .license_files()
+                        .map_err(|e| {
+                            GenerateRecipeError::MetadataProviderError(
+                                String::from("license-files"),
+                                e,
+                            )
+                        })?,
+                };
+                if files.is_empty() {
+                    None
+                } else {
+                    Some(ListOrItem::new(
+                        files.into_iter().map(Value::Concrete).collect(),
+                    ))
+                }
             },
             summary: provider
                 .summary()
@@ -242,8 +253,8 @@ pub trait MetadataProvider {
     fn license(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)
     }
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
-        Ok(None)
+    fn license_files(&mut self) -> Result<Vec<String>, Self::Error> {
+        Ok(Vec::new())
     }
     fn summary(&mut self) -> Result<Option<String>, Self::Error> {
         Ok(None)

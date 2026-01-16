@@ -2,7 +2,7 @@
 Python metadata provider types and protocols.
 """
 
-from typing import Optional, Protocol
+from typing import List, Optional, Protocol
 
 
 class MetadataProvider(Protocol):
@@ -29,9 +29,9 @@ class MetadataProvider(Protocol):
         """Return the package license or None if not available."""
         return None
 
-    def license_file(self) -> Optional[str]:
-        """Return the path to the license file or None if not available."""
-        return None
+    def license_files(self) -> List[str]:
+        """Return the list of paths to license files or empty list if not available."""
+        return []
 
     def summary(self) -> Optional[str]:
         """Return a short package summary or None if not available."""

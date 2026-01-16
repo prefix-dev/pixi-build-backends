@@ -160,23 +160,43 @@ impl MetadataProvider for PyprojectMetadataProvider {
             }))
     }
 
-    /// Returns the package license file path from the pyproject.toml manifest.
+    /// Returns the package license file paths from the pyproject.toml manifest.
     ///
-    /// If `ignore_pyproject_manifest` is true, returns `None`. Otherwise, extracts
-    /// the license file path from the project section if the license is specified
-    /// as a file reference.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    /// If `ignore_pyproject_manifest` is true, returns an empty Vec. Otherwise, extracts
+    /// the license file paths from either `license-files` field or the `license.file` field.
+    /// The returned paths are absolute, resolved against the manifest root directory.
+    fn license_files(&mut self) -> Result<Vec<String>, Self::Error> {
         if self.ignore_pyproject_manifest {
-            return Ok(None);
+            return Ok(Vec::new());
         }
-        Ok(self
-            .ensure_manifest_project()?
-            .and_then(|proj| proj.license.as_ref())
-            .and_then(|license| match license {
-                pyproject_toml::License::File { file } => Some(file.to_string_lossy().to_string()),
-                pyproject_toml::License::Text { text: _ } => None,
-                pyproject_toml::License::Spdx(_) => None,
-            }))
+
+        let Some(project) = self.ensure_manifest_project()? else {
+            return Ok(Vec::new());
+        };
+
+        // Helper to make paths absolute
+        let make_absolute = |file: &str| -> String {
+            self.manifest_root
+                .join(file)
+                .to_string_lossy()
+                .to_string()
+        };
+
+        // First check for license_files (PEP 639)
+        if let Some(ref files) = project.license_files {
+            if !files.is_empty() {
+                return Ok(files.iter().map(|f| make_absolute(f)).collect());
+            }
+        }
+
+        // Fall back to license.file if present
+        if let Some(ref license) = project.license {
+            if let pyproject_toml::License::File { file } = license {
+                return Ok(vec![make_absolute(&file.to_string_lossy())]);
+            }
+        }
+
+        Ok(Vec::new())
     }
 
     /// Returns the package summary from the pyproject.toml manifest.
@@ -320,10 +340,35 @@ license = {file = "LICENSE.txt"}
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), Some("LICENSE.txt".to_string()));
+        let expected_path = temp_dir.path().join("LICENSE.txt");
         assert_eq!(
-            provider.license_file().unwrap(),
-            Some("LICENSE.txt".to_string())
+            provider.license_files().unwrap(),
+            vec![expected_path.to_string_lossy().to_string()]
         );
+    }
+
+    #[test]
+    fn test_license_files_from_pyproject() {
+        let pyproject_toml_content = r#"
+[project]
+name = "test-package"
+version = "1.0.0"
+license = "BSD-3-Clause AND MIT"
+license-files = ["LICENSE.txt", "third_party/LICENSE-MIT"]
+"#;
+
+        let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
+        let mut provider = create_metadata_provider(temp_dir.path());
+
+        assert_eq!(
+            provider.license().unwrap(),
+            Some("BSD-3-Clause AND MIT".to_string())
+        );
+        let expected_paths: Vec<String> = vec!["LICENSE.txt", "third_party/LICENSE-MIT"]
+            .iter()
+            .map(|f| temp_dir.path().join(f).to_string_lossy().to_string())
+            .collect();
+        assert_eq!(provider.license_files().unwrap(), expected_paths);
     }
 
     #[test]
@@ -372,7 +417,7 @@ description = "Test description"
         let temp_dir = create_temp_pyproject_project(pyproject_toml_content);
         let mut provider = PyprojectMetadataProvider::new(temp_dir.path(), true);
 
-        // All methods should return None when ignore_pyproject_manifest is true
+        // All methods should return None/empty when ignore_pyproject_manifest is true
         assert_eq!(provider.name().unwrap(), None);
         assert_eq!(provider.version().unwrap(), None);
         assert_eq!(provider.description().unwrap(), None);
@@ -380,7 +425,7 @@ description = "Test description"
         assert_eq!(provider.homepage().unwrap(), None);
         assert_eq!(provider.repository().unwrap(), None);
         assert_eq!(provider.documentation().unwrap(), None);
-        assert_eq!(provider.license_file().unwrap(), None);
+        assert!(provider.license_files().unwrap().is_empty());
         assert_eq!(provider.summary().unwrap(), None);
         assert_eq!(provider.requires_python().unwrap(), None);
     }

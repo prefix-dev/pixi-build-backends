@@ -24,7 +24,6 @@ tests: []
 about:
   homepage: "https://example.com"
   license: MIT
-  license_file: ~
   summary: A test package
   description: A test package
   documentation: "https://docs.example.com"

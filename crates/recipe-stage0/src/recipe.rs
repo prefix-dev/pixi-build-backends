@@ -703,7 +703,8 @@ impl Display for PackageContents {
 pub struct About {
     pub homepage: Option<Value<String>>,
     pub license: Option<Value<String>>,
-    pub license_file: Option<Value<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license_file: Option<ListOrItem<Value<String>>>,
     pub summary: Option<Value<String>>,
     pub description: Option<Value<String>>,
     pub documentation: Option<Value<String>>,

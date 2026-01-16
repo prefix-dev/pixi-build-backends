@@ -259,21 +259,21 @@ impl MetadataProvider for CargoMetadataProvider {
         Ok(Some(license.clone()))
     }
 
-    /// Returns the package license file path from the Cargo.toml manifest.
+    /// Returns the package license file paths from the Cargo.toml manifest.
     ///
-    /// If `ignore_cargo_manifest` is true, returns `None`. Otherwise, extracts
+    /// If `ignore_cargo_manifest` is true, returns an empty Vec. Otherwise, extracts
     /// the license-file from the package section, handling workspace
     /// inheritance if needed. The path is converted to a string
-    /// representation.
-    fn license_file(&mut self) -> Result<Option<String>, Self::Error> {
+    /// representation. Cargo.toml only supports a single license-file.
+    fn license_files(&mut self) -> Result<Vec<String>, Self::Error> {
         if self.ignore_cargo_manifest {
-            return Ok(None);
+            return Ok(Vec::new());
         }
         let Some(value) = self.ensure_manifest_package()?.map(|pkg| &pkg.license_file) else {
-            return Ok(None);
+            return Ok(Vec::new());
         };
         let license_file = match value {
-            None => return Ok(None),
+            None => return Ok(Vec::new()),
             Some(Inheritable::Set(value)) => value,
             Some(Inheritable::Inherited) => self
                 .ensure_workspace_manifest()?
@@ -284,7 +284,7 @@ impl MetadataProvider for CargoMetadataProvider {
                     ))
                 })?,
         };
-        Ok(Some(license_file.display().to_string()))
+        Ok(vec![license_file.display().to_string()])
     }
 
     /// Returns the package summary from the Cargo.toml manifest.
@@ -379,6 +379,25 @@ mod tests {
     /// Helper function to assert workspace inheritance error
     fn assert_missing_inherited_value_error(
         result: Result<Option<String>, MetadataError>,
+        expected_field: &str,
+    ) {
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        match error {
+            MetadataError::MissingInheritedValue(field) => {
+                assert_eq!(field, expected_field);
+            }
+            MetadataError::CargoTomlError(_) => {
+                // This is expected when workspace inheritance fails due to
+                // missing workspace
+            }
+            _ => panic!("Expected MissingInheritedValue or CargoTomlError, got: {error:?}"),
+        }
+    }
+
+    /// Helper function to assert workspace inheritance error for Vec results
+    fn assert_missing_inherited_value_error_vec(
+        result: Result<Vec<String>, MetadataError>,
         expected_field: &str,
     ) {
         assert!(result.is_err());
@@ -572,8 +591,8 @@ license-file.workspace = true
         let temp_dir = create_temp_cargo_project(cargo_toml_content);
         let mut provider = create_metadata_provider(temp_dir.path());
 
-        let result = provider.license_file();
-        assert_missing_inherited_value_error(result, "workspace.package.license-file");
+        let result = provider.license_files();
+        assert_missing_inherited_value_error_vec(result, "workspace.package.license-file");
     }
 
     #[test]
@@ -814,7 +833,7 @@ description = "Test description"
         assert_eq!(provider.homepage().unwrap(), None);
         assert_eq!(provider.repository().unwrap(), None);
         assert_eq!(provider.documentation().unwrap(), None);
-        assert_eq!(provider.license_file().unwrap(), None);
+        assert!(provider.license_files().unwrap().is_empty());
         assert_eq!(provider.summary().unwrap(), None);
     }
 

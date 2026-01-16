@@ -444,7 +444,7 @@ license-files = ["LICENSE.txt", "COPYING.txt"]
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
-        let expected_paths: Vec<String> = vec!["LICENSE.txt", "COPYING.txt"]
+        let expected_paths: Vec<String> = ["LICENSE.txt", "COPYING.txt"]
             .iter()
             .map(|f| temp_dir.path().join(f).to_string_lossy().to_string())
             .collect();
@@ -465,7 +465,7 @@ license-files = ["NOTICE.txt", "AUTHORS.txt"]
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
-        let expected_paths: Vec<String> = vec!["LICENSE", "NOTICE.txt", "AUTHORS.txt"]
+        let expected_paths: Vec<String> = ["LICENSE", "NOTICE.txt", "AUTHORS.txt"]
             .iter()
             .map(|f| temp_dir.path().join(f).to_string_lossy().to_string())
             .collect();

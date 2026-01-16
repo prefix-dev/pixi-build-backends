@@ -217,8 +217,8 @@ impl MetadataProvider for PyprojectMetadataProvider {
     /// 1. `license.file` - if specified as a file reference
     /// 2. `license-files` - if specified as a list of file paths
     ///
-    /// If both are present, they are combined with commas. If multiple files are
-    /// present in `license-files`, they are joined with commas.
+    /// If both are present, they are combined. The returned paths are absolute,
+    /// resolved against the manifest root directory.
     fn license_files(&mut self) -> Result<Option<Vec<String>>, Self::Error> {
         if self.mode == PyprojectManifestMode::Ignore {
             return Ok(None);
@@ -229,16 +229,20 @@ impl MetadataProvider for PyprojectMetadataProvider {
             None => return Ok(None),
         };
 
+        // Helper to make paths absolute
+        let make_absolute =
+            |file: &str| -> String { self.manifest_root.join(file).to_string_lossy().to_string() };
+
         let mut license_files = Vec::new();
 
         // Check for license.file
         if let Some(pyproject_toml::License::File { file }) = project.license.as_ref() {
-            license_files.push(file.to_string_lossy().to_string());
+            license_files.push(make_absolute(&file.to_string_lossy()));
         }
 
         // Check for license-files
         if let Some(files) = project.license_files.as_ref() {
-            license_files.extend(files.iter().cloned());
+            license_files.extend(files.iter().map(|f| make_absolute(f)));
         }
 
         if license_files.is_empty() {
@@ -420,9 +424,10 @@ license = {file = "LICENSE.txt"}
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
+        let expected_path = temp_dir.path().join("LICENSE.txt");
         assert_eq!(
             provider.license_files().unwrap(),
-            Some(vec!["LICENSE.txt".to_string()])
+            Some(vec![expected_path.to_string_lossy().to_string()])
         );
     }
 
@@ -439,10 +444,11 @@ license-files = ["LICENSE.txt", "COPYING.txt"]
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
-        assert_eq!(
-            provider.license_files().unwrap(),
-            Some(vec!["LICENSE.txt".to_string(), "COPYING.txt".to_string()])
-        );
+        let expected_paths: Vec<String> = vec!["LICENSE.txt", "COPYING.txt"]
+            .iter()
+            .map(|f| temp_dir.path().join(f).to_string_lossy().to_string())
+            .collect();
+        assert_eq!(provider.license_files().unwrap(), Some(expected_paths));
     }
 
     #[test]
@@ -459,14 +465,11 @@ license-files = ["NOTICE.txt", "AUTHORS.txt"]
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
-        assert_eq!(
-            provider.license_files().unwrap(),
-            Some(vec![
-                "LICENSE".to_string(),
-                "NOTICE.txt".to_string(),
-                "AUTHORS.txt".to_string()
-            ])
-        );
+        let expected_paths: Vec<String> = vec!["LICENSE", "NOTICE.txt", "AUTHORS.txt"]
+            .iter()
+            .map(|f| temp_dir.path().join(f).to_string_lossy().to_string())
+            .collect();
+        assert_eq!(provider.license_files().unwrap(), Some(expected_paths));
     }
 
     #[test]
@@ -482,9 +485,10 @@ license-files = ["LICENSE"]
         let mut provider = create_metadata_provider(temp_dir.path());
 
         assert_eq!(provider.license().unwrap(), None);
+        let expected_path = temp_dir.path().join("LICENSE");
         assert_eq!(
             provider.license_files().unwrap(),
-            Some(vec!["LICENSE".to_string()])
+            Some(vec![expected_path.to_string_lossy().to_string()])
         );
     }
 

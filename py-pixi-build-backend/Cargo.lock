@@ -3664,7 +3664,7 @@ dependencies = [
 
 [[package]]
 name = "pixi-build-backend"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3868,7 +3868,7 @@ dependencies = [
 
 [[package]]
 name = "py-pixi-build-backend"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "async-trait",
  "indexmap 2.13.0",
@@ -4765,7 +4765,7 @@ dependencies = [
 
 [[package]]
 name = "recipe-stage0"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "hashlink",
  "indexmap 2.13.0",

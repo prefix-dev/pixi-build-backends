@@ -1,6 +1,6 @@
 [package]
 name = "pixi-build-rattler-build"
-version = "0.3.6"
+version = "0.3.7"
 edition.workspace = true
 
 [features]

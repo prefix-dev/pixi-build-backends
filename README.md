@@ -1,5 +1,8 @@
 # Pixi Build Backends
 
+> [!IMPORTANT]
+> This repository has moved to https://github.com/prefix-dev/pixi
+
 **Work in Progress: Backend Implementations for Building Pixi Projects from Source**
 
 This repository contains backend implementations designed to facilitate the building of pixi projects directly from their source code. These backends aim to enhance the functionality of Pixi, a cross-platform, multi-language package manager and workflow tool built on the foundation of the conda ecosystem.
